@@ -178,29 +178,33 @@ const CrucibleRealTrading = {
     for (let i = 1; i < closes.length; i++) {
       changes.push(closes[i] - closes[i-1]);
     }
-    const gains = changes.filter(c => c > 0).reduce((a, b) => a + b, 0) / changes.length;
-    const losses = Math.abs(changes.filter(c => c < 0).reduce((a, b) => a + b, 0)) / changes.length;
-    const rs = gains / (losses || 0.001);
-    const rsi = 100 - (100 / (1 + rs));
+    const gains = changes.filter(c => c > 0).reduce((a, b) => a + b, 0) / Math.max(1, changes.length);
+    const losses = Math.abs(changes.filter(c => c < 0).reduce((a, b) => a + b, 0)) / Math.max(1, changes.length);
+    const rs = (gains || 0.5) / (losses || 0.5);
+    let rsi = 100 - (100 / (1 + rs));
+    if (isNaN(rsi)) rsi = 50; // Default to neutral if calculation fails
     
     // Volatility (Standard Deviation of returns)
     const returns = [];
     for (let i = 1; i < closes.length; i++) {
-      returns.push((closes[i] - closes[i-1]) / closes[i-1]);
+      returns.push((closes[i] - closes[i-1]) / (closes[i-1] || 1));
     }
-    const avgReturn = returns.reduce((a, b) => a + b, 0) / returns.length;
-    const variance = returns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / returns.length;
-    const volatility = Math.sqrt(variance) * 100; // Convert to percentage
+    const avgReturn = returns.reduce((a, b) => a + b, 0) / Math.max(1, returns.length);
+    const variance = returns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / Math.max(1, returns.length);
+    let volatility = Math.sqrt(variance) * 100; // Convert to percentage
+    if (isNaN(volatility) || volatility === 0) volatility = 0.5; // Default if NaN
     
     // Trend Direction (price vs SMA)
     const currentPrice = closes[closes.length - 1];
-    const trendStrength = (currentPrice - sma10) / sma10 * 100;
+    let trendStrength = (currentPrice - sma10) / (sma10 || 1) * 100;
+    if (isNaN(trendStrength)) trendStrength = 0;
     
     // Momentum (Rate of Change)
     const lookback = Math.min(5, closes.length - 1);
-    const momentum = ((currentPrice - closes[closes.length - 1 - lookback]) / closes[closes.length - 1 - lookback]) * 100;
+    let momentum = ((currentPrice - closes[closes.length - 1 - lookback]) / (closes[closes.length - 1 - lookback] || 1)) * 100;
+    if (isNaN(momentum)) momentum = 0;
     
-    return {
+    const indicators = {
       currentPrice,
       sma5,
       sma10,
@@ -210,6 +214,8 @@ const CrucibleRealTrading = {
       trendStrength,
       trend: trendStrength > 0 ? 'UP' : 'DOWN',
     };
+    
+    return indicators;
   },
   
   // ════════════════════════════════════════════════════════════════
@@ -467,14 +473,16 @@ const CrucibleRealTrading = {
         if (!indicators) {
           cryptoIndex++;
           cyclesWithoutTrade++;
+          console.log(`⚠️  No indicators for ${crypto.symbol}`);
           continue;
         }
         
-        // Generate trading signal
+        // Generate trading signal (ALWAYS generates a signal now)
         const signals = this.generateSignals(indicators);
+        console.log(`📊 ${crypto.symbol} | RSI: ${indicators.rsi.toFixed(1)} | Mom: ${indicators.momentum.toFixed(2)}% | Signal: ${signals.strategy} | Conf: ${signals.confidence.toFixed(0)}%`);
         
-        // Execute trade if signal is valid
-        if (signals.entrySignal && signals.confidence > 20) {  // Lowered from 40 to 20
+        // Execute trade if signal is valid (confidence > 20, which should always be true)
+        if (signals && signals.entrySignal && signals.confidence > 20) {  // Lowered from 40 to 20
           const positionSize = this.calculatePositionSize(indicators, signals);
           const trade = await this.executeTrade(crypto, indicators, signals, positionSize);
           
