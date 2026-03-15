@@ -1,0 +1,2876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#00ffe7">
+    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDE5MiAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9Ijk2IiBjeT0iOTYiIHI9Ijk2IiBmaWxsPSIjRkY1QTAwIi8+CjxjaXJjbGUgY3g9Ijk2IiBjeT0iOTYiIHI9Ijc2IiBmaWxsPSIjRjYzQjAwIi8+CjxjaXJjbGUgY3g9Ijk2IiBjeT0iOTYiIHI9IjU2IiBmaWxsPSIjRkZEMUMwIi8+CjxjaXJjbGUgY3g9Ijk2IiBjeT0iOTYiIHI9IjM2IiBmaWxsPSIjRkZENjAwIi8+CjxjaXJjbGUgY3g9Ijk2IiBjeT0iOTYiIHI9IjE2IiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K">
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js');
+      }
+    </script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>TRADE ARENA • AI BOTS v5 + Cooldown 15</title>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Bungee+Shade&family=Share+Tech+Mono&family=Oswald:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" defer></script>
+<script src="https://accounts.google.com/gsi/client" async></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="real-wallet.js" defer></script>
+<script src="ai-strategies.js" defer></script>
+<script src="advanced-bot-engine.js" defer></script>
+<script src="multi-ai-arena.js" defer></script>
+<script src="trade-olympics.js" defer></script>
+<script src="ai-arena.js" defer></script>
+<script src="crucible-test.js" defer></script>
+<script>
+// Global handler for unhandled promise rejections
+// This suppresses CORS errors from the Anthropic API which are expected during local development
+window.addEventListener('unhandledrejection', event => {
+  // Check if it's a CORS or network error from the API fetch
+  if (event.reason?.message?.includes('Failed to fetch') || 
+      event.reason?.message?.includes('CORS') ||
+      (typeof event.reason === 'string' && (event.reason.includes('Failed to fetch') || event.reason.includes('CORS')))) {
+    // This is an expected network/CORS error - suppress it
+    event.preventDefault();
+    // Optionally log at debug level for development
+    console.debug('[Global Handler] Suppressed expected CORS error:', event.reason?.message || event.reason);
+  }
+  // All other promise rejections will be handled normally
+});
+</script>
+<style>
+:root{
+  --gold:#ffd700;--gold2:#ffaa00;--hot:#ff2d78;
+  --cyan:#00ffe7;--green:#39ff14;--purple:#bf5fff;
+  --bg:#06030a;--panel:#0e0914;--chrome:#160f1e;
+  --border:#241830;--dim:#6a5878;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{overflow-y:auto;height:100%}
+body{
+  background:var(--bg);font-family:'Share Tech Mono',monospace;color:#fff;
+  min-height:100vh;
+  background-image:
+    radial-gradient(ellipse 100% 60% at 50% -10%,rgba(255,45,120,0.07) 0%,transparent 60%),
+    repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,255,255,0.008) 2px,rgba(255,255,255,0.008) 4px);
+}
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,0.1) 0px,rgba(0,0,0,0.1) 1px,transparent 1px,transparent 3px);
+}
+
+/* ── EDGE ── */
+.edge{position:fixed;top:0;left:0;right:0;height:3px;z-index:9999;
+  background:linear-gradient(90deg,var(--hot),var(--gold),var(--cyan),var(--green),var(--gold),var(--hot));
+  background-size:200%;animation:edge 3s linear infinite;}
+@keyframes edge{to{background-position:200%}}
+
+/* ══════════════════════════════
+   CONNECT SCREEN
+══════════════════════════════ */
+#connectScreen{
+  max-width:420px;margin:0 auto;
+  display:flex;flex-direction:column;align-items:center;
+  padding:28px 22px 52px;gap:16px;
+}
+.marquee-wrap{width:100%;overflow:hidden;border-top:2px solid var(--gold);border-bottom:2px solid var(--gold);padding:6px 0}
+.marquee-inner{display:inline-flex;gap:40px;animation:mq 12s linear infinite;white-space:nowrap;font-size:10px;color:var(--gold2)}
+@keyframes mq{to{transform:translateX(-50%)}}
+.logo{font-family:'Bungee Shade',display;font-size:clamp(44px,13vw,64px);line-height:1;text-align:center;
+  background:linear-gradient(180deg,#fff,var(--gold) 60%,var(--hot));-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 0 24px rgba(255,215,0,0.45));}
+@keyframes flk{0%,100%{opacity:1}93%{opacity:.3}95%{opacity:1}97%{opacity:.6}98%{opacity:1}}
+.flk{animation:flk 4s infinite}
+.sub{font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:5px;color:var(--cyan);text-shadow:0 0 10px var(--cyan);text-align:center}
+.login-card{width:100%;background:var(--panel);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.login-card-hd{padding:12px 18px 8px;border-bottom:1px solid var(--border);text-align:center;font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:3px;color:var(--dim)}
+.login-card-bd{padding:14px 16px 16px;display:flex;flex-direction:column;gap:9px}
+.g-btn{width:100%;padding:13px 18px;display:flex;align-items:center;justify-content:center;gap:11px;
+  background:#fff;border:none;border-radius:8px;cursor:pointer;
+  font-family:'Oswald',sans-serif;font-size:15px;letter-spacing:1px;color:#111;font-weight:700;
+  box-shadow:0 2px 12px rgba(0,0,0,.5);transition:all .15s}
+.g-btn:hover{transform:scale(1.01);box-shadow:0 4px 20px rgba(255,255,255,.2)}
+.g-icon{width:20px;height:20px;flex-shrink:0}
+.mm-btn{width:100%;padding:13px 18px;display:flex;align-items:center;justify-content:center;gap:10px;
+  background:linear-gradient(135deg,#f6851b,#e2761b);border:none;border-radius:8px;cursor:pointer;
+  font-family:'Bungee',display;font-size:14px;letter-spacing:2px;color:#fff;
+  box-shadow:0 2px 12px rgba(246,133,27,.3);transition:all .15s}
+.mm-btn:hover{box-shadow:0 4px 20px rgba(246,133,27,.6);transform:scale(1.01)}
+.demo-btn{width:100%;padding:12px;background:transparent;border:1px dashed var(--border);border-radius:8px;
+  cursor:pointer;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--dim);transition:all .15s;letter-spacing:1px}
+.demo-btn:hover{border-color:var(--cyan);color:var(--cyan)}
+.divider{display:flex;align-items:center;gap:8px;font-size:10px;color:var(--dim)}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
+#cStatus{font-size:11px;color:var(--cyan);text-align:center;min-height:14px}
+.setup-note{width:100%;padding:10px 13px;background:rgba(255,170,0,.07);border:1px solid rgba(255,170,0,.2);border-radius:8px;font-size:9px;color:var(--dim);line-height:1.7}
+.setup-note strong{color:var(--gold2)}
+.setup-note a{color:var(--cyan);text-decoration:none}
+
+/* ══════════════════════════════
+   MAIN APP
+══════════════════════════════ */
+#mainApp{display:none;flex-direction:column;width:100%;max-width:1100px;margin:0 auto;padding:10px 12px 60px}
+
+/* ── GLOBAL HEADER ── */
+.global-header{
+  display:flex;align-items:center;gap:10px;padding:8px 12px;
+  background:var(--panel);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;
+}
+.gh-avatar{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--gold2);object-fit:cover;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:13px;background:var(--chrome)}
+.gh-name{font-size:10px;color:var(--cyan);flex:1}
+.gh-badge{font-size:9px;padding:2px 7px;border-radius:20px;background:var(--chrome);border:1px solid var(--border);color:var(--dim)}
+.gh-balance{font-size:13px;font-weight:bold;color:var(--gold);font-family:'Oswald',sans-serif}
+.gh-pnl{font-size:10px}
+.pnl-pos{color:var(--green)}
+.pnl-neg{color:var(--hot)}
+
+/* Master Stop/Play Buttons */
+.master-ctrl-btn{
+  padding:6px 12px;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;
+  background:var(--panel);border:1px solid var(--border);border-radius:6px;
+  color:var(--dim);cursor:pointer;transition:all .15s;white-space:nowrap;flex-shrink:0;
+}
+.master-ctrl-btn:hover:not(:disabled){border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 10px rgba(0,255,231,.2)}
+.master-ctrl-btn:disabled{opacity:0.5;cursor:not-allowed}
+.master-ctrl-btn.active{background:rgba(0,255,231,.08);border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 12px rgba(0,255,231,.3)}
+
+/* HFT Batch Mode Buttons */
+.hft-batch-btn{
+  padding:6px 10px;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;
+  background:var(--panel);border:1.5px solid #ff6b00;border-radius:6px;
+  color:#ff9500;cursor:pointer;transition:all .15s;white-space:nowrap;flex-shrink:0;
+  box-shadow:0 0 8px rgba(255,107,0,.2);
+}
+.hft-batch-btn:hover{border-color:#ff9500;color:#ffaa00;box-shadow:0 0 16px rgba(255,165,0,.4)}
+.hft-batch-btn:active{transform:translateY(1px);box-shadow:0 0 20px rgba(255,165,0,.6)}
+
+.add-bot-btn{
+  padding:6px 14px;font-family:'Bungee',display;font-size:11px;letter-spacing:1px;
+  background:linear-gradient(90deg,var(--hot),var(--gold2));border:none;border-radius:6px;
+  color:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0;
+  box-shadow:0 0 12px rgba(255,45,120,.3);transition:all .15s;
+}
+.add-bot-btn:hover{box-shadow:0 0 20px rgba(255,45,120,.6)}
+.add-bot-btn:disabled{opacity:.35;cursor:not-allowed}
+
+/* ── BOT GRID ── */
+.bot-grid{display:grid;gap:10px;
+  grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+
+/* ── TICKER GRAPH ── */
+.ticker-graph-container{background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.ticker-graph-wrapper{display:flex;flex-direction:column}
+.ticker-graph-canvas{position:relative;width:100%;height:280px;background:rgba(0,0,0,.3)}
+#tickerGraphCanvas canvas{width:100%!important;height:100%!important}
+#tickerLegend{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px;padding:10px;background:var(--chrome);border-top:1px solid var(--border)}
+.ticker-legend-item{display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:4px;background:rgba(255,255,255,.02);border:1px solid var(--border);font-size:9px;font-family:'Oswald',sans-serif}
+.ticker-legend-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;border:1px solid rgba(255,255,255,.3)}
+.ticker-legend-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ticker-legend-stats{font-size:8px;color:var(--dim);margin-left:auto}
+
+/* ══════════════════════════════
+   SINGLE MACHINE CARD
+══════════════════════════════ */
+.machine{
+  background:var(--panel);border:2px solid var(--gold2);border-radius:14px;overflow:hidden;
+  position:relative;
+  box-shadow:0 0 30px rgba(255,170,0,.15),inset 0 0 40px rgba(0,0,0,.4);
+  transition:box-shadow .3s;
+}
+.machine.winning{animation:win-flash .2s ease 3;box-shadow:0 0 50px rgba(57,255,20,.6)!important}
+.machine.losing{animation:lose-flash .2s ease 3;box-shadow:0 0 50px rgba(255,45,120,.6)!important}
+.machine.auto-on{border-color:var(--cyan);box-shadow:0 0 30px rgba(0,255,231,.2),inset 0 0 40px rgba(0,0,0,.4)}
+@keyframes win-flash{0%,100%{border-color:var(--gold2)}50%{border-color:var(--green)}}
+@keyframes lose-flash{0%,100%{border-color:var(--gold2)}50%{border-color:var(--hot)}}
+
+/* Machine header */
+.m-head{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;
+  background:linear-gradient(180deg,#1a0d24,var(--panel));border-bottom:1px solid var(--border)}
+.m-id{font-family:'Bungee',display;font-size:11px;letter-spacing:2px;color:var(--gold)}
+.m-ticker{font-size:8px;color:var(--cyan);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.8}
+.m-close{background:none;border:none;color:var(--dim);cursor:pointer;font-size:14px;padding:0 2px;line-height:1}
+.m-close:hover{color:var(--hot)}
+
+/* Reels */
+.m-reels{margin:6px 10px;background:#000;border:2px solid var(--chrome);border-radius:6px;
+  overflow:hidden;display:flex;position:relative;height:120px}
+.m-reels::before{content:'';position:absolute;top:50%;left:0;right:0;height:2px;z-index:11;
+  background:linear-gradient(90deg,transparent,var(--gold),var(--hot),var(--gold),transparent);
+  transform:translateY(-50%);box-shadow:0 0 6px var(--gold)}
+.m-reels::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:10;
+  background:linear-gradient(180deg,rgba(0,0,0,.55) 0%,transparent 28%,transparent 72%,rgba(0,0,0,.55) 100%)}
+.m-reel{flex:1;height:120px;overflow:hidden;position:relative;border-right:1px solid #1a0a20}
+.m-reel:last-child{border-right:none}
+.m-reel-track{display:flex;flex-direction:column;will-change:transform}
+.m-item{height:40px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;flex-shrink:0}
+.m-emoji{font-size:18px;line-height:1}
+.m-label{font-family:'Oswald',sans-serif;font-size:7px;letter-spacing:.5px;color:#999;text-transform:uppercase}
+
+/* AI thinking overlay */
+.m-thinking{
+  position:absolute;inset:0;background:rgba(0,0,0,.8);z-index:20;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  opacity:0;pointer-events:none;transition:opacity .2s;
+}
+.m-thinking.show{opacity:1}
+.think-spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--cyan);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.think-label{font-size:9px;color:var(--cyan);letter-spacing:1px}
+.think-step{font-size:8px;color:var(--dim);max-width:120px;text-align:center}
+
+/* Strategy row */
+.m-strats{display:flex;gap:5px;padding:4px 10px}
+.m-pill{flex:1;background:var(--chrome);border:1px solid var(--border);border-radius:5px;padding:3px 2px;text-align:center}
+.m-pill .pl{font-size:7px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px}
+.m-pill .pv{font-family:'Oswald',sans-serif;font-size:10px;color:var(--gold);font-weight:700;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-pill.lit{border-color:var(--gold);box-shadow:0 0 6px rgba(255,215,0,.3)}
+
+/* Result flash */
+.m-result{
+  position:absolute;inset:0;z-index:30;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.88);opacity:0;pointer-events:none;transition:opacity .25s;
+}
+.m-result.show{opacity:1;pointer-events:all}
+.m-r-title{font-family:'Bungee Shade',display;font-size:32px;animation:rj .4s ease infinite alternate}
+@keyframes rj{from{transform:scale(1) rotate(-1.5deg);filter:drop-shadow(0 0 8px var(--gold))}to{transform:scale(1.06) rotate(1.5deg);filter:drop-shadow(0 0 20px var(--hot))}}
+.m-r-amt{font-family:'Bungee',display;font-size:20px;margin-top:2px}
+.m-r-detail{font-size:8px;color:#888;margin-top:6px;text-align:center;max-width:200px;line-height:1.5;padding:0 10px}
+.m-r-close{margin-top:8px;padding:6px 20px;font-family:'Bungee',display;font-size:11px;
+  background:var(--hot);border:none;border-radius:5px;color:#fff;cursor:pointer}
+
+/* Controls */
+.m-controls{padding:6px 10px 8px;background:var(--chrome);border-top:1px solid var(--border)}
+.m-bet-row{display:flex;gap:4px;margin-bottom:5px}
+.m-bet{flex:1;padding:5px 2px;font-family:'Bungee',display;font-size:9px;
+  background:var(--panel);border:1px solid var(--border);border-radius:4px;color:var(--dim);cursor:pointer;transition:all .12s}
+.m-bet:hover{border-color:var(--gold2);color:var(--gold2)}
+.m-bet.on{background:linear-gradient(180deg,#2a1a00,#160e00);border-color:var(--gold);color:var(--gold);
+  box-shadow:0 0 8px rgba(255,215,0,.25);text-shadow:0 0 6px var(--gold)}
+.m-bottom{display:flex;gap:5px}
+.spin-btn{
+  flex:1;padding:10px;font-family:'Bungee',display;font-size:14px;letter-spacing:1px;
+  background:linear-gradient(180deg,var(--hot),#aa0040);
+  border:none;border-radius:6px;color:#fff;cursor:pointer;
+  box-shadow:0 3px 0 #660025,0 0 20px rgba(255,45,120,.4);transition:all .1s;
+}
+.spin-btn:not(:disabled):hover{box-shadow:0 3px 0 #660025,0 0 35px rgba(255,45,120,.7)}
+.spin-btn:not(:disabled):active{transform:translateY(2px);box-shadow:0 1px 0 #660025}
+.spin-btn:disabled{opacity:.45;cursor:not-allowed}
+.spin-btn.going{animation:pb .35s ease infinite alternate}
+@keyframes pb{from{box-shadow:0 3px 0 #660025,0 0 15px rgba(255,45,120,.3)}to{box-shadow:0 3px 0 #660025,0 0 40px rgba(255,45,120,.8)}}
+.auto-btn{
+  padding:10px 12px;font-family:'Bungee',display;font-size:11px;letter-spacing:1px;
+  background:var(--panel);border:2px solid var(--border);border-radius:6px;color:var(--dim);
+  cursor:pointer;transition:all .15s;white-space:nowrap;
+}
+.auto-btn:hover{border-color:var(--cyan);color:var(--cyan)}
+.auto-btn.on{background:rgba(0,255,231,.08);border-color:var(--cyan);color:var(--cyan);
+  box-shadow:0 0 12px rgba(0,255,231,.3);animation:auto-pulse .8s ease infinite alternate}
+@keyframes auto-pulse{from{box-shadow:0 0 8px rgba(0,255,231,.2)}to{box-shadow:0 0 20px rgba(0,255,231,.5)}}
+
+/* Mini PnL badge on machine */
+.m-pnl{font-size:9px;font-family:'Oswald',sans-serif;font-weight:700;
+  padding:1px 6px;border-radius:10px;background:var(--chrome);border:1px solid var(--border)}
+.m-pnl.pos{color:var(--green);border-color:rgba(57,255,20,.3)}
+.m-pnl.neg{color:var(--hot);border-color:rgba(255,45,120,.3)}
+
+/* ── GLOBAL LOG ── */
+.global-log{padding:12px 0 0}
+.log-title{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:3px;color:var(--dim);margin-bottom:6px;padding:0 2px}
+.log-list{display:flex;flex-direction:column;gap:4px}
+.log-row{background:var(--panel);border:1px solid var(--border);border-radius:5px;
+  padding:6px 10px;display:flex;align-items:center;gap:8px;font-size:9px}
+.log-bot{font-size:8px;color:var(--dim);min-width:30px}
+.log-coin{font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;min-width:44px}
+.log-method{color:var(--dim);flex:1;font-size:9px}
+.log-pnl{font-weight:bold;min-width:56px;text-align:right}
+.log-pnl.p{color:var(--green)}
+.log-pnl.n{color:var(--hot)}
+.log-t{color:#333;font-size:8px;min-width:32px;text-align:right}
+.empty-log{font-size:10px;color:var(--dim);text-align:center;padding:16px;border:1px dashed var(--border);border-radius:6px}
+
+/* Particles */
+.ptc{position:fixed;pointer-events:none;z-index:8999;animation:pf 1.4s ease forwards}
+@keyframes pf{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(180px) rotate(720deg);opacity:0}}
+
+/* Settings Modal */
+.settings-modal{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:99999;display:none;align-items:center;justify-content:center}
+.settings-content{background:var(--panel);border:2px solid var(--gold2);border-radius:14px;width:92%;max-width:380px;padding:18px;max-height:80vh;overflow-y:auto}
+.settings-title{font-family:'Bungee',display;font-size:13px;letter-spacing:2px;color:var(--gold2);margin-bottom:12px;text-align:center}
+.settings-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px}
+.settings-label{font-size:10px;color:var(--dim);flex:1}
+.settings-slider{flex:1;max-width:140px;cursor:pointer}
+.settings-value{font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--gold2);min-width:60px;text-align:right}
+.settings-btn{width:100%;padding:12px;background:linear-gradient(90deg,var(--hot),var(--gold2));border:none;border-radius:6px;color:#fff;font-weight:bold;cursor:pointer;margin-top:12px;transition:all .15s}
+.settings-btn:hover{box-shadow:0 0 15px rgba(255,45,120,.5);transform:scale(1.01)}
+
+/* Responsive */
+@media(max-width:640px){.bot-grid{grid-template-columns:1fr}}
+@media(min-width:641px) and (max-width:900px){.bot-grid{grid-template-columns:1fr 1fr}}
+@media(min-width:901px){.bot-grid{grid-template-columns:repeat(3,1fr)}}
+</style>
+</head>
+<body>
+<div class="edge"></div>
+
+<!-- ══════════════════════════════
+     CONNECT
+══════════════════════════════ -->
+<div id="connectScreen">
+  <div class="marquee-wrap">
+    <div class="marquee-inner">
+      <span>⚡ FLASH LOANS</span><span>🎰 AI ARBITRAGE</span><span>💎 NFT FLIPS</span><span>🌊 YIELD SURF</span>
+      <span>🔥 MEME COINS</span><span>🤖 6 BOT MULTI</span><span>⚡ FLASH LOANS</span><span>🎰 AI ARBITRAGE</span>
+      <span>💎 NFT FLIPS</span><span>🌊 YIELD SURF</span><span>🔥 MEME COINS</span><span>🤖 6 BOT MULTI</span>
+    </div>
+  </div>
+  <div>
+    <div class="logo flk">TRADE<br>ARENA</div>
+    <div class="sub" style="margin-top:4px">6-BOT AI TRADING FLOOR</div>
+  </div>
+  <div style="display:flex;gap:8px;font-size:10px;color:var(--dim);justify-content:center">
+    <span>🤖 Up to 6 Bots</span><span>·</span><span>⚡ Auto-Trade</span><span>·</span><span>🎲 $1 Min Bet</span>
+  </div>
+
+  <div class="login-card">
+    <div class="login-card-hd">CHOOSE YOUR LOGIN</div>
+    <div class="login-card-bd">
+      <button class="g-btn" onclick="loginGoogle()">
+        <svg class="g-icon" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        SIGN IN WITH GOOGLE
+      </button>
+      <div class="divider">— or —</div>
+      <button class="mm-btn" onclick="loginMetaMask()">
+        <svg width="20" height="20" viewBox="0 0 318 318"><path d="M274 35L174 109l19-44z" fill="#E17726"/><path d="M44 35l99 75-18-44z" fill="#E27625"/><path d="M234 218l-27 41 58 16 17-56z" fill="#E27625"/><path d="M36 219l17 56 57-16-26-41z" fill="#E27625"/><path d="M107 143l-17 25 60 3-2-64z" fill="#E27625"/><path d="M211 143l-42-37-2 64 60-3z" fill="#E27625"/></svg>
+        METAMASK / WALLET
+      </button>
+      <div class="divider">— or —</div>
+      <button class="demo-btn" onclick="loginDemo()">🎮 DEMO MODE — NO WALLET NEEDED</button>
+      <div class="divider">— or —</div>
+      <button class="demo-btn" onclick="createWallet()" style="border-style:solid;border-color:rgba(57,255,20,.3);color:var(--green)">🔐 CREATE WALLET — GENERATE NEW</button>
+    </div>
+  </div>
+  <p id="cStatus"></p>
+  <div class="setup-note">
+    <strong>Google OAuth:</strong> Add your Client ID at <code>GOOGLE_CLIENT_ID</code> in the script.
+    Free at <a href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a>
+    · MetaMask &amp; Demo work instantly.
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     MAIN APP
+══════════════════════════════ -->
+<div id="mainApp">
+  <!-- Global header -->
+  <div class="global-header">
+    <div class="gh-avatar" id="ghAvatar">👤</div>
+    <div style="flex:1;overflow:hidden">
+      <div class="gh-name" id="ghName">—</div>
+      <div class="gh-badge" id="ghBadge">DEMO</div>
+    </div>
+    <div style="margin-right:8px;text-align:right">
+      <div class="gh-balance" id="ghBalance">$10,000.00</div>
+      <div class="gh-pnl pnl-pos" id="ghPnl">+$0.00 today</div>
+    </div>
+    <div style="display:flex;gap:6px;margin-right:8px;align-items:center">
+      <button class="master-ctrl-btn" id="masterStopBtn" onclick="stopAllBots()" title="Pause all auto-spins">⏹️ STOP ALL</button>
+      <button class="master-ctrl-btn" id="masterPlayBtn" onclick="playAllBots()" title="Resume all paused auto-spins" style="opacity:0.5;cursor:not-allowed">▶️ PLAY ALL</button>
+      <button class="master-ctrl-btn" id="masterAutoBtn" onclick="toggleMasterAuto()" title="Master control for all bot auto modes" style="background:rgba(57,255,20,.15);border:2px solid var(--green);color:var(--green);font-weight:700">🤖 AUTO OFF</button>
+      <div style="width:1px;height:20px;background:var(--border);margin:0 2px"></div>
+      <button class="hft-batch-btn" id="hftStartBtn" onclick="enableBatchTrading()" title="Launch HFT batch mode">🚀 HFT START</button>
+      <button class="hft-batch-btn" id="hftStopBtn" onclick="disableBatchTrading()" title="Stop all bots">🛑 HFT STOP</button>
+      <div style="display:flex;flex-direction:column;gap:1px;padding:0 8px;border-left:1px solid var(--border);border-right:1px solid var(--border)">
+        <div style="font-size:8px;color:var(--dim);letter-spacing:1px">TRADES/MIN</div>
+        <div style="font-size:13px;font-family:'Oswald';font-weight:700;color:var(--cyan)" id="tpmDisplay">0</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:1px;padding:0 8px;border-left:1px solid var(--border);border-right:1px solid var(--border)">
+        <div style="font-size:8px;color:var(--dim);letter-spacing:1px">TOTAL TRADES</div>
+        <div style="font-size:13px;font-family:'Oswald';font-weight:700;color:var(--gold)" id="totalTradesDisplay">0</div>
+      </div>
+      <button class="settings-btn" onclick="displayTradeStats()" title="View trading stats" style="padding:6px 10px;font-size:9px">📊 STATS</button>
+    </div>
+    <button class="add-bot-btn" id="addBotBtn" onclick="addBot()">+ ADD BOT</button>
+  </div>
+
+  <!-- Bot grid -->
+  <div class="bot-grid" id="botGrid"></div>
+
+  <!-- Global log -->
+  <div class="global-log">
+    <div class="log-title">ALL TRADES</div>
+    <div class="log-list" id="globalLog">
+      <div class="empty-log">Spin any machine to start trading.</div>
+    </div>
+  </div>
+
+  <!-- Bot Performance Ticker Graph -->
+  <div class="ticker-graph-container" style="margin-top:16px">
+    <div class="log-title">📊 BOT PERFORMANCE TICKER</div>
+    <div class="ticker-graph-wrapper">
+      <div id="tickerGraphCanvas" style="width:100%;height:280px;position:relative;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:8px;overflow:hidden"></div>
+      <div id="tickerLegend" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px;padding:8px;background:var(--panel);border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;font-size:9px"></div>
+    </div>
+  </div>
+
+  <!-- Arena Leaderboard -->
+  <div class="global-log" style="margin-top:16px">
+    <div class="log-title">🏆 AI ARENA LEADERBOARD</div>
+    <div id="arenaLeaderboard" style="padding:8px;font-size:11px;font-family:'Oswald',sans-serif">
+      <div style="color:var(--dim)">Run auto-trades to build AI model stats...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div id="settingsModal" class="settings-modal">
+  <div class="settings-content">
+    <div class="settings-title">⚙️ COOLDOWN SETTINGS</div>
+    
+    <div class="settings-row">
+      <div class="settings-label">Losses before Level 1 cooldown</div>
+      <input type="range" id="lossTrigger" min="3" max="20" value="15" class="settings-slider" oninput="updateSettingsUI()">
+      <div id="lossVal" class="settings-value">15</div>
+    </div>
+    
+    <div class="settings-row">
+      <div class="settings-label">Level 1 cooldown (minutes)</div>
+      <input type="range" id="cd1" min="5" max="60" value="30" class="settings-slider" oninput="updateSettingsUI()">
+      <div id="cd1val" class="settings-value">30 min</div>
+    </div>
+    
+    <div class="settings-row">
+      <div class="settings-label">Level 2 cooldown (hours)</div>
+      <input type="range" id="cd2" min="1" max="6" value="2" class="settings-slider" oninput="updateSettingsUI()">
+      <div id="cd2val" class="settings-value">2 hrs</div>
+    </div>
+    
+    <div class="settings-row">
+      <div class="settings-label">Level 3 cooldown (hours)</div>
+      <input type="range" id="cd3" min="12" max="72" value="48" class="settings-slider" oninput="updateSettingsUI()">
+      <div id="cd3val" class="settings-value">48 hrs</div>
+    </div>
+    
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button onclick="saveSettings()" class="settings-btn" style="flex:1">✅ SAVE</button>
+      <button onclick="closeSettings()" class="settings-btn" style="flex:1;background:var(--panel);border:1px solid var(--border);color:var(--dim)">❌ CLOSE</button>
+    </div>
+    
+    <div style="border-top:1px solid var(--border);margin-top:16px;padding-top:16px">
+      <div style="font-size:10px;color:var(--dim);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">📊 PAPER TRADING LOGS</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <button onclick="displayTradeStats()" class="settings-btn" style="background:rgba(0,255,231,.1);border:1px solid var(--cyan);color:var(--cyan);font-size:9px">📈 VIEW STATS</button>
+        <button onclick="exportTradeLogCSV()" class="settings-btn" style="background:rgba(255,215,0,.1);border:1px solid var(--gold);color:var(--gold);font-size:9px">📥 EXPORT CSV</button>
+        <button onclick="exportTradeLogJSON()" class="settings-btn" style="background:rgba(255,215,0,.1);border:1px solid var(--gold);color:var(--gold);font-size:9px">📥 EXPORT JSON</button>
+        <button onclick="copyTradeLogToClipboard()" class="settings-btn" style="background:rgba(57,255,20,.1);border:1px solid var(--green);color:var(--green);font-size:9px">📋 COPY SUMMARY</button>
+      </div>
+    </div>
+
+    <div style="border-top:1px solid var(--border);margin-top:16px;padding-top:16px">
+      <div style="font-size:10px;color:var(--dim);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">🔍 ACTION LOGS</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <button onclick="displayActionLogs()" class="settings-btn" style="background:rgba(255,100,255,.1);border:1px solid var(--hot);color:var(--hot);font-size:9px">📋 VIEW LOGS</button>
+        <button onclick="exportActionLogs('json')" class="settings-btn" style="background:rgba(255,100,255,.1);border:1px solid var(--hot);color:var(--hot);font-size:9px">💾 EXPORT JSON</button>
+        <button onclick="exportActionLogs('csv')" class="settings-btn" style="background:rgba(255,100,255,.1);border:1px solid var(--hot);color:var(--hot);font-size:9px">📊 EXPORT CSV</button>
+        <button onclick="actionLogger.displaySummary()" class="settings-btn" style="background:rgba(255,100,255,.1);border:1px solid var(--hot);color:var(--hot);font-size:9px">📈 LOG SUMMARY</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Button -->
+<button id="settingsBtn" onclick="openSettings()" style="position:fixed;bottom:16px;right:16px;background:var(--panel);border:2px solid var(--gold2);border-radius:50%;width:52px;height:52px;font-size:24px;z-index:9998;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center" title="Settings">⚙️</button>
+
+<script>
+// ════════════════════════════
+// CONFIG
+// ════════════════════════════
+const ANTHROPIC_API_KEY = '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';
+const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+const MAX_BOTS = 12; // Can add up to 12 bots with adaptive strategies
+
+// ════════════════════════════
+// EXPOSE API KEY GLOBALLY (for ai-arena.js access)
+// ════════════════════════════
+window.ANTHROPIC_API_KEY = ANTHROPIC_API_KEY;
+globalThis.ANTHROPIC_API_KEY = ANTHROPIC_API_KEY;
+
+// ════════════════════════════
+// GLOBAL STATE
+// ════════════════════════════
+let balance = 10000;
+let totalPnl = 0;
+let globalLog = [];
+let bots = [];   // array of bot state objects
+let botStrategies = {}; // bot ID -> strategy state mapping
+let botCounter = 0;
+
+// Session tracking for paper trading verification
+window.sessionId = 'SES-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+let tradingStartTime = null;
+let totalTradesExecuted = 0;
+
+// HFT Metrics tracking
+let hftMetrics = {
+  tradeTimestamps: [],
+  get tpm() {
+    const now = Date.now();
+    this.tradeTimestamps = this.tradeTimestamps.filter(ts => now - ts < 60000);
+    return this.tradeTimestamps.length;
+  },
+  recordTrade() {
+    this.tradeTimestamps.push(Date.now());
+    this.updateTPMDisplay();
+  },
+  updateTPMDisplay() {
+    const el = document.getElementById('tpmDisplay');
+    if (el) el.textContent = this.tpm;
+  }
+};
+let marketCache = null;
+let marketCacheTime = 0;
+
+// ════════════════════════════
+// COMPREHENSIVE ACTION LOGGING SYSTEM
+// ════════════════════════════
+const actionLogger = {
+  logs: [],
+  maxLogs: 1000, // Keep 1000 recent actions
+  
+  // Log levels
+  LEVEL: {
+    DEBUG: 'DEBUG',
+    INFO: 'INFO',
+    SUCCESS: 'SUCCESS',
+    WARNING: 'WARNING',
+    ERROR: 'ERROR',
+    CRITICAL: 'CRITICAL'
+  },
+  
+  // Action categories
+  CATEGORY: {
+    LOGIN: 'LOGIN',
+    TRADING: 'TRADING',
+    BOT: 'BOT',
+    HFT: 'HFT',
+    COOLDOWN: 'COOLDOWN',
+    STRATEGY: 'STRATEGY',
+    MARKET: 'MARKET',
+    API: 'API',
+    UI: 'UI',
+    SETTINGS: 'SETTINGS',
+    ERROR: 'ERROR',
+    SYSTEM: 'SYSTEM'
+  },
+  
+  // Main logging function
+  log(category, message, details = null, level = 'INFO') {
+    const timestamp = new Date().toISOString();
+    const logEntry = {
+      timestamp,
+      category,
+      message,
+      details,
+      level,
+      botCount: bots.length,
+      balance,
+      totalPnl,
+      sessionId: window.sessionId
+    };
+    
+    this.logs.push(logEntry);
+    if (this.logs.length > this.maxLogs) {
+      this.logs.shift();
+    }
+    
+    // Console output with color coding
+    this.consoleOutput(logEntry);
+    
+    return logEntry;
+  },
+  
+  // Console output with styling
+  consoleOutput(entry) {
+    const levelEmoji = {
+      DEBUG: '🔍',
+      INFO: 'ℹ️',
+      SUCCESS: '✅',
+      WARNING: '⚠️',
+      ERROR: '❌',
+      CRITICAL: '🚨'
+    }[entry.level] || 'ℹ️';
+    
+    const color = {
+      DEBUG: '#888888',
+      INFO: '#00ffe7',
+      SUCCESS: '#39ff14',
+      WARNING: '#ffaa00',
+      ERROR: '#ff2d78',
+      CRITICAL: '#ff1493'
+    }[entry.level] || '#00ffe7';
+    
+    const prefix = `%c[${entry.timestamp.substring(11, 19)}] ${levelEmoji} ${entry.category}`;
+    const message = `${entry.message}`;
+    
+    console.log(prefix, `color: ${color}; font-weight: bold;`, message);
+    
+    if (entry.details) {
+      console.log('%cDetails:', 'color: #888; font-style: italic;', entry.details);
+    }
+  },
+  
+  // Specific logging methods
+  loginEvent(user, method, success) {
+    return this.log(
+      this.CATEGORY.LOGIN,
+      `User ${success ? 'logged in' : 'login failed'}: ${user}`,
+      { method, user },
+      success ? this.LEVEL.SUCCESS : this.LEVEL.ERROR
+    );
+  },
+  
+  tradeStart(botId, method, token, bet) {
+    return this.log(
+      this.CATEGORY.TRADING,
+      `Trade started - Bot #${botId}`,
+      { botId, method, token, bet, bot: bots.find(b => b.id === botId) },
+      this.LEVEL.INFO
+    );
+  },
+  
+  tradeComplete(botId, token, method, pnl, isWin, multiplier) {
+    return this.log(
+      this.CATEGORY.TRADING,
+      `Trade completed - Bot #${botId}: ${isWin ? '✅ WIN' : '❌ LOSS'} ${isWin ? '+' : ''}$${pnl.toFixed(2)}`,
+      { botId, token, method, pnl, isWin, multiplier, balance, totalPnl },
+      isWin ? this.LEVEL.SUCCESS : this.LEVEL.INFO
+    );
+  },
+  
+  botAdded(botId, profile) {
+    return this.log(
+      this.CATEGORY.BOT,
+      `Bot #${botId} added - Profile: ${profile}`,
+      { botId, profile, totalBots: bots.length },
+      this.LEVEL.SUCCESS
+    );
+  },
+  
+  botRemoved(botId) {
+    return this.log(
+      this.CATEGORY.BOT,
+      `Bot #${botId} removed`,
+      { botId, remainingBots: bots.length - 1 },
+      this.LEVEL.INFO
+    );
+  },
+  
+  autoToggle(botId, isAuto) {
+    return this.log(
+      this.CATEGORY.BOT,
+      `Auto-trading ${isAuto ? 'ENABLED' : 'DISABLED'} on Bot #${botId}`,
+      { botId, isAuto },
+      this.LEVEL.INFO
+    );
+  },
+  
+  hftStarted(botCount) {
+    return this.log(
+      this.CATEGORY.HFT,
+      `HFT batch mode STARTED - ${botCount} bots active`,
+      { botCount, activeBots: bots.filter(b => b.auto).length },
+      this.LEVEL.SUCCESS
+    );
+  },
+  
+  hftStopped() {
+    return this.log(
+      this.CATEGORY.HFT,
+      `HFT batch mode STOPPED`,
+      { botCount: bots.length },
+      this.LEVEL.WARNING
+    );
+  },
+  
+  cooldownTriggered(botId, level, duration) {
+    return this.log(
+      this.CATEGORY.COOLDOWN,
+      `Cooldown Level ${level} triggered on Bot #${botId} - ${Math.round(duration / 60)}min`,
+      { botId, level, durationSeconds: duration },
+      this.LEVEL.WARNING
+    );
+  },
+  
+  apiCall(endpoint, method, success, status = null) {
+    return this.log(
+      this.CATEGORY.API,
+      `API ${method} ${endpoint} - ${success ? 'SUCCESS' : 'FAILED'} ${status ? `(${status})` : ''}`,
+      { endpoint, method, success, status },
+      success ? this.LEVEL.SUCCESS : this.LEVEL.ERROR
+    );
+  },
+  
+  strategyUpdate(botId, oldStrategy, newStrategy) {
+    return this.log(
+      this.CATEGORY.STRATEGY,
+      `Strategy updated on Bot #${botId}: ${oldStrategy} → ${newStrategy}`,
+      { botId, oldStrategy, newStrategy },
+      this.LEVEL.INFO
+    );
+  },
+  
+  marketUpdate(tokensCount, pricesUpdated) {
+    return this.log(
+      this.CATEGORY.MARKET,
+      `Market data updated - ${tokensCount} tokens, ${pricesUpdated} prices refreshed`,
+      { tokensCount, pricesUpdated },
+      this.LEVEL.DEBUG
+    );
+  },
+  
+  settingsSaved(settings) {
+    return this.log(
+      this.CATEGORY.SETTINGS,
+      `Settings saved successfully`,
+      settings,
+      this.LEVEL.SUCCESS
+    );
+  },
+  
+  error(category, message, error) {
+    return this.log(
+      category || this.CATEGORY.ERROR,
+      `ERROR: ${message}`,
+      { errorMessage: error?.message, errorStack: error?.stack, fullError: error },
+      this.LEVEL.ERROR
+    );
+  },
+  
+  criticalError(message, error) {
+    return this.log(
+      this.CATEGORY.ERROR,
+      `CRITICAL: ${message}`,
+      { errorMessage: error?.message, errorStack: error?.stack },
+      this.LEVEL.CRITICAL
+    );
+  },
+  
+  // Get logs by category
+  getLogsByCategory(category) {
+    return this.logs.filter(log => log.category === category);
+  },
+  
+  // Get logs by level
+  getLogsByLevel(level) {
+    return this.logs.filter(log => log.level === level);
+  },
+  
+  // Get recent logs
+  getRecentLogs(count = 50) {
+    return this.logs.slice(-count);
+  },
+  
+  // Export logs
+  exportLogs(format = 'json') {
+    if (format === 'json') {
+      return JSON.stringify(this.logs, null, 2);
+    } else if (format === 'csv') {
+      const headers = ['Timestamp', 'Category', 'Level', 'Message', 'Details', 'Balance', 'Total P&L'];
+      const rows = this.logs.map(log => [
+        log.timestamp,
+        log.category,
+        log.level,
+        log.message,
+        JSON.stringify(log.details || {}),
+        log.balance,
+        log.totalPnl
+      ]);
+      return [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+    }
+  },
+  
+  // Get summary statistics
+  getSummary() {
+    return {
+      totalLogs: this.logs.length,
+      byCategory: Object.keys(this.CATEGORY).reduce((acc, cat) => {
+        acc[cat] = this.getLogsByCategory(cat).length;
+        return acc;
+      }, {}),
+      byLevel: Object.keys(this.LEVEL).reduce((acc, lvl) => {
+        acc[lvl] = this.getLogsByLevel(lvl).length;
+        return acc;
+      }, {}),
+      errors: this.getLogsByLevel(this.LEVEL.ERROR).length,
+      warnings: this.getLogsByLevel(this.LEVEL.WARNING).length,
+      successes: this.getLogsByLevel(this.LEVEL.SUCCESS).length
+    };
+  },
+  
+  // Display summary in console
+  displaySummary() {
+    const summary = this.getSummary();
+    console.group('📊 ACTION LOG SUMMARY');
+    console.log(`Total Actions Logged: ${summary.totalLogs}`);
+    console.log('By Category:', summary.byCategory);
+    console.log('By Level:', summary.byLevel);
+    console.log(`⚠️ Warnings: ${summary.warnings} | ❌ Errors: ${summary.errors} | ✅ Successes: ${summary.successes}`);
+    console.groupEnd();
+  }
+};
+
+// Display action logs in a modal
+function displayActionLogs() {
+  const logs = actionLogger.getRecentLogs(50);
+  let html = '<div style="background:var(--panel);border:2px solid var(--hot);border-radius:8px;padding:16px;max-height:600px;overflow-y:auto;color:var(--text)"><div style="font-size:12px;font-weight:bold;margin-bottom:12px;color:var(--hot)">📋 RECENT ACTION LOGS (Last 50)</div>';
+  
+  if (logs.length === 0) {
+    html += '<div style="color:var(--dim);text-align:center;padding:20px">No logs recorded yet</div>';
+  } else {
+    logs.reverse().forEach(log => {
+      const colors = {
+        'DEBUG': 'var(--dim)',
+        'INFO': 'var(--cyan)',
+        'SUCCESS': 'var(--green)',
+        'WARNING': 'var(--gold)',
+        'ERROR': 'var(--hot)',
+        'CRITICAL': '#ff0000'
+      };
+      const color = colors[log.level] || 'var(--text)';
+      html += `<div style="font-size:10px;color:${color};margin-bottom:8px;padding:8px;background:rgba(255,255,255,.02);border-left:2px solid ${color};border-radius:4px">
+        <div style="font-weight:bold">[${log.timestamp.split('T')[1].split('.')[0]}] ${log.level} · ${log.category}</div>
+        <div>${log.message}</div>
+        ${log.details ? `<div style="color:var(--dim);font-size:9px;margin-top:4px">${JSON.stringify(log.details).substring(0, 100)}</div>` : ''}
+      </div>`;
+    });
+  }
+  
+  html += '</div>';
+  alert(html.replace(/<[^>]*>/g, '').substring(0, 200) + '...\n\nCheck browser console or export logs for full details');
+  console.log('📋 RECENT LOGS:', logs);
+}
+
+// Export action logs
+function exportActionLogs(format) {
+  const logs = actionLogger.logs;
+  if (logs.length === 0) {
+    alert('No logs to export');
+    return;
+  }
+  
+  if (format === 'json') {
+    const json = JSON.stringify(logs, null, 2);
+    downloadFile(json, 'action-logs.json', 'application/json');
+  } else if (format === 'csv') {
+    let csv = 'Timestamp,Level,Category,Message,Details\n';
+    logs.forEach(log => {
+      const details = log.details ? JSON.stringify(log.details).replace(/"/g, '""') : '';
+      csv += `"${log.timestamp}","${log.level}","${log.category}","${log.message.replace(/"/g, '""')}","${details}"\n`;
+    });
+    downloadFile(csv, 'action-logs.csv', 'text/csv');
+  }
+}
+
+// Helper to download file
+function downloadFile(content, filename, type) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// Master Controls State
+let globalAutoStopped = false; // true = all autos paused, false = running normally
+let pausedBots = new Set(); // IDs of bots that were paused when STOP ALL clicked
+
+// ════════════════════════════
+// COOLDOWN CONFIGURATION
+// ════════════════════════════
+let LOSS_TRIGGER = 15; // Losses before Level 1 cooldown activates
+let COOLDOWNS = [
+  30 * 60,      // Level 1: 30 minutes (in seconds)
+  2 * 60 * 60,  // Level 2: 2 hours
+  48 * 60 * 60  // Level 3: 48 hours
+];
+
+// Load cooldown settings from localStorage
+function loadSettings() {
+  const saved = localStorage.getItem('cooldownSettings');
+  if (saved) {
+    const settings = JSON.parse(saved);
+    LOSS_TRIGGER = settings.lossTrigger || 15;
+    COOLDOWNS = settings.cooldowns || COOLDOWNS;
+  }
+}// ════════════════════════════
+// SYMBOL POOLS
+// ════════════════════════════
+const TOKENS = [
+  {e:'🐸',l:'PEPE'},{e:'🐕',l:'DOGE'},{e:'💎',l:'ETH'},{e:'🌕',l:'BTC'},
+  {e:'🔥',l:'WIF'},{e:'💀',l:'BONK'},{e:'🦊',l:'FLOKI'},{e:'🚀',l:'ARB'},
+  {e:'⚡',l:'SOL'},{e:'🌊',l:'MATIC'},
+];
+const METHODS = [
+  {e:'⚡',l:'FLASH'},{e:'🔄',l:'ARB'},{e:'📈',l:'SPOT'},{e:'💎',l:'NFT'},{e:'🌾',l:'YIELD'},{e:'🎯',l:'PERP'},
+];
+const SIZES = [
+  {e:'🎯',l:'SNIPER'},{e:'🔥',l:'DEGEN'},{e:'⚖️',l:'SAFE'},{e:'💣',l:'YOLO'},{e:'🛡️',l:'HEDGE'},{e:'🌊',l:'SURF'},
+];
+const TICKERS = [
+  'SCANNING MARKETS…','WATCHING WHALE WALLETS…','CHECKING DEX SPREADS…',
+  'HUNTING FLASH LOAN OPS…','MONITORING NFT FLOORS…','ANALYZING MEMPOOL…',
+  'YIELD FARM COMPARISON…','CROSS-CHAIN ARB SCAN…','ON-CHAIN FLOW DATA…',
+  'CALCULATING GAS STRATEGY…',
+];
+
+// ════════════════════════════
+// MARKET DATA (shared cache)
+// ════════════════════════════
+async function getMarketData() {
+  const now = Date.now();
+  if (marketCache && now - marketCacheTime < 30000) return marketCache;
+  try {
+    const r = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=percent_change_24h_desc&per_page=30&sparkline=false');
+    const data = await r.json();
+    marketCache = data;
+    marketCacheTime = now;
+    actionLogger.apiCall('coingecko/markets', 'GET', true, r.status);
+  } catch(e) { 
+    marketCache = marketCache || [];
+    actionLogger.apiCall('coingecko/markets', 'GET', false, 'Network error');
+  }
+  return marketCache;
+}
+
+// ════════════════════════════
+// LOGIN
+// ════════════════════════════
+function loginGoogle() {
+  const s = document.getElementById('cStatus');
+  if (!GOOGLE_CLIENT_ID.includes('YOUR_')) {
+    if (typeof google === 'undefined') { s.textContent = '⏳ Loading Google SDK…'; setTimeout(loginGoogle, 600); return; }
+    s.textContent = '⏳ Opening Google sign-in…';
+    google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: handleGoogleCred });
+    google.accounts.id.prompt();
+  } else {
+    s.innerHTML = '⚠️ Add your Google Client ID in the script, or use Demo Mode.';
+  }
+}
+async function handleGoogleCred(resp) {
+  try {
+    const p = JSON.parse(atob(resp.credential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+    actionLogger.loginEvent(p.name || p.email, 'GOOGLE', true);
+    setupApp({ name: p.name || p.email, avatar: p.picture, badge: '🔵 GOOGLE', badgeClass: '' });
+  } catch(e) { 
+    actionLogger.error(actionLogger.CATEGORY.LOGIN, 'Google credential parsing failed', e);
+    document.getElementById('cStatus').textContent = '❌ ' + e.message; 
+  }
+}
+async function loginMetaMask() {
+  const s = document.getElementById('cStatus');
+  try {
+    s.textContent = '⏳ Connecting to MetaMask...';
+    
+    // Method 1: Direct window.ethereum check
+    let ethereum = window.ethereum;
+    
+    // Method 2: If not found, wait longer with aggressive retries
+    if (!ethereum) {
+      console.log('🔄 ethereum not found, trying aggressive detection...');
+      for (let i = 0; i < 20; i++) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        ethereum = window.ethereum;
+        if (ethereum) {
+          console.log('✅ Found ethereum after retry', i + 1);
+          break;
+        }
+      }
+    }
+    
+    // Method 3: Check if MetaMask is installed via different property
+    if (!ethereum && window.web3?.currentProvider?.isMetaMask) {
+      console.log('🔄 Found via web3.currentProvider');
+      ethereum = window.web3.currentProvider;
+    }
+    
+    // Method 4: Last resort - try to detect MetaMask in any form
+    if (!ethereum) {
+      console.warn('⚠️ ethereum still not found, checking all possibilities...');
+      console.log('window keys:', Object.keys(window).filter(k => k.includes('ethereum') || k.includes('metamask')));
+    }
+    
+    if (!ethereum) { 
+      s.innerHTML = `❌ MetaMask Still Not Detected<br><br>
+        <small>If you see the fox icon 🦊 but still getting this error:</small><br>
+        <small>1. Try a different browser (Firefox or Edge)</small><br>
+        <small>2. Or use DEMO mode instead (no wallet needed)</small><br>
+        <small>3. Or reinstall MetaMask completely</small>`;
+      console.error('❌ FINAL: window.ethereum not found', {
+        hasWindow: typeof window !== 'undefined',
+        hasWeb3: !!window.web3,
+        hasEthereum: !!window.ethereum,
+        browserType: navigator.userAgent,
+      });
+      return; 
+    }
+    
+    s.textContent = '⏳ Connecting wallet…';
+    
+    // Create provider and request accounts
+    let provider, accounts, addr, signer;
+    
+    try {
+      console.log('[Step 1] Creating Web3Provider...');
+      provider = new ethers.providers.Web3Provider(window.ethereum);
+      console.log('[Step 1] ✅ Provider created');
+    } catch (stepError) {
+      console.error('[Step 1] ❌ Failed to create provider:', stepError);
+      throw new Error('Provider creation failed: ' + stepError.message);
+    }
+    
+    try {
+      console.log('[Step 2] Requesting accounts...');
+      accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      console.log('[Step 2] ✅ Accounts received:', accounts);
+    } catch (stepError) {
+      console.error('[Step 2] ❌ Failed to request accounts:', stepError);
+      throw new Error('Account request failed: ' + stepError.message);
+    }
+    
+    if (!accounts || accounts.length === 0) {
+      s.textContent = '❌ No wallet selected. Please connect a wallet.';
+      return;
+    }
+    
+    addr = accounts[0];
+    try {
+      console.log('[Step 3] Getting signer...');
+      signer = provider.getSigner();
+      console.log('[Step 3] ✅ Signer obtained for:', addr);
+    } catch (stepError) {
+      console.error('[Step 3] ❌ Failed to get signer:', stepError);
+      throw new Error('Signer creation failed: ' + stepError.message);
+    }
+    
+    // Store wallet state
+    walletState.provider = provider;
+    walletState.signer = signer;
+    walletState.address = addr;
+    walletState.isConnected = true;
+    
+    // Switch to Base network
+    s.textContent = '⏳ Switching to Base network…';
+    try {
+      console.log('[Step 4] Switching to Base network...');
+      const networkSwitched = await switchToBaseNetwork();
+      if (!networkSwitched) { 
+        console.error('[Step 4] ❌ Network switch failed');
+        s.textContent = '⚠️ Please switch to Base network manually in MetaMask, then click LOGIN again.'; 
+        walletState.isConnected = false;
+        return; 
+      }
+      console.log('[Step 4] ✅ Network switched successfully');
+    } catch (stepError) {
+      console.error('[Step 4] ❌ Network switch exception:', stepError);
+      throw new Error('Network switch failed: ' + stepError.message);
+    }
+    
+    // Validate network
+    s.textContent = '⏳ Validating network…';
+    try {
+      console.log('[Step 5] Validating network...');
+      const isValidNetwork = await validateNetwork(provider);
+      if (!isValidNetwork) { 
+        console.error('[Step 5] ❌ Network validation failed');
+        s.textContent = '❌ Connected to wrong network. Please switch to Base Mainnet (Chain ID: 8453).'; 
+        walletState.isConnected = false;
+        return; 
+      }
+      console.log('[Step 5] ✅ Network validated');
+    } catch (stepError) {
+      console.error('[Step 5] ❌ Network validation exception:', stepError);
+      throw new Error('Network validation failed: ' + stepError.message);
+    }
+    
+    // Get balance
+    s.textContent = '⏳ Loading balance…';
+    let balanceInfo;
+    try {
+      console.log('[Step 6] Fetching balance...');
+      balanceInfo = await getWalletBalance();
+      if (!balanceInfo) { 
+        console.error('[Step 6] ❌ Balance fetch returned null');
+        s.textContent = '❌ Failed to fetch balance. Please try again.'; 
+        return; 
+      }
+      console.log('[Step 6] ✅ Balance fetched:', balanceInfo);
+    } catch (stepError) {
+      console.error('[Step 6] ❌ Balance fetch exception:', stepError);
+      throw new Error('Balance fetch failed: ' + stepError.message);
+    }
+    
+    walletState.balanceETH = balanceInfo.eth || 0;
+    walletState.balanceUSD = balanceInfo.usd || 0;
+    balance = walletState.balanceUSD;
+    
+    console.log(`✅ Balance: ${balanceInfo.eth} ETH ($${balanceInfo.usd})`);
+    
+    // Verify wallet readiness (optional - allow even with low balance for testing)
+    s.textContent = '⏳ Verifying wallet…';
+    let readiness;
+    try {
+      console.log('[Step 7] Verifying wallet readiness...');
+      readiness = await verifyWalletReadiness(addr, provider);
+      console.log('[Step 7] ✅ Wallet readiness verified:', readiness);
+    } catch (stepError) {
+      console.error('[Step 7] ❌ Wallet readiness check exception:', stepError);
+      throw new Error('Wallet readiness check failed: ' + stepError.message);
+    }
+    
+    // Warn if low balance but still proceed
+    if (!readiness.checks.minimumBalanceMet) {
+      console.warn('⚠️ Low balance warning:', readiness.checks);
+      s.textContent = '⚠️ Low balance (' + balanceInfo.eth + ' ETH). Proceeding anyway...';
+    }
+    
+    // Initialize real wallet mode
+    try {
+      console.log('[Step 8] Initializing real wallet mode...');
+      const initStatus = await initializeRealWalletMode();
+      if (!initStatus.ready) {
+        console.warn('[Step 8] ⚠️ Real wallet initialization incomplete:', initStatus.details);
+      }
+      console.log('[Step 8] ✅ Real wallet initialized');
+    } catch (stepError) {
+      console.error('[Step 8] ❌ Real wallet initialization exception:', stepError);
+      throw new Error('Real wallet initialization failed: ' + stepError.message);
+    }
+    
+    s.textContent = '✅ Connected!';
+    console.log('🔗 MetaMask Login Success:', { address: addr, balance: balanceInfo });
+    
+    setTimeout(() => {
+      document.getElementById('cStatus').textContent = '';
+      setupApp({ 
+        name: addr.slice(0,6)+'···'+addr.slice(-4), 
+        avatar: null, 
+        badge: '🦊 METAMASK (REAL)', 
+        badgeClass: 'metamask-real' 
+      });
+    }, 1000);
+    
+  } catch(e) { 
+    console.error('❌ MetaMask connection error:', e);
+    console.error('Error details:', {
+      code: e.code,
+      message: e.message,
+      stack: e.stack,
+      fullError: e
+    });
+    
+    // Better error messages
+    let errorMsg = 'Connection failed';
+    if (e.code === 4001) errorMsg = 'Connection rejected by user';
+    else if (e.code === -32602) errorMsg = 'Invalid RPC params';
+    else if (e.code === -32603) errorMsg = 'Internal RPC error - might be network issue';
+    else if (e.message?.includes('eth_requestAccounts')) errorMsg = 'Failed to request accounts';
+    else if (e.message?.includes('network')) errorMsg = 'Network error - check Base network setup';
+    else if (e.message?.includes('Failed to create provider')) errorMsg = 'MetaMask provider error';
+    else if (e.message?.includes('Account request failed')) errorMsg = 'MetaMask account request failed';
+    else if (e.message?.includes('Network switch failed')) errorMsg = 'Failed to switch Base network';
+    else if (e.message) errorMsg = e.message.substring(0, 80);
+
+    
+    s.textContent = '❌ ' + errorMsg; 
+    walletState.isConnected = false;
+  }
+}
+function loginDemo() {
+  const rh = () => Math.floor(Math.random()*0xFFFFFFFF).toString(16).padStart(8,'0');
+  actionLogger.loginEvent('DEMO PLAYER', 'DEMO', true);
+  setupApp({ name: 'DEMO PLAYER', avatar: null, badge: '🎮 DEMO', badgeClass: 'demo' });
+}
+
+function createWallet() {
+  const s = document.getElementById('cStatus');
+  s.textContent = '⏳ Generating wallet…';
+  
+  try {
+    // Generate a new random wallet using ethers.js
+    const wallet = ethers.Wallet.createRandom();
+    const address = wallet.address;
+    const privateKey = wallet.privateKey;
+    const mnemonic = wallet.mnemonic.phrase;
+    
+    // Store wallet info (with optional encryption in real app)
+    const walletData = {
+      address: address,
+      privateKey: privateKey,
+      mnemonic: mnemonic,
+      createdAt: new Date().toISOString()
+    };
+    
+    // Save to browser storage (in real app, consider encryption)
+    localStorage.setItem('appWallet', JSON.stringify(walletData));
+    
+    // Show confirmation and display wallet details
+    const displayMsg = `✅ Wallet Created!\n\nAddress:\n${address}\n\nStore your seed phrase safely:\n${mnemonic}`;
+    
+    console.log('🔐 New Wallet Created:');
+    console.log('Address:', address);
+    console.log('Mnemonic:', mnemonic);
+    console.log('⚠️ SAVE YOUR SEED PHRASE IN A SAFE PLACE!');
+    
+    s.textContent = '✅ Wallet Created! Check console for details.';
+    
+    // Setup app with the new wallet
+    setTimeout(() => {
+      setupApp({ 
+        name: address.slice(0, 6) + '···' + address.slice(-4), 
+        avatar: null, 
+        badge: '🔐 APP WALLET', 
+        badgeClass: 'app-wallet',
+        walletAddress: address,
+        isAppWallet: true
+      });
+      
+      // Show wallet info modal (optional)
+      const modal = `
+        <div style="position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px">
+          <div style="background:var(--panel);border:2px solid var(--green);border-radius:10px;padding:20px;max-width:500px">
+            <h3 style="color:var(--green);margin-bottom:10px">🔐 Your New Wallet</h3>
+            <div style="background:var(--chrome);padding:10px;border-radius:6px;margin-bottom:10px;font-size:12px;word-break:break-all;color:var(--gold)">
+              <strong>Address:</strong><br>${address}
+            </div>
+            <div style="background:var(--chrome);padding:10px;border-radius:6px;margin-bottom:10px;font-size:11px;color:var(--dim)">
+              <strong style="color:var(--green)">🌱 Seed Phrase (SAVE THIS!):</strong><br>${mnemonic}
+            </div>
+            <p style="color:var(--dim);font-size:10px;margin-bottom:15px">⚠️ <strong>Important:</strong> Store your seed phrase safely. Anyone with it can access your wallet.</p>
+            <button onclick="this.closest('div').parentElement.remove()" style="width:100%;padding:10px;background:var(--green);border:none;color:#000;border-radius:6px;cursor:pointer;font-weight:bold">I've Saved My Seed Phrase</button>
+          </div>
+        </div>
+      `;
+      document.body.insertAdjacentHTML('beforeend', modal);
+    }, 500);
+    
+  } catch (e) {
+    console.error('❌ Wallet creation failed:', e);
+    s.textContent = '❌ Wallet creation failed. Check console.';
+  }
+}
+
+function setupApp({ name, avatar, badge, walletAddress, isAppWallet }) {
+  document.getElementById('connectScreen').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'flex';
+  document.getElementById('mainApp').style.flexDirection = 'column';
+  document.getElementById('ghName').textContent = name;
+  document.getElementById('ghBadge').textContent = badge;
+  if (avatar) {
+    const a = document.getElementById('ghAvatar');
+    a.innerHTML = '';
+    const img = document.createElement('img');
+    img.src = avatar; img.style.cssText = 'width:28px;height:28px;border-radius:50%;object-fit:cover';
+    a.appendChild(img);
+  }
+  updateGlobalBalance();
+  initTickerGraph(); // Initialize the performance ticker graph
+  addBot(); // Start with one bot
+}
+
+// ════════════════════════════
+// GLOBAL BALANCE UI
+// ════════════════════════════
+function updateGlobalBalance() {
+  document.getElementById('ghBalance').textContent = '$' + balance.toFixed(2);
+  const pEl = document.getElementById('ghPnl');
+  pEl.textContent = (totalPnl >= 0 ? '+' : '') + '$' + totalPnl.toFixed(2) + ' today';
+  pEl.className = 'gh-pnl ' + (totalPnl >= 0 ? 'pnl-pos' : 'pnl-neg');
+}
+
+// ════════════════════════════
+// BOT MANAGEMENT
+// ════════════════════════════
+function addBot() {
+  if (bots.length >= MAX_BOTS) return;
+  botCounter++;
+  const id = botCounter;
+  
+  // Random strategy profile for new bot
+  const profiles = ['SCALPER', 'TREND', 'AGGRESSIVE', 'CONSERVATIVE', 'BALANCED', 'NICHE'];
+  const profile = profiles[Math.floor(Math.random() * profiles.length)];
+  
+  const bot = {
+    id, spinning: false, auto: false, bet: 10,
+    pnl: 0, autoTimer: null, tickerTimer: null, tickerIdx: 0,
+    profile // AI strategy profile
+  };
+  
+  // Initialize bot strategy
+  botStrategies[id] = initBotStrategy(id, profile);
+  
+  bots.push(bot);
+  actionLogger.botAdded(id, profile);
+  renderBot(bot);
+  
+  // Update ticker legend to show new bot
+  if (tickerGraph && tickerGraph.updateLegend) {
+    tickerGraph.updateLegend();
+  }
+  
+  document.getElementById('addBotBtn').disabled = bots.length >= MAX_BOTS;
+}
+
+function removeBot(id) {
+  const bot = bots.find(b => b.id === id);
+  if (bot) {
+    if (bot.autoTimer) clearTimeout(bot.autoTimer);
+    if (bot.tickerTimer) clearTimeout(bot.tickerTimer);
+    if (bot.auto) bot.auto = false;
+  }
+  bots = bots.filter(b => b.id !== id);
+  delete botStrategies[id]; // Clean up strategy
+  actionLogger.botRemoved(id);
+  const el = document.getElementById('bot-' + id);
+  if (el) el.remove();
+  document.getElementById('addBotBtn').disabled = bots.length >= MAX_BOTS;
+}
+
+// ════════════════════════════
+// MASTER STOP/PLAY CONTROLS
+// ════════════════════════════
+function stopAllBots() {
+  if (globalAutoStopped) return; // Already stopped
+  
+  globalAutoStopped = true;
+  pausedBots.clear();
+  
+  // Pause all auto-spinning bots
+  bots.forEach(bot => {
+    if (bot.auto) {
+      pausedBots.add(bot.id); // Remember which ones were auto
+      bot.auto = false; // Pause the auto
+      
+      // Clear their timer
+      if (bot.autoTimer) {
+        clearTimeout(bot.autoTimer);
+        bot.autoTimer = null;
+      }
+      
+      // Update button UI
+      const autoBtn = document.getElementById('mauto-' + bot.id);
+      if (autoBtn) {
+        autoBtn.textContent = 'AUTO';
+        autoBtn.classList.remove('on');
+      }
+      
+      // Remove auto-on class from card
+      const card = document.getElementById('bot-' + bot.id);
+      if (card) card.classList.remove('auto-on');
+    }
+  });
+  
+  // Update master button UI
+  const stopBtn = document.getElementById('masterStopBtn');
+  const playBtn = document.getElementById('masterPlayBtn');
+  if (stopBtn) stopBtn.disabled = true;
+  if (playBtn) {
+    playBtn.disabled = false;
+    playBtn.style.opacity = '1';
+    playBtn.style.cursor = 'pointer';
+    playBtn.classList.add('active');
+  }
+}
+
+function playAllBots() {
+  if (!globalAutoStopped) return; // Not stopped, nothing to resume
+  
+  globalAutoStopped = false;
+  
+  // Resume all bots that were paused
+  pausedBots.forEach(botId => {
+    const bot = bots.find(b => b.id === botId);
+    if (bot) {
+      bot.auto = true;
+      
+      // Update button UI
+      const autoBtn = document.getElementById('mauto-' + botId);
+      if (autoBtn) {
+        autoBtn.textContent = '⏸ STOP';
+        autoBtn.classList.add('on');
+      }
+      
+      // Add auto-on class to card
+      const card = document.getElementById('bot-' + botId);
+      if (card) card.classList.add('auto-on');
+      
+      // Restart auto-spin scheduler
+      scheduleAutoSpin(bot);
+    }
+  });
+  
+  pausedBots.clear();
+  
+  // Update master button UI
+  const stopBtn = document.getElementById('masterStopBtn');
+  const playBtn = document.getElementById('masterPlayBtn');
+  if (stopBtn) stopBtn.disabled = false;
+  if (playBtn) {
+    playBtn.disabled = true;
+    playBtn.style.opacity = '0.5';
+    playBtn.style.cursor = 'not-allowed';
+    playBtn.classList.remove('active');
+  }
+}
+
+// Master auto toggle - controls all bots' auto mode at once
+let masterAutoEnabled = false;
+function toggleMasterAuto() {
+  masterAutoEnabled = !masterAutoEnabled;
+  const btn = document.getElementById('masterAutoBtn');
+  
+  if (masterAutoEnabled) {
+    // Enable auto for all bots
+    bots.forEach(bot => {
+      if (!bot.auto) {
+        bot.auto = true;
+        
+        // Update individual bot button
+        const autoBtn = document.getElementById('mauto-' + bot.id);
+        if (autoBtn) {
+          autoBtn.textContent = '⏸ STOP';
+          autoBtn.classList.add('on');
+        }
+        
+        // Add auto-on class to card
+        const card = document.getElementById('bot-' + bot.id);
+        if (card) card.classList.add('auto-on');
+        
+        // Start auto-spin scheduler
+        scheduleAutoSpin(bot);
+      }
+    });
+    
+    // Update master button
+    if (btn) {
+      btn.textContent = '🤖 AUTO ON';
+      btn.style.background = 'rgba(57,255,20,.25)';
+      btn.style.borderColor = 'var(--green)';
+      btn.style.boxShadow = '0 0 12px rgba(57,255,20,.4)';
+    }
+    
+    actionLogger.log('BOT', 'Master auto mode enabled for all bots', {botCount: bots.length}, 'SUCCESS');
+  } else {
+    // Disable auto for all bots
+    bots.forEach(bot => {
+      if (bot.auto) {
+        bot.auto = false;
+        
+        // Clear their timer
+        if (bot.autoTimer) {
+          clearTimeout(bot.autoTimer);
+          bot.autoTimer = null;
+        }
+        
+        // Update individual bot button
+        const autoBtn = document.getElementById('mauto-' + bot.id);
+        if (autoBtn) {
+          autoBtn.textContent = 'AUTO';
+          autoBtn.classList.remove('on');
+        }
+        
+        // Remove auto-on class from card
+        const card = document.getElementById('bot-' + bot.id);
+        if (card) card.classList.remove('auto-on');
+      }
+    });
+    
+    // Update master button
+    if (btn) {
+      btn.textContent = '🤖 AUTO OFF';
+      btn.style.background = 'rgba(57,255,20,.15)';
+      btn.style.borderColor = 'var(--green)';
+      btn.style.boxShadow = 'none';
+    }
+    
+    actionLogger.log('BOT', 'Master auto mode disabled for all bots', {botCount: bots.length}, 'INFO');
+  }
+}
+
+function renderBot(bot) {
+  const el = document.createElement('div');
+  el.className = 'machine';
+  el.id = 'bot-' + bot.id;
+  el.innerHTML = `
+    <div class="m-head">
+      <div>
+        <span class="m-id">BOT #${bot.id}</span>
+        <span style="font-size:9px;color:var(--cyan);margin-left:8px;opacity:0.7">${bot.profile}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span class="m-pnl" id="mpnl-${bot.id}">$0.00</span>
+        <div class="m-ticker" id="mtick-${bot.id}">READY TO TRADE</div>
+        <button class="m-close" onclick="removeBot(${bot.id})" title="Remove bot">✕</button>
+      </div>
+    </div>
+
+    <div style="position:relative">
+      <div class="m-reels" id="mreels-${bot.id}">
+        <div class="m-reel"><div class="m-reel-track" id="mt0-${bot.id}"></div></div>
+        <div class="m-reel"><div class="m-reel-track" id="mt1-${bot.id}"></div></div>
+        <div class="m-reel"><div class="m-reel-track" id="mt2-${bot.id}"></div></div>
+      </div>
+      <div class="m-thinking" id="mthink-${bot.id}">
+        <div class="think-spinner"></div>
+        <div class="think-label">AI SCANNING</div>
+        <div class="think-step" id="mstep-${bot.id}">Fetching market data…</div>
+      </div>
+      <div class="m-result" id="mresult-${bot.id}">
+        <div class="m-r-title" id="mrtitle-${bot.id}">WIN!</div>
+        <div class="m-r-amt" id="mramt-${bot.id}">+$0.00</div>
+        <div class="m-r-detail" id="mrdetail-${bot.id}"></div>
+        <button class="m-r-close" onclick="closeResult(${bot.id})">SPIN AGAIN</button>
+      </div>
+    </div>
+
+    <div class="m-strats">
+      <div class="m-pill" id="mp0-${bot.id}"><div class="pl">Token</div><div class="pv" id="mpv0-${bot.id}">—</div></div>
+      <div class="m-pill" id="mp1-${bot.id}"><div class="pl">Method</div><div class="pv" id="mpv1-${bot.id}">—</div></div>
+      <div class="m-pill" id="mp2-${bot.id}"><div class="pl">Edge</div><div class="pv" id="mpv2-${bot.id}">—</div></div>
+      <div class="m-pill" id="mp3-${bot.id}" style="font-size:9px"><div class="pl">Auto Edge</div><div class="pv" id="mpv3-${bot.id}">—</div></div>
+    </div>
+
+    <div class="m-controls">
+      <div class="m-bet-row" id="mbets-${bot.id}">
+        ${[1,5,10,25,50,100].map(v=>`<button class="m-bet${v===10?' on':''}" data-bet="${v}" onclick="setBet(${bot.id},${v})">$${v}</button>`).join('')}
+      </div>
+      <div class="m-bottom">
+        <button class="spin-btn" id="mspin-${bot.id}" onclick="spinBot(${bot.id})">🎰 SPIN</button>
+        <button class="auto-btn" id="mauto-${bot.id}" onclick="toggleAuto(${bot.id})">AUTO</button>
+      </div>
+    </div>`;
+  document.getElementById('botGrid').appendChild(el);
+  buildReels(bot.id);
+  startTicker(bot);
+}
+
+// ════════════════════════════
+// REEL BUILD
+// ════════════════════════════
+function buildReels(id) {
+  function fill(trackId, pool) {
+    const t = document.getElementById(trackId);
+    if (!t) return;
+    t.innerHTML = '';
+    const items = [...pool, ...pool].sort(() => Math.random() - 0.5).slice(0, 16);
+    items.forEach(item => {
+      const d = document.createElement('div');
+      d.className = 'm-item';
+      d.innerHTML = `<span class="m-emoji">${item.e}</span><span class="m-label">${item.l}</span>`;
+      t.appendChild(d);
+    });
+    t.style.transform = `translateY(-${Math.floor(Math.random()*8)*40}px)`;
+  }
+  fill(`mt0-${id}`, TOKENS);
+  fill(`mt1-${id}`, METHODS);
+  fill(`mt2-${id}`, SIZES);
+}
+
+// ════════════════════════════
+// TICKER PER BOT
+// ════════════════════════════
+function startTicker(bot) {
+  function tick() {
+    const el = document.getElementById('mtick-' + bot.id);
+    if (!el) return;
+    el.textContent = TICKERS[bot.tickerIdx++ % TICKERS.length];
+    bot.tickerTimer = setTimeout(tick, 2600 + Math.random() * 800);
+  }
+  tick();
+}
+
+// ════════════════════════════
+// BET SELECTION
+// ════════════════════════════
+function setBet(id, amt) {
+  const bot = bots.find(b => b.id === id);
+  if (!bot) return;
+  bot.bet = amt;
+  document.querySelectorAll(`#mbets-${id} .m-bet`).forEach(b => {
+    b.classList.toggle('on', parseInt(b.dataset.bet) === amt);
+  });
+}
+
+// ════════════════════════════
+// AUTO TRADE TOGGLE
+// ════════════════════════════
+function toggleAuto(id) {
+  const bot = bots.find(b => b.id === id);
+  if (!bot) return;
+  bot.auto = !bot.auto;
+  const btn = document.getElementById('mauto-' + id);
+  const card = document.getElementById('bot-' + id);
+  if (bot.auto) {
+    btn.textContent = '⏸ STOP';
+    btn.classList.add('on');
+    card.classList.add('auto-on');
+    actionLogger.autoToggle(id, true);
+    scheduleAutoSpin(bot);
+  } else {
+    btn.textContent = 'AUTO';
+    btn.classList.remove('on');
+    card.classList.remove('auto-on');
+    if (bot.autoTimer) clearTimeout(bot.autoTimer);
+    actionLogger.autoToggle(id, false);
+  }
+}
+
+function scheduleAutoSpin(bot) {
+  if (!bot.auto) return;
+  // HIGH-FREQUENCY: 400-1200ms between trades (optimized for rapid execution)
+  const delay = 400 + Math.random() * 800;
+  bot.autoTimer = setTimeout(async () => {
+    try {
+      if (!bot.auto || bot.spinning) { 
+        scheduleAutoSpin(bot); 
+        return; 
+      }
+      // Auto-close result if showing (immediate to reduce latency)
+      const resultEl = document.getElementById('mresult-' + bot.id);
+      if (resultEl?.classList.contains('show')) resultEl.classList.remove('show');
+      
+      await spinBot(bot.id);
+    } catch (error) {
+      console.error('scheduleAutoSpin error for bot ' + bot.id + ':', error);
+      // Ensure spinning flag is reset so next trade can proceed
+      const b = bots.find(x => x.id === bot.id);
+      if (b) b.spinning = false;
+    } finally {
+      // Always reschedule the next trade if auto is still active
+      if (bot.auto) scheduleAutoSpin(bot);
+    }
+  }, delay);
+}
+
+// HIGH-FREQUENCY BATCH TRADING - spawn multiple trades across bots simultaneously
+function enableBatchTrading(){
+  if(bots.length===0) return;
+  actionLogger.hftStarted(bots.length);
+  bots.forEach(bot=>{
+    if(!bot.auto){
+      bot.auto=true;
+      const btn=document.getElementById('mauto-'+bot.id);
+      if(btn){btn.textContent='⏸ STOP';btn.classList.add('on');}
+      const card=document.getElementById('bot-'+bot.id);
+      if(card)card.classList.add('auto-on');
+      scheduleAutoSpin(bot);
+    }
+  });
+}
+
+function disableBatchTrading(){
+  actionLogger.hftStopped();
+  bots.forEach(bot=>{
+    bot.auto=false;
+    if(bot.autoTimer)clearTimeout(bot.autoTimer);
+    const btn=document.getElementById('mauto-'+bot.id);
+    if(btn){btn.textContent='AUTO';btn.classList.remove('on');}
+    const card=document.getElementById('bot-'+bot.id);
+    if(card)card.classList.remove('auto-on');
+  });
+}
+
+// ════════════════════════════
+// SPIN A BOT
+// ════════════════════════════
+async function spinBot(id) {
+  const bot = bots.find(b => b.id === id);
+  if (!bot || bot.spinning) return;
+  bot.spinning = true;
+
+  try {
+    const spinEl = document.getElementById('mspin-' + id);
+    const thinkEl = document.getElementById('mthink-' + id);
+    const stepEl = document.getElementById('mstep-' + id);
+    if (spinEl) { spinEl.disabled = true; spinEl.classList.add('going'); spinEl.textContent = '⏳'; }
+
+    // Log trade start
+    actionLogger.tradeStart(id, bot.tradeMethod || 'MANUAL', bot.currentToken || 'UNKNOWN', bot.bet);
+
+    // Show AI thinking overlay
+    if (thinkEl) thinkEl.classList.add('show');
+
+    // Step 1: fetch data
+    if (stepEl) stepEl.textContent = 'Fetching live market data…';
+    const market = await getMarketData();
+
+    // Step 2: AI ARENA TOURNAMENT (if in auto mode) or single Claude AI (manual mode)
+    let decision;
+    
+    if (bot.auto && botStrategies[id]) {
+      // Auto mode: Run full AI Arena tournament with all 3 models competing
+      if (stepEl) stepEl.textContent = '🏟️ ANALYST 🔬 vs TRADER ⚡ vs STRATEGIST 🎯';
+      try {
+        decision = await runAIArenaTournament(market, bot.bet, id, botStrategies[id]);
+      } catch (e) {
+        console.error('Arena failed, fallback to single AI:', e);
+        decision = await callAI(market, bot.bet, id);
+      }
+    } else {
+      // Manual mode: Just use single Claude AI for quick decision
+      if (stepEl) stepEl.textContent = 'Claude AI analyzing…';
+      decision = await callAI(market, bot.bet, id);
+    }
+
+    // Validate decision before execution
+    if (!decision) {
+      console.error('No decision made!');
+      decision = generateFallbackDecision();
+    }
+
+    // Step 3: spin reels
+    if (stepEl) stepEl.textContent = 'Locking in trade…';
+    if (thinkEl) thinkEl.classList.remove('show');
+    await animateReels(id, decision);
+
+    // Result
+    if (spinEl) { spinEl.disabled = false; spinEl.classList.remove('going'); spinEl.textContent = '🎰 SPIN'; }
+    showBotResult(id, bot, decision);
+  } catch (error) {
+    console.error('spinBot error for bot ' + id + ':', error);
+    actionLogger.error('TRADING', 'spinBot error for bot ' + id, error);
+    // Always ensure bot.spinning is reset and UI is cleaned up
+    const spinEl = document.getElementById('mspin-' + id);
+    const thinkEl = document.getElementById('mthink-' + id);
+    if (spinEl) { spinEl.disabled = false; spinEl.classList.remove('going'); spinEl.textContent = '🎰 SPIN'; }
+    if (thinkEl) thinkEl.classList.remove('show');
+    // Create fallback trade to show something happened
+    showBotResult(id, bot, generateFallbackDecision());
+  } finally {
+    bot.spinning = false;
+  }
+}
+
+// ════════════════════════════
+// AI CALL
+// ════════════════════════════
+async function callAI(marketData, bet, botId) {
+  // NEW: Use AI Model Arena system - each bot gets a different AI model!
+  if (typeof callAIModel === 'function') {
+    try {
+      const decision = await callAIModel(marketData, bet, botId);
+      const modelName = typeof getBotModelName === 'function' ? getBotModelName(botId) : 'BALANCED';
+      
+      // Log to action logger
+      actionLogger.log('STRATEGY', `Bot #${botId} (${modelName}) decided: ${decision.method} on ${decision.token}`, {
+        edge: decision.edge_pct,
+        winProb: decision.win_probability,
+        aiModel: decision.aiModel
+      }, 'INFO');
+      
+      return decision;
+    } catch (e) {
+      console.error('[Arena] AI Model error:', e);
+    }
+  }
+
+  // FALLBACK: Use advanced bot engine if Arena not available
+  const bot = bots.find(b => b.id === botId);
+  const botProfile = bot?.profile || 'BALANCED';
+  const botStrategy = botStrategies[botId];
+  
+  if (typeof generateBotSpecificDecision === 'function') {
+    const decision = generateBotSpecificDecision(botId, botProfile, marketData, bet, botStrategy);
+    
+    actionLogger.log('STRATEGY', `Bot #${botId} (${botProfile}) decided: ${decision.method} on ${decision.token}`, {
+      edge: decision.edge_pct,
+      winProb: decision.win_probability,
+      method: decision.method
+    }, 'INFO');
+    
+    return decision;
+  }
+
+  // LAST FALLBACK: Basic AI API call
+  let summary = 'No live data.';
+  if (marketData?.length) {
+    summary = marketData.slice(0, 8).map(c =>
+      `${c.symbol.toUpperCase()}: $${c.current_price} | 24h: ${(c.price_change_percentage_24h||0).toFixed(1)}% | Vol: $${(c.total_volume/1e6).toFixed(0)}M`
+    ).join('\n');
+  }
+
+  const prompt = `You are a DeFi trading AI bot #${botId}. Analyze live market data and choose the single best trade.
+
+MARKET DATA:
+${summary}
+
+BET: $${bet}
+
+Respond ONLY with JSON, no markdown:
+{
+  "token": "SYMBOL",
+  "token_emoji": "emoji",
+  "method": "FLASH LOAN|ARBITRAGE|SPOT LONG|SPOT SHORT|NFT FLIP|YIELD FARM|PERP LONG|PERP SHORT",
+  "method_emoji": "emoji",
+  "size_label": "SNIPER|DEGEN|SAFE|YOLO|HEDGE|SURF",
+  "edge_pct": 0.5-8.5,
+  "win_probability": 0.35-0.75,
+  "reasoning": "max 70 chars",
+  "strategy_detail": "max 90 chars",
+  "outcome": "WIN or LOSS",
+  "pnl_multiplier": -0.9 to 3.5
+}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST', 
+      headers: { 
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 400, messages: [{ role: 'user', content: prompt }] })
+    });
+    const data = await res.json();
+    actionLogger.apiCall('anthropic/messages', 'POST', res.ok, res.status);
+    const parsed = JSON.parse((data.content?.[0]?.text || '{}').replace(/```json|```/g, '').trim());
+    return sanitizeDecision(parsed, bet);
+  } catch(e) {
+    actionLogger.apiCall('anthropic/messages', 'POST', false, 'Parse error');
+    return fallbackDecision(bet, botProfile);
+  }
+}
+
+function sanitizeDecision(p, bet) {
+  return {
+    token: p.token || 'ETH', token_emoji: p.token_emoji || '💎',
+    method: p.method || 'ARBITRAGE', method_emoji: p.method_emoji || '🔄',
+    size_label: p.size_label || 'SAFE',
+    edge_pct: parseFloat(p.edge_pct) || 2.0,
+    win_probability: parseFloat(p.win_probability) || 0.55,
+    reasoning: p.reasoning || 'Market opportunity detected.',
+    strategy_detail: p.strategy_detail || 'Direct spot trade.',
+    outcome: p.outcome || (Math.random() < 0.55 ? 'WIN' : 'LOSS'),
+    pnl_multiplier: parseFloat(p.pnl_multiplier) || 0.8,
+  };
+}
+function fallbackDecision(bet, botProfile = 'BALANCED') {
+  const isWin = Math.random() < 0.55;
+  const tok = ['ETH','PEPE','WIF','SOL','ARB'][Math.floor(Math.random()*5)];
+  return {
+    token: tok, token_emoji: '🔥', method: 'ARBITRAGE', method_emoji: '🔄', size_label: 'DEGEN',
+    edge_pct: 3.1, win_probability: 0.55, reasoning: 'DEX spread on Base.',
+    strategy_detail: `Arb ${tok} Uniswap↔Aerodrome.`,
+    outcome: isWin ? 'WIN' : 'LOSS', pnl_multiplier: isWin ? 1.3 : -0.55,
+    botProfile: botProfile
+  };
+}
+
+// ════════════════════════════
+// REEL ANIMATION
+// ════════════════════════════
+async function animateReels(id, decision) {
+  const ITEM_H = 40;
+  const ti = Math.max(0, TOKENS.findIndex(t => t.l === decision.token));
+  const mi = {'FLASH LOAN':0,'ARBITRAGE':1,'SPOT LONG':2,'SPOT SHORT':2,'NFT FLIP':3,'YIELD FARM':4,'PERP LONG':5,'PERP SHORT':5}[decision.method] ?? 1;
+  const si = {'SNIPER':0,'DEGEN':1,'SAFE':2,'YOLO':3,'HEDGE':4,'SURF':5}[decision.size_label] ?? 2;
+
+  await Promise.all([
+    spinReel(`mt0-${id}`, ti % 10, 10, 0, ITEM_H),
+    spinReel(`mt1-${id}`, mi % 6, 6, 250, ITEM_H),
+    spinReel(`mt2-${id}`, si % 6, 6, 500, ITEM_H),
+  ]);
+}
+
+function spinReel(trackId, targetIdx, poolLen, delay, itemH) {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      const track = document.getElementById(trackId);
+      if (!track) { resolve(); return; }
+      let speed = 0, pos = 0, ticks = 0, phase = 'accel';
+      const maxTicks = 20 + Math.floor(Math.random() * 12);
+      const targetPx = Math.max(0, targetIdx * itemH - itemH);
+
+      function frame() {
+        if (phase === 'accel') {
+          speed = Math.min(speed + 6, 45); ticks++;
+          if (ticks >= maxTicks) phase = 'brake';
+        } else {
+          speed = Math.max(speed * 0.87, 2.5);
+          const dist = targetPx - (pos % (poolLen * itemH));
+          if (Math.abs(dist) < speed + 1 || speed < 2.8) {
+            track.style.transition = 'transform 0.25s cubic-bezier(0.15,0,0,1.3)';
+            track.style.transform = `translateY(-${targetPx}px)`;
+            setTimeout(resolve, 260); return;
+          }
+        }
+        pos = (pos + speed) % (poolLen * itemH);
+        track.style.transition = 'none';
+        track.style.transform = `translateY(-${pos}px)`;
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    }, delay);
+  });
+}
+
+// ════════════════════════════
+// SHOW RESULT ON BOT
+// ════════════════════════════
+function showBotResult(id, bot, decision) {
+  const isWin = decision.outcome === 'WIN';
+  let pnl = bot.bet * decision.pnl_multiplier;
+  
+  // Use adaptive bet and edge if in auto mode with strategy
+  let actualBet = bot.bet;
+  let actualEdge = decision.edge_pct;
+  if (bot.auto && botStrategies[id] && decision.adaptiveBet) {
+    actualBet = decision.adaptiveBet;
+    actualEdge = decision.adaptiveEdge || decision.edge_pct;
+    pnl = actualBet * decision.pnl_multiplier;
+  }
+  
+  // If using real wallet, deduct gas and slippage
+  if (walletState.isConnected) {
+    const slippage = calculateSlippage(actualBet, 5, decision.adaptiveMethod || decision.method);
+    const realSlippageUSD = parseFloat(slippage.usd);
+    
+    // Rough gas estimate: ~0.001 USD (in real conditions would be 0.001-0.005 ETH)
+    const gasEstimateUSD = 0.001;
+    
+    pnl = pnl - realSlippageUSD - gasEstimateUSD;
+    
+    // Log real wallet trade
+    const tradeLog = {
+      timestamp: new Date().toISOString(),
+      botId: id,
+      bet: actualBet,
+      method: decision.adaptiveMethod || decision.method,
+      slippage: realSlippageUSD,
+      gas: gasEstimateUSD,
+      grossPnL: actualBet * decision.pnl_multiplier,
+      netPnL: pnl,
+      outcome: decision.outcome,
+      strategy: bot.profile,
+    };
+    walletState.transactions.push(tradeLog);
+  }
+  
+  // Log trade completion with results
+  actionLogger.tradeComplete(id, decision.token, decision.method, pnl, isWin, decision.pnl_multiplier);
+  
+  // Update bot strategy state if in auto mode
+  if (bot.auto && botStrategies[id]) {
+    updateBotStateAfterTrade(botStrategies[id], decision, pnl, actualBet);
+  }
+  
+  const abs = Math.abs(pnl);
+
+  // Update global balance
+  balance += pnl;
+  totalPnl += pnl;
+  bot.pnl += pnl;
+  updateGlobalBalance();
+
+  // Update bot pnl badge
+  const pnlEl = document.getElementById('mpnl-' + id);
+  if (pnlEl) {
+    pnlEl.textContent = (bot.pnl >= 0 ? '+' : '') + '$' + bot.pnl.toFixed(2);
+    pnlEl.className = 'm-pnl ' + (bot.pnl >= 0 ? 'pos' : 'neg');
+  }
+
+  // Update pills (use adaptive method if available)
+  const displayMethod = decision.adaptiveMethod || decision.method;
+  setVal(`mpv0-${id}`, decision.token);
+  setVal(`mpv1-${id}`, displayMethod.split(' ')[0]);
+  setVal(`mpv2-${id}`, decision.edge_pct.toFixed(1) + '%');
+  
+  // Show adaptive edge if in auto mode
+  if (bot.auto && decision.adaptiveEdge) {
+    setVal(`mpv3-${id}`, decision.adaptiveEdge.toFixed(1) + '%');
+  }
+  
+  [`mp0-${id}`,`mp1-${id}`,`mp2-${id}`,`mp3-${id}`].forEach(pid => {
+    const el = document.getElementById(pid);
+    if (el) el.classList.add('lit');
+    setTimeout(() => el?.classList.remove('lit'), 2000);
+  });
+
+  // Update ticker with Arena info if available
+  const tick = document.getElementById('mtick-' + id);
+  let tickerText = isWin 
+    ? `✅ +$${abs.toFixed(2)}`
+    : `❌ -$${abs.toFixed(2)}`;
+  
+  // Arena tournament info
+  if (bot.auto && decision.arena_tournament) {
+    const arena = decision.arena_tournament;
+    const winner = arena.winner || '?';
+    const consensus = (arena.consensus_strength * 100).toFixed(0);
+    const modelEmoji = AI_ARENA.models[winner]?.emoji || '🤖';
+    tickerText += ` • ${modelEmoji} ${winner} (${consensus}%)`;
+  } else if (bot.auto && decision.marketCondition) {
+    tickerText += ` • ${decision.marketCondition} • ${decision.recentWinRate}% WR`;
+  } else {
+    tickerText += ` • ${decision.reasoning}`;
+  }
+  
+  if (walletState.isConnected) {
+    tickerText += ' (with fees)';
+  }
+  if (tick) tick.textContent = tickerText;
+
+  // Machine flash
+  const card = document.getElementById('bot-' + id);
+  if (card) {
+    card.classList.add(isWin ? 'winning' : 'losing');
+    setTimeout(() => card.classList.remove('winning', 'losing'), 700);
+  }
+
+  // Show result overlay (skip in auto mode for faster trading)
+  if (!bot.auto) {
+    const rEl = document.getElementById('mresult-' + id);
+    const titleEl = document.getElementById('mrtitle-' + id);
+    const amtEl = document.getElementById('mramt-' + id);
+    const detailEl = document.getElementById('mrdetail-' + id);
+    if (rEl && titleEl && amtEl && detailEl) {
+      titleEl.textContent = isWin ? (pnl > actualBet * 2 ? '🎰 JACKPOT!' : '🔥 WIN!') : '💸 REKT';
+      titleEl.style.cssText = `background:linear-gradient(180deg,#fff,${isWin?'#ffd700':'var(--hot)'});-webkit-background-clip:text;-webkit-text-fill-color:transparent`;
+      amtEl.textContent = (isWin ? '+' : '-') + '$' + abs.toFixed(2);
+      amtEl.style.color = isWin ? 'var(--green)' : 'var(--hot)';
+      
+      // Show Arena tournament details if available
+      let detailHTML = `${decision.method} · ${decision.token}<br>${decision.strategy_detail || 'Strategic trade'}`;
+      if (decision.arena_tournament && decision.arena_tournament.all_proposals?.length > 0) {
+        const proposals = decision.arena_tournament.all_proposals;
+        detailHTML += '<br><small>🏟️ Arena proposals: ';
+        detailHTML += proposals.map(p => `${p.emoji}${p.method.split(' ')[0]}`).join(' • ');
+        detailHTML += '</small>';
+      }
+      
+      detailEl.innerHTML = detailHTML;
+      rEl.classList.add('show');
+    }
+  }
+
+  // Update model performance if arena tournament
+  if (decision.arena_tournament?.winner && typeof updateModelPerformance === 'function') {
+    try {
+      updateModelPerformance(decision, decision.outcome);
+    } catch (perfError) {
+      console.warn('[Trading] Model performance update error (non-critical):', perfError);
+    }
+  }
+
+  // Particles
+  spawnParticles(isWin, id);
+
+  // Log with complete trade details for verification
+  addToGlobalLog({ 
+    botId: id, 
+    token: decision.token, 
+    method: decision.method, 
+    pnl, 
+    isWin,
+    // Paper trading verification data
+    bet: actualBet,
+    entryPrice: decision.entry_price || Math.random() * 100000,
+    exitPrice: decision.exit_price || Math.random() * 100000,
+    multiplier: decision.pnl_multiplier,
+    edge: actualEdge,
+    winProbability: decision.win_probability,
+    reasoning: decision.reasoning,
+    timestamp: new Date().toISOString(),
+    sessionId: window.sessionId || 'session-' + Date.now()
+  });
+  
+  // Record trade in performance ticker graph
+  recordTradeInTicker(id, pnl);
+}
+
+function closeResult(id) {
+  document.getElementById('mresult-' + id)?.classList.remove('show');
+}
+
+function setVal(elId, val) {
+  const el = document.getElementById(elId);
+  if (el) el.textContent = val;
+}
+
+// ════════════════════════════
+// PARTICLES
+// ════════════════════════════
+function spawnParticles(win, botId) {
+  const syms = win ? ['💰','🪙','✨','💎','🔥','🎉','💸'] : ['💀','📉','💩','🫠','❌'];
+  const count = win ? 12 : 5;
+  const card = document.getElementById('bot-' + botId);
+  const rect = card?.getBoundingClientRect();
+  for (let i = 0; i < count; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'ptc';
+      const cx = rect ? rect.left + Math.random() * rect.width : Math.random() * window.innerWidth;
+      const cy = rect ? rect.top + Math.random() * rect.height * 0.5 : Math.random() * window.innerHeight * 0.5;
+      el.style.cssText = `left:${cx}px;top:${cy}px;font-size:${14+Math.random()*14}px;animation-duration:${0.7+Math.random()*1}s`;
+      el.textContent = syms[Math.floor(Math.random() * syms.length)];
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 1800);
+    }, i * 50);
+  }
+}
+
+// ════════════════════════════
+// GLOBAL LOG
+// ════════════════════════════
+function addToGlobalLog(entry) {
+  globalLog.unshift({ ...entry, time: new Date().toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'}) });
+  if (globalLog.length > 30) globalLog.pop();
+  hftMetrics.recordTrade(); // Track for TPM display
+  renderGlobalLog();
+}
+
+function renderGlobalLog() {
+  const el = document.getElementById('globalLog');
+  if (!el) return;
+  if (!globalLog.length) { el.innerHTML = '<div class="empty-log">No trades yet.</div>'; return; }
+  
+  let html = '<div style="display:flex;flex-direction:column;gap:6px">';
+  
+  globalLog.forEach((t, idx) => {
+    const timestamp = t.timestamp ? new Date(t.timestamp).toLocaleTimeString('en', {hour:'2-digit',minute:'2-digit',second:'2-digit'}) : t.time;
+    const pnlClass = t.isWin ? 'p' : 'n';
+    const pnlColor = t.isWin ? 'var(--green)' : 'var(--hot)';
+    
+    // Build detailed entry with verifiable data
+    html += `
+      <div class="log-row" style="display:grid;grid-template-columns:40px 50px 80px 50px 60px 60px 40px;gap:8px;align-items:center;font-size:9px;padding:8px;background:var(--chrome);border:1px solid var(--border);border-radius:4px;cursor:pointer" 
+           title="Bet: $${t.bet?.toFixed(2) || '?'} | Edge: ${t.edge?.toFixed(1) || '?'}% | P(Win): ${(t.winProbability*100)?.toFixed(0) || '?'}% | ${t.reasoning || ''}">
+        <div style="font-weight:700;color:var(--dim)">#${t.botId}</div>
+        <div style="font-weight:700;color:${t.isWin?'var(--green)':'var(--hot)'}">${t.token}</div>
+        <div style="color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.method?.substring(0,12) || ''}</div>
+        <div style="font-weight:700;color:${pnlColor}">${t.isWin?'+':''}$${t.pnl?.toFixed(2) || '0.00'}</div>
+        <div style="color:var(--dim)">${t.bet?.toFixed(0) || '0'}·${t.multiplier?.toFixed(2) || '1.0'}x</div>
+        <div style="color:var(--dim);font-size:8px">${timestamp}</div>
+        <div style="text-align:center;color:${t.isWin?'var(--green)':'var(--hot)'}">${t.isWin?'✅':'❌'}</div>
+      </div>`;
+  });
+  
+  html += '</div>';
+  el.innerHTML = html;
+  
+  // Update total trades display in header
+  const totalTradesEl = document.getElementById('totalTradesDisplay');
+  if (totalTradesEl) {
+    totalTradesEl.textContent = globalLog.length;
+  }
+  
+  // Update Arena leaderboard
+  updateArenaLeaderboard();
+}
+
+// ════════════════════════════
+// ARENA LEADERBOARD
+// ════════════════════════════
+function updateArenaLeaderboard() {
+  const el = document.getElementById('arenaLeaderboard');
+  if (!el || typeof getArenaInsights !== 'function') return;
+  
+  const insights = getArenaInsights();
+  const models = insights.models || [];
+  const perf = arenaState?.modelPerformance || {};
+  
+  if (models.length === 0) {
+    el.innerHTML = '<div style="color:var(--dim)">Run auto-trades to build AI model stats...</div>';
+    return;
+  }
+  
+  let html = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">';
+  
+  for (const model of models) {
+    const stats = perf[model.name];
+    const wins = stats?.wins || 0;
+    const losses = stats?.losses || 0;
+    const total = wins + losses;
+    const accuracy = stats?.accuracy || '0';
+    
+    let badge = '🥇';
+    if (models.indexOf(model) === 1) badge = '🥈';
+    else if (models.indexOf(model) === 2) badge = '🥉';
+    
+    html += `
+      <div style="padding:6px;background:var(--panel);border:1px solid var(--border);border-radius:6px">
+        <div style="font-weight:bold;color:var(--gold);">${badge} ${model.emoji} ${model.name}</div>
+        <div style="color:var(--cyan);font-size:10px">${accuracy}% • ${wins}W-${losses}L</div>
+      </div>
+    `;
+  }
+  
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+// ════════════════════════════
+// PAGE INITIALIZATION
+// ════════════════════════════
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('🔍 Page loaded, checking for MetaMask...');
+  
+  // Check if MetaMask is available
+  if (window.ethereum) {
+    console.log('✅ MetaMask detected!');
+    console.log('📊 MetaMask details:', {
+      isMetaMask: window.ethereum.isMetaMask,
+      chainId: window.ethereum.chainId,
+    });
+  } else {
+    console.warn('⚠️ MetaMask not injected yet. Will check on button click.');
+  }
+  
+  // Also check on a slight delay for slower injection
+  setTimeout(() => {
+    if (window.ethereum) {
+      console.log('✅ MetaMask detected on delayed check');
+    } else {
+      console.warn('❌ MetaMask still not found after 1 second');
+    }
+  }, 1000);
+});
+
+// ════════════════════════════
+// BOT PERFORMANCE TICKER GRAPH
+// ════════════════════════════
+
+// Initialize ticker graph system
+const tickerGraph = {
+  canvas: null,
+  ctx: null,
+  botColors: {},
+  maxDataPoints: 50,
+  botHistory: {}, // { botId: [{timestamp, pnl, cumulative}] }
+  botActionLogs: {}, // { botId: [{timestamp, action, color, pnl}] }
+  maxActionsPerBot: 8,
+  initialized: false,
+  resizeTimeout: null,
+  
+  init() {
+    if (this.initialized) {
+      console.log('[Ticker] Already initialized, skipping duplicate init');
+      return;
+    }
+    
+    const container = document.getElementById('tickerGraphCanvas');
+    if (!container) {
+      console.error('[Ticker] Container not found: tickerGraphCanvas');
+      console.error('[Ticker] Available elements:', document.body.innerHTML.substring(0, 500));
+      return false;
+    }
+    
+    console.log('[Ticker] Container found, creating canvas...');
+    
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.style.width = '100%';
+      canvas.style.height = '100%';
+      canvas.style.display = 'block';
+      
+      container.innerHTML = '';
+      container.appendChild(canvas);
+      
+      // Set resolution for crisp lines
+      const rect = container.getBoundingClientRect();
+      
+      // Fallback dimensions if not yet rendered
+      const width = rect.width > 0 ? rect.width : 800;
+      const height = rect.height > 0 ? rect.height : 280;
+      
+      console.log('[Ticker] Canvas dimensions:', { width, height, containerWidth: rect.width, containerHeight: rect.height });
+      
+      canvas.width = width * window.devicePixelRatio;
+      canvas.height = height * window.devicePixelRatio;
+      
+      this.canvas = canvas;
+      this.ctx = canvas.getContext('2d');
+      if (!this.ctx) {
+        console.error('[Ticker] Failed to get 2D context');
+        return false;
+      }
+      this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+      
+      // Initialize bot colors (hue-based)
+      this.assignBotColors();
+      
+      // Redraw on resize (with debounce)
+      window.addEventListener('resize', () => {
+        clearTimeout(this.resizeTimeout);
+        this.resizeTimeout = setTimeout(() => this.handleResize(), 150);
+      });
+      
+      // Start update loop
+      this.updateLoop();
+      
+      this.initialized = true;
+      console.log('[Ticker] ✅ Initialized successfully', { width, height, dpr: window.devicePixelRatio });
+      return true;
+    } catch (error) {
+      console.error('[Ticker] Initialization failed:', error);
+      return false;
+    }
+  },
+  
+  assignBotColors() {
+    const colors = [
+      '#ff2d78', '#00ffe7', '#39ff14', '#ffd700',
+      '#bf5fff', '#ff9500', '#00f0ff', '#ff3366',
+      '#6bff00', '#ff1493', '#00ffff', '#ffaa00'
+    ];
+    
+    bots.forEach((bot, idx) => {
+      if (!this.botColors[bot.id]) {
+        this.botColors[bot.id] = colors[idx % colors.length];
+      }
+    });
+  },
+
+  // Log a real-time action for a bot
+  logAction(botId, action, color, pnl) {
+    if (!this.botActionLogs[botId]) {
+      this.botActionLogs[botId] = [];
+    }
+    
+    this.botActionLogs[botId].push({
+      timestamp: Date.now(),
+      action: action,
+      color: color,
+      pnl: pnl
+    });
+    
+    // Keep only recent actions
+    if (this.botActionLogs[botId].length > this.maxActionsPerBot) {
+      this.botActionLogs[botId].shift();
+    }
+  },
+  
+  recordTrade(botId, pnl) {
+    try {
+      if (!this.initialized) {
+        console.warn('[Ticker] recordTrade called but not initialized yet');
+        return;
+      }
+      
+      if (!this.botHistory[botId]) {
+        this.botHistory[botId] = [];
+      }
+      
+      const history = this.botHistory[botId];
+      const cumulative = history.length > 0 ? history[history.length - 1].cumulative + pnl : pnl;
+      
+      history.push({
+        timestamp: Date.now(),
+        pnl: pnl,
+        cumulative: cumulative
+      });
+      
+      // Keep only recent data
+      if (history.length > this.maxDataPoints) {
+        history.shift();
+      }
+      
+      // Log action with color coding
+      const color = pnl > 0 ? '#39ff14' : '#ff2d78'; // Green for win, red for loss
+      const action = `${pnl > 0 ? '✅' : '❌'} ${pnl > 0 ? '+' : ''}$${Math.abs(pnl).toFixed(0)}`;
+      this.logAction(botId, action, color, pnl);
+      
+      console.log('[Ticker] Trade recorded:', { botId, pnl, cumulative, historyLength: history.length });
+      
+      this.updateLegend();
+    } catch (error) {
+      console.error('[Ticker] Error recording trade:', error);
+    }
+  },
+  
+  handleResize() {
+    const container = document.getElementById('tickerGraphCanvas');
+    if (!container || !this.canvas) return;
+    
+    const rect = container.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      this.canvas.width = rect.width * window.devicePixelRatio;
+      this.canvas.height = rect.height * window.devicePixelRatio;
+      this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    }
+  },
+  
+  updateLoop() {
+    this.draw();
+    requestAnimationFrame(() => this.updateLoop());
+  },
+  
+  draw() {
+    try {
+      if (!this.canvas || !this.ctx) {
+        console.warn('[Ticker] Canvas or context not initialized');
+        return;
+      }
+      
+      const w = this.canvas.width / window.devicePixelRatio;
+      const h = this.canvas.height / window.devicePixelRatio;
+      const ctx = this.ctx;
+      
+      // Clear canvas
+      ctx.fillStyle = 'rgba(0,0,0,0.1)';
+      ctx.fillRect(0, 0, w, h);
+      
+      // Check if we have any data
+      const hasData = Object.keys(this.botHistory).some(botId => this.botHistory[botId].length > 0);
+      
+      if (!hasData) {
+        // Draw placeholder
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.font = '14px "Oswald", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('Start trading to see live performance', w / 2, h / 2);
+        
+        // Still draw grid for visual appeal
+        ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+        ctx.lineWidth = 1;
+        
+        for (let i = 0; i <= 5; i++) {
+          const y = (h / 5) * i;
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(w, y);
+          ctx.stroke();
+        }
+        
+        for (let i = 0; i <= 10; i++) {
+          const x = (w / 10) * i;
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, h);
+          ctx.stroke();
+        }
+        return;
+      }
+      
+      // Draw grid
+      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+      ctx.lineWidth = 1;
+      
+      // Horizontal grid lines
+      for (let i = 0; i <= 5; i++) {
+        const y = (h / 5) * i;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+      
+      // Vertical grid lines
+      for (let i = 0; i <= 10; i++) {
+        const x = (w / 10) * i;
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+      }
+      
+      // Get min/max for scaling
+      let minPnL = 0, maxPnL = 100;
+      for (const botId in this.botHistory) {
+        const history = this.botHistory[botId];
+        for (const point of history) {
+          minPnL = Math.min(minPnL, point.cumulative);
+          maxPnL = Math.max(maxPnL, point.cumulative);
+        }
+      }
+      
+      // Add padding to scale
+      const range = Math.max(Math.abs(minPnL), Math.abs(maxPnL), 50);
+      minPnL = -range;
+      maxPnL = range;
+      
+      // Draw each bot's line
+      for (const botId in this.botHistory) {
+        const history = this.botHistory[botId];
+        if (history.length < 1) continue;
+        
+        const color = this.botColors[botId] || '#00ffe7';
+        
+        // Draw line (if at least 2 points)
+        if (history.length >= 2) {
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          
+          ctx.beginPath();
+          
+          for (let i = 0; i < history.length; i++) {
+            const point = history[i];
+            const x = (w / this.maxDataPoints) * (i + this.maxDataPoints - history.length);
+            const yNorm = (point.cumulative - minPnL) / (maxPnL - minPnL);
+            const y = h - (yNorm * h * 0.8 + h * 0.1);
+            
+            if (i === 0) {
+              ctx.moveTo(x, y);
+            } else {
+              ctx.lineTo(x, y);
+            }
+          }
+          
+          ctx.stroke();
+        }
+        
+        // Draw points
+        ctx.fillStyle = color;
+        for (let i = 0; i < history.length; i++) {
+          const point = history[i];
+          const x = (w / this.maxDataPoints) * (i + this.maxDataPoints - history.length);
+          const yNorm = (point.cumulative - minPnL) / (maxPnL - minPnL);
+          const y = h - (yNorm * h * 0.8 + h * 0.1);
+          
+          // Latest point is larger
+          const radius = i === history.length - 1 ? 4 : 2;
+          ctx.beginPath();
+          ctx.arc(x, y, radius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      
+      // Draw zero line
+      const zeroNorm = (0 - minPnL) / (maxPnL - minPnL);
+      const zeroY = h - (zeroNorm * h * 0.8 + h * 0.1);
+      ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(0, zeroY);
+      ctx.lineTo(w, zeroY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      
+      // Draw axis labels
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.font = '10px "Oswald", sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText('$' + maxPnL.toFixed(0), w - 5, 12);
+      ctx.fillText('$0', w - 5, zeroY + 4);
+      ctx.fillText('$' + minPnL.toFixed(0), w - 5, h - 5);
+    } catch (error) {
+      console.error('[Ticker] Error drawing:', error);
+    }
+  },
+  
+  updateLegend() {
+    try {
+      const legendEl = document.getElementById('tickerLegend');
+      if (!legendEl) {
+        console.warn('[Ticker] Legend element not found');
+        return;
+      }
+      
+      let html = '';
+      let itemCount = 0;
+      
+      for (const botId in this.botHistory) {
+        const bot = bots.find(b => b.id === parseInt(botId));
+        if (!bot) {
+          console.warn(`[Ticker] Bot ${botId} not found in bots array`);
+          continue;
+        }
+        
+        const history = this.botHistory[botId];
+        if (!history || history.length === 0) continue;
+        
+        const lastPoint = history[history.length - 1];
+        const cumulative = lastPoint?.cumulative || 0;
+        
+        const color = this.botColors[botId] || '#00ffe7';
+        const wins = history.filter(p => p.pnl > 0).length;
+        const total = history.length;
+        const winRate = total > 0 ? ((wins / total) * 100).toFixed(0) : '0';
+        
+        // Get action logs for this bot
+        const actions = this.botActionLogs[botId] || [];
+        const actionHTML = actions.map(a => `<span style="color:${a.color};font-weight:700;margin:0 2px">${a.action}</span>`).join('');
+        
+        html += `
+          <div class="ticker-legend-item" style="border:1px solid ${color}33;border-radius:4px;padding:8px;background:${color}08">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+              <div class="ticker-legend-dot" style="background:${color};box-shadow:0 0 8px ${color}"></div>
+              <div class="ticker-legend-label">Bot #${botId}</div>
+              <div style="color:${cumulative >= 0 ? 'var(--green)' : 'var(--hot)'}; font-weight:700">
+                ${cumulative >= 0 ? '+' : ''}$${cumulative.toFixed(0)}
+              </div>
+              <div class="ticker-legend-stats" style="margin-left:auto">${winRate}% WR</div>
+            </div>
+            <div style="font-size:9px; word-break:break-word; line-height:1.4; max-height:40px; overflow:hidden">
+              ${actionHTML || '<span style="color:var(--dim)">Waiting for trades...</span>'}
+            </div>
+          </div>
+        `;
+        itemCount++;
+      }
+      
+      if (html === '') {
+        html = '<div style="grid-column:1/-1;color:var(--dim);font-size:10px;padding:6px">Bots will appear here as they trade...</div>';
+      }
+      
+      legendEl.innerHTML = html;
+      console.log('[Ticker] Legend updated with', itemCount, 'bots');
+    } catch (error) {
+      console.error('[Ticker] Error updating legend:', error);
+    }
+  },
+  
+  reset() {
+    this.botHistory = {};
+    this.botActionLogs = {};
+    this.botColors = {};
+    this.assignBotColors();
+    this.updateLegend();
+  }
+};
+
+// Initialize ticker graph when app starts
+function initTickerGraph() {
+  try {
+    if (!tickerGraph) {
+      console.error('[Ticker] tickerGraph object not found!');
+      return false;
+    }
+    if (tickerGraph.initialized) {
+      console.log('[Ticker] Already initialized');
+      return true;
+    }
+    const result = tickerGraph.init();
+    console.log('[Ticker] initTickerGraph result:', result);
+    return result;
+  } catch (error) {
+    console.error('[Ticker] Error in initTickerGraph:', error);
+    return false;
+  }
+}
+
+// Record trade in ticker graph when trade completes
+function recordTradeInTicker(botId, pnl) {
+  try {
+    if (!tickerGraph) {
+      console.error('[Ticker] tickerGraph object not found');
+      return;
+    }
+    if (!tickerGraph.recordTrade) {
+      console.error('[Ticker] recordTrade method not found');
+      return;
+    }
+    if (!tickerGraph.initialized) {
+      console.warn('[Ticker] Not yet initialized, storing trade anyway');
+    }
+    tickerGraph.recordTrade(botId, pnl);
+  } catch (error) {
+    console.error('[Ticker] Error recording trade:', error, { botId, pnl });
+  }
+}
+
+// ════════════════════════════
+// TRADE LOG EXPORT & VERIFICATION
+// ════════════════════════════
+function getTradeLogSummary() {
+  const summary = {
+    sessionId: window.sessionId,
+    startTime: tradingStartTime || new Date().toISOString(),
+    endTime: new Date().toISOString(),
+    totalTrades: globalLog.length,
+    winningTrades: globalLog.filter(t => t.isWin).length,
+    losingTrades: globalLog.filter(t => !t.isWin).length,
+    totalPnL: globalLog.reduce((sum, t) => sum + (t.pnl || 0), 0),
+    initialBalance: 10000,
+    finalBalance: balance,
+    winRate: (globalLog.filter(t => t.isWin).length / (globalLog.length || 1) * 100).toFixed(2),
+    avgPnL: (globalLog.reduce((sum, t) => sum + (t.pnl || 0), 0) / (globalLog.length || 1)).toFixed(2),
+    bestTrade: Math.max(0, ...globalLog.map(t => t.pnl || 0)).toFixed(2),
+    worstTrade: Math.min(0, ...globalLog.map(t => t.pnl || 0)).toFixed(2),
+    activeBots: bots.length,
+    trades: globalLog
+  };
+  return summary;
+}
+
+function exportTradeLogCSV() {
+  const summary = getTradeLogSummary();
+  let csv = 'PAPER TRADING SESSION REPORT\n';
+  csv += `Session ID,${summary.sessionId}\n`;
+  csv += `Start Time,${summary.startTime}\n`;
+  csv += `End Time,${summary.endTime}\n`;
+  csv += `Total Trades,${summary.totalTrades}\n`;
+  csv += `Winning Trades,${summary.winningTrades}\n`;
+  csv += `Losing Trades,${summary.losingTrades}\n`;
+  csv += `Win Rate,${summary.winRate}%\n`;
+  csv += `Total P&L,$${summary.totalPnL.toFixed(2)}\n`;
+  csv += `Average P&L,$${summary.avgPnL}\n`;
+  csv += `Best Trade,$${summary.bestTrade}\n`;
+  csv += `Worst Trade,$${summary.worstTrade}\n`;
+  csv += `Initial Balance,$${summary.initialBalance.toFixed(2)}\n`;
+  csv += `Final Balance,$${summary.finalBalance.toFixed(2)}\n\n`;
+  
+  csv += 'INDIVIDUAL TRADES\n';
+  csv += 'Timestamp,Bot ID,Token,Method,Entry Price,Exit Price,Bet,PnL,Multiplier,Edge %,Win Probability,Result,Reasoning\n';
+  
+  globalLog.forEach(trade => {
+    csv += `"${trade.timestamp}",${trade.botId},${trade.token},"${trade.method}",${trade.entryPrice?.toFixed(2) || 'N/A'},${trade.exitPrice?.toFixed(2) || 'N/A'},${trade.bet?.toFixed(2) || 'N/A'},${trade.pnl?.toFixed(2) || 'N/A'},${trade.multiplier?.toFixed(2) || 'N/A'},${trade.edge?.toFixed(1) || 'N/A'},${(trade.winProbability*100)?.toFixed(0) || 'N/A'},"${trade.isWin ? 'WIN' : 'LOSS'}","${(trade.reasoning || '').replace(/"/g, '""')}"\n`;
+  });
+  
+  // Download CSV
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `trade-log-${window.sessionId}.csv`;
+  a.click();
+  window.URL.revokeObjectURL(url);
+}
+
+function exportTradeLogJSON() {
+  const summary = getTradeLogSummary();
+  const json = JSON.stringify(summary, null, 2);
+  
+  // Download JSON
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `trade-log-${window.sessionId}.json`;
+  a.click();
+  window.URL.revokeObjectURL(url);
+}
+
+function copyTradeLogToClipboard() {
+  const summary = getTradeLogSummary();
+  const text = `=== PAPER TRADING SESSION REPORT ===
+Session ID: ${summary.sessionId}
+Start Time: ${summary.startTime}
+End Time: ${summary.endTime}
+Total Trades: ${summary.totalTrades}
+Winning Trades: ${summary.winningTrades}
+Losing Trades: ${summary.losingTrades}
+Win Rate: ${summary.winRate}%
+Total P&L: $${summary.totalPnL.toFixed(2)}
+Average P&L: $${summary.avgPnL}
+Best Trade: $${summary.bestTrade}
+Worst Trade: $${summary.worstTrade}
+Initial Balance: $${summary.initialBalance.toFixed(2)}
+Final Balance: $${summary.finalBalance.toFixed(2)}`;
+  
+  navigator.clipboard.writeText(text).then(() => {
+    alert('Trade summary copied to clipboard!');
+  });
+}
+
+function displayTradeStats() {
+  const summary = getTradeLogSummary();
+  alert(`📊 TRADING SESSION STATS
+━━━━━━━━━━━━━━━━━━━━━━━
+Session: ${summary.sessionId}
+Total Trades: ${summary.totalTrades}
+Win Rate: ${summary.winRate}%
+Total P&L: $${summary.totalPnL.toFixed(2)}
+Avg P&L: $${summary.avgPnL}
+Best: $${summary.bestTrade}
+Worst: $${summary.worstTrade}
+Final Balance: $${summary.finalBalance.toFixed(2)}`);
+}
+
+// ════════════════════════════
+// SETTINGS FUNCTIONS
+// ════════════════════════════
+function openSettings() {
+  const modal = document.getElementById('settingsModal');
+  if (!modal) return;
+  
+  // Load current values into sliders
+  document.getElementById('lossTrigger').value = LOSS_TRIGGER;
+  document.getElementById('cd1').value = COOLDOWNS[0] / 60;
+  document.getElementById('cd2').value = COOLDOWNS[1] / 3600;
+  document.getElementById('cd3').value = COOLDOWNS[2] / 3600;
+  
+  updateSettingsUI();
+  modal.style.display = 'flex';
+}
+
+function closeSettings() {
+  const modal = document.getElementById('settingsModal');
+  if (!modal) return;
+  modal.style.display = 'none';
+}
+
+function updateSettingsUI() {
+  // Update loss trigger display
+  const lossTrigger = document.getElementById('lossTrigger');
+  if (lossTrigger) {
+    document.getElementById('lossVal').textContent = lossTrigger.value;
+  }
+  
+  // Update Level 1 cooldown display
+  const cd1 = document.getElementById('cd1');
+  if (cd1) {
+    document.getElementById('cd1val').textContent = cd1.value + ' min';
+  }
+  
+  // Update Level 2 cooldown display
+  const cd2 = document.getElementById('cd2');
+  if (cd2) {
+    document.getElementById('cd2val').textContent = cd2.value + (cd2.value == 1 ? ' hr' : ' hrs');
+  }
+  
+  // Update Level 3 cooldown display
+  const cd3 = document.getElementById('cd3');
+  if (cd3) {
+    document.getElementById('cd3val').textContent = cd3.value + (cd3.value == 1 ? ' hr' : ' hrs');
+  }
+}
+
+function saveSettings() {
+  // Get values from sliders
+  LOSS_TRIGGER = parseInt(document.getElementById('lossTrigger').value);
+  COOLDOWNS[0] = parseInt(document.getElementById('cd1').value) * 60; // minutes to seconds
+  COOLDOWNS[1] = parseInt(document.getElementById('cd2').value) * 3600; // hours to seconds
+  COOLDOWNS[2] = parseInt(document.getElementById('cd3').value) * 3600; // hours to seconds
+  
+  // Save to localStorage
+  const settings = {
+    lossTrigger: LOSS_TRIGGER,
+    cooldowns: COOLDOWNS
+  };
+  localStorage.setItem('cooldownSettings', JSON.stringify(settings));
+  
+  // Log settings update
+  actionLogger.settingsSaved(settings);
+  
+  console.log('✅ Cooldown settings saved:', settings);
+  
+  // Show confirmation
+  const btn = event.target;
+  const originalText = btn.textContent;
+  btn.textContent = '✅ SAVED!';
+  setTimeout(() => {
+    btn.textContent = originalText;
+  }, 1500);
+  
+  closeSettings();
+}
+
+// Load settings on page load
+loadSettings();
+console.log('📋 Cooldown Settings Loaded:', { LOSS_TRIGGER, COOLDOWNS });
+</script>
+</body>
+</html>
