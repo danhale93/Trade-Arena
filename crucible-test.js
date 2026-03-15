@@ -2,6 +2,10 @@
  * CRUCIBLE TEST SYSTEM
  * Paper trading verification with verifiable logs
  * For testing trading logic without real money
+ * 
+ * VERSION: 2.0 - STRICT RISK MANAGEMENT ENFORCEMENT
+ * UPDATED: 2026-03-15 10:45:00
+ * CACHE BUST: 1773572160000
  */
 
 const CrucibleTest = {
