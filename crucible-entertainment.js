@@ -371,6 +371,81 @@ const CrucibleEntertainment = {
         .stat-value {
           flex: 1;
         }
+
+        /* Control Panel Styles */
+        .control-panel {
+          position: fixed;
+          bottom: 20px;
+          right: 20px;
+          background: rgba(0, 0, 0, 0.95);
+          border: 3px solid #ff00ff;
+          border-radius: 15px;
+          padding: 15px 20px;
+          display: flex;
+          gap: 12px;
+          align-items: center;
+          z-index: 100001;
+          box-shadow: 0 0 40px rgba(255, 0, 255, 0.6);
+        }
+
+        .control-panel-btn {
+          padding: 12px 18px;
+          font-size: 14px;
+          font-weight: 900;
+          border: 2px solid #00ff88;
+          border-radius: 8px;
+          background: rgba(0, 255, 136, 0.1);
+          color: #00ff88;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          font-family: 'Courier New', monospace;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+        }
+
+        .control-panel-btn:hover {
+          background: rgba(0, 255, 136, 0.3);
+          box-shadow: 0 0 30px rgba(0, 255, 136, 0.8);
+          transform: scale(1.05);
+        }
+
+        .control-panel-btn:active {
+          transform: scale(0.95);
+        }
+
+        .control-panel-btn.mute-btn {
+          border-color: #ff6b00;
+          background: rgba(255, 107, 0, 0.1);
+          color: #ff6b00;
+          box-shadow: 0 0 20px rgba(255, 107, 0, 0.3);
+        }
+
+        .control-panel-btn.mute-btn:hover {
+          background: rgba(255, 107, 0, 0.3);
+          box-shadow: 0 0 30px rgba(255, 107, 0, 0.8);
+        }
+
+        .control-panel-btn.mute-btn.muted {
+          border-color: #666666;
+          background: rgba(100, 100, 100, 0.1);
+          color: #666666;
+          box-shadow: 0 0 20px rgba(100, 100, 100, 0.3);
+        }
+
+        .control-panel-btn.deploy-btn {
+          border-color: #00d4ff;
+          background: rgba(0, 212, 255, 0.1);
+          color: #00d4ff;
+          box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+          padding: 14px 24px;
+          font-size: 16px;
+        }
+
+        .control-panel-btn.deploy-btn:hover {
+          background: rgba(0, 212, 255, 0.3);
+          box-shadow: 0 0 40px rgba(0, 212, 255, 0.9);
+        }
       </style>
 
       <div class="trade-ticker" id="trade-ticker">
@@ -395,12 +470,24 @@ const CrucibleEntertainment = {
           <span class="streak" id="streak-display">STREAK: 0</span>
         </div>
       </div>
+
+      <div class="control-panel" id="control-panel">
+        <button class="control-panel-btn deploy-btn" id="deploy-btn" onclick="CrucibleEntertainment.deployTrading()" title="Launch the trading engine!">
+          🚀 DEPLOY CRUCIBLE
+        </button>
+        <button class="control-panel-btn mute-btn" id="mute-btn" onclick="CrucibleEntertainment.toggleMute()" title="Toggle sound effects">
+          🔊 MUTE
+        </button>
+      </div>
     `;
 
     document.body.appendChild(container);
 
     // Initialize bot name and color
     this.initializeBotDisplay();
+    
+    // Set up mute button state
+    this.isMuted = false;
   },
 
   // Initialize bot display with name and colors
@@ -622,6 +709,74 @@ const CrucibleEntertainment = {
   milestoneReached(tradeNumber) {
     const comment = this.getCommentary('milestones');
     this.announcement(comment);
+  },
+
+  // Deploy the Crucible trading engine
+  deployTrading() {
+    const deployBtn = document.getElementById('deploy-btn');
+    
+    // Check if trading engine exists
+    if (typeof runCrucibleReal !== 'function') {
+      this.showCommentary('ERROR: Trading engine not loaded! 😭', 'loss');
+      return;
+    }
+    
+    // Disable the deploy button to prevent multiple clicks
+    deployBtn.disabled = true;
+    deployBtn.textContent = '🚀 DEPLOYING...';
+    deployBtn.style.opacity = '0.5';
+    
+    // Show deployment announcement
+    this.announcement('🚀 CRUCIBLE DEPLOYED! TRADING LIVE!');
+    this.playSound('boom');
+    
+    // Wait 1 second then launch
+    setTimeout(() => {
+      try {
+        window.runCrucibleReal();
+      } catch (e) {
+        console.error('Failed to deploy:', e);
+        this.showCommentary('Deployment FAILED! Check console! 💔', 'loss');
+        deployBtn.disabled = false;
+        deployBtn.textContent = '🚀 DEPLOY CRUCIBLE';
+        deployBtn.style.opacity = '1';
+      }
+    }, 1000);
+  },
+
+  // Toggle mute for sound effects
+  toggleMute() {
+    this.isMuted = !this.isMuted;
+    const muteBtn = document.getElementById('mute-btn');
+    
+    if (this.isMuted) {
+      // Mute all sounds
+      muteBtn.textContent = '🔇 UNMUTE';
+      muteBtn.classList.add('muted');
+      
+      // Mute all audio elements
+      Object.keys(this.sounds).forEach(key => {
+        const audio = this.sounds[key + '_audio'];
+        if (audio) audio.volume = 0;
+      });
+      if (this.bgMusic) this.bgMusic.volume = 0;
+      
+      this.showCommentary('🔇 SOUND MUTED! Vibe: SILENT MODE ACTIVATED! 🤐', 'neutral');
+    } else {
+      // Unmute all sounds
+      muteBtn.textContent = '🔊 MUTE';
+      muteBtn.classList.remove('muted');
+      
+      // Restore sound volumes
+      Object.keys(this.sounds).forEach(key => {
+        const audio = this.sounds[key + '_audio'];
+        if (audio) audio.volume = 0.3;
+      });
+      if (this.bgMusic) this.bgMusic.volume = 0.1;
+      
+      this.playSound('bell');
+      this.showCommentary('🔊 SOUND RESTORED! Welcome BACK! 🎉', 'win');
+    }
   }
 };
 
