@@ -500,6 +500,20 @@ const CrucibleRealTrading = {
     this.aiState.entryAdaptation = Math.min(1.2, Math.max(0.8, this.aiState.entryAdaptation));
   },
   
+  // ════════════════════════════════════════════════════════════════
+  // CALCULATE CURRENT WIN STREAK
+  // ════════════════════════════════════════════════════════════════
+  calculateStreak() {
+    let streak = 0;
+    for (let i = this.trades.length - 1; i >= 0; i--) {
+      if (this.trades[i].isWin) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+    return streak;
+  },
   
   // ════════════════════════════════════════════════════════════════
   // RUN COMPLETE TRADING SESSION (20 TRADES MAX)
@@ -508,6 +522,11 @@ const CrucibleRealTrading = {
     this.isRunning = true;
     this.startTime = Date.now();
     
+    // 🎬 STARTUP ENTERTAINMENT 🎬
+    if (window.CrucibleEntertainment) {
+      window.CrucibleEntertainment.startSession();
+    }
+
     console.log('%c🚀 CRUCIBLE REAL TRADING SESSION STARTED', 'color: #00ff88; font-weight: bold; font-size: 16px;');
     console.log(`Fetching CoinGecko data for ${this.cryptos.length} cryptocurrencies...`);
     
@@ -572,6 +591,35 @@ const CrucibleRealTrading = {
             `P&L: $${trade.pnlAUD.toFixed(4)} AUD | Balance: $${trade.balanceAfter.toFixed(2)}`,
             `color: ${pnlColor}; font-weight: bold;`
           );
+          
+          // 🎬 ENTERTAINMENT INTEGRATION 🎬
+          if (window.CrucibleEntertainment) {
+            const x = window.innerWidth * 0.5 + (Math.random() - 0.5) * 400;
+            const y = window.innerHeight * 0.3 + (Math.random() - 0.5) * 200;
+            
+            if (trade.isWin) {
+              window.CrucibleEntertainment.celebrateWin(trade.pnlAUD, x, y);
+            } else {
+              window.CrucibleEntertainment.reactToLoss(trade.pnlAUD, x, y);
+            }
+            
+            // Update ticker
+            window.CrucibleEntertainment.updateTicker(
+              this.tradeState.wins,
+              this.tradeState.losses,
+              this.tradeState.equity,
+              this.calculateStreak()
+            );
+            
+            // Milestone announcements
+            if (tradesExecuted === 5) {
+              window.CrucibleEntertainment.showCommentary('🎂 5 TRADES! We got this!', 'neutral');
+            } else if (tradesExecuted === 10) {
+              window.CrucibleEntertainment.announcement('🏁 HALFWAY THERE! Let\'s GOOOO! 🚀');
+            } else if (tradesExecuted === this.config.maxTradesPerDay) {
+              window.CrucibleEntertainment.announcement('🏆 SESSION COMPLETE! YOU\'RE A LEGEND! 👑');
+            }
+          }
           
           tradesExecuted++;
           cyclesWithoutTrade = 0; // Reset counter when trade is executed
