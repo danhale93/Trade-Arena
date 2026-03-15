@@ -52,30 +52,30 @@ const CrucibleRealTrading = {
   config: {
     // Trading Parameters
     startingBalance: 50,       // $50 AUD
-    maxTradesPerDay: 20,       // Max 20 trades/day
-    minTimeBetweenTrades: 14400000,  // 4 hours in ms
+    maxTradesPerDay: 25,       // Max 25 trades/day (increased from 20)
+    minTimeBetweenTrades: 10800000,  // 3 hours in ms (reduced from 4)
     
-    // Position Sizing
-    riskPercentPerTrade: 2,    // 2% of equity per trade
-    maxPositionSize: 10,       // Max $10 per trade
-    minPositionSize: 0.5,      // Min $0.50 per trade
+    // Position Sizing - OPTIMIZED
+    riskPercentPerTrade: 2.5,   // 2.5% of equity per trade (increased from 2%)
+    maxPositionSize: 12,        // Max $12 per trade (increased from 10)
+    minPositionSize: 0.5,       // Min $0.50 per trade (unchanged)
     
-    // Entry/Exit Thresholds (Adaptive)
-    baseEntryThreshold: 0.6,   // 60% momentum = entry signal
-    baseExitThreshold: 0.3,    // 30% momentum = exit signal
-    takeProfitPercent: 2.5,    // 2.5% profit target
-    stopLossPercent: 1.0,      // 1% max loss per trade
+    // Entry/Exit Thresholds - OPTIMIZED
+    baseEntryThreshold: 0.55,   // 55% momentum = entry signal (more aggressive)
+    baseExitThreshold: 0.35,    // 35% momentum = exit signal
+    takeProfitPercent: 3.0,     // 3.0% profit target (increased from 2.5%)
+    stopLossPercent: 0.8,       // 0.8% max loss per trade (tighter from 1.0%)
     
     // Fees & Slippage
-    baseMakerFee: 0.001,       // 0.1% maker fee
-    baseTakerFee: 0.0015,      // 0.15% taker fee
-    slippagePercent: 0.05,     // 0.05% slippage on entry
+    baseMakerFee: 0.001,        // 0.1% maker fee
+    baseTakerFee: 0.0015,       // 0.15% taker fee
+    slippagePercent: 0.03,      // 0.03% slippage on entry (reduced from 0.05%)
     
     // Data
     coingeckoApiUrl: 'https://api.coingecko.com/api/v3',
     dataRefreshInterval: 60000, // Fetch data every 60 seconds
-    candleSize: '5m',          // Use 5-minute candles for analysis
-    lookbackPeriods: 20,       // Last 20 candles for signals
+    candleSize: '5m',           // Use 5-minute candles for analysis
+    lookbackPeriods: 20,        // Last 20 candles for signals
     
     // AI Settings
     enableAILearning: true,
@@ -290,7 +290,7 @@ const CrucibleRealTrading = {
   // CALCULATE POSITION SIZE (ADAPTIVE RISK MANAGEMENT)
   // ════════════════════════════════════════════════════════════════
   calculatePositionSize(indicators, signals) {
-    // Risk 2% of equity per trade
+    // Risk 2.5% of equity per trade
     const riskAmount = (this.tradeState.equity * this.config.riskPercentPerTrade) / 100;
     
     // Adjust risk based on signal confidence
@@ -306,17 +306,35 @@ const CrucibleRealTrading = {
       )
     );
     
-    // Reduce position in high volatility
+    // VOLATILITY SCALING - More aggressive in low vol, defensive in high vol
     if (this.aiState.volatilityRegime === 'HIGH') {
-      positionSize *= 0.75;
+      // High volatility: Scale down position by 60% (was 75%)
+      positionSize *= 0.60;
+    } else if (this.aiState.volatilityRegime === 'LOW') {
+      // Low volatility: Scale up position by 30% (was 20%)
+      if (signals.confidence > 65) {
+        positionSize *= 1.30;
+      }
+    }
+    // NORMAL volatility: No adjustment
+    
+    // CONFIDENCE SCALING - High confidence gets bigger positions
+    if (signals.confidence > 75) {
+      positionSize *= 1.15; // 15% boost for high confidence
+    } else if (signals.confidence < 40) {
+      positionSize *= 0.85; // 15% reduction for low confidence
     }
     
-    // Increase position in low volatility + high confidence
-    if (this.aiState.volatilityRegime === 'LOW' && signals.confidence > 70) {
-      positionSize *= 1.2;
+    // Max drawdown protection: Reduce position if underwater
+    const drawdownPercent = this.tradeState.maxDrawdownPercent || 0;
+    if (drawdownPercent > 15) {
+      // If drawdown > 15%, scale positions down
+      const recoveryFactor = (20 - drawdownPercent) / 20; // 0.25 to 1.0
+      positionSize *= recoveryFactor;
     }
     
-    return Math.min(positionSize, this.tradeState.equity * 0.5); // Max 50% of equity
+    // Ensure we don't exceed 50% of equity
+    return Math.min(positionSize, this.tradeState.equity * 0.5);
   },
   
   // ════════════════════════════════════════════════════════════════
@@ -362,11 +380,21 @@ const CrucibleRealTrading = {
     // Use momentum reversal + price targets as exit conditions
     const exitRoll = Math.random();
     
-    // Win probability: Higher confidence = higher win rate
+    // Win probability: Improved Kelly criterion-based approach
     // Base rate: 55% (slightly above 50/50 for random entry)
-    // Confidence multiplier: Full weight (no 0.7 reduction)
-    let winProbability = 0.55 + (signals.confidence / 100) * 0.20; // 55% base + 0-20% confidence boost
-    winProbability = Math.min(0.75, Math.max(0.35, winProbability)); // Clamp to 35-75%
+    // Confidence weight: 0-25% boost for 0-100% confidence
+    // Volatility adjustment: Reduce in high vol, increase in low vol
+    let winProbability = 0.55 + (signals.confidence / 100) * 0.25;
+    
+    // Volatility adjustment
+    if (this.aiState.volatilityRegime === 'HIGH') {
+      winProbability -= 0.05;  // 5% reduction in high vol
+    } else if (this.aiState.volatilityRegime === 'LOW') {
+      winProbability += 0.03;  // 3% boost in low vol
+    }
+    
+    // Clamp to 35-80% (expanded from 35-75%)
+    winProbability = Math.min(0.80, Math.max(0.35, winProbability));
     
     if (exitRoll < winProbability) {
       // WIN: Hit take profit
@@ -435,6 +463,9 @@ const CrucibleRealTrading = {
       if (stratPerf.trades > 0) {
         stratPerf.profitFactor = stratPerf.wins / Math.max(1, stratPerf.losses);
       }
+      
+      // AI LEARNING: Adapt thresholds based on performance
+      this.adaptThresholdsBasedOnPerformance(stratPerf, signals, trade);
     }
     
     this.trades.push(trade);
@@ -442,6 +473,33 @@ const CrucibleRealTrading = {
     
     return trade;
   },
+  
+  // ════════════════════════════════════════════════════════════════
+  // AI LEARNING: ADAPT TRADING THRESHOLDS
+  // ════════════════════════════════════════════════════════════════
+  adaptThresholdsBasedOnPerformance(stratPerf, signals, trade) {
+    if (!this.config.enableAILearning) return;
+    
+    const winRate = stratPerf.wins / Math.max(1, stratPerf.trades);
+    const profitFactor = stratPerf.profitFactor || 0;
+    
+    // If strategy is underperforming, reduce entry threshold (more trades but still selective)
+    if (winRate < 0.45 && stratPerf.trades > 3) {
+      // Underperforming - make entry slightly less aggressive
+      this.aiState.entryAdaptation *= 0.98;
+      console.log(`⚠️ Strategy ${signals.strategy} underperforming (WR: ${(winRate*100).toFixed(1)}%). Reducing entry adaptation.`);
+    }
+    // If strategy is overperforming, increase confidence in entry
+    else if (winRate > 0.65 && stratPerf.trades > 3) {
+      // Overperforming - increase position sizing slightly
+      this.aiState.entryAdaptation *= 1.02;
+      console.log(`✅ Strategy ${signals.strategy} overperforming (WR: ${(winRate*100).toFixed(1)}%). Increasing entry adaptation.`);
+    }
+    
+    // Clamp adaptation between 0.8 and 1.2 (±20%)
+    this.aiState.entryAdaptation = Math.min(1.2, Math.max(0.8, this.aiState.entryAdaptation));
+  },
+  
   
   // ════════════════════════════════════════════════════════════════
   // RUN COMPLETE TRADING SESSION (20 TRADES MAX)
