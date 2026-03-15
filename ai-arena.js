@@ -46,6 +46,14 @@ const AI_ARENA = {
       style: 'Read market conditions, adapt strategy, balance opportunity vs risk',
       riskProfile: 'MEDIUM',
       confidence_range: [0.55, 0.80],
+    },
+    FALLBACK: {
+      name: 'FALLBACK',
+      emoji: '🤖',
+      personality: 'Fallback system when AI models are unavailable',
+      style: 'Simple technical indicator based decisions',
+      riskProfile: 'MEDIUM',
+      confidence_range: [0.5, 0.75],
     }
   },
 
@@ -540,13 +548,16 @@ function updateModelPerformance(decision, outcome) {
 function getArenaInsights() {
   const perf = arenaState.modelPerformance;
   const models = Object.entries(perf)
-    .map(([name, stats]) => ({
-      name,
-      accuracy: parseFloat(stats.accuracy) || 0,
-      total: stats.wins + stats.losses,
-      wins: stats.wins,
-      emoji: AI_ARENA.models[name].emoji,
-    }))
+    .map(([name, stats]) => {
+      const modelConfig = AI_ARENA.models[name];
+      return {
+        name,
+        accuracy: parseFloat(stats.accuracy) || 0,
+        total: stats.wins + stats.losses,
+        wins: stats.wins,
+        emoji: modelConfig?.emoji || '🤖',  // Default emoji if model not found
+      };
+    })
     .sort((a, b) => b.accuracy - a.accuracy);
   
   return {
