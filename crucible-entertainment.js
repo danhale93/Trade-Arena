@@ -16,6 +16,22 @@
  */
 
 const CrucibleEntertainment = {
+  // Bot Configuration - Editable Names & Colors
+  bots: {
+    primary: {
+      name: 'ARIA',  // Change to any name you want
+      color: '#00ff88',  // Green - wins
+      emoji: '💅',
+      description: 'Hot Nerdy Genius'
+    }
+  },
+
+  // Randomize or customize bot name on init
+  getBotName() {
+    const names = ['ARIA', 'NOVA', 'VIBE', 'PIXEL', 'NEON', 'SAGE', 'IRIS', 'ZARA', 'LUNA', 'ECHO'];
+    return this.bots.primary.name || names[Math.floor(Math.random() * names.length)];
+  },
+
   // Audio URLs (Using free royalty-free sources)
   sounds: {
     win: 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3',
@@ -269,50 +285,146 @@ const CrucibleEntertainment = {
           position: fixed;
           top: 20px;
           left: 20px;
-          background: rgba(0, 0, 0, 0.8);
+          background: rgba(0, 0, 0, 0.9);
           color: #00ff88;
-          padding: 15px 25px;
-          border-radius: 10px;
+          padding: 25px 35px;
+          border-radius: 15px;
           font-family: 'Courier New', monospace;
-          font-size: 16px;
-          font-weight: bold;
-          border: 2px solid #00ff88;
+          font-size: 28px;
+          font-weight: 900;
+          border: 3px solid #00ff88;
           z-index: 100000;
-          box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+          box-shadow: 0 0 40px rgba(0, 255, 136, 0.8);
+          letter-spacing: 2px;
+          line-height: 1.8;
         }
 
         .win-counter {
           color: #00ff88;
+          font-size: 32px;
+          font-weight: 900;
+          margin: 8px 0;
         }
 
         .loss-counter {
           color: #ff3333;
+          font-size: 32px;
+          font-weight: 900;
+          margin: 8px 0;
         }
 
         .balance-display {
           color: #00ffff;
-          font-size: 20px;
-          margin-top: 10px;
+          font-size: 40px;
+          font-weight: 900;
+          margin-top: 15px;
+          margin-bottom: 10px;
+          text-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
+          letter-spacing: 1px;
         }
 
         .streak {
           animation: glow 1s infinite;
           color: #ffff00;
-          font-size: 18px;
-          margin-top: 5px;
+          font-size: 32px;
+          font-weight: 900;
+          margin-top: 10px;
+          text-shadow: 0 0 15px rgba(255, 255, 0, 0.8);
+        }
+
+        .bot-header {
+          font-size: 36px;
+          font-weight: 900;
+          margin-bottom: 15px;
+          padding-bottom: 10px;
+          border-bottom: 3px solid;
+          text-shadow: 0 0 20px;
+          letter-spacing: 2px;
+        }
+
+        .bot-name {
+          font-size: 32px;
+          font-weight: 900;
+          text-transform: uppercase;
+          letter-spacing: 3px;
+        }
+
+        .bot-status {
+          font-size: 14px;
+          opacity: 0.8;
+          margin-top: 2px;
+        }
+
+        .stats-line {
+          display: flex;
+          align-items: center;
+          margin: 8px 0;
+          font-size: 28px;
+          font-weight: 900;
+        }
+
+        .stat-icon {
+          margin-right: 10px;
+          font-size: 32px;
+        }
+
+        .stat-value {
+          flex: 1;
         }
       </style>
 
       <div class="trade-ticker" id="trade-ticker">
-        <div>📊 CRUCIBLE TRADING SHOW</div>
-        <div class="win-counter">✅ WINS: 0</div>
-        <div class="loss-counter">❌ LOSSES: 0</div>
-        <div class="balance-display">💰 BALANCE: $50.00</div>
-        <div class="streak">🔥 STREAK: 0</div>
+        <div class="bot-header" id="bot-header">
+          <div class="bot-name" id="bot-name">ARIA 💅</div>
+          <div class="bot-status" id="bot-status">Hot Nerdy Genius</div>
+        </div>
+        <div class="stats-line">
+          <span class="stat-icon">✅</span>
+          <span class="stat-value win-counter" id="wins-display">WINS: 0</span>
+        </div>
+        <div class="stats-line">
+          <span class="stat-icon">❌</span>
+          <span class="stat-value loss-counter" id="losses-display">LOSSES: 0</span>
+        </div>
+        <div class="stats-line">
+          <span class="stat-icon">💰</span>
+          <span class="balance-display" id="balance-display">$50.00</span>
+        </div>
+        <div class="stats-line">
+          <span class="stat-icon">🔥</span>
+          <span class="streak" id="streak-display">STREAK: 0</span>
+        </div>
       </div>
     `;
 
     document.body.appendChild(container);
+
+    // Initialize bot name and color
+    this.initializeBotDisplay();
+  },
+
+  // Initialize bot display with name and colors
+  initializeBotDisplay() {
+    const botName = this.getBotName();
+    const botColor = this.bots.primary.color;
+    const botEmoji = this.bots.primary.emoji;
+    
+    const botHeader = document.getElementById('bot-header');
+    const botNameDiv = document.getElementById('bot-name');
+    const ticker = document.getElementById('trade-ticker');
+    
+    if (botHeader && botNameDiv) {
+      botNameDiv.textContent = `${botName} ${botEmoji}`;
+      botNameDiv.style.color = botColor;
+      botHeader.style.borderBottomColor = botColor;
+      botHeader.style.textShadow = `0 0 20px ${botColor}`;
+    }
+    
+    if (ticker) {
+      ticker.style.color = botColor;
+      ticker.style.borderColor = botColor;
+      ticker.style.boxShadow = `0 0 40px ${botColor}`;
+    }
   },
 
   // Load all sound effects
@@ -458,16 +570,15 @@ const CrucibleEntertainment = {
 
   // Update live ticker
   updateTicker(wins, losses, balance, streak) {
-    const ticker = document.getElementById('trade-ticker');
-    if (ticker) {
-      ticker.innerHTML = `
-        <div>📊 CRUCIBLE TRADING SHOW</div>
-        <div class="win-counter">✅ WINS: ${wins}</div>
-        <div class="loss-counter">❌ LOSSES: ${losses}</div>
-        <div class="balance-display">💰 BALANCE: $${balance.toFixed(2)}</div>
-        <div class="streak">🔥 STREAK: ${streak}</div>
-      `;
-    }
+    const winsDisplay = document.getElementById('wins-display');
+    const lossesDisplay = document.getElementById('losses-display');
+    const balanceDisplay = document.getElementById('balance-display');
+    const streakDisplay = document.getElementById('streak-display');
+    
+    if (winsDisplay) winsDisplay.textContent = `WINS: ${wins}`;
+    if (lossesDisplay) lossesDisplay.textContent = `LOSSES: ${losses}`;
+    if (balanceDisplay) balanceDisplay.textContent = `$${balance.toFixed(2)}`;
+    if (streakDisplay) streakDisplay.textContent = `STREAK: ${streak}`;
   },
 
   // Get random commentary
