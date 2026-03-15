@@ -462,7 +462,11 @@ const CrucibleRealTrading = {
         const crypto = this.cryptos[cryptoIndex % this.cryptos.length];
         const candles = this.historicalData[crypto.id];
         
+        console.log(`🔄 Cycle ${cyclesWithoutTrade}: Checking ${crypto.symbol}...`);
+        console.log(`   Candles loaded: ${candles ? candles.length : 'NONE'}`);
+        
         if (!candles || candles.length < 10) {
+          console.log(`   ❌ Insufficient data (need 10+, have ${candles ? candles.length : 0}), skipping`);
           cryptoIndex++;
           cyclesWithoutTrade++;
           continue;
@@ -470,19 +474,25 @@ const CrucibleRealTrading = {
         
         // Calculate indicators from latest candles
         const indicators = this.calculateIndicators(candles);
+        console.log(`   Indicators calculated: ${indicators ? 'YES' : 'NO'}`);
+        
         if (!indicators) {
+          console.log(`   ❌ Indicator calculation failed`);
           cryptoIndex++;
           cyclesWithoutTrade++;
-          console.log(`⚠️  No indicators for ${crypto.symbol}`);
           continue;
         }
         
+        console.log(`   ✅ Indicators: RSI=${indicators.rsi.toFixed(1)} Mom=${indicators.momentum.toFixed(2)}%`);
+        
         // Generate trading signal (ALWAYS generates a signal now)
         const signals = this.generateSignals(indicators);
+        console.log(`   Signals: entrySignal=${signals.entrySignal} direction=${signals.direction} conf=${signals.confidence.toFixed(0)}%`);
         console.log(`📊 ${crypto.symbol} | RSI: ${indicators.rsi.toFixed(1)} | Mom: ${indicators.momentum.toFixed(2)}% | Signal: ${signals.strategy} | Conf: ${signals.confidence.toFixed(0)}%`);
         
         // Execute trade if signal is valid (confidence > 20, which should always be true)
         if (signals && signals.entrySignal && signals.confidence > 20) {  // Lowered from 40 to 20
+          console.log(`   ✅ TRADE CONDITIONS MET! Executing trade...`);
           const positionSize = this.calculatePositionSize(indicators, signals);
           const trade = await this.executeTrade(crypto, indicators, signals, positionSize);
           
@@ -498,6 +508,7 @@ const CrucibleRealTrading = {
           tradesExecuted++;
           cyclesWithoutTrade = 0; // Reset counter when trade is executed
         } else {
+          console.log(`   ❌ Trade conditions NOT met: entrySignal=${signals.entrySignal} conf=${signals.confidence.toFixed(0)}% (need >20)`);
           cyclesWithoutTrade++;
         }
         
