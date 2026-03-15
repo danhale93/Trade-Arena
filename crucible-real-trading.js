@@ -255,21 +255,26 @@ const CrucibleRealTrading = {
       signals.entrySignal = true;
       signals.direction = 'LONG';
       signals.strategy = 'MOMENTUM_LONG';
-      // Confidence: RSI distance from 50, or momentum strength
-      signals.confidence = Math.min(100, Math.abs(indicators.rsi - 50) + Math.abs(indicators.momentum * 10));
+      // Confidence: RSI distance from 50 (0-50 points) + momentum (0-50 points)
+      // Max 100% confidence when both indicators strongly support entry
+      const rsiDistance = Math.min(50, Math.abs(indicators.rsi - 50) * 2); // 0-50 (double the distance)
+      const momentumStrength = Math.min(50, Math.abs(indicators.momentum * 5)); // 0-50 (momentum * 5)
+      signals.confidence = Math.min(100, rsiDistance + momentumStrength);
       signals.rationale = `RSI ${indicators.rsi.toFixed(1)} | Momentum ${indicators.momentum.toFixed(2)}%`;
     } else {
       // Bias towards SHORT
       signals.entrySignal = true;
       signals.direction = 'SHORT';
       signals.strategy = 'MOMENTUM_SHORT';
-      signals.confidence = Math.min(100, Math.abs(indicators.rsi - 50) + Math.abs(indicators.momentum * 10));
+      const rsiDistance = Math.min(50, Math.abs(indicators.rsi - 50) * 2);
+      const momentumStrength = Math.min(50, Math.abs(indicators.momentum * 5));
+      signals.confidence = Math.min(100, rsiDistance + momentumStrength);
       signals.rationale = `RSI ${indicators.rsi.toFixed(1)} | Momentum ${indicators.momentum.toFixed(2)}%`;
     }
     
     // Ensure minimum confidence threshold
-    if (signals.confidence < 25) {
-      signals.confidence = 25; // Always at least 25% confidence
+    if (signals.confidence < 30) {
+      signals.confidence = 30; // Always at least 30% confidence
     }
     
     // Apply AI adaptation to thresholds
@@ -356,7 +361,12 @@ const CrucibleRealTrading = {
     // Simulate exit within next 4 hours
     // Use momentum reversal + price targets as exit conditions
     const exitRoll = Math.random();
-    const winProbability = Math.min(0.65, (signals.confidence / 100) * 0.7); // Max 65% based on confidence
+    
+    // Win probability: Higher confidence = higher win rate
+    // Base rate: 55% (slightly above 50/50 for random entry)
+    // Confidence multiplier: Full weight (no 0.7 reduction)
+    let winProbability = 0.55 + (signals.confidence / 100) * 0.20; // 55% base + 0-20% confidence boost
+    winProbability = Math.min(0.75, Math.max(0.35, winProbability)); // Clamp to 35-75%
     
     if (exitRoll < winProbability) {
       // WIN: Hit take profit
