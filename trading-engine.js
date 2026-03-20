@@ -37,7 +37,8 @@ class TradingEngine {
                         sellExchange: dex1Price > dex2Price ? 'uniswap' : 'sushiswap',
                         buyPrice: Math.min(dex1Price, dex2Price),
                         sellPrice: Math.max(dex1Price, dex2Price),
-                        profitMargin: profitMargin.toFixed(2),
+                        // store numeric profit margin (percentage), not a string
+                        profitMargin: Number(profitMargin.toFixed(2)),
                         volume: pair.volume,
                         riskScore: this.calculateRiskScore(pair.volatility, profitMargin),
                         timestamp: Date.now(),
@@ -181,7 +182,10 @@ class TradingEngine {
         }
 
         // Volume Analysis
-        if (volume > volume * 1.5) { // Above average
+        // NOTE: previous code compared `volume > volume * 1.5` (always false).
+        // If caller provides an average/historical volume value (avgVolume) use that
+        // to detect unusually large volume spikes. Otherwise skip this check.
+        if (marketData.avgVolume && volume > marketData.avgVolume * 1.5) { // Above average
             confidence += 0.2;
         }
 
@@ -294,13 +298,12 @@ class TradingEngine {
             trade.executedTime = Date.now();
             
             // Simulate profit based on opportunity margin
-            const simulatedProfit = 
-                (opportunity.profitMargin || 0.5) * 
-                parseFloat(trade.size) * 
-                0.8; // 80% success rate
+            // opportunity.profitMargin is a percentage (e.g. 1.2 for 1.2%).
+            const margin = Number(opportunity.profitMargin) || 0.5; // percent
+            const simulatedProfit = (margin / 100) * parseFloat(trade.size) * 0.8; // 80% realized
 
-            trade.profit = simulatedProfit.toFixed(4);
-            trade.profitPercent = ((simulatedProfit / parseFloat(trade.size)) * 100).toFixed(2);
+            trade.profit = Number(simulatedProfit.toFixed(4));
+            trade.profitPercent = Number(((simulatedProfit / parseFloat(trade.size)) * 100).toFixed(2));
             trade.status = 'CLOSED';
             trade.closedTime = Date.now();
         } catch (e) {
