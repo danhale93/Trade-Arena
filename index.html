@@ -2259,7 +2259,7 @@ async function runEnsemble(marketData, bet, botId, politicianData, bot){
   // With ~0.5% costs per trade, need at least 1% move to break even
   // If move is tiny, agents should hold to avoid losing money on execution
   let minMoveRequirement = 1.5; // percent
-  let extraCtx;
+  let extraCtx = '';
   if(targetCoin && Math.abs(targetCoin.price_change_percentage_24h || 0) < minMoveRequirement) {
     // Low volatility market - signal agents to be very cautious
     extraCtx = `${edgeContext}\n⚠️ LOW VOLATILITY: ${targetToken} only moved ${(targetCoin.price_change_percentage_24h||0).toFixed(1)}% (need ${minMoveRequirement}%+ to cover costs). Trade only if conviction >0.85.`;
