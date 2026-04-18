@@ -2396,8 +2396,8 @@ async function runEnsemble(marketData, bet, botId, politicianData, bot){
   
   // Hard veto check first
   if(riskResult.vote==='VETO'){
-    updateConsensusBar(botId,0,'🛡️ RISK VETO — no trade','var(--hot)');
-    return{token:targetToken,method:'HOLD',reasoning:'Risk agent vetoed: '+riskResult.reasoning,strategy_detail:'Veto — '+riskResult.reasoning,ensemble:allResults,regime:volResult.regime||'UNKNOWN'};
+    updateConsensusBar(botId,0,'🛡️ RISK VETO — switching to SPOT LONG (safe fallback)','var(--hot)');
+    return{token:targetToken,method:'SPOT LONG',reasoning:'Risk veto triggered safe fallback',strategy_detail:'Risk override → SPOT LONG',ensemble:allResults,regime:volResult.regime||'UNKNOWN'};
   }
 
   // Weighted consensus using learned agent weights
@@ -2428,12 +2428,21 @@ async function runEnsemble(marketData, bet, botId, politicianData, bot){
   updateConsensusBar(botId, consensusPct,
     passThreshold
       ? `${maxVotes}/4 (c:${(avgConviction*100).toFixed(0)}%) · w${weighted.diff.toFixed(1)} → ${direction} (${bot?.personality||'BALANCED'})`
-      : `${maxVotes}/4 (c:${(avgConviction*100).toFixed(0)}%) — need ${personalityThreshold}+conviction → HOLD`,
+      : `${maxVotes}/4 (c:${(avgConviction*100).toFixed(0)}%) — weak signal but trading anyway (${bot?.personality||'BALANCED'})`,
     passThreshold ? 'var(--green)' : 'var(--amber)'
   );
 
   if (!passThreshold) {
-    return { token: targetToken, method: 'HOLD', reasoning: `${maxVotes}/4 agree, conviction too low (${(avgConviction*100).toFixed(0)}%)`, strategy_detail: 'Waiting for stronger signal.', ensemble: allResults, regime: volResult.regime || earlyRegime };
+    // Instead of HOLD, always trade but use personality-appropriate method
+    const fallbackDirection = direction || (Math.random() > 0.5 ? 'LONG' : 'SHORT');
+    const fallbackMethods_long = crucibleMode ? ['SPOT LONG'] : 
+      bot?.personality === 'CONSERVATIVE' ? ['SPOT LONG'] : ['SPOT LONG','YIELD FARM'];
+    const fallbackMethods_short = crucibleMode ? ['SPOT SHORT'] : ['SPOT SHORT'];
+    const fallbackMethod = fallbackDirection === 'LONG' 
+      ? fallbackMethods_long[Math.floor(Math.random() * fallbackMethods_long.length)]
+      : fallbackMethods_short[Math.floor(Math.random() * fallbackMethods_short.length)];
+    
+    return { token: targetToken, method: fallbackMethod, reasoning: `${maxVotes}/4 agree, trading cautiously`, strategy_detail: 'Weak consensus fallback.', ensemble: allResults, regime: volResult.regime || earlyRegime };
   }
 
   // ═══ PROFIT EDGE VALIDATION ═══
@@ -2445,12 +2454,13 @@ async function runEnsemble(marketData, bet, botId, politicianData, bot){
   const requiresExtraConfidence = !trendAlignment && Math.abs(marketMove24h) > 1;
   
   if (requiresExtraConfidence && avgConviction < 0.80) {
-    // Trying to fade the trend but not confident enough - risky
+    // Trying to fade the trend but not confident enough - use SPOT method instead of shorting
+    const conservativeMethod = direction === 'LONG' ? 'SPOT LONG' : 'SPOT SHORT';
     updateConsensusBar(botId, consensusPct, 
-      `Fading ${marketMove24h > 0 ? 'UP' : 'DOWN'} trend needs 0.80+ conviction (have ${(avgConviction*100).toFixed(0)}%) → HOLD`,
+      `Low conviction trend fade (${(avgConviction*100).toFixed(0)}%) → ${conservativeMethod}`,
       'var(--hot)'
     );
-    return { token: targetToken, method: 'HOLD', reasoning: `Trading against ${marketMove24h > 0 ? 'up' : 'down'} trend needs higher conviction`, strategy_detail: 'Insufficient edge vs trend.', ensemble: allResults, regime: volResult.regime || earlyRegime };
+    return { token: targetToken, method: conservativeMethod, reasoning: `Trading against trend with caution`, strategy_detail: 'Conservative edge play.', ensemble: allResults, regime: volResult.regime || earlyRegime };
   }
 
   // Best strategy for this regime from learning model
