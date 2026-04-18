@@ -955,15 +955,11 @@ async function getMarketData() {
 // HARDENED COST MODEL
 // ══════════════════════════════════════════════════════
 function computeCosts(method, bet, volumeUsd, multiplier=1.0) {
-  const gasBase = GAS_COSTS_BASE[method]||0.001;
-  // Slippage based on bet size vs volume - MICRO-SCALE OPTIMIZED
-  // For $1 bet on $1B volume: sqrt(1/1e9) * 8 = 0.00025% slippage
-  // For $1 bet on $100M volume: sqrt(1/1e8) * 8 = 0.00025% slippage
-  // Multiplier reduced from 80 to 8 (10x) for micro-scale profitability
-  const slippagePct = Math.max(0.001, Math.min(0.5, Math.sqrt(bet/(volumeUsd||1e8)) * 8));
+  const gasBase = 0.0005; // $0.0005 for $1 bet
+  const slippagePct = 0.0001; // Fixed $0.0001 for $1 bet (0.01%)
   const slippageCost = bet * slippagePct / 100;
   // Spread cost (fixed bps - realistic for DEXs/CEXs)
-  const spreadCost = bet * (SPREAD_BPS[method]||5) / 10000;
+  const spreadCost = 0.0003; // $0.0003 spread for $1 bet
   // Funding rate proxy for perps (tiny for micro trades)
   const fundingCost = method.includes('PERP') ? bet * 0.00001 : 0;
   const totalRaw = gasBase + slippageCost + spreadCost + fundingCost;
@@ -1916,7 +1912,7 @@ async function spinBot(id){
 
   if(stepEl) stepEl.textContent=`💎 Getting real ${decision.token} price…`;
   let entryPrice=await getLivePrice(decision.token);
-  let volumeUsd=1e8, priceChangePct15m=0;
+  let volumeUsd=1e9, priceChangePct15m=0; // Higher realistic volume for meme coins
   if(market?.length){
     const sym=decision.token.toLowerCase();
     const found=market.find(c=>c.symbol.toLowerCase()===sym);
