@@ -1008,8 +1008,6 @@ function computeBaselines(entryPrice, exitPrice, bet, method, volumeUsd, priceCh
 // POSITION LIFECYCLE
 // ══════════════════════════════════════════════════════
 async function openPosition(bot, decision, entryPrice, bet, volumeUsd, priceChangePct15m) {
-  if(decision.method==='HOLD') return null;
-  
   // CRITICAL: Check if sufficient balance exists before opening trade
   if(balance < bet) {
     const tick=document.getElementById('mtick-'+bot.id);
@@ -1954,17 +1952,7 @@ async function spinBot(id){
   if(spinEl){spinEl.disabled=false;spinEl.classList.remove('going');spinEl.textContent='🎰 SPIN';}
   bot.spinning=false;
 
-  if(decision.method==='HOLD'){
-    const rEl=document.getElementById('mresult-'+id), tEl=document.getElementById('mrtitle-'+id), aEl=document.getElementById('mramt-'+id), dEl=document.getElementById('mrdetail-'+id);
-    if(rEl&&tEl&&aEl&&dEl){
-      tEl.textContent='🧠 HOLD';tEl.style.cssText='background:linear-gradient(180deg,#fff,var(--amber));-webkit-background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 8px rgba(255,179,0,.4))';
-      aEl.textContent='No trade taken';aEl.style.color='var(--amber)';
-      dEl.innerHTML=decision.strategy_detail+'<br><span style="color:#555;font-size:7px">'+decision.reasoning+'</span>';
-      rEl.classList.add('show');
-    }
-    addToLog({method:'HOLD',token:decision.token,netPnl:0,isWin:false,isHold:true,botId:id,entryPrice,exitPrice:null,costs:{total:0},reasoning:decision.reasoning});
-    return;
-  }
+  // Always execute a trade - HOLD method has been removed
   await openPosition(bot,decision,entryPrice,bot.bet,volumeUsd,priceChangePct15m);
   updateQuantReport();
 }
@@ -2481,6 +2469,9 @@ VOTE SUMMARY — ${direction} wins (${maxVotes}/4 raw, weighted score ${weighted
 LEARNING MODEL RECOMMENDATION: ${regimeBestStrat ? `In ${volResult.regime||earlyRegime} regime, ${regimeBestStrat} has highest historical win rate — prefer it` : 'No historical preference yet'}
 
 Available: ${allowedMethods}
+
+CRITICAL: You MUST return a real trading method. NEVER return HOLD or any other method. If unsure, default to ${direction==='LONG'?'SPOT LONG':'SPOT SHORT'}.
+
 Respond ONLY with JSON:
 {"token":"${targetToken}","method":"SPOT LONG|SPOT SHORT|YIELD FARM|PERP LONG|PERP SHORT","reasoning":"max 65 chars","strategy_detail":"max 85 chars"}`;
 
@@ -2514,10 +2505,17 @@ Respond ONLY with JSON:
     if(data.error){ API_CB.recordFailure(); throw new Error(data.error.message); }
     const parsed=JSON.parse((data.content?.[0]?.text||'{}').replace(/```json|```/g,'').trim());
     API_CB.recordSuccess();
-    if(crucibleMode&&!CRUCIBLE_METHODS.includes(parsed.method)) parsed.method=direction==='LONG'?'SPOT LONG':'SPOT SHORT';
+    
+    // CRITICAL: Enforce valid trading method - never allow HOLD
+    let method = parsed.method || (direction==='LONG'?'SPOT LONG':'SPOT SHORT');
+    const validMethods = crucibleMode ? ['SPOT LONG','SPOT SHORT'] : ['SPOT LONG','SPOT SHORT','YIELD FARM','PERP LONG','PERP SHORT'];
+    if(!validMethods.includes(method) || method === 'HOLD') {
+      method = direction==='LONG'?'SPOT LONG':'SPOT SHORT';
+    }
+    
     return{
       token:parsed.token||targetToken,
-      method:parsed.method||(direction==='LONG'?'SPOT LONG':'SPOT SHORT'),
+      method:method,
       reasoning:parsed.reasoning||`${maxVotes}/4 agents agree ${direction}`,
       strategy_detail:parsed.strategy_detail||'Ensemble consensus trade.',
       ensemble:allResults,
