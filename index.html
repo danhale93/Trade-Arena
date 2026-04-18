@@ -852,11 +852,11 @@ const EXIT_TIMES = {
 };
 // Base gas costs per strategy (USD)
 const GAS_COSTS_BASE = {
-  'SPOT LONG':0.12,'SPOT SHORT':0.18,'YIELD FARM':0.35,
-  'PERP LONG':0.22,'PERP SHORT':0.22,'HOLD':0
+  'SPOT LONG':0.001,'SPOT SHORT':0.0015,'YIELD FARM':0.003,
+  'PERP LONG':0.002,'PERP SHORT':0.002,'HOLD':0
 };
-// Spread penalty (basis points per leg) — conservative fixed component
-const SPREAD_BPS = { 'SPOT LONG':8,'SPOT SHORT':10,'YIELD FARM':6,'PERP LONG':12,'PERP SHORT':12,'HOLD':0 };
+// Spread penalty (basis points per leg) — micro-scale friendly
+const SPREAD_BPS = { 'SPOT LONG':5,'SPOT SHORT':6,'YIELD FARM':4,'PERP LONG':8,'PERP SHORT':8,'HOLD':0 };
 
 const COINGECKO_IDS = {
   'ETH':'ethereum','BTC':'bitcoin','SOL':'solana','MATIC':'matic-network',
@@ -871,7 +871,7 @@ const CRUCIBLE_METHODS = ['SPOT LONG','SPOT SHORT','HOLD'];
 // ══════════════════════════════════════════════════════
 // GLOBAL STATE
 // ══════════════════════════════════════════════════════
-let balance=10000, startBalance=10000, totalPnl=0;
+let balance=50, startBalance=50, totalPnl=0;
 let closedTrades=[], openPositions=[], equityHistory=[10000];
 let agentHistory=[]; // per-agent vote accuracy for quant report
 let baselines={ random:{trades:[]}, long:{trades:[]}, momentum:{trades:[]} };
@@ -940,16 +940,17 @@ async function getMarketData() {
 // HARDENED COST MODEL
 // ══════════════════════════════════════════════════════
 function computeCosts(method, bet, volumeUsd, multiplier=1.0) {
-  const gasBase = GAS_COSTS_BASE[method]||0.15;
-  // Slippage based on bet size vs volume
-  // Small bet on large volume = near 0, large bet on small volume = higher
-  // sqrt(bet/volume) * 80 gives: $100 on $1B → 0.025%, $100 on $100M → 0.08%
-  const slippagePct = Math.max(0.01, Math.min(1.5, Math.sqrt(bet/(volumeUsd||1e8)) * 80));
+  const gasBase = GAS_COSTS_BASE[method]||0.001;
+  // Slippage based on bet size vs volume - MICRO-SCALE OPTIMIZED
+  // For $1 bet on $1B volume: sqrt(1/1e9) * 8 = 0.00025% slippage
+  // For $1 bet on $100M volume: sqrt(1/1e8) * 8 = 0.00025% slippage
+  // Multiplier reduced from 80 to 8 (10x) for micro-scale profitability
+  const slippagePct = Math.max(0.001, Math.min(0.5, Math.sqrt(bet/(volumeUsd||1e8)) * 8));
   const slippageCost = bet * slippagePct / 100;
   // Spread cost (fixed bps - realistic for DEXs/CEXs)
-  const spreadCost = bet * (SPREAD_BPS[method]||8) / 10000;
-  // Funding rate proxy for perps (small carry cost)
-  const fundingCost = method.includes('PERP') ? bet * 0.001 : 0;
+  const spreadCost = bet * (SPREAD_BPS[method]||5) / 10000;
+  // Funding rate proxy for perps (tiny for micro trades)
+  const fundingCost = method.includes('PERP') ? bet * 0.00001 : 0;
   const totalRaw = gasBase + slippageCost + spreadCost + fundingCost;
   return {
     gas: gasBase * multiplier,
@@ -1743,7 +1744,7 @@ function renderBot(bot){
     <div class="consensus-bar-wrap"><div class="consensus-bar-fill" id="cbar-${bot.id}" style="width:0%;background:var(--dim)"></div></div>
     <div class="m-controls">
       <div class="m-bet-row" id="mbets-${bot.id}">
-        ${[1,5,10,25,50,100].map(v=>`<button class="m-bet${v===10?' on':''}" data-bet="${v}" onclick="setBet(${bot.id},${v})">$${v}</button>`).join('')}
+        ${[0.10,0.25,0.50,1.00,2.00,5.00].map(v=>`<button class="m-bet${v===1.00?' on':''}" data-bet="${v}" onclick="setBet(${bot.id},${v})">$${v.toFixed(2)}</button>`).join('')}
       </div>
       <div class="m-bottom">
         <button class="spin-btn" id="mspin-${bot.id}" onclick="spinBot(${bot.id})">🎰  SPIN</button>
