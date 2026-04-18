@@ -606,6 +606,21 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         <button class="crucible-toggle" id="crucibleBtn" onclick="toggleCrucible()">OFF</button>
       </div>
 
+      <!-- Crucible Controls -->
+      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
+        <label style="color:var(--dim);font-size:10px">Mode:</label>
+        <select id="crucibleMode" style="padding:4px 8px;background:var(--chrome);color:#fff;border:1px solid var(--border);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px">
+          <option value="TEST">TEST (no API)</option>
+          <option value="REAL">REAL (live API)</option>
+          <option value="ENTERTAINMENT">ENTERTAINMENT</option>
+        </select>
+        
+        <label style="color:var(--dim);font-size:10px">Trades:</label>
+        <input type="number" id="crucibleTradeCount" value="50" min="1" max="1000" style="width:60px;padding:4px 6px;background:var(--chrome);color:#fff;border:1px solid var(--border);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px">
+        
+        <button onclick="runCrucibleBatch()" style="padding:6px 14px;background:linear-gradient(90deg,var(--purple),var(--cyan));border:none;border-radius:4px;color:#fff;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;cursor:pointer;white-space:nowrap">▶ RUN BATCH</button>
+      </div>
+
       <!-- Databricks Genie Config -->
       <div class="db-config" id="dbConfig">
         <div class="db-config-title">🧱 DATABRICKS GENIE <span style="color:var(--dim);font-size:7px;font-family:'Share Tech Mono',monospace" id="dbStatus">NOT CONFIGURED</span></div>
@@ -1417,6 +1432,51 @@ function updateCrucible() {
   const pct=Math.min(crucibleCount/100*100,100);
   const fill=document.getElementById('crucibleFill'); if(fill) fill.style.width=pct+'%';
   setVal('crucibleCount',crucibleCount+' / 100');
+}
+
+async function runCrucibleBatch() {
+  const mode = document.getElementById('crucibleMode')?.value || 'TEST';
+  const tradeCount = parseInt(document.getElementById('crucibleTradeCount')?.value || '50');
+  
+  if(tradeCount < 1 || tradeCount > 1000) {
+    alert('Trade count must be between 1 and 1000');
+    return;
+  }
+  
+  // Reset counters
+  crucibleCount = 0;
+  updateCrucible();
+  
+  // Run batch of trades
+  const startBalance = balance;
+  let tradesRun = 0;
+  
+  for(let i = 0; i < tradeCount && balance > 0; i++) {
+    // Pick a random bot that can trade
+    const availableBots = bots.filter(b => !b.spinning && !b.cooling && balance >= 0.10);
+    if(availableBots.length === 0) {
+      console.log(`Crucible: Stopped at ${tradesRun} trades (no available bots)`);
+      break;
+    }
+    
+    const bot = availableBots[Math.floor(Math.random() * availableBots.length)];
+    
+    // Use a default bet if none selected
+    if(!bot.bet || bot.bet < 0.10) bot.bet = 1.00;
+    
+    // Run the trade
+    await spinBot(bot.id);
+    tradesRun++;
+    
+    // Wait for trade to settle
+    await new Promise(r => setTimeout(r, 500 + Math.random() * 1000));
+  }
+  
+  const endBalance = balance;
+  const pnl = endBalance - startBalance;
+  const pnlPct = ((pnl / startBalance) * 100).toFixed(2);
+  
+  alert(`Crucible Batch Complete!\n\nMode: ${mode}\nTrades: ${tradesRun}\nStart: $${startBalance.toFixed(2)}\nEnd: $${endBalance.toFixed(2)}\nP&L: ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)} (${pnlPct}%)`);
 }
 
 // ══════════════════════════════════════════════════════
