@@ -941,10 +941,12 @@ async function getMarketData() {
 // ══════════════════════════════════════════════════════
 function computeCosts(method, bet, volumeUsd, multiplier=1.0) {
   const gasBase = GAS_COSTS_BASE[method]||0.15;
-  // Nonlinear slippage: sqrt(bet/volume) * scaling factor, min 3bps
-  const slippagePct = Math.max(0.03, Math.min(2.0, Math.sqrt(bet/(volumeUsd||1e8)) * 150));
+  // Slippage based on bet size vs volume
+  // Small bet on large volume = near 0, large bet on small volume = higher
+  // sqrt(bet/volume) * 80 gives: $100 on $1B → 0.025%, $100 on $100M → 0.08%
+  const slippagePct = Math.max(0.01, Math.min(1.5, Math.sqrt(bet/(volumeUsd||1e8)) * 80));
   const slippageCost = bet * slippagePct / 100;
-  // Spread cost (fixed bps per trade)
+  // Spread cost (fixed bps - realistic for DEXs/CEXs)
   const spreadCost = bet * (SPREAD_BPS[method]||8) / 10000;
   // Funding rate proxy for perps (small carry cost)
   const fundingCost = method.includes('PERP') ? bet * 0.001 : 0;
@@ -2239,17 +2241,32 @@ async function runEnsemble(marketData, bet, botId, politicianData, bot){
     if (targetCoin) earlyRegime = classifyRegime(targetCoin);
   }
 
+  // ═══ CRITICAL: EDGE CHECK ═══
+  // Only trade if the market direction matches what we're voting
+  // If market moved UP 2%, voting LONG has edge. Voting SHORT = fading → requires much stronger signal
+  const marketMove24h = targetCoin ? (targetCoin.price_change_percentage_24h || 0) : 0;
+  const marketMoveAbs = Math.abs(marketMove24h);
+  
+  // If market barely moved, need very high conviction to trade (not enough money to be made)
+  // If market moved strong, can trade with moderate conviction aligned with direction
+  const edgeContext = marketMoveAbs > 3 
+    ? `EDGE: Market moved ${marketMove24h.toFixed(1)}% (STRONG direction). Trading WITH trend has edge.`
+    : marketMoveAbs > 1.5
+    ? `EDGE: Market moved ${marketMove24h.toFixed(1)}%. Need >0.70 conviction to overcome costs.`
+    : `EDGE: Market barely moved (${marketMove24h.toFixed(1)}%). Need 0.85+ conviction AND trend alignment.`;
+
   // PROFITABILITY CHECK: Only proceed if move is large enough to overcome costs
   // With ~0.5% costs per trade, need at least 1% move to break even
   // If move is tiny, agents should hold to avoid losing money on execution
   let minMoveRequirement = 1.5; // percent
+  let extraCtx;
   if(targetCoin && Math.abs(targetCoin.price_change_percentage_24h || 0) < minMoveRequirement) {
     // Low volatility market - signal agents to be very cautious
-    extraCtx = `⚠️ LOW VOLATILITY: ${targetToken} only moved ${(targetCoin.price_change_percentage_24h||0).toFixed(1)}% (need ${minMoveRequirement}%+ to cover costs). Trade only if conviction >0.85.`;
+    extraCtx = `${edgeContext}\n⚠️ LOW VOLATILITY: ${targetToken} only moved ${(targetCoin.price_change_percentage_24h||0).toFixed(1)}% (need ${minMoveRequirement}%+ to cover costs). Trade only if conviction >0.85.`;
   } else {
     // Adaptive context from learning model
     const adaptiveCtx = buildAdaptiveContext(targetToken, earlyRegime);
-    const extraCtx = [polContext, genieContext, adaptiveCtx].filter(Boolean).join('\n');
+    extraCtx = [edgeContext, polContext, genieContext, adaptiveCtx].filter(Boolean).join('\n');
   }
 
   // Update agent cards to "thinking" state
@@ -2333,6 +2350,23 @@ async function runEnsemble(marketData, bet, botId, politicianData, bot){
 
   if (!passThreshold) {
     return { token: targetToken, method: 'HOLD', reasoning: `${maxVotes}/4 agree, conviction too low (${(avgConviction*100).toFixed(0)}%)`, strategy_detail: 'Waiting for stronger signal.', ensemble: allResults, regime: volResult.regime || earlyRegime };
+  }
+
+  // ═══ PROFIT EDGE VALIDATION ═══
+  // After passing consensus, verify the trade has REAL EDGE
+  // Market UP → LONG has edge (following trend)
+  // Market DOWN → SHORT has edge (following trend)
+  // AGAINST trend → need conviction >0.80 (fading market is risky)
+  const trendAlignment = (marketMove24h > 0 && direction === 'LONG') || (marketMove24h < 0 && direction === 'SHORT');
+  const requiresExtraConfidence = !trendAlignment && Math.abs(marketMove24h) > 1;
+  
+  if (requiresExtraConfidence && avgConviction < 0.80) {
+    // Trying to fade the trend but not confident enough - risky
+    updateConsensusBar(botId, consensusPct, 
+      `Fading ${marketMove24h > 0 ? 'UP' : 'DOWN'} trend needs 0.80+ conviction (have ${(avgConviction*100).toFixed(0)}%) → HOLD`,
+      'var(--hot)'
+    );
+    return { token: targetToken, method: 'HOLD', reasoning: `Trading against ${marketMove24h > 0 ? 'up' : 'down'} trend needs higher conviction`, strategy_detail: 'Insufficient edge vs trend.', ensemble: allResults, regime: volResult.regime || earlyRegime };
   }
 
   // Best strategy for this regime from learning model
