@@ -952,13 +952,17 @@ function computeCosts(method, bet, volumeUsd, multiplier=1.0) {
   // Funding rate proxy for perps (tiny for micro trades)
   const fundingCost = method.includes('PERP') ? bet * 0.00001 : 0;
   const totalRaw = gasBase + slippageCost + spreadCost + fundingCost;
+  
+  // SAFETY: Cap costs at 50% of bet to prevent guaranteed losses
+  const totalCost = Math.min(totalRaw, bet * 0.5) * multiplier;
+  
   return {
     gas: gasBase * multiplier,
     slippagePct,
     slippage: slippageCost * multiplier,
     spread: spreadCost * multiplier,
     funding: fundingCost * multiplier,
-    total: totalRaw * multiplier
+    total: totalCost
   };
 }
 
@@ -990,6 +994,17 @@ function computeBaselines(entryPrice, exitPrice, bet, method, volumeUsd, priceCh
 // ══════════════════════════════════════════════════════
 async function openPosition(bot, decision, entryPrice, bet, volumeUsd, priceChangePct15m) {
   if(decision.method==='HOLD') return null;
+  
+  // CRITICAL: Check if sufficient balance exists before opening trade
+  if(balance < bet) {
+    const tick=document.getElementById('mtick-'+bot.id);
+    if(tick) tick.textContent=`❌ Insufficient balance ($${balance.toFixed(2)} < $${bet})`;
+    bot.spinning=false;
+    const spinEl=document.getElementById('mspin-'+bot.id);
+    if(spinEl){spinEl.disabled=false;spinEl.classList.remove('going');spinEl.textContent='🎰 SPIN';}
+    return null;
+  }
+  
   const costs = computeCosts(decision.method, bet, volumeUsd);
   const isShort = decision.method.includes('SHORT');
 
@@ -1821,6 +1836,14 @@ function scheduleAuto(bot){
 async function spinBot(id){
   const bot=bots.find(b=>b.id===id);
   if(!bot||bot.spinning||bot.cooling) return;
+  
+  // CRITICAL: Prevent spinning if balance is insufficient for minimum bet
+  if(balance < 0.10) {
+    const t=document.getElementById('mtick-'+id);
+    if(t) t.textContent='🚫 Insufficient balance to trade';
+    return;
+  }
+  
   const block=isGlobalBlocked();
   if(block.blocked){const t=document.getElementById('mtick-'+id);if(t)t.textContent='🚫 '+block.reason;return;}
   bot.spinning=true;
