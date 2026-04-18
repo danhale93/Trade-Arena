@@ -408,7 +408,8 @@ const CrucibleTest = {
   // HELPER FUNCTIONS
   // ════════════════════════════════════════════════════════════════
   randomTradingMethod() {
-    const methods = ['ARBITRAGE', 'SPOT LONG', 'SPOT SHORT', 'PERP LONG', 'PERP SHORT', 'FLASH LOAN', 'YIELD FARM'];
+    // Valid methods: SPOT LONG, SPOT SHORT, YIELD FARM, PERP LONG, PERP SHORT, HOLD
+    const methods = ['SPOT LONG', 'SPOT SHORT', 'PERP LONG', 'PERP SHORT', 'YIELD FARM'];
     return methods[Math.floor(Math.random() * methods.length)];
   },
 
