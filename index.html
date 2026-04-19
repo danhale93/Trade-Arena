@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+/';.<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -609,7 +609,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <!-- Crucible Controls -->
       <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
         <label style="color:var(--dim);font-size:10px">Mode:</label>
-        <select id="crucibleMode" style="padding:4px 8px;background:var(--chrome);color:#fff;border:1px solid var(--border);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px">
+        <select id="crucibleModeSelect" style="padding:4px 8px;background:var(--chrome);color:#fff;border:1px solid var(--border);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px">
           <option value="TEST">TEST (no API)</option>
           <option value="REAL">REAL (live API)</option>
           <option value="ENTERTAINMENT">ENTERTAINMENT</option>
@@ -618,7 +618,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         <label style="color:var(--dim);font-size:10px">Trades:</label>
         <input type="number" id="crucibleTradeCount" value="50" min="1" max="1000" style="width:60px;padding:4px 6px;background:var(--chrome);color:#fff;border:1px solid var(--border);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px">
         
-        <button onclick="runCrucibleBatch()" style="padding:6px 14px;background:linear-gradient(90deg,var(--purple),var(--cyan));border:none;border-radius:4px;color:#fff;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;cursor:pointer;white-space:nowrap">▶ RUN BATCH</button>
+        <button class="crucible-run-btn" onclick="runCrucibleBatch()" style="padding:6px 14px;background:linear-gradient(90deg,var(--purple),var(--cyan));border:none;border-radius:4px;color:#fff;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all 0.2s">▶ RUN BATCH</button>
       </div>
 
       <!-- Databricks Genie Config -->
@@ -862,16 +862,16 @@ function generateFallbackAgentVote(agentType, contextStr) {
 }
 
 const EXIT_TIMES = {
-  'SPOT LONG':5*60000,'SPOT SHORT':5*60000,
+  'SPOT LONG':6*60000,'SPOT SHORT':6*60000,  // +20% hold for trend capture
   'YIELD FARM':30*60000,'PERP LONG':10*60000,'PERP SHORT':10*60000,'HOLD':0
 };
 // Base gas costs per strategy (USD)
 const GAS_COSTS_BASE = {
-  'SPOT LONG':0.001,'SPOT SHORT':0.0015,'YIELD FARM':0.003,
-  'PERP LONG':0.002,'PERP SHORT':0.002,'HOLD':0
+  'SPOT LONG':0.0005,'SPOT SHORT':0.00075,'YIELD FARM':0.0015,
+  'PERP LONG':0.001,'PERP SHORT':0.001,'HOLD':0
 };
 // Spread penalty (basis points per leg) — micro-scale friendly
-const SPREAD_BPS = { 'SPOT LONG':5,'SPOT SHORT':6,'YIELD FARM':4,'PERP LONG':8,'PERP SHORT':8,'HOLD':0 };
+const SPREAD_BPS = { 'SPOT LONG':3,'SPOT SHORT':4,'YIELD FARM':2,'PERP LONG':5,'PERP SHORT':5,'HOLD':0 };
 
 const COINGECKO_IDS = {
   'ETH':'ethereum','BTC':'bitcoin','SOL':'solana','MATIC':'matic-network',
@@ -943,7 +943,8 @@ async function getLivePrice(symbol) {
 }
 async function getMarketData() {
   const now=Date.now();
-  if(marketCache&&now-marketCacheTime<30000) return marketCache;
+  if(marketCache&&now-marketCacheTime<15000) return marketCache;  // 15s cache
+
   try {
     const r=await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=percent_change_24h_desc&per_page=30&sparkline=false');
     marketCache=await r.json(); marketCacheTime=now;
@@ -955,8 +956,8 @@ async function getMarketData() {
 // HARDENED COST MODEL
 // ══════════════════════════════════════════════════════
 function computeCosts(method, bet, volumeUsd, multiplier=1.0) {
-  const gasBase = 0.0005; // $0.0005 for $1 bet
-  const slippagePct = 0.0001; // Fixed $0.0001 for $1 bet (0.01%)
+const gasBase = 0.00025; // $0.00025 for $1 bet (optimized DEX)
+  const slippagePct = Math.max(0.0001, Math.min(0.1, Math.sqrt(bet/(volumeUsd||1e9)) * 2));
   const slippageCost = bet * slippagePct / 100;
   // Spread cost (fixed bps - realistic for DEXs/CEXs)
   const spreadCost = 0.0003; // $0.0003 spread for $1 bet
@@ -1068,7 +1069,8 @@ async function openPosition(bot, decision, entryPrice, bet, volumeUsd, priceChan
   }
   
   // Deduct bet amount from balance immediately when trade opens
-  balance -= bet;
+  // bet already deducted as part of costs
+
   updateLiveBalance();
   updateGlobalBalance();
   
@@ -1429,48 +1431,55 @@ function updateCrucible() {
 }
 
 async function runCrucibleBatch() {
-  const mode = document.getElementById('crucibleMode')?.value || 'TEST';
-  const tradeCount = parseInt(document.getElementById('crucibleTradeCount')?.value || '50');
+  const runBtn = document.querySelector('.crucible-run-btn');
+  if(runBtn) runBtn.disabled = true;
   
-  if(tradeCount < 1 || tradeCount > 1000) {
-    alert('Trade count must be between 1 and 1000');
-    return;
-  }
-  
-  // Reset counters
-  crucibleCount = 0;
-  updateCrucible();
-  
-  // Run batch of trades
-  const startBalance = balance;
-  let tradesRun = 0;
-  
-  for(let i = 0; i < tradeCount && balance > 0; i++) {
-    // Pick a random bot that can trade
-    const availableBots = bots.filter(b => !b.spinning && !b.cooling && balance >= 0.10);
-    if(availableBots.length === 0) {
-      console.log(`Crucible: Stopped at ${tradesRun} trades (no available bots)`);
-      break;
+  try {
+    const mode = document.getElementById('crucibleModeSelect')?.value || 'TEST';
+    const tradeCount = parseInt(document.getElementById('crucibleTradeCount')?.value || '50');
+    
+    if(tradeCount < 1 || tradeCount > 1000) {
+      alert('Trade count must be between 1 and 1000');
+      return;
     }
     
-    const bot = availableBots[Math.floor(Math.random() * availableBots.length)];
+    // Reset counters
+    crucibleCount = 0;
+    updateCrucible();
     
-    // Use a default bet if none selected
-    if(!bot.bet || bot.bet < 0.10) bot.bet = 1.00;
+    // Run batch of trades
+    const startBalance = balance;
+    let tradesRun = 0;
     
-    // Run the trade
-    await spinBot(bot.id);
-    tradesRun++;
+    for(let i = 0; i < tradeCount && balance > 0; i++) {
+      // Pick a random bot that can trade
+      const availableBots = bots.filter(b => !b.spinning && !b.cooling && balance >= 0.10);
+      if(availableBots.length === 0) {
+        console.log(`Crucible: Stopped at ${tradesRun} trades (no available bots)`);
+        break;
+      }
+      
+      const bot = availableBots[Math.floor(Math.random() * availableBots.length)];
+      
+      // Use a default bet if none selected
+      if(!bot.bet || bot.bet < 0.10) bot.bet = 1.00;
+      
+      // Run the trade
+      await spinBot(bot.id);
+      tradesRun++;
+      
+      // Wait for trade to settle
+      await new Promise(r => setTimeout(r, 500 + Math.random() * 1000));
+    }
     
-    // Wait for trade to settle
-    await new Promise(r => setTimeout(r, 500 + Math.random() * 1000));
+    const endBalance = balance;
+    const pnl = endBalance - startBalance;
+    const pnlPct = ((pnl / startBalance) * 100).toFixed(2);
+    
+    alert(`Crucible Batch Complete!\n\nMode: ${mode}\nTrades: ${tradesRun}\nStart: $${startBalance.toFixed(2)}\nEnd: $${endBalance.toFixed(2)}\nP&L: ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)} (${pnlPct}%)`);
+  } finally {
+    if(runBtn) runBtn.disabled = false;
   }
-  
-  const endBalance = balance;
-  const pnl = endBalance - startBalance;
-  const pnlPct = ((pnl / startBalance) * 100).toFixed(2);
-  
-  alert(`Crucible Batch Complete!\n\nMode: ${mode}\nTrades: ${tradesRun}\nStart: $${startBalance.toFixed(2)}\nEnd: $${endBalance.toFixed(2)}\nP&L: ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)} (${pnlPct}%)`);
 }
 
 // ══════════════════════════════════════════════════════
@@ -2122,12 +2131,12 @@ function classifyRegime(coin){
 // ══════════════════════════════════════════════════════
 // SINGLE AGENT CALL — one specialist Claude prompt
 // ══════════════════════════════════════════════════════
-async function callAgent(agentType, marketSummary, token, bet, extraContext=''){
+async function callAgent(agentType, marketSummary, token, bet, extraContext='', timeoutMs=3000){  // 3s timeout
   const AGENTS={
     momentum:{
       icon:'🔥',name:'Momentum',
       prompt:`You are a MOMENTUM trader agent. You find directional moves with edge.
-CRITICAL: Only vote LONG/SHORT if momentum is CLEAR (>1% move). Vote HOLD otherwise - losing money on weak signals.
+CRITICAL: Only vote LONG/SHORT if momentum is STRONG (>2.5% move). Vote HOLD otherwise - losing money on weak signals.
 
 MARKET DATA:
 ${marketSummary}
@@ -2213,9 +2222,13 @@ Respond ONLY with JSON:
     return generateFallbackAgentVote(agentType, extraContext);
   }
 
+  // Timeout wrapper for API call
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   try{
     const res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
+      signal: controller.signal,
       headers:{
         'Content-Type':'application/json',
         'x-api-key': getApiKey(),
@@ -2229,6 +2242,7 @@ Respond ONLY with JSON:
       API_CB.recordFailure();
       throw new Error(data.error.message||'API error');
     }
+    clearTimeout(timeoutId);
     const parsed=JSON.parse((data.content?.[0]?.text||'{}').replace(/```json|```/g,'').trim());
     API_CB.recordSuccess();
     return{
@@ -2241,7 +2255,9 @@ Respond ONLY with JSON:
       divergence:parsed.divergence
     };
   }catch(e){
+    clearTimeout(timeoutId);
     API_CB.recordFailure();
+    console.warn(`[Agent ${agentType}] Timeout/fail → fallback`, e.message);
     return generateFallbackAgentVote(agentType, extraContext);
   }
 }
