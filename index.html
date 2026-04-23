@@ -1669,36 +1669,182 @@ function startOverride(bot,btn){
 // ══════════════════════════════════════════════════════
 function loginGoogle(){
   const s=document.getElementById('cStatus'); if(!s) return;
-  if(GOOGLE_CLIENT_ID.includes('YOUR_')){ s.innerHTML='⚠️ Google Client ID not configured. Use Demo Mode.'; return; }
-  if(typeof google==='undefined'){ s.textContent='⏳ Loading Google SDK…'; setTimeout(loginGoogle,800); return; }
+  
+  // Check if Google Client ID is configured
+  if(GOOGLE_CLIENT_ID.includes('YOUR_')){ 
+    s.innerHTML='ℹ️ Google Client ID not configured. <a href="https://console.cloud.google.com" target="_blank" style="color:var(--cyan);cursor:pointer">Set up OAuth →</a> or use Demo/MetaMask'; 
+    return; 
+  }
+  
+  // Wait for Google SDK to load
+  if(typeof google==='undefined'){ 
+    s.textContent='⏳ Loading Google SDK…'; 
+    setTimeout(loginGoogle, 1000); 
+    return; 
+  }
+  
   try{
-    s.textContent='⏳ Opening sign-in…';
-    google.accounts.id.initialize({ client_id:GOOGLE_CLIENT_ID, callback:function(r){
-      try{
-        const p=JSON.parse(atob(r.credential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
-        setupApp({name:p.name||p.email||'Google User', avatar:p.picture||null, badge:'🔵 GOOGLE'});
-      }catch(e){ s.textContent='❌ Google error: '+e.message; }
-    }});
-    google.accounts.id.prompt();
-  }catch(e){ s.textContent='❌ '+e.message; }
+    s.textContent='⏳ Opening Google Sign-In…';
+    
+    google.accounts.id.initialize({ 
+      client_id: GOOGLE_CLIENT_ID, 
+      callback: handleGoogleLoginResponse,
+      hosted_domain: 'gmail.com'
+    });
+    
+    // Show the One Tap popup
+    google.accounts.id.prompt((notification) => {
+      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+        // If One Tap didn't display, show the button-based flow
+        google.accounts.id.renderButton(
+          document.getElementById('googleButtonContainer') || s,
+          { theme: 'dark', size: 'large' }
+        );
+      }
+    });
+  }catch(e){ 
+    s.textContent='❌ Google Error: '+e.message; 
+    console.error('Google login error:', e);
+  }
+}
+
+function handleGoogleLoginResponse(response){
+  const s=document.getElementById('cStatus'); if(!s) return;
+  
+  try{
+    if(!response.credential){
+      s.textContent='❌ Google: No credential received';
+      return;
+    }
+    
+    // Decode JWT token
+    const tokenParts = response.credential.split('.');
+    if(tokenParts.length !== 3){
+      throw new Error('Invalid token format');
+    }
+    
+    const decodedPayload = JSON.parse(
+      atob(tokenParts[1].replace(/-/g, '+').replace(/_/g, '/'))
+    );
+    
+    const userData = {
+      name: decodedPayload.name || decodedPayload.email || 'Google User',
+      email: decodedPayload.email,
+      avatar: decodedPayload.picture || null,
+      badge: '🔵 GOOGLE',
+      provider: 'google'
+    };
+    
+    s.textContent='✅ Signed in with Google!';
+    setupApp(userData);
+  }catch(e){ 
+    s.textContent='❌ Google Sign-In Error: '+e.message; 
+    console.error('Google response handling error:', e);
+  }
 }
 
 async function loginMetaMask(){
   const s=document.getElementById('cStatus'); if(!s) return;
+  
   try{
-    if(!window.ethereum){ s.innerHTML='❌ MetaMask not found. <a href="https://metamask.io" target="_blank" style="color:var(--cyan)">Install →</a>'; return; }
-    s.textContent='⏳ Connecting wallet…';
-    const provider=new ethers.providers.Web3Provider(window.ethereum);
-    await provider.send('eth_requestAccounts',[]);
-    const signer=provider.getSigner(); const addr=await signer.getAddress();
-    s.textContent='⏳ Switching to Base…';
-    try{ await window.ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x2105'}]}); }
-    catch(sw){ if(sw.code===4902) await window.ethereum.request({method:'wallet_addEthereumChain',params:[{chainId:'0x2105',chainName:'Base Mainnet',rpcUrls:['https://mainnet.base.org'],nativeCurrency:{name:'ETH',symbol:'ETH',decimals:18},blockExplorerUrls:['https://basescan.org']}]}); }
-    let bal=10000;
-    try{ const b=await provider.getBalance(addr); const eth=parseFloat(ethers.utils.formatEther(b)); const d=await(await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd')).json(); bal=eth*(d?.ethereum?.usd||3200); }catch(e){}
-    balance=bal; startBalance=bal;
-    setupApp({name:addr.slice(0,6)+'···'+addr.slice(-4), avatar:null, badge:'🦊 METAMASK'});
-  }catch(e){ if(s) s.textContent='❌ '+(e.message||'Connection failed'); }
+    // Check if MetaMask is installed
+    if(!window.ethereum){ 
+      s.innerHTML='<span style="color:var(--hot)">❌ MetaMask not detected</span><br><small style="color:var(--dim);margin-top:8px;display:block">Install MetaMask: <a href="https://metamask.io" target="_blank" style="color:var(--cyan)">metamask.io →</a></small>'; 
+      return; 
+    }
+    
+    s.textContent='⏳ Connecting MetaMask wallet…';
+    
+    // Request account access
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    if (!accounts || accounts.length === 0) {
+      s.textContent='❌ No accounts selected in MetaMask';
+      return;
+    }
+    
+    const address = accounts[0];
+    
+    // Create provider
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    
+    // Switch to Base Mainnet (optional, but recommended)
+    s.textContent='⏳ Verifying network…';
+    try { 
+      await window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: '0x2105' }] // Base Mainnet
+      }); 
+    }
+    catch(switchError) { 
+      // Chain doesn't exist, add it
+      if(switchError.code === 4902) {
+        try {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: '0x2105',
+              chainName: 'Base Mainnet',
+              rpcUrls: ['https://mainnet.base.org'],
+              nativeCurrency: {
+                name: 'Ethereum',
+                symbol: 'ETH',
+                decimals: 18
+              },
+              blockExplorerUrls: ['https://basescan.org']
+            }]
+          });
+        } catch(addError) {
+          console.warn('Could not add Base chain:', addError);
+        }
+      }
+    }
+    
+    // Get balance
+    s.textContent='⏳ Fetching wallet balance…';
+    let balanceUSD = 10000; // Default fallback
+    
+    try { 
+      const balanceWei = await provider.getBalance(address);
+      const balanceETH = parseFloat(ethers.utils.formatEther(balanceWei));
+      
+      // Get ETH price in USD
+      const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+      const priceData = await priceResponse.json();
+      const ethPrice = priceData?.ethereum?.usd || 3200;
+      
+      balanceUSD = balanceETH * ethPrice;
+    } 
+    catch(balanceError) { 
+      console.warn('Could not fetch balance:', balanceError);
+      // Use default balance
+    }
+    
+    // Update global balance
+    balance = balanceUSD;
+    startBalance = balanceUSD;
+    
+    const userData = {
+      name: address.slice(0, 6) + '···' + address.slice(-4),
+      address: address,
+      avatar: null,
+      badge: '🦊 METAMASK',
+      provider: 'metamask'
+    };
+    
+    s.textContent='✅ Connected to MetaMask!';
+    setupApp(userData);
+    
+  }catch(error) { 
+    console.error('MetaMask connection error:', error);
+    
+    if(error.code === 4001) {
+      s.textContent='❌ Connection rejected by user';
+    } else if(error.code === -32002) {
+      s.textContent='❌ MetaMask request already pending';
+    } else {
+      s.textContent='❌ MetaMask Error: '+(error.message||'Connection failed'); 
+    }
+  }
 }
 
 function loginDemo(){
