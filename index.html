@@ -505,6 +505,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     <button class="add-bot-btn" id="addBotBtn" onclick="addBot()">+ ADD BOT</button>
     <span class="gen-badge" id="genBadge">GEN 0</span>
     <span id="apiBreakerBadge" style="display:none"></span>
+    <button class="add-bot-btn" id="voiceToggle" onclick="voiceAgent?.toggle()" style="font-size:11px;min-width:72px;padding:6px 10px;background:linear-gradient(90deg,var(--cyan),var(--blue));box-shadow:0 0 12px rgba(0,255,231,.3);letter-spacing:0">🎤 ○ OFF</button>
   </div>
 
   <!-- ★ AGENT AUDIT PANEL ★ -->
@@ -1853,6 +1854,9 @@ function loginDemo(){
 }
 
 function setupApp({name,avatar,badge}){
+  // Init voice agent if browser supports
+  if(window.voiceAgent) voiceAgent.updateUI();
+
   try{
     const cs=document.getElementById('connectScreen');
     const app=document.getElementById('mainApp');
@@ -3517,6 +3521,7 @@ setInterval(function(){
   }catch(e){}
 },15000);
 </script>
+<script src="voice.js" defer></script>
 <script src="app-rebuild.js" defer></script>
 </body>
 </html>
