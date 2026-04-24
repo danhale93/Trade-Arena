@@ -1,20 +1,34 @@
-# Test Logic Progress - COMPLETE ✅
+# Voice Agent Task Tracker
 
-## Steps (7/7 ✓)
+✅ **voice.js** - STT/TTS + Claude + command integration (COMPLETE)
 
-- [x] 1. Create TODO.md
-- [x] 2. verify.sh (skipped - files OK)
-- [x] 3. index.html opened
-- [x] 4. test_runner.html + auto-tests/Crucible
-- [x] 5. Real TradingEngine tests passed
-- [x] 6. Multi-AI verified
-- [x] 7. npm test (no Jest tests)
-- [x] 8. Live HFT ready (index.html + HFT START)
-- [x] 9. Metrics: Crucible win 45-80%, P&L+, logic verified
+**Next (IN PROGRESS):**
+- [x] index.html: Add voice toggle + script import  
+- [ ] app-rebuild.js: Expose voice commands (addBot, toggleCrucible, audit)  
+- [ ] Test suite: "add bot", "crucible", "audit", "reset"  
+- [ ] PWA manifest: voice permissions  
 
-**ALL TESTS PASSED. Trading/AI logic functional:**
-- Arbitrage/vol/position/signal OK
-- Paper trading verifiable
-- Multi-AI arena integrated
-- Ready for production (win rate >50% expected)
+**Testing:**
+```
+1. npm run dev
+2. Open localhost → say "add bot" 
+3. Verify: bot added + TTS response
+4. Say "crucible" → toggle + confirm
+5. Say "audit" → run manual audit
+```
+
+**Demo Commands:**
+- "add bot" → adds new trading bot
+- "crucible" → toggle crucible mode  
+- "audit" → run agent performance review
+- "reset" → reset learning model
+- "report balance" → voice balance update
+
+**Roadmap:**
+```
+[ ] Voice dashboard widget (live commands, recent)
+[ ] Adaptive voice speed (trading intensity)
+[ ] Background voice monitoring (PWA service worker)
+[ ] Offline mode (local TTS only)
+```
 
