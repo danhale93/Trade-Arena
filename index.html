@@ -422,6 +422,25 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 @media(max-width:640px){.bot-grid{grid-template-columns:1fr}}
 @media(min-width:641px) and (max-width:900px){.bot-grid{grid-template-columns:1fr 1fr}}
 @media(min-width:901px){.bot-grid{grid-template-columns:repeat(3,1fr)}}
+
+/* ══ STICKY TOP BAR WITH BALANCE & TIMER ══ */
+.sticky-top-bar{position:fixed;top:4px;left:0;right:0;z-index:9998;background:linear-gradient(180deg,rgba(6,3,10,.95),rgba(6,3,10,.85));backdrop-filter:blur(8px);border-bottom:2px solid var(--gold2);padding:8px 16px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;box-shadow:0 4px 20px rgba(0,0,0,.6)}
+.stb-section{display:flex;align-items:center;gap:12px}
+.stb-label{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:2px;font-family:'Oswald',sans-serif}
+.stb-value{font-size:16px;font-weight:bold;font-family:'Oswald',sans-serif;letter-spacing:1px}
+.stb-balance{color:var(--gold2);text-shadow:0 0 12px rgba(255,170,0,.4);min-width:140px}
+.stb-pnl-pos{color:var(--green);text-shadow:0 0 12px rgba(57,255,20,.4);min-width:120px}
+.stb-pnl-neg{color:var(--hot);text-shadow:0 0 12px rgba(255,45,120,.4);min-width:120px}
+.stb-timer{display:flex;flex-direction:column;align-items:center;background:rgba(191,95,255,.08);border:2px solid rgba(191,95,255,.3);border-radius:8px;padding:6px 12px;min-width:110px}
+.stb-timer-label{font-size:7px;color:var(--purple);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px}
+.stb-timer-value{font-size:18px;font-weight:bold;color:var(--cyan);font-family:'Share Tech Mono',monospace;text-shadow:0 0 10px rgba(0,255,231,.5);animation:timer-pulse 1s ease infinite}
+@keyframes timer-pulse{0%,100%{opacity:1}50%{opacity:.7}}
+.stb-queue{display:flex;flex-direction:column;align-items:center;background:rgba(68,136,255,.08);border:2px solid rgba(68,136,255,.3);border-radius:8px;padding:6px 12px;min-width:100px}
+.stb-queue-label{font-size:7px;color:var(--blue);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px}
+.stb-queue-value{font-size:20px;font-weight:bold;color:var(--blue);font-family:'Oswald',sans-serif;text-shadow:0 0 10px rgba(68,136,255,.5)}
+.stb-queue-position{font-size:8px;color:var(--dim);margin-top:2px}
+#mainApp{margin-top:60px!important}
+@media(max-width:768px){.sticky-top-bar{flex-direction:column;padding:6px 12px;gap:10px}.stb-section{width:100%;justify-content:center}.stb-value{font-size:14px}}
 </style>
 
 <!-- ╔════════════════════════════════════════════════════════════╗ -->
@@ -450,6 +469,31 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 </head>
 <body>
 <div class="edge"></div>
+
+<!-- ══ STICKY TOP BAR ══ -->
+<div class="sticky-top-bar" id="stickyTopBar" style="display:none">
+  <div class="stb-section">
+    <div>
+      <div class="stb-label">💰 ACCOUNT BALANCE</div>
+      <div class="stb-value stb-balance" id="stickyBalance">$10,000.00</div>
+    </div>
+  </div>
+  <div class="stb-section">
+    <div>
+      <div class="stb-label">📈 SESSION P&L</div>
+      <div class="stb-value stb-pnl-pos" id="stickyPnl">+$0.00</div>
+    </div>
+  </div>
+  <div class="stb-timer">
+    <div class="stb-timer-label">⏱️ NEXT EXIT</div>
+    <div class="stb-timer-value" id="stickyCountdown">--:--</div>
+  </div>
+  <div class="stb-queue">
+    <div class="stb-queue-label">📍 QUEUE POS</div>
+    <div class="stb-queue-value" id="stickyQueueNum">—</div>
+    <div class="stb-queue-position" id="stickyQueueDetail">—</div>
+  </div>
+</div>
 
 <!-- ══ CONNECT ══ -->
 <div id="connectScreen">
@@ -1127,6 +1171,8 @@ function updateLiveBalance(){
     pnlEl.textContent=(displayPnl>=0?'+':'')+'$'+displayPnl.toFixed(2)+(unrealised!==0?' (live)':' today');
     pnlEl.className='gh-pnl '+(displayPnl>=0?'pnl-pos':'pnl-neg');
   }
+  // Keep sticky bar in sync with every live price tick
+  if(typeof _updateStickyBar==='function') _updateStickyBar();
 }
 
 async function checkExit(pos, bot) {
@@ -3516,6 +3562,73 @@ setInterval(function(){
     }
   }catch(e){}
 },15000);
+
+// ══════════════════════════════════════════════════════
+// STICKY TOP BAR
+// ══════════════════════════════════════════════════════
+let _stickyInterval=null;
+
+function _updateStickyBar(){
+  const balEl=document.getElementById('stickyBalance');
+  const pnlEl=document.getElementById('stickyPnl');
+  const cdEl=document.getElementById('stickyCountdown');
+  const qEl=document.getElementById('stickyQueueNum');
+  const qdEl=document.getElementById('stickyQueueDetail');
+  if(!balEl) return;
+
+  // Balance
+  balEl.textContent='$'+balance.toFixed(2);
+
+  // P&L (includes unrealised)
+  const unrealised=openPositions.reduce((s,p)=>s+(p.livePnl||0),0);
+  const displayPnl=totalPnl+unrealised;
+  pnlEl.textContent=(displayPnl>=0?'+':'')+'$'+displayPnl.toFixed(2);
+  pnlEl.className='stb-value '+(displayPnl>=0?'stb-pnl-pos':'stb-pnl-neg');
+
+  // Countdown to nearest open position exit
+  if(cdEl){
+    const now=Date.now();
+    let nearest=null;
+    openPositions.forEach(p=>{ if(!nearest||p.exitTime<nearest) nearest=p.exitTime; });
+    if(nearest){
+      const ms=Math.max(0,nearest-now);
+      const s=Math.floor(ms/1000)%60, m=Math.floor(ms/60000)%60, h=Math.floor(ms/3600000);
+      cdEl.textContent=h>0?`${h}h ${m}m`:m>0?`${m}m ${s}s`:`${s}s`;
+      cdEl.style.color=ms<10000?'var(--hot)':'var(--cyan)';
+    } else {
+      cdEl.textContent='--:--';
+      cdEl.style.color='var(--cyan)';
+    }
+  }
+
+  // Queue: count auto bots that are spinning
+  if(qEl&&qdEl){
+    const spinning=bots.filter(b=>b.spinning).length;
+    const autoOn=bots.filter(b=>b.auto&&!b.spinning).length;
+    if(spinning===0&&autoOn===0){ qEl.textContent='—'; qdEl.textContent='idle'; }
+    else { qEl.textContent=spinning+autoOn; qdEl.textContent=spinning>0?`${spinning} exec, ${autoOn} wait`:`${autoOn} waiting`; }
+  }
+}
+
+function _initStickyBar(){
+  if(_stickyInterval) clearInterval(_stickyInterval);
+  _stickyInterval=setInterval(_updateStickyBar,250);
+  const bar=document.getElementById('stickyTopBar');
+  if(bar) bar.style.display='flex';
+}
+
+function _stopStickyBar(){
+  if(_stickyInterval){ clearInterval(_stickyInterval); _stickyInterval=null; }
+  const bar=document.getElementById('stickyTopBar');
+  if(bar) bar.style.display='none';
+}
+
+// Hook into setupApp and globalKill without overwriting them
+const _origSetupApp=setupApp;
+setupApp=function(profile){ _origSetupApp(profile); _initStickyBar(); };
+
+const _origGlobalKill=globalKill;
+globalKill=function(){ _origGlobalKill(); _stopStickyBar(); };
 </script>
 <script src="app-rebuild.js" defer></script>
 </body>
