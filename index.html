@@ -423,24 +423,25 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 @media(min-width:641px) and (max-width:900px){.bot-grid{grid-template-columns:1fr 1fr}}
 @media(min-width:901px){.bot-grid{grid-template-columns:repeat(3,1fr)}}
 
-/* ══ STICKY TOP BAR WITH BALANCE & TIMER ══ */
-.sticky-top-bar{position:fixed;top:4px;left:0;right:0;z-index:9998;background:linear-gradient(180deg,rgba(6,3,10,.95),rgba(6,3,10,.85));backdrop-filter:blur(8px);border-bottom:2px solid var(--gold2);padding:8px 16px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;box-shadow:0 4px 20px rgba(0,0,0,.6)}
-.stb-section{display:flex;align-items:center;gap:12px}
-.stb-label{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:2px;font-family:'Oswald',sans-serif}
-.stb-value{font-size:16px;font-weight:bold;font-family:'Oswald',sans-serif;letter-spacing:1px}
-.stb-balance{color:var(--gold2);text-shadow:0 0 12px rgba(255,170,0,.4);min-width:140px}
-.stb-pnl-pos{color:var(--green);text-shadow:0 0 12px rgba(57,255,20,.4);min-width:120px}
-.stb-pnl-neg{color:var(--hot);text-shadow:0 0 12px rgba(255,45,120,.4);min-width:120px}
-.stb-timer{display:flex;flex-direction:column;align-items:center;background:rgba(191,95,255,.08);border:2px solid rgba(191,95,255,.3);border-radius:8px;padding:6px 12px;min-width:110px}
-.stb-timer-label{font-size:7px;color:var(--purple);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px}
-.stb-timer-value{font-size:18px;font-weight:bold;color:var(--cyan);font-family:'Share Tech Mono',monospace;text-shadow:0 0 10px rgba(0,255,231,.5);animation:timer-pulse 1s ease infinite}
-@keyframes timer-pulse{0%,100%{opacity:1}50%{opacity:.7}}
-.stb-queue{display:flex;flex-direction:column;align-items:center;background:rgba(68,136,255,.08);border:2px solid rgba(68,136,255,.3);border-radius:8px;padding:6px 12px;min-width:100px}
-.stb-queue-label{font-size:7px;color:var(--blue);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px}
-.stb-queue-value{font-size:20px;font-weight:bold;color:var(--blue);font-family:'Oswald',sans-serif;text-shadow:0 0 10px rgba(68,136,255,.5)}
-.stb-queue-position{font-size:8px;color:var(--dim);margin-top:2px}
-#mainApp{margin-top:60px!important}
-@media(max-width:768px){.sticky-top-bar{flex-direction:column;padding:6px 12px;gap:10px}.stb-section{width:100%;justify-content:center}.stb-value{font-size:14px}}
+/* ══ STICKY TOP BAR — slim info strip ══ */
+.sticky-top-bar{position:fixed;top:4px;left:0;right:0;z-index:9998;height:22px;background:rgba(6,3,10,.7);backdrop-filter:blur(6px);border-bottom:1px solid rgba(255,170,0,.15);padding:0 12px;display:flex;align-items:center;gap:16px;overflow:hidden}
+.stb-section{display:flex;align-items:center;gap:5px;flex-shrink:0}
+.stb-label{font-size:7px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;font-family:'Oswald',sans-serif}
+.stb-value{font-size:10px;font-family:'Oswald',sans-serif;font-weight:700;letter-spacing:.5px}
+.stb-balance{color:var(--gold2)}
+.stb-pnl-pos{color:var(--green)}
+.stb-pnl-neg{color:var(--hot)}
+.stb-sep{color:rgba(255,255,255,.1);font-size:10px;flex-shrink:0}
+.stb-timer{display:flex;align-items:center;gap:5px;flex-shrink:0}
+.stb-timer-label{font-size:7px;color:var(--dim);text-transform:uppercase;letter-spacing:1px}
+.stb-timer-value{font-size:10px;color:var(--cyan);font-family:'Share Tech Mono',monospace}
+@keyframes timer-pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.stb-queue{display:flex;align-items:center;gap:5px;flex-shrink:0}
+.stb-queue-label{font-size:7px;color:var(--dim);text-transform:uppercase;letter-spacing:1px}
+.stb-queue-value{font-size:10px;color:var(--blue);font-family:'Oswald',sans-serif;font-weight:700}
+.stb-queue-position{font-size:8px;color:var(--dim)}
+#mainApp{margin-top:26px!important}
+@media(max-width:480px){.stb-section:first-child~.stb-sep,.stb-queue{display:none}}
 </style>
 
 <!-- ╔════════════════════════════════════════════════════════════╗ -->
@@ -473,25 +474,24 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 <!-- ══ STICKY TOP BAR ══ -->
 <div class="sticky-top-bar" id="stickyTopBar" style="display:none">
   <div class="stb-section">
-    <div>
-      <div class="stb-label">💰 ACCOUNT BALANCE</div>
-      <div class="stb-value stb-balance" id="stickyBalance">$10,000.00</div>
-    </div>
+    <span class="stb-label">BAL</span>
+    <span class="stb-value stb-balance" id="stickyBalance">$10,000.00</span>
   </div>
+  <span class="stb-sep">·</span>
   <div class="stb-section">
-    <div>
-      <div class="stb-label">📈 SESSION P&L</div>
-      <div class="stb-value stb-pnl-pos" id="stickyPnl">+$0.00</div>
-    </div>
+    <span class="stb-label">P&L</span>
+    <span class="stb-value stb-pnl-pos" id="stickyPnl">+$0.00</span>
   </div>
+  <span class="stb-sep">·</span>
   <div class="stb-timer">
-    <div class="stb-timer-label">⏱️ NEXT EXIT</div>
-    <div class="stb-timer-value" id="stickyCountdown">--:--</div>
+    <span class="stb-timer-label">EXIT</span>
+    <span class="stb-timer-value" id="stickyCountdown">--:--</span>
   </div>
+  <span class="stb-sep">·</span>
   <div class="stb-queue">
-    <div class="stb-queue-label">📍 QUEUE POS</div>
-    <div class="stb-queue-value" id="stickyQueueNum">—</div>
-    <div class="stb-queue-position" id="stickyQueueDetail">—</div>
+    <span class="stb-queue-label">QUEUE</span>
+    <span class="stb-queue-value" id="stickyQueueNum">—</span>
+    <span class="stb-queue-position" id="stickyQueueDetail"></span>
   </div>
 </div>
 
