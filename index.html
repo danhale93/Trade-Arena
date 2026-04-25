@@ -1152,11 +1152,32 @@ function startLivePnlTicker(pos) {
       }
       // Store live unrealised P&L on the position for global display
       pos.livePnl=net;
+
+      // ── Stop loss / take profit early exit ──
+      const bot=bots.find(b=>b.id===pos.botId);
+      if(bot && pos.status==='open'){
+        const pct=(net/pos.bet)*100;
+        const sl=bot.stopLossPct||0;
+        const tp=bot.takeProfitPct||0;
+        if(sl>0 && pct<=-sl){
+          pos._earlyExitReason=`SL −${sl}%`;
+          checkExit(pos,bot);
+          return;
+        }
+        if(tp>0 && pct>=tp){
+          pos._earlyExitReason=`TP +${tp}%`;
+          checkExit(pos,bot);
+          return;
+        }
+      }
     }
     if(timerEl){
       const rem=Math.max(0,pos.exitTime-Date.now());
       const m=Math.floor(rem/60000),s=Math.floor((rem%60000)/1000);
-      timerEl.textContent=`Exit in ${m}:${s.toString().padStart(2,'0')}`;
+      const slBot=bots.find(b=>b.id===pos.botId);
+      const slLabel=slBot&&(slBot.stopLossPct||slBot.takeProfitPct)
+        ?` · SL${slBot.stopLossPct?` −${slBot.stopLossPct}%`:'—'} TP${slBot.takeProfitPct?` +${slBot.takeProfitPct}%`:'—'}`:'';
+      timerEl.textContent=`Exit in ${m}:${s.toString().padStart(2,'0')}${slLabel}`;
     }
     // Update global balance header with unrealised P&L across all open positions
     updateLiveBalance();
@@ -1228,8 +1249,38 @@ async function checkExit(pos, bot) {
 
   updateGlobalBalance(); updateBotPnl(bot); updateQuantReport(); updateOpenCount();
   showExitResult(pos,bot); addToLog(pos);
+
+  // ── SFX + FX + VOICE on trade close ──
+  try {
+    const rect = card ? card.getBoundingClientRect() : null;
+    const cx = rect ? rect.left + rect.width/2 : window.innerWidth/2;
+    const cy = rect ? rect.top + rect.height*0.3 : window.innerHeight*0.3;
+    const earlyReason = pos._earlyExitReason || '';
+    const isSL = earlyReason.startsWith('SL');
+    const isTP = earlyReason.startsWith('TP');
+
+    if (pos.isWin) {
+      const big = pos.netPnl > 20;
+      if (typeof SFX !== 'undefined') big ? SFX.bigWin() : SFX.win();
+      if (typeof FX !== 'undefined') {
+        FX.flash('rgba(57,255,20,0.12)', big ? 500 : 300);
+        FX.confetti(cx, cy, big ? 28 : 16);
+        FX.pnlFlyUp(pos.netPnl, cx - 30, cy);
+      }
+      if (typeof VOICE !== 'undefined') isTP ? VOICE.takeProfit(bot.id) : VOICE.win(bot.id, pos.netPnl);
+    } else {
+      if (typeof SFX !== 'undefined') isSL ? SFX.stopLoss() : SFX.loss();
+      if (typeof FX !== 'undefined') {
+        FX.flash('rgba(255,45,120,0.1)', 400);
+        FX.shake(card);
+        FX.pnlFlyUp(pos.netPnl, cx - 30, cy);
+      }
+      if (typeof VOICE !== 'undefined') isSL ? VOICE.stopLoss(bot.id) : VOICE.loss(bot.id, pos.netPnl);
+    }
+  } catch(e) {}
+
   if(card){ card.classList.add(pos.isWin?'winning':'losing'); setTimeout(()=>card.classList.remove('winning','losing'),700); }
-  if(!bot.auto) spawnParticles(pos.isWin,pos.botId);
+  spawnParticles(pos.isWin,pos.botId); // always show particles now
   if(crucibleMode&&pos.method!=='HOLD'){ crucibleCount++; updateCrucible(); }
 }
 
@@ -1927,6 +1978,7 @@ function setupApp({name,avatar,badge}){
       try{ addBot(); }catch(e){ console.error('addBot:',e); }
       _startHeaderTicker();
       _syncHeaderBotBtns();
+      _injectAVControls();
     });
   }catch(e){
     console.error('setupApp critical error:',e);
@@ -2283,6 +2335,7 @@ async function spinBot(id){
   const block=isGlobalBlocked();
   if(block.blocked){const t=document.getElementById('mtick-'+id);if(t)t.textContent='🚫 '+block.reason;return;}
   bot.spinning=true;
+  try{ if(typeof SFX!=='undefined') SFX.spin(); }catch(e){}
   const spinEl=document.getElementById('mspin-'+id), thinkEl=document.getElementById('mthink-'+id), stepEl=document.getElementById('mstep-'+id);
   if(spinEl){spinEl.disabled=true;spinEl.classList.add('going');spinEl.textContent='⏳';}
   if(thinkEl) thinkEl.classList.add('show');
@@ -2331,6 +2384,10 @@ async function spinBot(id){
   bot.spinning=false;
 
   // Always execute a trade - HOLD method has been removed
+  try{
+    if(typeof SFX!=='undefined') SFX.tradeOpen();
+    if(typeof VOICE!=='undefined') VOICE.tradeOpen(bot.id, decision.token, decision.method);
+  }catch(e){}
   await openPosition(bot,decision,entryPrice,bot.bet,volumeUsd,priceChangePct15m);
   updateQuantReport();
 }
@@ -3743,6 +3800,185 @@ setInterval(function(){
     }
   }catch(e){}
 },15000);
+
+// ══════════════════════════════════════════════════════
+// SOUND ENGINE  (Web Audio API — no external files)
+// ══════════════════════════════════════════════════════
+const SFX = (() => {
+  let ctx = null;
+  let enabled = localStorage.getItem('ta_sfx') !== 'false';
+
+  function getCtx() {
+    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+
+  function tone(freq, type, vol, attack, sustain, decay) {
+    if (!enabled) return;
+    try {
+      const c = getCtx();
+      const osc = c.createOscillator();
+      const gain = c.createGain();
+      osc.connect(gain); gain.connect(c.destination);
+      osc.type = type; osc.frequency.setValueAtTime(freq, c.currentTime);
+      gain.gain.setValueAtTime(0, c.currentTime);
+      gain.gain.linearRampToValueAtTime(vol, c.currentTime + attack);
+      gain.gain.setValueAtTime(vol, c.currentTime + attack + sustain);
+      gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + attack + sustain + decay);
+      osc.start(c.currentTime); osc.stop(c.currentTime + attack + sustain + decay + 0.05);
+    } catch(e) {}
+  }
+
+  function chord(freqs, type, vol, delay=0) {
+    freqs.forEach((f,i) => setTimeout(() => tone(f, type, vol, 0.01, 0.08, 0.25), i*delay));
+  }
+
+  return {
+    get enabled() { return enabled; },
+    toggle() { enabled = !enabled; localStorage.setItem('ta_sfx', enabled ? 'true' : 'false'); return enabled; },
+    spin()       { tone(220,'sawtooth',0.08,0.01,0.04,0.12); setTimeout(()=>tone(330,'sawtooth',0.06,0.01,0.04,0.1),80); },
+    tradeOpen()  { chord([440,554,659],'sine',0.12,60); },
+    win()        { chord([523,659,784,1047],'sine',0.15,55); setTimeout(()=>tone(1047,'sine',0.1,0.01,0.15,0.3),280); },
+    bigWin()     { [523,659,784,1047,1319].forEach((f,i)=>setTimeout(()=>tone(f,'sine',0.18,0.01,0.12,0.25),i*60)); },
+    loss()       { tone(220,'sawtooth',0.1,0.01,0.05,0.18); setTimeout(()=>tone(165,'sawtooth',0.08,0.01,0.05,0.3),120); },
+    stopLoss()   { [330,220,165].forEach((f,i)=>setTimeout(()=>tone(f,'square',0.1,0.01,0.06,0.2),i*90)); },
+    takeProfit() { chord([659,784,1047],'triangle',0.14,70); },
+    tick()       { tone(880,'sine',0.04,0.005,0.01,0.05); },
+  };
+})();
+
+// ══════════════════════════════════════════════════════
+// ANIMATION ENGINE
+// ══════════════════════════════════════════════════════
+const FX = (() => {
+  function pnlFlyUp(amount, x, y) {
+    const el = document.createElement('div');
+    const pos = amount >= 0;
+    el.style.cssText = `position:fixed;left:${x}px;top:${y}px;z-index:9990;pointer-events:none;
+      font-family:'Oswald',sans-serif;font-size:${Math.min(11+Math.abs(amount)*0.8,22)}px;
+      font-weight:700;color:${pos?'var(--green)':'var(--hot)'};
+      text-shadow:0 0 8px ${pos?'rgba(57,255,20,.6)':'rgba(255,45,120,.6)'};
+      animation:_pnlfly 1.4s ease forwards;white-space:nowrap`;
+    el.textContent = (pos?'+':'') + '$' + Math.abs(amount).toFixed(2);
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1500);
+  }
+
+  function flash(color, duration=300) {
+    const el = document.createElement('div');
+    el.style.cssText = `position:fixed;inset:0;z-index:9989;pointer-events:none;
+      background:${color};opacity:0;animation:_flash ${duration}ms ease forwards`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), duration + 50);
+  }
+
+  function shake(cardEl) {
+    if (!cardEl) return;
+    cardEl.style.animation = 'none';
+    setTimeout(() => { cardEl.style.animation = '_shake 0.4s ease'; }, 10);
+    setTimeout(() => { cardEl.style.animation = ''; }, 450);
+  }
+
+  function confetti(x, y, count=16) {
+    const colors = ['var(--gold)','var(--green)','var(--cyan)','var(--hot)','#fff','var(--purple)'];
+    for (let i = 0; i < count; i++) {
+      setTimeout(() => {
+        const el = document.createElement('div');
+        const angle = Math.random() * 360;
+        const dist = 40 + Math.random() * 90;
+        const size = 4 + Math.random() * 5;
+        el.style.cssText = `position:fixed;left:${x}px;top:${y}px;z-index:9990;pointer-events:none;
+          width:${size}px;height:${size}px;border-radius:${Math.random()>.5?'50%':'2px'};
+          background:${colors[Math.floor(Math.random()*colors.length)]};
+          animation:_confetti 1s ease forwards;
+          --dx:${Math.cos(angle*Math.PI/180)*dist}px;
+          --dy:${Math.sin(angle*Math.PI/180)*dist}px`;
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 1100);
+      }, i * 28);
+    }
+  }
+
+  return { pnlFlyUp, flash, shake, confetti };
+})();
+
+// ══════════════════════════════════════════════════════
+// VOICE ENGINE  (SpeechSynthesis — no API key needed)
+// ══════════════════════════════════════════════════════
+const VOICE = (() => {
+  let enabled = localStorage.getItem('ta_voice') === 'true';
+  let voice = null;
+
+  function pickVoice() {
+    const voices = speechSynthesis.getVoices();
+    voice = voices.find(v => v.lang.startsWith('en') && /male/i.test(v.name))
+         || voices.find(v => v.lang.startsWith('en'))
+         || voices[0] || null;
+  }
+  if (typeof speechSynthesis !== 'undefined') {
+    if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = pickVoice;
+    pickVoice();
+  }
+
+  function say(text, rate=1.05, pitch=1) {
+    if (!enabled || typeof speechSynthesis === 'undefined') return;
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.voice = voice; u.rate = rate; u.pitch = pitch; u.volume = 0.9;
+      speechSynthesis.speak(u);
+    } catch(e) {}
+  }
+
+  function fmt(n) {
+    const a = Math.abs(n);
+    return '$' + (a >= 100 ? a.toFixed(0) : a >= 10 ? a.toFixed(1) : a.toFixed(2));
+  }
+
+  return {
+    get enabled() { return enabled; },
+    toggle() { enabled = !enabled; localStorage.setItem('ta_voice', enabled?'true':'false'); return enabled; },
+    tradeOpen(bot, token, method) { say(`Bot ${bot}, ${method.toLowerCase()} on ${token}`, 1.1); },
+    win(bot, amount)   { say(amount > 20 ? `Big win! ${fmt(amount)} profit, bot ${bot}` : `Bot ${bot} wins ${fmt(amount)}`, 1.05); },
+    loss(bot, amount)  { say(`Bot ${bot} lost ${fmt(amount)}`, 0.95, 0.85); },
+    stopLoss(bot)      { say(`Stop loss, bot ${bot}`, 1.0, 0.8); },
+    takeProfit(bot)    { say(`Take profit hit, bot ${bot}`, 1.1, 1.1); },
+  };
+})();
+
+// Inject keyframe animations
+(function() {
+  const s = document.createElement('style');
+  s.textContent = `
+@keyframes _pnlfly{0%{opacity:1;transform:translateY(0) scale(1)}60%{opacity:1;transform:translateY(-52px) scale(1.15)}100%{opacity:0;transform:translateY(-88px) scale(0.9)}}
+@keyframes _flash{0%{opacity:.3}100%{opacity:0}}
+@keyframes _shake{0%,100%{transform:translateX(0)}15%{transform:translateX(-7px)}30%{transform:translateX(7px)}45%{transform:translateX(-5px)}60%{transform:translateX(5px)}75%{transform:translateX(-3px)}90%{transform:translateX(3px)}}
+@keyframes _confetti{0%{opacity:1;transform:translate(0,0) rotate(0deg)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(720deg)}}
+`;
+  document.head.appendChild(s);
+})();
+
+// Sound/Voice toggle buttons in header
+function _injectAVControls() {
+  if (document.getElementById('avControls')) return;
+  const hdr = document.querySelector('.global-header');
+  if (!hdr) return;
+  const wrap = document.createElement('div');
+  wrap.id = 'avControls';
+  wrap.style.cssText = 'display:flex;gap:4px;flex-shrink:0';
+  const btnStyle = 'width:26px;height:26px;border:1px solid var(--border);border-radius:4px;background:var(--chrome);color:var(--dim);font-size:13px;cursor:pointer;transition:all .15s';
+  wrap.innerHTML = `
+    <button id="sfxBtn" style="${btnStyle}" class="${SFX.enabled?'av-on':''}" title="${SFX.enabled?'Sound ON':'Sound OFF'}"
+      onclick="const on=SFX.toggle();this.classList.toggle('av-on',on);this.title=on?'Sound ON':'Sound OFF'">🔊</button>
+    <button id="voiceBtn" style="${btnStyle}" class="${VOICE.enabled?'av-on':''}" title="${VOICE.enabled?'Voice ON':'Voice OFF'}"
+      onclick="const on=VOICE.toggle();this.classList.toggle('av-on',on);this.title=on?'Voice ON':'Voice OFF'">🎙️</button>`;
+  const gen = document.getElementById('genBadge');
+  if (gen) hdr.insertBefore(wrap, gen); else hdr.appendChild(wrap);
+  const st = document.createElement('style');
+  st.textContent = '#avControls .av-on{border-color:var(--cyan)!important;color:var(--cyan)!important;background:rgba(0,255,231,.08)!important}';
+  document.head.appendChild(st);
+}
 
 
 </script>
