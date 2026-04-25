@@ -488,6 +488,93 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
 /* ══ STICKY HEADER ══ */
 .global-header{position:sticky;top:4px;z-index:9998}
+
+/* ══ VIEW TOGGLE BUTTON ══ */
+.gh-view-btn{padding:0 9px;height:26px;border:1px solid var(--border);border-radius:5px;background:var(--chrome);color:var(--dim);font-family:'Bungee',display;font-size:9px;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0}
+.gh-view-btn:hover{border-color:var(--purple);color:var(--purple)}
+.gh-view-btn.active{border-color:var(--purple);color:var(--purple);background:rgba(191,95,255,.1)}
+
+/* ══ FLEET VIEW ══ */
+#fleetView{display:none;flex-direction:column;gap:6px;animation:_fadeIn .25s ease}
+@keyframes _fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* Fleet summary bar */
+.fleet-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:6px;margin-bottom:4px}
+.fleet-stat{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:8px 10px;text-align:center;transition:border-color .3s}
+.fleet-stat.positive{border-color:rgba(57,255,20,.3)}
+.fleet-stat.negative{border-color:rgba(255,45,120,.3)}
+.fleet-stat-val{font-family:'Oswald',sans-serif;font-size:18px;font-weight:700;line-height:1}
+.fleet-stat-lbl{font-size:7px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+
+/* Fleet bot rows */
+.fleet-row{display:grid;grid-template-columns:60px 1fr 90px 90px 80px 80px 70px 36px;align-items:center;gap:6px;padding:7px 10px;background:var(--panel);border:1px solid var(--border);border-radius:8px;transition:all .25s;cursor:default}
+.fleet-row:hover{background:var(--chrome);border-color:var(--gold2)}
+.fleet-row.fr-auto{border-left:3px solid var(--cyan)}
+.fleet-row.fr-open{border-left:3px solid var(--blue)}
+.fleet-row.fr-cooling{border-left:3px solid var(--hot)}
+.fleet-row.fr-win{animation:_frwin .6s ease}
+.fleet-row.fr-loss{animation:_frloss .6s ease}
+@keyframes _frwin{0%,100%{background:var(--panel)}50%{background:rgba(57,255,20,.07)}}
+@keyframes _frloss{0%,100%{background:var(--panel)}50%{background:rgba(255,45,120,.07)}}
+.fr-id{font-family:'Bungee',display;font-size:10px;color:var(--gold);letter-spacing:1px}
+.fr-status{display:flex;align-items:center;gap:5px}
+.fr-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;transition:background .3s}
+.fr-dot.auto{background:var(--cyan);box-shadow:0 0 5px var(--cyan)}
+.fr-dot.open{background:var(--blue);box-shadow:0 0 5px var(--blue)}
+.fr-dot.cooling{background:var(--hot);animation:_dotpulse .6s ease infinite alternate}
+.fr-dot.idle{background:var(--dim)}
+@keyframes _dotpulse{from{opacity:.4}to{opacity:1}}
+.fr-label{font-size:8px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fr-token{font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;color:var(--blue)}
+.fr-method{font-size:8px;color:var(--dim)}
+.fr-pnl{font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;text-align:right}
+.fr-pnl.pos{color:var(--green)}
+.fr-pnl.neg{color:var(--hot)}
+.fr-pnl.zero{color:var(--dim)}
+.fr-live{font-size:8px;text-align:right}
+.fr-live.pos{color:var(--green)}
+.fr-live.neg{color:var(--hot)}
+.fr-live.none{color:var(--dim)}
+.fr-bet{font-size:9px;color:var(--gold2);text-align:center}
+.fr-personality{font-size:7px;color:var(--dim);text-align:center;text-transform:uppercase;letter-spacing:.5px}
+.fr-actions{display:flex;gap:3px;justify-content:flex-end}
+.fr-btn{width:28px;height:22px;border:1px solid var(--border);border-radius:4px;background:var(--chrome);color:var(--dim);font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.fr-btn:hover{border-color:var(--cyan);color:var(--cyan)}
+.fr-btn.on{border-color:var(--cyan);color:var(--cyan);background:rgba(0,255,231,.08)}
+
+/* Fleet header row */
+.fleet-header{display:grid;grid-template-columns:60px 1fr 90px 90px 80px 80px 70px 36px;gap:6px;padding:3px 10px;font-size:7px;color:var(--dim);text-transform:uppercase;letter-spacing:1px}
+
+/* Mini equity sparkline */
+.fr-spark{width:70px;height:22px;flex-shrink:0}
+
+/* ══ ONBOARDING TOOLTIP ══ */
+.tip-overlay{position:fixed;inset:0;z-index:10000;pointer-events:none}
+.tip-box{position:absolute;background:linear-gradient(135deg,rgba(14,9,20,.98),rgba(22,15,30,.98));border:1px solid var(--gold2);border-radius:10px;padding:12px 14px;max-width:240px;pointer-events:all;box-shadow:0 8px 32px rgba(0,0,0,.7);animation:_fadeIn .2s ease}
+.tip-box::before{content:'';position:absolute;width:10px;height:10px;background:var(--gold2);clip-path:polygon(50% 0%,0% 100%,100% 100%);top:-6px;left:20px}
+.tip-title{font-family:'Bungee',display;font-size:10px;letter-spacing:2px;color:var(--gold2);margin-bottom:5px}
+.tip-body{font-size:10px;color:#bbb;line-height:1.6}
+.tip-body strong{color:#fff}
+.tip-footer{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+.tip-step{font-size:8px;color:var(--dim)}
+.tip-btns{display:flex;gap:5px}
+.tip-btn{padding:3px 10px;font-family:'Bungee',display;font-size:8px;border:none;border-radius:4px;cursor:pointer;letter-spacing:.5px}
+.tip-btn-skip{background:var(--chrome);color:var(--dim)}
+.tip-btn-next{background:linear-gradient(90deg,var(--hot),var(--gold2));color:#fff}
+
+/* ══ HOTKEY HINT BAR ══ */
+.hotkey-bar{display:flex;gap:10px;flex-wrap:wrap;padding:5px 10px;background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:6px;margin-bottom:6px;animation:_fadeIn .3s ease}
+.hk{display:flex;align-items:center;gap:4px;font-size:8px;color:var(--dim)}
+.hk kbd{background:var(--chrome);border:1px solid var(--border);border-radius:3px;padding:1px 5px;font-family:'Share Tech Mono',monospace;font-size:8px;color:#aaa}
+
+/* ══ COMPACT VIEW (bot-grid in fleet mode hides) ══ */
+#mainApp.fleet-mode #botGrid,
+#mainApp.fleet-mode .audit-panel,
+#mainApp.fleet-mode .learn-panel,
+#mainApp.fleet-mode #quantPanel,
+#mainApp.fleet-mode #breakerPanel,
+#mainApp.fleet-mode .bus-panel{display:none!important}
+#mainApp.fleet-mode #fleetView{display:flex}
 </style>
 
 <!-- ╔════════════════════════════════════════════════════════════╗ -->
@@ -579,6 +666,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     </div>
     <!-- bot controls -->
     <div class="gh-controls">
+      <button class="gh-view-btn" id="ghViewBtn" onclick="switchView()" title="Toggle fleet view">⊞ FLEET</button>
       <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots">⚙ BUS</button>
       <button class="gh-auto-btn" id="ghAutoBtn" onclick="globalAutoToggle()" title="Toggle auto-trading on all bots">AUTO</button>
       <button class="gh-bot-btn" id="ghRemoveBtn" onclick="removeLastBot()" title="Remove last bot" disabled>−</button>
@@ -672,6 +760,58 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('reset')"       title="Reset all bots to defaults">↺ RESET ALL</button>
     </div>
     <div class="bus-status" id="busStatus"></div>
+  </div>
+
+  <!-- ══ FLEET VIEW ══ -->
+  <div id="fleetView">
+    <!-- Summary stats bar -->
+    <div class="fleet-summary" id="fleetSummary">
+      <div class="fleet-stat" id="fsBal">
+        <div class="fleet-stat-val" style="color:var(--gold)">$—</div>
+        <div class="fleet-stat-lbl">Balance</div>
+      </div>
+      <div class="fleet-stat" id="fsPnl">
+        <div class="fleet-stat-val" style="color:var(--dim)">$0.00</div>
+        <div class="fleet-stat-lbl">Session P&L</div>
+      </div>
+      <div class="fleet-stat" id="fsOpen">
+        <div class="fleet-stat-val" style="color:var(--blue)">0</div>
+        <div class="fleet-stat-lbl">Open Trades</div>
+      </div>
+      <div class="fleet-stat" id="fsWin">
+        <div class="fleet-stat-val" style="color:var(--green)">—</div>
+        <div class="fleet-stat-lbl">Win Rate</div>
+      </div>
+      <div class="fleet-stat" id="fsBots">
+        <div class="fleet-stat-val" style="color:var(--cyan)">0</div>
+        <div class="fleet-stat-lbl">Active Bots</div>
+      </div>
+      <div class="fleet-stat" id="fsGen">
+        <div class="fleet-stat-val" style="color:var(--purple)">0</div>
+        <div class="fleet-stat-lbl">AI Generation</div>
+      </div>
+    </div>
+    <!-- Column headers -->
+    <div class="fleet-header">
+      <div>BOT</div><div>STATUS</div><div>POSITION</div><div>SESSION P&L</div><div>LIVE P&L</div><div>BET · STYLE</div><div>TRADES</div><div></div>
+    </div>
+    <!-- Bot rows injected by JS -->
+    <div id="fleetRows"></div>
+  </div>
+
+  <!-- ══ ONBOARDING TOOLTIP OVERLAY ══ -->
+  <div class="tip-overlay" id="tipOverlay" style="display:none">
+    <div class="tip-box" id="tipBox">
+      <div class="tip-title" id="tipTitle">WELCOME</div>
+      <div class="tip-body" id="tipBody"></div>
+      <div class="tip-footer">
+        <span class="tip-step" id="tipStep"></span>
+        <div class="tip-btns">
+          <button class="tip-btn tip-btn-skip" onclick="endTour()">SKIP</button>
+          <button class="tip-btn tip-btn-next" onclick="nextTip()">NEXT →</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- ★ AGENT AUDIT PANEL ★ -->
@@ -2092,6 +2232,8 @@ function setupApp({name,avatar,badge}){
       _startHeaderTicker();
       _syncHeaderBotBtns();
       _injectAVControls();
+      _injectHotkeyBar();
+      setTimeout(startTour, 1200);
     });
   }catch(e){
     console.error('setupApp critical error:',e);
@@ -2123,7 +2265,7 @@ function addBot(){
   // Each bot gets unique personality for trade diversity
   const personality = ['AGGRESSIVE', 'CONSERVATIVE', 'MOMENTUM', 'CONTRARIAN', 'BALANCED'][botCounter % 5];
   const bot={
-    id:botCounter,spinning:false,auto:false,bet:10,pnl:0,
+    id:botCounter,spinning:false,auto:false,bet:1,pnl:0,
     consecutiveLosses:0,cooldownLevel:0,coolingUntil:0,cooling:false,
     autoTimer:null,tickerTimer:null,tickerIdx:0,
     personality,
@@ -3913,6 +4055,258 @@ setInterval(function(){
     }
   }catch(e){}
 },15000);
+
+// ══════════════════════════════════════════════════════
+// VIEW SWITCHER — fleet vs detail
+// ══════════════════════════════════════════════════════
+let _viewMode = 'detail'; // 'detail' | 'fleet'
+let _fleetInterval = null;
+
+function switchView() {
+  _viewMode = _viewMode === 'detail' ? 'fleet' : 'detail';
+  const app  = document.getElementById('mainApp');
+  const btn  = document.getElementById('ghViewBtn');
+  const bus  = document.getElementById('busPanel');
+  if (_viewMode === 'fleet') {
+    app.classList.add('fleet-mode');
+    if (btn) { btn.textContent = '⊟ DETAIL'; btn.classList.add('active'); }
+    if (bus) bus.classList.remove('open');
+    document.getElementById('ghBusBtn')?.classList.remove('open');
+    _buildFleetRows();
+    _updateFleetSummary();
+    if (_fleetInterval) clearInterval(_fleetInterval);
+    _fleetInterval = setInterval(() => { _buildFleetRows(); _updateFleetSummary(); }, 1000);
+  } else {
+    app.classList.remove('fleet-mode');
+    if (btn) { btn.textContent = '⊞ FLEET'; btn.classList.remove('active'); }
+    if (_fleetInterval) { clearInterval(_fleetInterval); _fleetInterval = null; }
+  }
+}
+
+function _updateFleetSummary() {
+  const unrealised = openPositions.reduce((s,p) => s+(p.livePnl||0), 0);
+  const displayBal = balance + unrealised;
+  const displayPnl = totalPnl + unrealised;
+  const wins = closedTrades.filter(t => t.isWin).length;
+  const total = closedTrades.length;
+  const wr = total > 0 ? Math.round(wins/total*100) : null;
+
+  const set = (id, val, color) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.querySelector('.fleet-stat-val').textContent = val;
+    if (color) el.querySelector('.fleet-stat-val').style.color = color;
+    el.className = 'fleet-stat' + (parseFloat(val) > 0 ? ' positive' : parseFloat(val) < 0 ? ' negative' : '');
+  };
+
+  set('fsBal', '$'+displayBal.toFixed(2), displayBal >= balance ? 'var(--gold)' : 'var(--hot)');
+  const pnlEl = document.getElementById('fsPnl');
+  if (pnlEl) {
+    pnlEl.querySelector('.fleet-stat-val').textContent = (displayPnl>=0?'+':'')+'$'+displayPnl.toFixed(2);
+    pnlEl.querySelector('.fleet-stat-val').style.color = displayPnl>=0?'var(--green)':'var(--hot)';
+  }
+  set('fsOpen', openPositions.length, 'var(--blue)');
+  set('fsWin', wr !== null ? wr+'%' : '—', wr >= 50 ? 'var(--green)' : wr !== null ? 'var(--hot)' : 'var(--dim)');
+  set('fsBots', bots.length, 'var(--cyan)');
+  set('fsGen', typeof learningGeneration !== 'undefined' ? learningGeneration : 0, 'var(--purple)');
+}
+
+function _buildFleetRows() {
+  const container = document.getElementById('fleetRows');
+  if (!container) return;
+
+  bots.forEach(bot => {
+    let row = document.getElementById('fr-'+bot.id);
+    const openPos = openPositions.find(p => p.botId === bot.id);
+    const isAuto = bot.auto;
+    const isCooling = bot.cooling;
+
+    // State class
+    const stateClass = isCooling ? 'fr-cooling' : openPos ? 'fr-open' : isAuto ? 'fr-auto' : '';
+    const dotClass   = isCooling ? 'cooling' : openPos ? 'open' : isAuto ? 'auto' : 'idle';
+    const statusLabel = isCooling ? '❄ COOLDOWN' : openPos ? `${openPos.token} ${openPos.method}` : isAuto ? '⚡ AUTO' : '— IDLE';
+
+    // Live P&L
+    const livePnl = openPos ? (openPos.livePnl || 0) : null;
+    const livePnlStr = livePnl !== null ? (livePnl>=0?'+':'')+'$'+livePnl.toFixed(2) : '—';
+    const livePnlClass = livePnl === null ? 'none' : livePnl >= 0 ? 'pos' : 'neg';
+
+    // Session P&L
+    const pnlClass = bot.pnl > 0 ? 'pos' : bot.pnl < 0 ? 'neg' : 'zero';
+    const pnlStr = (bot.pnl>=0?'+':'')+'$'+bot.pnl.toFixed(2);
+
+    // Trade count
+    const tradeCount = bot.tradeHistory?.length || 0;
+
+    const autoLabel = isAuto ? '⏸' : '▶';
+
+    if (!row) {
+      row = document.createElement('div');
+      row.id = 'fr-'+bot.id;
+      row.className = 'fleet-row ' + stateClass;
+      container.appendChild(row);
+    } else {
+      // Flash on state change
+      const wasOpen = row.dataset.wasOpen === '1';
+      const nowOpen = !!openPos;
+      if (!wasOpen && nowOpen) { row.classList.add('fr-win'); setTimeout(()=>row.classList.remove('fr-win'),700); }
+      row.className = 'fleet-row ' + stateClass;
+    }
+    row.dataset.wasOpen = openPos ? '1' : '0';
+
+    row.innerHTML = `
+      <div class="fr-id">BOT #${bot.id}</div>
+      <div class="fr-status">
+        <div class="fr-dot ${dotClass}"></div>
+        <div class="fr-label">${statusLabel}</div>
+      </div>
+      <div>
+        ${openPos ? `<div class="fr-token">${openPos.token}</div><div class="fr-method">${openPos.method}</div>` : '<div class="fr-method" style="color:var(--dim)">—</div>'}
+      </div>
+      <div class="fr-pnl ${pnlClass}">${pnlStr}</div>
+      <div class="fr-live ${livePnlClass}">${livePnlStr}</div>
+      <div>
+        <div class="fr-bet">$${bot.bet%1===0?bot.bet.toFixed(0):bot.bet.toFixed(2)}</div>
+        <div class="fr-personality">${bot.personality||'—'}</div>
+      </div>
+      <div style="font-size:9px;color:var(--dim);text-align:center">${tradeCount} trades</div>
+      <div class="fr-actions">
+        <button class="fr-btn${isAuto?' on':''}" onclick="toggleAuto(${bot.id})" title="${isAuto?'Stop auto':'Start auto'}">${autoLabel}</button>
+      </div>`;
+  });
+
+  // Remove rows for deleted bots
+  container.querySelectorAll('.fleet-row').forEach(row => {
+    const id = parseInt(row.id.replace('fr-',''));
+    if (!bots.find(b => b.id === id)) row.remove();
+  });
+}
+
+// Hook fleet updates into trade close
+const _origCheckExit = checkExit;
+// (fleet updates via interval — no need to monkey-patch)
+
+// ══════════════════════════════════════════════════════
+// ONBOARDING TOUR
+// ══════════════════════════════════════════════════════
+const TIPS = [
+  {
+    title: 'WELCOME TO TRADE ARENA',
+    body: '<strong>AI bots trade crypto in real time</strong> using a 5-agent ensemble: Momentum, Volatility, Politician, Sentiment, and Risk. Each agent votes — majority wins.',
+    anchor: '.global-header'
+  },
+  {
+    title: 'ADD YOUR FIRST BOT',
+    body: 'Tap <strong>+</strong> in the header to add a bot. Each bot has its own personality and trades independently. Add up to 99 bots.',
+    anchor: '#ghAddBtn'
+  },
+  {
+    title: 'SET TRADE AMOUNT',
+    body: 'Tap <strong>⚙</strong> on any bot card to open its settings. Set how much to bet per trade — from $0.10 to $100 or a custom amount.',
+    anchor: '#botGrid'
+  },
+  {
+    title: 'AUTO TRADING',
+    body: 'Hit <strong>AUTO</strong> on a bot to let it trade continuously. Use the header <strong>AUTO</strong> button to start/stop all bots at once.',
+    anchor: '#ghAutoBtn'
+  },
+  {
+    title: 'BUS SETTINGS',
+    body: 'The <strong>⚙ BUS</strong> button applies settings to ALL bots at once — trade amount, personality, stop loss, take profit, and quick presets like Degen Mode or Safe Mode.',
+    anchor: '#ghBusBtn'
+  },
+  {
+    title: 'FLEET VIEW',
+    body: 'Tap <strong>⊞ FLEET</strong> to see all bots on one screen — live P&L, open positions, win rate, and quick controls in a compact dashboard.',
+    anchor: '#ghViewBtn'
+  },
+  {
+    title: 'SOUND & VOICE',
+    body: '<strong>🔊</strong> toggles sound effects (win fanfare, loss thud, spin blip). <strong>🎙️</strong> toggles voice callouts — the app announces every trade open and close.',
+    anchor: '#avControls'
+  },
+];
+
+let _tipIdx = 0;
+let _tourActive = false;
+
+function startTour() {
+  if (localStorage.getItem('ta_tour_done') === '1') return;
+  _tipIdx = 0;
+  _tourActive = true;
+  _showTip();
+}
+
+function _showTip() {
+  const tip = TIPS[_tipIdx];
+  if (!tip) { endTour(); return; }
+  const overlay = document.getElementById('tipOverlay');
+  const box     = document.getElementById('tipBox');
+  if (!overlay || !box) return;
+
+  document.getElementById('tipTitle').textContent = tip.title;
+  document.getElementById('tipBody').innerHTML    = tip.body;
+  document.getElementById('tipStep').textContent  = `${_tipIdx+1} / ${TIPS.length}`;
+
+  // Position near anchor
+  const anchor = document.querySelector(tip.anchor);
+  if (anchor) {
+    const r = anchor.getBoundingClientRect();
+    box.style.top  = Math.min(r.bottom + 10, window.innerHeight - 200) + 'px';
+    box.style.left = Math.max(10, Math.min(r.left, window.innerWidth - 260)) + 'px';
+  } else {
+    box.style.top = '120px'; box.style.left = '20px';
+  }
+
+  overlay.style.display = 'block';
+  box.style.animation = 'none';
+  setTimeout(() => { box.style.animation = '_fadeIn .2s ease'; }, 10);
+}
+
+function nextTip() {
+  _tipIdx++;
+  if (_tipIdx >= TIPS.length) { endTour(); return; }
+  _showTip();
+}
+
+function endTour() {
+  document.getElementById('tipOverlay').style.display = 'none';
+  _tourActive = false;
+  localStorage.setItem('ta_tour_done', '1');
+}
+
+// ══════════════════════════════════════════════════════
+// HOTKEY BAR
+// ══════════════════════════════════════════════════════
+function _injectHotkeyBar() {
+  if (document.getElementById('hotkeyBar')) return;
+  const bar = document.createElement('div');
+  bar.id = 'hotkeyBar';
+  bar.className = 'hotkey-bar';
+  bar.innerHTML = `
+    <div class="hk"><kbd>A</kbd> Add bot</div>
+    <div class="hk"><kbd>F</kbd> Fleet view</div>
+    <div class="hk"><kbd>B</kbd> Bus panel</div>
+    <div class="hk"><kbd>Space</kbd> Global AUTO</div>
+    <div class="hk"><kbd>?</kbd> Tour</div>
+    <div class="hk" style="margin-left:auto"><span style="color:var(--dim);font-size:7px">Press <kbd>H</kbd> to hide</span></div>`;
+  const grid = document.getElementById('botGrid');
+  if (grid) grid.parentNode.insertBefore(bar, grid);
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return;
+  if (e.key === 'a' || e.key === 'A') addBot();
+  if (e.key === 'f' || e.key === 'F') switchView();
+  if (e.key === 'b' || e.key === 'B') toggleBusPanel();
+  if (e.key === ' ') { e.preventDefault(); globalAutoToggle(); }
+  if (e.key === '?') startTour();
+  if (e.key === 'h' || e.key === 'H') {
+    const bar = document.getElementById('hotkeyBar');
+    if (bar) bar.style.display = bar.style.display === 'none' ? 'flex' : 'none';
+  }
+});
 
 // ══════════════════════════════════════════════════════
 // BUS SETTINGS — apply to all bots simultaneously
