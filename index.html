@@ -65,6 +65,22 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 .add-bot-btn{padding:6px 12px;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;background:linear-gradient(90deg,var(--hot),var(--gold2));border:none;border-radius:6px;color:#fff;cursor:pointer;white-space:nowrap;box-shadow:0 0 10px rgba(255,45,120,.3);transition:all .15s}
 .add-bot-btn:hover{box-shadow:0 0 18px rgba(255,45,120,.6)}
 .add-bot-btn:disabled{opacity:.35;cursor:not-allowed}
+/* ── header controls ── */
+.gh-controls{display:flex;align-items:center;gap:5px;flex-shrink:0}
+.gh-bot-btn{width:26px;height:26px;border:1px solid var(--border);border-radius:5px;background:var(--chrome);color:#fff;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+.gh-bot-btn:hover{border-color:var(--gold2);color:var(--gold2)}
+.gh-bot-btn:disabled{opacity:.3;cursor:not-allowed}
+.gh-auto-btn{padding:0 9px;height:26px;border:1px solid var(--border);border-radius:5px;background:var(--chrome);color:var(--dim);font-family:'Bungee',display;font-size:9px;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0}
+.gh-auto-btn:hover{border-color:var(--cyan);color:var(--cyan)}
+.gh-auto-btn.on{background:rgba(0,255,231,.1);border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 8px rgba(0,255,231,.2)}
+.gh-ticker{display:flex;flex-direction:column;align-items:center;flex-shrink:0;min-width:44px}
+.gh-ticker-cd{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--cyan);line-height:1}
+.gh-ticker-cd.urgent{color:var(--hot);animation:gh-blink .5s ease infinite alternate}
+@keyframes gh-blink{from{opacity:1}to{opacity:.4}}
+.gh-ticker-lbl{font-size:7px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-top:1px}
+.gh-queue{display:flex;flex-direction:column;align-items:center;flex-shrink:0;min-width:24px}
+.gh-queue-num{font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;color:var(--blue);line-height:1}
+.gh-queue-lbl{font-size:7px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-top:1px}
 
 /* ══ MASTER SWITCH ══ */
 #masterSwitchContainer{display:flex !important;visibility:visible !important}
@@ -497,15 +513,29 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
   <!-- Header -->
   <div class="global-header">
     <div class="gh-avatar" id="ghAvatar">👤</div>
-    <div style="flex:1;overflow:hidden;min-width:80px">
+    <div style="flex:1;overflow:hidden;min-width:60px">
       <div class="gh-name" id="ghName">—</div>
       <span style="font-size:9px;padding:1px 6px;border-radius:10px;background:var(--chrome);border:1px solid var(--border);color:var(--dim)" id="ghBadge">DEMO</span>
     </div>
-    <div style="margin-right:6px;text-align:right">
+    <div style="margin-right:4px;text-align:right;flex-shrink:0">
       <div class="gh-balance" id="ghBalance" style="transition:color .3s">$10,000.00</div>
       <div class="gh-pnl pnl-pos" id="ghPnl">+$0.00 today</div>
     </div>
-    <button class="add-bot-btn" id="addBotBtn" onclick="addBot()">+ ADD BOT</button>
+    <!-- countdown + open trade tally -->
+    <div class="gh-ticker" id="ghTicker" style="display:none">
+      <span class="gh-ticker-cd" id="ghCountdown">--:--</span>
+      <span class="gh-ticker-lbl">next exit</span>
+    </div>
+    <div class="gh-queue" id="ghQueueWrap" style="display:none">
+      <span class="gh-queue-num" id="ghQueueNum">0</span>
+      <span class="gh-queue-lbl">open</span>
+    </div>
+    <!-- bot controls -->
+    <div class="gh-controls">
+      <button class="gh-auto-btn" id="ghAutoBtn" onclick="globalAutoToggle()" title="Toggle auto-trading on all bots">AUTO</button>
+      <button class="gh-bot-btn" id="ghRemoveBtn" onclick="removeLastBot()" title="Remove last bot" disabled>−</button>
+      <button class="gh-bot-btn" id="ghAddBtn" onclick="addBot()" title="Add bot">+</button>
+    </div>
     <span class="gen-badge" id="genBadge">GEN 0</span>
     <span id="apiBreakerBadge" style="display:none"></span>
   </div>
@@ -1579,6 +1609,9 @@ function globalKill() {
   bots.forEach(b=>{ b.auto=false; if(b.autoTimer) clearTimeout(b.autoTimer);
     const btn=document.getElementById('mauto-'+b.id), card=document.getElementById('bot-'+b.id);
     if(btn){btn.textContent='AUTO';btn.classList.remove('on');} if(card) card.classList.remove('auto-on'); });
+  _ghAutoOn=false;
+  const ghBtn=document.getElementById('ghAutoBtn');
+  if(ghBtn){ghBtn.textContent='AUTO';ghBtn.classList.remove('on');}
   checkGlobalBreakers();
   document.getElementById('breakerBody')?.classList.add('open');
   document.getElementById('breakerHd')?.classList.add('open');
@@ -1871,6 +1904,8 @@ function setupApp({name,avatar,badge}){
       try{ loadLearningState(); }catch(e){ console.warn('learning:',e); }
       try{ updateAuditSummaryBadge(); }catch(e){}
       try{ addBot(); }catch(e){ console.error('addBot:',e); }
+      _startHeaderTicker();
+      _syncHeaderBotBtns();
     });
   }catch(e){
     console.error('setupApp critical error:',e);
@@ -1911,14 +1946,79 @@ function addBot(){
     lastTradeTime:0
   };
   bots.push(bot); renderBot(bot);
-  document.getElementById('addBotBtn').disabled=bots.length>=MAX_BOTS;
+  _syncHeaderBotBtns();
 }
 function removeBot(id){
   const bot=bots.find(b=>b.id===id);
   if(bot){if(bot.autoTimer)clearTimeout(bot.autoTimer);if(bot.tickerTimer)clearTimeout(bot.tickerTimer);}
   bots=bots.filter(b=>b.id!==id);
   document.getElementById('bot-'+id)?.remove();
-  document.getElementById('addBotBtn').disabled=bots.length>=MAX_BOTS;
+  _syncHeaderBotBtns();
+}
+function removeLastBot(){
+  if(bots.length===0) return;
+  removeBot(bots[bots.length-1].id);
+}
+function _syncHeaderBotBtns(){
+  const add=document.getElementById('ghAddBtn');
+  const rem=document.getElementById('ghRemoveBtn');
+  if(add) add.disabled=bots.length>=MAX_BOTS;
+  if(rem) rem.disabled=bots.length===0;
+  // keep legacy button in sync if still present
+  const legacy=document.getElementById('addBotBtn');
+  if(legacy) legacy.disabled=bots.length>=MAX_BOTS;
+}
+
+// ── Global auto toggle ──
+let _ghAutoOn=false;
+function globalAutoToggle(){
+  _ghAutoOn=!_ghAutoOn;
+  bots.forEach(b=>{
+    if(_ghAutoOn===b.auto) return; // already in target state
+    b.auto=_ghAutoOn;
+    const btn=document.getElementById('mauto-'+b.id), card=document.getElementById('bot-'+b.id);
+    if(_ghAutoOn){
+      if(btn){btn.textContent='⏸ STOP';btn.classList.add('on');}
+      if(card) card.classList.add('auto-on');
+      scheduleAuto(b);
+    } else {
+      if(btn){btn.textContent='AUTO';btn.classList.remove('on');}
+      if(card) card.classList.remove('auto-on');
+      if(b.autoTimer) clearTimeout(b.autoTimer);
+    }
+  });
+  const btn=document.getElementById('ghAutoBtn');
+  if(btn){ btn.textContent=_ghAutoOn?'⏸ STOP':'AUTO'; btn.classList.toggle('on',_ghAutoOn); }
+}
+
+// ── Header countdown + open-trade tally ──
+let _ghTickerInterval=null;
+function _startHeaderTicker(){
+  if(_ghTickerInterval) clearInterval(_ghTickerInterval);
+  _ghTickerInterval=setInterval(_tickHeader,500);
+}
+function _tickHeader(){
+  // open trade count
+  const count=openPositions.length;
+  const qWrap=document.getElementById('ghQueueWrap');
+  const qNum=document.getElementById('ghQueueNum');
+  if(qWrap){ qWrap.style.display=count>0?'flex':'none'; }
+  if(qNum) qNum.textContent=count;
+
+  // countdown to nearest exit
+  const ticker=document.getElementById('ghTicker');
+  const cd=document.getElementById('ghCountdown');
+  if(!ticker||!cd) return;
+  if(count===0){ ticker.style.display='none'; return; }
+  ticker.style.display='flex';
+  const now=Date.now();
+  let nearest=null;
+  openPositions.forEach(p=>{ if(p.exitTime&&(!nearest||p.exitTime<nearest)) nearest=p.exitTime; });
+  if(!nearest){ cd.textContent='--:--'; return; }
+  const ms=Math.max(0,nearest-now);
+  const s=Math.floor(ms/1000)%60, m=Math.floor(ms/60000)%60, h=Math.floor(ms/3600000);
+  cd.textContent=h>0?`${h}h${m}m`:m>0?`${m}:${String(s).padStart(2,'0')}`:`0:${String(s).padStart(2,'0')}`;
+  cd.className='gh-ticker-cd'+(ms<15000?' urgent':'');
 }
 function renderBot(bot){
   const el=document.createElement('div'); el.className='machine'; el.id='bot-'+bot.id;
@@ -2033,6 +2133,11 @@ function toggleAuto(id){
   const btn=document.getElementById('mauto-'+id), card=document.getElementById('bot-'+id);
   if(bot.auto){btn.textContent='⏸ STOP';btn.classList.add('on');card.classList.add('auto-on');scheduleAuto(bot);}
   else{btn.textContent='AUTO';btn.classList.remove('on');card.classList.remove('auto-on');if(bot.autoTimer)clearTimeout(bot.autoTimer);}
+  // keep global auto button in sync
+  const allOn=bots.length>0&&bots.every(b=>b.auto);
+  _ghAutoOn=allOn;
+  const ghBtn=document.getElementById('ghAutoBtn');
+  if(ghBtn){ghBtn.textContent=allOn?'⏸ STOP':'AUTO';ghBtn.classList.toggle('on',allOn);}
 }
 function scheduleAuto(bot){
   if(!bot.auto) return;
