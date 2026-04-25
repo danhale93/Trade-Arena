@@ -65,6 +65,32 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 .add-bot-btn{padding:6px 12px;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;background:linear-gradient(90deg,var(--hot),var(--gold2));border:none;border-radius:6px;color:#fff;cursor:pointer;white-space:nowrap;box-shadow:0 0 10px rgba(255,45,120,.3);transition:all .15s}
 .add-bot-btn:hover{box-shadow:0 0 18px rgba(255,45,120,.6)}
 .add-bot-btn:disabled{opacity:.35;cursor:not-allowed}
+/* ── bus panel ── */
+.gh-bus-btn{padding:0 9px;height:26px;border:1px solid var(--border);border-radius:5px;background:var(--chrome);color:var(--dim);font-family:'Bungee',display;font-size:9px;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0}
+.gh-bus-btn:hover{border-color:var(--gold2);color:var(--gold2)}
+.gh-bus-btn.open{border-color:var(--gold2);color:var(--gold2);background:rgba(255,170,0,.08)}
+.bus-panel{display:none;background:linear-gradient(180deg,rgba(14,9,20,.98),rgba(10,6,16,.98));border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;padding:12px 14px 14px;margin-top:-8px;margin-bottom:8px;box-shadow:0 8px 32px rgba(0,0,0,.6)}
+.bus-panel.open{display:block}
+.bus-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.bus-section{background:var(--chrome);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
+.bus-section-title{font-family:'Bungee',display;font-size:9px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.bus-section-title span{font-size:12px}
+.bus-presets{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
+.bus-preset{padding:4px 9px;font-family:'Bungee',display;font-size:8px;letter-spacing:.5px;background:var(--panel);border:1px solid var(--border);border-radius:4px;color:var(--dim);cursor:pointer;transition:all .12s;white-space:nowrap}
+.bus-preset:hover{border-color:var(--gold2);color:var(--gold2)}
+.bus-preset.active{background:rgba(255,170,0,.1);border-color:var(--gold2);color:var(--gold2)}
+.bus-custom-row{display:flex;gap:5px;margin-top:4px}
+.bus-custom-row input{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--gold);padding:4px 7px;border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px;min-width:0}
+.bus-custom-row input:focus{outline:none;border-color:var(--gold2)}
+.bus-custom-row button{padding:4px 10px;font-family:'Bungee',display;font-size:8px;background:var(--chrome);border:1px solid var(--border);border-radius:4px;color:var(--dim);cursor:pointer;white-space:nowrap;transition:all .12s}
+.bus-custom-row button:hover{border-color:var(--gold2);color:var(--gold2)}
+.bus-apply-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+.bus-apply-btn{flex:1;min-width:120px;padding:7px 10px;font-family:'Bungee',display;font-size:9px;letter-spacing:1px;border:none;border-radius:5px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.bus-apply-primary{background:linear-gradient(90deg,var(--hot),var(--gold2));color:#fff;box-shadow:0 0 10px rgba(255,45,120,.3)}
+.bus-apply-primary:hover{box-shadow:0 0 18px rgba(255,45,120,.5)}
+.bus-apply-secondary{background:var(--chrome);border:1px solid var(--border);color:var(--dim)}
+.bus-apply-secondary:hover{border-color:var(--cyan);color:var(--cyan)}
+.bus-status{font-size:8px;color:var(--dim);margin-top:6px;min-height:12px;transition:color .3s}
 /* ── header controls ── */
 .gh-controls{display:flex;align-items:center;gap:5px;flex-shrink:0}
 .gh-bot-btn{width:26px;height:26px;border:1px solid var(--border);border-radius:5px;background:var(--chrome);color:#fff;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
@@ -553,12 +579,99 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     </div>
     <!-- bot controls -->
     <div class="gh-controls">
+      <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots">⚙ BUS</button>
       <button class="gh-auto-btn" id="ghAutoBtn" onclick="globalAutoToggle()" title="Toggle auto-trading on all bots">AUTO</button>
       <button class="gh-bot-btn" id="ghRemoveBtn" onclick="removeLastBot()" title="Remove last bot" disabled>−</button>
       <button class="gh-bot-btn" id="ghAddBtn" onclick="addBot()" title="Add bot">+</button>
     </div>
     <span class="gen-badge" id="genBadge">GEN 0</span>
     <span id="apiBreakerBadge" style="display:none"></span>
+  </div>
+
+  <!-- ══ BUS SETTINGS PANEL ══ -->
+  <div class="bus-panel" id="busPanel">
+    <div class="bus-grid">
+
+      <!-- Trade Amount -->
+      <div class="bus-section">
+        <div class="bus-section-title"><span>💰</span> TRADE AMOUNT — ALL BOTS</div>
+        <div class="bus-presets" id="busAmtPresets">
+          <button class="bus-preset" onclick="busSetAmount(0.10)">$0.10</button>
+          <button class="bus-preset" onclick="busSetAmount(0.25)">$0.25</button>
+          <button class="bus-preset" onclick="busSetAmount(0.50)">$0.50</button>
+          <button class="bus-preset" onclick="busSetAmount(1)">$1</button>
+          <button class="bus-preset" onclick="busSetAmount(2)">$2</button>
+          <button class="bus-preset" onclick="busSetAmount(5)">$5</button>
+          <button class="bus-preset" onclick="busSetAmount(20)">$20</button>
+          <button class="bus-preset" onclick="busSetAmount(100)">$100</button>
+        </div>
+        <div class="bus-custom-row">
+          <input type="number" id="busCustomAmt" placeholder="Custom $" min="0.01" step="0.01">
+          <button onclick="busSetCustomAmount()">SET ALL</button>
+        </div>
+      </div>
+
+      <!-- Personality -->
+      <div class="bus-section">
+        <div class="bus-section-title"><span>🧠</span> PERSONALITY — ALL BOTS</div>
+        <div class="bus-presets" id="busPersonalityPresets">
+          <button class="bus-preset" onclick="busSetPersonality('AGGRESSIVE')">🔥 Aggressive</button>
+          <button class="bus-preset" onclick="busSetPersonality('CONSERVATIVE')">🛡️ Conservative</button>
+          <button class="bus-preset" onclick="busSetPersonality('MOMENTUM')">📈 Momentum</button>
+          <button class="bus-preset" onclick="busSetPersonality('CONTRARIAN')">🔄 Contrarian</button>
+          <button class="bus-preset" onclick="busSetPersonality('BALANCED')">⚖️ Balanced</button>
+          <button class="bus-preset" onclick="busSetPersonality('RANDOM')">🎲 Random Spread</button>
+          <button class="bus-preset" onclick="busSetPersonality('OPTIMIZED')">⚡ Optimized Spread</button>
+        </div>
+      </div>
+
+      <!-- Auto Delay -->
+      <div class="bus-section">
+        <div class="bus-section-title"><span>⏱️</span> AUTO DELAY — ALL BOTS</div>
+        <div class="bus-presets" id="busDelayPresets">
+          <button class="bus-preset" onclick="busSetDelay(2000)">Fast 2s</button>
+          <button class="bus-preset" onclick="busSetDelay(5000)">Normal 5s</button>
+          <button class="bus-preset" onclick="busSetDelay(15000)">Slow 15s</button>
+          <button class="bus-preset" onclick="busSetDelay(60000)">Patient 1m</button>
+        </div>
+      </div>
+
+      <!-- Risk Controls -->
+      <div class="bus-section">
+        <div class="bus-section-title"><span>🛡️</span> RISK — ALL BOTS</div>
+        <div style="display:flex;gap:8px">
+          <div style="flex:1">
+            <div style="font-size:7px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Stop Loss</div>
+            <div class="bus-presets" id="busSLPresets" style="flex-direction:column">
+              <button class="bus-preset" onclick="busSetSL(0)">None</button>
+              <button class="bus-preset" onclick="busSetSL(10)">−10%</button>
+              <button class="bus-preset" onclick="busSetSL(20)">−20%</button>
+              <button class="bus-preset" onclick="busSetSL(50)">−50%</button>
+            </div>
+          </div>
+          <div style="flex:1">
+            <div style="font-size:7px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Take Profit</div>
+            <div class="bus-presets" id="busTPPresets" style="flex-direction:column">
+              <button class="bus-preset" onclick="busSetTP(0)">None</button>
+              <button class="bus-preset" onclick="busSetTP(20)">+20%</button>
+              <button class="bus-preset" onclick="busSetTP(50)">+50%</button>
+              <button class="bus-preset" onclick="busSetTP(100)">+100%</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Quick presets row -->
+    <div class="bus-apply-row">
+      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('conservative')" title="Small bets, high consensus, stop loss on">🛡️ SAFE MODE</button>
+      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('balanced')"    title="Medium bets, mixed personalities">⚖️ BALANCED</button>
+      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('aggressive')"  title="Large bets, aggressive personalities, no SL">🔥 DEGEN MODE</button>
+      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('optimized')"   title="Optimized spread based on learning model">⚡ OPTIMIZED</button>
+      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('reset')"       title="Reset all bots to defaults">↺ RESET ALL</button>
+    </div>
+    <div class="bus-status" id="busStatus"></div>
   </div>
 
   <!-- ★ AGENT AUDIT PANEL ★ -->
@@ -3800,6 +3913,135 @@ setInterval(function(){
     }
   }catch(e){}
 },15000);
+
+// ══════════════════════════════════════════════════════
+// BUS SETTINGS — apply to all bots simultaneously
+// ══════════════════════════════════════════════════════
+const PERSONALITIES = ['AGGRESSIVE','CONSERVATIVE','MOMENTUM','CONTRARIAN','BALANCED'];
+
+function toggleBusPanel() {
+  const panel = document.getElementById('busPanel');
+  const btn   = document.getElementById('ghBusBtn');
+  if (!panel) return;
+  const open = panel.classList.toggle('open');
+  if (btn) btn.classList.toggle('open', open);
+}
+
+function _busStatus(msg, ok=true) {
+  const el = document.getElementById('busStatus');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = ok ? 'var(--green)' : 'var(--hot)';
+  setTimeout(() => { el.textContent = ''; }, 3000);
+}
+
+function _busHighlight(containerId, matchFn) {
+  document.querySelectorAll(`#${containerId} .bus-preset`).forEach(b => {
+    b.classList.toggle('active', matchFn(b));
+  });
+}
+
+// ── Amount ──
+function busSetAmount(amt) {
+  if (!bots.length) { _busStatus('No bots active', false); return; }
+  bots.forEach(b => setBet(b.id, amt));
+  _busHighlight('busAmtPresets', b => parseFloat(b.textContent.replace('$','')) === amt);
+  _busStatus(`All ${bots.length} bots → $${amt} per trade`);
+}
+function busSetCustomAmount() {
+  const inp = document.getElementById('busCustomAmt');
+  const val = parseFloat(inp?.value);
+  if (isNaN(val) || val < 0.01) { if(inp) inp.style.borderColor='var(--hot)'; return; }
+  if (inp) { inp.style.borderColor=''; inp.value=''; }
+  bots.forEach(b => setBet(b.id, val));
+  document.querySelectorAll('#busAmtPresets .bus-preset').forEach(b => b.classList.remove('active'));
+  _busStatus(`All ${bots.length} bots → $${val.toFixed(2)} per trade`);
+}
+
+// ── Personality ──
+function busSetPersonality(val) {
+  if (!bots.length) { _busStatus('No bots active', false); return; }
+  const SPREAD = ['AGGRESSIVE','CONSERVATIVE','MOMENTUM','CONTRARIAN','BALANCED'];
+  // Optimized: pick best personality per bot based on learning win rates
+  const getOptimized = (idx) => {
+    // Map agent weights to personalities — higher weight = use that style more
+    const map = {mom:'MOMENTUM', vol:'AGGRESSIVE', pol:'CONTRARIAN', sen:'BALANCED', risk:'CONSERVATIVE'};
+    const weights = typeof agentWeights !== 'undefined' ? agentWeights : {};
+    const sorted = Object.entries(weights).sort((a,b) => b[1]-a[1]);
+    // Distribute: best agent personality for first bot, second-best for next, etc.
+    const best = sorted[idx % Math.max(sorted.length, 1)];
+    return best ? (map[best[0]] || SPREAD[idx % SPREAD.length]) : SPREAD[idx % SPREAD.length];
+  };
+
+  bots.forEach((b, i) => {
+    let p;
+    if (val === 'RANDOM')    p = SPREAD[Math.floor(Math.random() * SPREAD.length)];
+    else if (val === 'OPTIMIZED') p = getOptimized(i);
+    else p = val;
+    b.personality = p;
+    const sel = document.getElementById('mpersonality-' + b.id);
+    if (sel) sel.value = p;
+  });
+  _busHighlight('busPersonalityPresets', b => b.textContent.includes(val === 'RANDOM' ? 'Random' : val === 'OPTIMIZED' ? 'Optimized' : val.charAt(0).toUpperCase() + val.slice(1).toLowerCase()));
+  _busStatus(val === 'RANDOM' ? `Random spread applied to ${bots.length} bots` : val === 'OPTIMIZED' ? `Optimized spread applied to ${bots.length} bots` : `All ${bots.length} bots → ${val}`);
+}
+
+// ── Delay ──
+function busSetDelay(ms) {
+  if (!bots.length) { _busStatus('No bots active', false); return; }
+  bots.forEach(b => {
+    b.autoDelay = ms;
+    const sel = document.getElementById('mdelay-' + b.id);
+    if (sel) sel.value = String(ms);
+  });
+  const label = ms < 3000 ? 'Fast 2s' : ms < 10000 ? 'Normal 5s' : ms < 30000 ? 'Slow 15s' : 'Patient 1m';
+  _busHighlight('busDelayPresets', b => b.textContent.trim() === label);
+  _busStatus(`All ${bots.length} bots → ${label} delay`);
+}
+
+// ── Stop Loss ──
+function busSetSL(pct) {
+  if (!bots.length) { _busStatus('No bots active', false); return; }
+  bots.forEach(b => {
+    b.stopLossPct = pct;
+    const sel = document.getElementById('mstoploss-' + b.id);
+    if (sel) sel.value = String(pct);
+  });
+  _busHighlight('busSLPresets', b => b.textContent.trim() === (pct === 0 ? 'None' : `−${pct}%`));
+  _busStatus(pct === 0 ? 'Stop loss disabled on all bots' : `All ${bots.length} bots → SL −${pct}%`);
+}
+
+// ── Take Profit ──
+function busSetTP(pct) {
+  if (!bots.length) { _busStatus('No bots active', false); return; }
+  bots.forEach(b => {
+    b.takeProfitPct = pct;
+    const sel = document.getElementById('mtakeprofit-' + b.id);
+    if (sel) sel.value = String(pct);
+  });
+  _busHighlight('busTPPresets', b => b.textContent.trim() === (pct === 0 ? 'None' : `+${pct}%`));
+  _busStatus(pct === 0 ? 'Take profit disabled on all bots' : `All ${bots.length} bots → TP +${pct}%`);
+}
+
+// ── Quick presets ──
+function busApplyPreset(name) {
+  if (!bots.length) { _busStatus('No bots active', false); return; }
+  const presets = {
+    conservative: { amt:0.25, personality:'CONSERVATIVE', delay:15000, sl:20, tp:50  },
+    balanced:     { amt:1,    personality:'RANDOM',        delay:5000,  sl:20, tp:50  },
+    aggressive:   { amt:5,    personality:'AGGRESSIVE',    delay:2000,  sl:0,  tp:0   },
+    optimized:    { amt:1,    personality:'OPTIMIZED',     delay:5000,  sl:20, tp:100 },
+    reset:        { amt:1,    personality:'RANDOM',        delay:5000,  sl:0,  tp:0   },
+  };
+  const p = presets[name]; if (!p) return;
+  busSetAmount(p.amt);
+  busSetPersonality(p.personality);
+  busSetDelay(p.delay);
+  busSetSL(p.sl);
+  busSetTP(p.tp);
+  const labels = { conservative:'🛡️ Safe Mode', balanced:'⚖️ Balanced', aggressive:'🔥 Degen Mode', optimized:'⚡ Optimized', reset:'↺ Reset' };
+  _busStatus(`${labels[name]} applied to ${bots.length} bots`);
+}
 
 // ══════════════════════════════════════════════════════
 // SOUND ENGINE  (Web Audio API — no external files)
