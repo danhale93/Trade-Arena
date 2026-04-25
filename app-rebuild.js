@@ -11,11 +11,9 @@
  * ✓ Auto-recovery on disconnect/reconnect
  */
 
-// ══════════════════════════════════════════════════════
-// MASTER SWITCH - CONTROLS ALL BOTS
-// ══════════════════════════════════════════════════════
+// MasterSwitch removed — global AUTO is now in the header (globalAutoToggle)
 
-class MasterSwitch {
+if (false) { class MasterSwitch {
   constructor() {
     this.isEnabled = localStorage.getItem('ta_master_enabled') !== 'false';
     this.lastToggleTime = 0;
@@ -259,6 +257,8 @@ class MasterSwitch {
   }
 }
 
+} } // end dead MasterSwitch class
+
 // ══════════════════════════════════════════════════════
 // REAL-TIME BALANCE UPDATER (500MS)
 // ══════════════════════════════════════════════════════
@@ -466,10 +466,6 @@ class AutoRecovery {
   }
 
   syncState() {
-    // Resync master switch and balance after reconnection
-    if (typeof masterSwitch !== 'undefined') {
-      masterSwitch.syncWithBots();
-    }
     if (typeof balanceUpdater !== 'undefined') {
       balanceUpdater.updateBalance();
     }
@@ -586,7 +582,6 @@ class RealMarketPricing {
 // GLOBAL INITIALIZATION & STARTUP
 // ══════════════════════════════════════════════════════
 
-let masterSwitch = null;
 let balanceUpdater = null;
 let autoRecovery = null;
 let realMarketPricing = null;
@@ -616,7 +611,6 @@ function initAppRebuildV42() {
   console.log('%c🚀 TRADE ARENA v4.2 INITIALIZING...', 'color: #39ff14; font-weight: bold; font-size: 14px;');
 
   // Initialize all subsystems
-  masterSwitch = new MasterSwitch();
   balanceUpdater = new BalanceUpdater();
   autoRecovery = new AutoRecovery();
   realMarketPricing = new RealMarketPricing();
@@ -627,7 +621,6 @@ function initAppRebuildV42() {
       const gameState = {
         balance: typeof balance !== 'undefined' ? balance : 10000,
         totalPnl: typeof totalPnl !== 'undefined' ? totalPnl : 0,
-        masterEnabled: masterSwitch ? masterSwitch.isEnabled : true,
       };
       localStorage.setItem('ta_game_state', JSON.stringify(gameState));
     } catch (e) {
@@ -636,7 +629,7 @@ function initAppRebuildV42() {
   }, 30000);
 
   console.log('%c✓ TRADE ARENA v4.2 READY', 'color: #39ff14; font-weight: bold; font-size: 14px;');
-  console.log('%c→ Master Switch active (Ctrl+Space)', 'color: #00ffff;');
+
   console.log('%c→ Real-time balance (500ms)', 'color: #00ffff;');
   console.log('%c→ Live ticker tracking', 'color: #00ffff;');
   console.log('%c→ Real market prices (CoinGecko)', 'color: #00ffff;');
@@ -654,17 +647,10 @@ if (document.readyState === 'loading') {
 // ══════════════════════════════════════════════════════
 
 window.TradeArenaApp = {
-  // Master switch control
-  getMasterSwitch: () => masterSwitch,
-  toggleMaster: () => {
-    if (masterSwitch) masterSwitch.toggle();
-  },
-  enableAllBots: () => {
-    if (masterSwitch) masterSwitch.enableAllBots();
-  },
-  disableAllBots: () => {
-    if (masterSwitch) masterSwitch.disableAllBots();
-  },
+  // Global auto control (replaces master switch)
+  toggleMaster: () => { if (typeof globalAutoToggle === 'function') globalAutoToggle(); },
+  enableAllBots: () => { if (!_ghAutoOn && typeof globalAutoToggle === 'function') globalAutoToggle(); },
+  disableAllBots: () => { if (_ghAutoOn && typeof globalAutoToggle === 'function') globalAutoToggle(); },
 
   // Balance info
   getBalance: () => typeof balance !== 'undefined' ? balance : 0,
@@ -682,7 +668,7 @@ window.TradeArenaApp = {
   getAutoRecovery: () => autoRecovery,
   getSystemStatus: () => {
     return {
-      master: masterSwitch ? (masterSwitch.isEnabled ? 'ON' : 'OFF') : 'INIT',
+      master: typeof _ghAutoOn !== 'undefined' ? (_ghAutoOn ? 'ON' : 'OFF') : 'INIT',
       balance: typeof balance !== 'undefined' ? balance : 'LOADING',
       online: autoRecovery ? autoRecovery.isOnline : false,
       version: 'v4.2'

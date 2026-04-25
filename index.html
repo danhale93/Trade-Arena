@@ -82,11 +82,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 .gh-queue-num{font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;color:var(--blue);line-height:1}
 .gh-queue-lbl{font-size:7px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-top:1px}
 
-/* ══ MASTER SWITCH ══ */
-#masterSwitchContainer{display:flex !important;visibility:visible !important}
-.master-toggle{transition:all 0.25s ease}
-.master-toggle:hover{border-color:var(--gold);transform:scale(1.05)}
-.master-toggle:active{transform:scale(0.98)}
+
 
 /* ══ COLLAPSIBLE PANEL BASE ══ */
 .cpanel{background:var(--panel);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden}
@@ -272,6 +268,31 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 @keyframes ap{from{box-shadow:0 0 6px rgba(0,255,231,.2)}to{box-shadow:0 0 16px rgba(0,255,231,.5)}}
 .loss-streak-bar{height:3px;border-radius:1px;background:var(--border);overflow:hidden;margin-top:4px}
 .loss-streak-fill{height:100%;border-radius:1px;transition:width .4s ease}
+
+/* ══ BOT SETTINGS DROPDOWN ══ */
+.m-settings-bar{display:flex;align-items:center;justify-content:space-between;padding:4px 9px;gap:6px}
+.m-bet-display{font-family:'Oswald',sans-serif;font-size:12px;color:var(--gold);font-weight:700;flex-shrink:0}
+.m-bet-display span{font-size:8px;color:var(--dim);font-family:'Share Tech Mono',monospace;margin-left:3px}
+.m-gear-btn{width:24px;height:24px;border:1px solid var(--border);border-radius:4px;background:var(--chrome);color:var(--dim);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+.m-gear-btn:hover{border-color:var(--gold2);color:var(--gold2)}
+.m-gear-btn.open{border-color:var(--cyan);color:var(--cyan);background:rgba(0,255,231,.07)}
+.m-dropdown{display:none;padding:8px 9px 10px;background:rgba(6,3,10,.97);border-top:1px solid var(--border)}
+.m-dropdown.open{display:block}
+.m-dd-section{margin-bottom:8px}
+.m-dd-label{font-size:7px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.m-dd-bets{display:flex;flex-wrap:wrap;gap:3px}
+.m-dd-bet{padding:4px 7px;font-family:'Bungee',display;font-size:8px;background:var(--panel);border:1px solid var(--border);border-radius:3px;color:var(--dim);cursor:pointer;transition:all .12s;white-space:nowrap}
+.m-dd-bet:hover{border-color:var(--gold2);color:var(--gold2)}
+.m-dd-bet.on{background:linear-gradient(180deg,#2a1a00,#160e00);border-color:var(--gold);color:var(--gold);box-shadow:0 0 6px rgba(255,215,0,.2)}
+.m-dd-custom{display:flex;gap:4px;margin-top:4px}
+.m-dd-custom input{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--gold);padding:4px 7px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:10px;min-width:0}
+.m-dd-custom input:focus{outline:none;border-color:var(--gold2)}
+.m-dd-custom button{padding:4px 9px;font-family:'Bungee',display;font-size:8px;background:var(--chrome);border:1px solid var(--border);border-radius:3px;color:var(--dim);cursor:pointer;white-space:nowrap}
+.m-dd-custom button:hover{border-color:var(--gold2);color:var(--gold2)}
+.m-dd-select{width:100%;background:var(--bg);border:1px solid var(--border);color:#ccc;padding:5px 7px;border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer}
+.m-dd-select:focus{outline:none;border-color:var(--cyan)}
+.m-dd-row{display:flex;gap:6px}
+.m-dd-row .m-dd-section{flex:1}
 .cooldown-countdown{font-size:18px;font-family:'Bungee',display;color:var(--hot);margin-bottom:4px}
 .override-btn{padding:4px 12px;font-family:'Bungee',display;font-size:9px;background:none;border:1px solid var(--hot);color:var(--hot);border-radius:4px;cursor:pointer;letter-spacing:1px;opacity:.6}
 .override-btn:hover{opacity:1}
@@ -843,7 +864,7 @@ function updateApiBreakerUI(isOpen){
     el.style.display='none';
   }
 }
-const MAX_BOTS = 6;
+const MAX_BOTS = 99;
 
 // ── Rule-based fallback signal generator ──
 // Used when Anthropic API is unavailable or key not set
@@ -2071,17 +2092,75 @@ function renderBot(bot){
     <div class="consensus-label"><span id="clab-${bot.id}" style="color:var(--dim);font-style:italic">awaiting spin…</span><span id="cthresh-${bot.id}"></span></div>
     <div class="consensus-bar-wrap"><div class="consensus-bar-fill" id="cbar-${bot.id}" style="width:0%;background:var(--dim)"></div></div>
     <div class="m-controls">
-      <div class="m-bet-row" id="mbets-${bot.id}">
-        ${[0.10,0.25,0.50,1.00,2.00,5.00].map(v=>`<button class="m-bet${v===1.00?' on':''}" data-bet="${v}" onclick="setBet(${bot.id},${v})">$${v.toFixed(2)}</button>`).join('')}
+      <div class="m-settings-bar">
+        <div class="m-bet-display" id="mbetdisp-${bot.id}">$1.00 <span>per trade</span></div>
+        <div style="display:flex;gap:4px;align-items:center">
+          <button class="auto-btn" id="mauto-${bot.id}" onclick="toggleAuto(${bot.id})">AUTO</button>
+          <button class="spin-btn" id="mspin-${bot.id}" onclick="spinBot(${bot.id})" style="padding:6px 12px;font-size:11px">🎰 SPIN</button>
+          <button class="m-gear-btn" id="mgear-${bot.id}" onclick="toggleBotSettings(${bot.id})" title="Bot settings">⚙</button>
+        </div>
       </div>
-      <div class="m-bottom">
-        <button class="spin-btn" id="mspin-${bot.id}" onclick="spinBot(${bot.id})">🎰  SPIN</button>
-        <button class="auto-btn" id="mauto-${bot.id}" onclick="toggleAuto(${bot.id})">AUTO</button>
+      <div class="m-dropdown" id="mdrop-${bot.id}">
+        <div class="m-dd-section">
+          <div class="m-dd-label">Trade Amount</div>
+          <div class="m-dd-bets" id="mbets-${bot.id}">
+            ${[0.10,0.25,0.50,1.00,2.00,5.00,20.00,100.00].map(v=>`<button class="m-dd-bet${v===1.00?' on':''}" data-bet="${v}" onclick="setBet(${bot.id},${v})">$${v%1===0?v.toFixed(0):v.toFixed(2)}</button>`).join('')}
+          </div>
+          <div class="m-dd-custom">
+            <input type="number" id="mcustom-${bot.id}" placeholder="Custom $" min="0.01" step="0.01">
+            <button onclick="setCustomBet(${bot.id})">SET</button>
+          </div>
+        </div>
+        <div class="m-dd-row">
+          <div class="m-dd-section">
+            <div class="m-dd-label">Personality</div>
+            <select class="m-dd-select" id="mpersonality-${bot.id}" onchange="setBotPersonality(${bot.id},this.value)">
+              <option value="BALANCED">⚖️ Balanced</option>
+              <option value="AGGRESSIVE">🔥 Aggressive</option>
+              <option value="CONSERVATIVE">🛡️ Conservative</option>
+              <option value="MOMENTUM">📈 Momentum</option>
+              <option value="CONTRARIAN">🔄 Contrarian</option>
+            </select>
+          </div>
+          <div class="m-dd-section">
+            <div class="m-dd-label">Auto Delay</div>
+            <select class="m-dd-select" id="mdelay-${bot.id}" onchange="setBotDelay(${bot.id},this.value)">
+              <option value="2000">Fast (2s)</option>
+              <option value="5000" selected>Normal (5s)</option>
+              <option value="15000">Slow (15s)</option>
+              <option value="60000">Patient (1m)</option>
+            </select>
+          </div>
+        </div>
+        <div class="m-dd-row">
+          <div class="m-dd-section">
+            <div class="m-dd-label">Stop Loss</div>
+            <select class="m-dd-select" id="mstoploss-${bot.id}" onchange="setBotStopLoss(${bot.id},this.value)">
+              <option value="0">None</option>
+              <option value="10">−10%</option>
+              <option value="20" selected>−20%</option>
+              <option value="30">−30%</option>
+              <option value="50">−50%</option>
+            </select>
+          </div>
+          <div class="m-dd-section">
+            <div class="m-dd-label">Take Profit</div>
+            <select class="m-dd-select" id="mtakeprofit-${bot.id}" onchange="setBotTakeProfit(${bot.id},this.value)">
+              <option value="0">None</option>
+              <option value="10">+10%</option>
+              <option value="20">+20%</option>
+              <option value="50" selected>+50%</option>
+              <option value="100">+100%</option>
+            </select>
+          </div>
+        </div>
       </div>
       <div class="loss-streak-bar"><div class="loss-streak-fill" id="mstreak-${bot.id}" style="width:0%"></div></div>
     </div>`;
   document.getElementById('botGrid').appendChild(el);
   buildReels(bot.id); startTicker(bot);
+  const psel=document.getElementById('mpersonality-'+bot.id);
+  if(psel) psel.value=bot.personality||'BALANCED';
 }
 function buildReels(id){
   function fill(tid,pool){
@@ -2124,8 +2203,46 @@ function startTicker(bot){
   tick();
 }
 function setBet(id,amt){
-  const bot=bots.find(b=>b.id===id); if(!bot) return; bot.bet=amt;
-  document.querySelectorAll(`#mbets-${id} .m-bet`).forEach(b=>b.classList.toggle('on',parseInt(b.dataset.bet)===amt));
+  const bot=bots.find(b=>b.id===id); if(!bot) return;
+  amt=parseFloat(amt);
+  if(isNaN(amt)||amt<0.01) return;
+  bot.bet=amt;
+  // highlight matching preset, clear others
+  document.querySelectorAll(`#mbets-${id} .m-dd-bet`).forEach(b=>b.classList.toggle('on',parseFloat(b.dataset.bet)===amt));
+  // update display
+  const disp=document.getElementById('mbetdisp-'+id);
+  if(disp) disp.innerHTML=`$${amt%1===0?amt.toFixed(0):amt.toFixed(2)} <span>per trade</span>`;
+}
+function setCustomBet(id){
+  const inp=document.getElementById('mcustom-'+id); if(!inp) return;
+  const val=parseFloat(inp.value);
+  if(isNaN(val)||val<0.01){ inp.style.borderColor='var(--hot)'; return; }
+  inp.style.borderColor='';
+  setBet(id,val);
+  inp.value='';
+}
+function toggleBotSettings(id){
+  const drop=document.getElementById('mdrop-'+id);
+  const gear=document.getElementById('mgear-'+id);
+  if(!drop) return;
+  const open=drop.classList.toggle('open');
+  if(gear) gear.classList.toggle('open',open);
+}
+function setBotPersonality(id,val){
+  const bot=bots.find(b=>b.id===id); if(!bot) return;
+  bot.personality=val;
+}
+function setBotDelay(id,val){
+  const bot=bots.find(b=>b.id===id); if(!bot) return;
+  bot.autoDelay=parseInt(val)||5000;
+}
+function setBotStopLoss(id,val){
+  const bot=bots.find(b=>b.id===id); if(!bot) return;
+  bot.stopLossPct=parseInt(val)||0;
+}
+function setBotTakeProfit(id,val){
+  const bot=bots.find(b=>b.id===id); if(!bot) return;
+  bot.takeProfitPct=parseInt(val)||0;
 }
 function toggleAuto(id){
   const bot=bots.find(b=>b.id===id); if(!bot) return;
@@ -2141,11 +2258,12 @@ function toggleAuto(id){
 }
 function scheduleAuto(bot){
   if(!bot.auto) return;
+  const base=bot.autoDelay||5000;
   bot.autoTimer=setTimeout(async()=>{
     if(!bot.auto||bot.spinning){scheduleAuto(bot);return;}
     document.getElementById('mresult-'+bot.id)?.classList.remove('show');
     await spinBot(bot.id); if(bot.auto) scheduleAuto(bot);
-  },2000+Math.random()*2000);
+  },base+Math.random()*2000);
 }
 
 // ══════════════════════════════════════════════════════
