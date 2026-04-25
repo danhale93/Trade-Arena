@@ -1,4 +1,4 @@
-/';.<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -422,6 +422,37 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 @media(max-width:640px){.bot-grid{grid-template-columns:1fr}}
 @media(min-width:641px) and (max-width:900px){.bot-grid{grid-template-columns:1fr 1fr}}
 @media(min-width:901px){.bot-grid{grid-template-columns:repeat(3,1fr)}}
+
+/* ══ ENTERTAINMENT MODE ══ */
+body.entertainment-mode .machine{animation:none !important}
+body.entertainment-mode .machine.winning{animation:wf .1s ease 8 !important}
+body.entertainment-mode .machine.losing{animation:lf .1s ease 8 !important}
+body.entertainment-mode .spin-btn.going{animation:pb .2s ease infinite alternate !important}
+body.entertainment-mode .auto-btn.on{animation:ap .4s ease infinite alternate !important}
+body.entertainment-mode .ptc{font-size:18px !important;animation-duration:1.5s !important}
+body.entertainment-mode .m-r-title{animation:rj .2s ease infinite alternate !important}
+body.entertainment-mode .m-result.show{backdrop-filter:blur(4px)}
+body.entertainment-mode .edge{height:6px;animation:edge 1s linear infinite}
+body.entertainment-mode .global-header{box-shadow:0 0 30px rgba(0,255,231,.2)}
+@keyframes screenFlashWin{0%,100%{opacity:0}50%{opacity:.15}}
+@keyframes screenFlashLoss{0%,100%{opacity:0}50%{opacity:.12}}
+body.entertainment-mode .win-flash{position:fixed;inset:0;pointer-events:none;z-index:9500;background:var(--green);animation:screenFlashWin .4s ease}
+body.entertainment-mode .loss-flash{position:fixed;inset:0;pointer-events:none;z-index:9500;background:var(--hot);animation:screenFlashLoss .4s ease}
+
+/* ══ COMPACT MODE ══ */
+body.compact-mode .agent-grid{display:none}
+body.compact-mode .consensus-bar-wrap{display:none}
+body.compact-mode .consensus-label{display:none}
+body.compact-mode .m-strats{margin:2px 9px}
+body.compact-mode .m-controls{padding:3px 9px 5px}
+body.compact-mode .m-reels{height:84px}
+body.compact-mode .m-reel{height:84px}
+body.compact-mode .m-item{height:28px}
+body.compact-mode .learn-panel{margin-bottom:4px}
+body.compact-mode .audit-panel{margin-bottom:4px}
+body.compact-mode .cpanel{margin-bottom:4px}
+body.compact-mode .global-header{padding:5px 8px}
+body.compact-mode .machine{border-width:1px}
 </style>
 
 <!-- ╔════════════════════════════════════════════════════════════╗ -->
@@ -506,6 +537,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     <span class="gen-badge" id="genBadge">GEN 0</span>
     <span id="apiBreakerBadge" style="display:none"></span>
     <button class="add-bot-btn" id="voiceToggle" onclick="voiceAgent?.toggle()" style="font-size:11px;min-width:72px;padding:6px 10px;background:linear-gradient(90deg,var(--cyan),var(--blue));box-shadow:0 0 12px rgba(0,255,231,.3);letter-spacing:0">🎤 ○ OFF</button>
+    <button class="add-bot-btn" id="entertainmentToggle" onclick="toggleEntertainment()" style="font-size:11px;padding:6px 10px;background:linear-gradient(90deg,var(--purple),var(--hot));box-shadow:0 0 12px rgba(191,95,255,.3);letter-spacing:0">🎮 FUN</button>
+    <button class="add-bot-btn" id="compactToggle" onclick="toggleCompact()" style="font-size:11px;padding:6px 10px;background:linear-gradient(90deg,var(--green),var(--cyan));box-shadow:0 0 12px rgba(57,255,20,.3);letter-spacing:0">🗜 COMPACT</button>
   </div>
 
   <!-- ★ AGENT AUDIT PANEL ★ -->
@@ -1016,6 +1049,10 @@ async function openPosition(bot, decision, entryPrice, bet, volumeUsd, priceChan
     return null;
   }
   
+  // CRITICAL FIX: Deduct bet from balance immediately when opening position
+  // This ensures money is locked while the trade is open
+  balance -= bet;
+  
   const costs = computeCosts(decision.method, bet, volumeUsd);
   const isShort = decision.method.includes('SHORT');
 
@@ -1177,6 +1214,12 @@ async function checkExit(pos, bot) {
   if(card){ card.classList.add(pos.isWin?'winning':'losing'); setTimeout(()=>card.classList.remove('winning','losing'),700); }
   if(!bot.auto) spawnParticles(pos.isWin,pos.botId);
   if(crucibleMode&&pos.method!=='HOLD'){ crucibleCount++; updateCrucible(); }
+  
+  // Voice agent feedback
+  if(window.voiceAgent) voiceAgent.onTradeResult(pos.isWin, pos.netPnl);
+  
+  // Entertainment mode screen flash
+  triggerScreenFlash(pos.isWin);
 }
 
 function showOpenOverlay(botId, pos) {
@@ -3520,6 +3563,52 @@ setInterval(function(){
     }
   }catch(e){}
 },15000);
+
+// ══════════════════════════════════════════════════════
+// ENTERTAINMENT & COMPACT MODE TOGGLES
+// ══════════════════════════════════════════════════════
+let entertainmentMode = false;
+let compactMode = false;
+
+function toggleEntertainment() {
+  entertainmentMode = !entertainmentMode;
+  document.body.classList.toggle('entertainment-mode', entertainmentMode);
+  const btn = document.getElementById('entertainmentToggle');
+  if (btn) {
+    btn.textContent = entertainmentMode ? '🎮 LIT!' : '🎮 FUN';
+    btn.style.boxShadow = entertainmentMode 
+      ? '0 0 20px rgba(191,95,255,.6), 0 0 40px rgba(255,45,120,.4)' 
+      : '0 0 12px rgba(191,95,255,.3)';
+  }
+  // Trigger a test flash if enabling
+  if (entertainmentMode) {
+    const flash = document.createElement('div');
+    flash.className = 'win-flash';
+    document.body.appendChild(flash);
+    setTimeout(() => flash.remove(), 500);
+  }
+}
+
+function toggleCompact() {
+  compactMode = !compactMode;
+  document.body.classList.toggle('compact-mode', compactMode);
+  const btn = document.getElementById('compactToggle');
+  if (btn) {
+    btn.textContent = compactMode ? '🗜 FULL' : '🗜 COMPACT';
+    btn.style.background = compactMode 
+      ? 'linear-gradient(90deg, var(--amber), var(--gold))' 
+      : 'linear-gradient(90deg, var(--green), var(--cyan))';
+  }
+}
+
+// Screen flash helper for entertainment mode
+function triggerScreenFlash(isWin) {
+  if (!entertainmentMode) return;
+  const flash = document.createElement('div');
+  flash.className = isWin ? 'win-flash' : 'loss-flash';
+  document.body.appendChild(flash);
+  setTimeout(() => flash.remove(), 500);
+}
 </script>
 <script src="voice.js" defer></script>
 <script src="app-rebuild.js" defer></script>
