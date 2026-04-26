@@ -1897,9 +1897,25 @@ function loginDemo(){
   catch(e){ const s=document.getElementById('cStatus'); if(s) s.textContent='❌ '+e.message; console.error('Demo error:',e); }
 }
 
-function setupApp({name,avatar,badge}){
+function setupApp({name,avatar,badge,provider}){
   // Init voice agent if browser supports
   if(window.voiceAgent) voiceAgent.updateUI();
+
+  // Create embedded wallet if Google login
+  if(provider === 'google') {
+    try {
+      const walletInstance = TradeArenaWallet.getInstance();
+      const userWallet = await walletInstance.initFromGoogle({name, email: userData?.email});
+      if(userWallet) {
+        console.log('✅ Embedded wallet created:', userWallet.address);
+        // Update UI with wallet address
+        const walletEl = document.getElementById('ghBadge');
+        if(walletEl) walletEl.textContent = `🔵 GOOGLE + ${userWallet.address.slice(-6)}`;
+      }
+    } catch(e) {
+      console.warn('Wallet creation failed:', e);
+    }
+  }
 
   try{
     const cs=document.getElementById('connectScreen');
@@ -3555,7 +3571,11 @@ function spawnParticles(win,botId){
     },i*55);
   }
 }
+// Load wallet integration
+await import('./wallet.js');
+
 // ══ GLOBAL REAL-TIME BALANCE TICKER ══
+
 // Refreshes balance display every second so it's always live
 setInterval(function(){
   try{
