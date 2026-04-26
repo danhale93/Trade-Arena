@@ -1,34 +1,36 @@
-# Voice Agent Task Tracker
+# Google OAuth Enablement - TODO
 
-✅ **voice.js** - STT/TTS + Claude + command integration (COMPLETE)
+## ✅ 1. Replace Client ID in index.html **(COMPLETE)**
+- ✅ Replaced with: `966834440154-e96si6lm0o3arf4in97dem5vr1kn81h6.apps.googleusercontent.com`
 
-**Next (IN PROGRESS):**
-- [x] index.html: Add voice toggle + script import  
-- [ ] app-rebuild.js: Expose voice commands (addBot, toggleCrucible, audit)  
-- [ ] Test suite: "add bot", "crucible", "audit", "reset"  
-- [ ] PWA manifest: voice permissions  
+## [ ] 2. Test locally
+- Run: `npx serve .`
+- Test Google login button → success
 
-**Testing:**
-```
-1. npm run dev
-2. Open localhost → say "add bot" 
-3. Verify: bot added + TTS response
-4. Say "crucible" → toggle + confirm
-5. Say "audit" → run manual audit
-```
+## [ ] 3. Deploy & Production Test
+- Update Google Console origins for Vercel/GitHub Pages
+- Test deployed version
 
-**Demo Commands:**
-- "add bot" → adds new trading bot
-- "crucible" → toggle crucible mode  
-- "audit" → run agent performance review
-- "reset" → reset learning model
-- "report balance" → voice balance update
+## [ ] 4. Completion
+- ✅ OAuth enabled
+- Remove setup error message
+- Update docs
 
-**Roadmap:**
-```
-[ ] Voice dashboard widget (live commands, recent)
-[ ] Adaptive voice speed (trading intensity)
-[ ] Background voice monitoring (PWA service worker)
-[ ] Offline mode (local TTS only)
-```
+**Status**: 2/4 complete**
+
+
+## [ ] 2. Test locally
+- Run: `npx serve .`
+- Test Google login button → success
+
+## [ ] 3. Deploy & Production Test
+- Update Google Console origins for Vercel/GitHub Pages
+- Test deployed version
+
+## [ ] 4. Completion
+- ✅ OAuth enabled
+- Remove setup error message
+- Update docs
+
+**Status**: 1/4 complete**
 

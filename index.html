@@ -802,7 +802,7 @@ body.compact-mode .machine{border-width:1px}
 // ══════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════
-const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = '966834440154-e96si6lm0o3arf4in97dem5vr1kn81h6.apps.googleusercontent.com';
 // ── Anthropic API Key ──
 // Get yours free at console.anthropic.com — paste it here to enable AI agents
 // Without it the app uses rule-based fallback signals (still trades, just no Claude)
@@ -1051,7 +1051,9 @@ async function openPosition(bot, decision, entryPrice, bet, volumeUsd, priceChan
   
   // CRITICAL FIX: Deduct bet from balance immediately when opening position
   // This ensures money is locked while the trade is open
+  console.log(`[TradeArena] Opening position: balance=${balance.toFixed(2)}, bet=${bet}, newBalance=${(balance-bet).toFixed(2)}`);
   balance -= bet;
+  console.log(`[TradeArena] Position opened: balance=${balance.toFixed(2)}`);
   
   const costs = computeCosts(decision.method, bet, volumeUsd);
   const isShort = decision.method.includes('SHORT');
@@ -1109,8 +1111,7 @@ async function openPosition(bot, decision, entryPrice, bet, volumeUsd, priceChan
   // Deduct bet amount from balance immediately when trade opens
   // bet already deducted as part of costs
 
-  updateLiveBalance();
-  updateGlobalBalance();
+  updateLiveBalance(); // live balance takes precedence (includes unrealised P&L)
   
   updateOpenCount();
   setTimeout(()=>checkExit(pos,bot), EXIT_TIMES[decision.method]);
@@ -1945,7 +1946,7 @@ function addBot(){
   // Each bot gets unique personality for trade diversity
   const personality = ['AGGRESSIVE', 'CONSERVATIVE', 'MOMENTUM', 'CONTRARIAN', 'BALANCED'][botCounter % 5];
   const bot={
-    id:botCounter,spinning:false,auto:false,bet:10,pnl:0,
+    id:botCounter,spinning:false,auto:false,bet:1.00,pnl:0,
     consecutiveLosses:0,cooldownLevel:0,coolingUntil:0,cooling:false,
     autoTimer:null,tickerTimer:null,tickerIdx:0,
     personality,
@@ -2068,7 +2069,7 @@ function startTicker(bot){
 }
 function setBet(id,amt){
   const bot=bots.find(b=>b.id===id); if(!bot) return; bot.bet=amt;
-  document.querySelectorAll(`#mbets-${id} .m-bet`).forEach(b=>b.classList.toggle('on',parseInt(b.dataset.bet)===amt));
+  document.querySelectorAll(`#mbets-${id} .m-bet`).forEach(b=>b.classList.toggle('on',parseFloat(b.dataset.bet)===amt));
 }
 function toggleAuto(id){
   const bot=bots.find(b=>b.id===id); if(!bot) return;
@@ -3554,6 +3555,16 @@ function spawnParticles(win,botId){
     },i*55);
   }
 }
+// ══ GLOBAL REAL-TIME BALANCE TICKER ══
+// Refreshes balance display every second so it's always live
+setInterval(function(){
+  try{
+    const appVisible=document.getElementById('mainApp')?.style.display!=='none';
+    if(!appVisible) return;
+    updateLiveBalance();
+  }catch(e){}
+},1000);
+
 setInterval(function(){
   try{
     const appVisible=document.getElementById('mainApp')?.style.display!=='none';
