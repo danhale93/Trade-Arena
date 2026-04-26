@@ -1108,9 +1108,7 @@ async function openPosition(bot, decision, entryPrice, bet, volumeUsd, priceChan
     setTimeout(()=>{card.style.boxShadow='';}, 600);
   }
   
-  // Deduct bet amount from balance immediately when trade opens
-  // bet already deducted as part of costs
-
+  // Balance updated with live unrealised P&L from open positions
   updateLiveBalance(); // live balance takes precedence (includes unrealised P&L)
   
   updateOpenCount();
@@ -1731,10 +1729,9 @@ function loginGoogle(){
   try{
     s.textContent='⏳ Opening Google Sign-In…';
     
-    google.accounts.id.initialize({ 
+      google.accounts.id.initialize({ 
       client_id: GOOGLE_CLIENT_ID, 
-      callback: handleGoogleLoginResponse,
-      hosted_domain: 'gmail.com'
+      callback: handleGoogleLoginResponse
     });
     
     // Show the One Tap popup
