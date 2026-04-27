@@ -1,36 +1,53 @@
-# Google OAuth Enablement - TODO
+# Trade-Arena: Real Wallet + Supabase Integration
+## Status: ✅ In Progress | 4/12 Complete
 
-## ✅ 1. Replace Client ID in index.html **(COMPLETE)**
-- ✅ Replaced with: `966834440154-e96si6lm0o3arf4in97dem5vr1kn81h6.apps.googleusercontent.com`
+### Step 1: Supabase Setup [✅]
+- Create supabase.js (client init)
+- package.json: add @supabase/supabase-js
+- .env.example + .env (user to fill keys)
+- Schema: users, trades, agent_stats tables (via dashboard)
 
-## [ ] 2. Test locally
-- Run: `npx serve .`
-- Test Google login button → success
+### Step 2: Wallet Fixes [ ]
+- app.js: Auto-connect real-wallet.js on load
+- real-wallet.js: Export connectWallet()
+- app.js: Real balance/gas in UI (no sim)
 
-## [ ] 3. Deploy & Production Test
-- Update Google Console origins for Vercel/GitHub Pages
-- Test deployed version
+### Step 3: Real Trading [ ]
+- app.js spinBot(): !demo → contract-helpers.executeSwap()
+- Micro trades: $0.1-5 ETH on Base UniswapV3
+- Tx confirm/error handling
 
-## [ ] 4. Completion
-- ✅ OAuth enabled
-- Remove setup error message
-- Update docs
+### Step 4: Supabase Frontend [ ]
+- app.js: Supabase auth (email/anon)
+- Log trades/agent votes to Supabase
+- Load agent_weights from Supabase
 
-**Status**: 2/4 complete**
+### Step 5: Backend Supabase [ ]
+- server.js: Supabase server client (if exists)
+- /api/trades endpoint (realtime)
 
+### Step 6: Persistence [ ]
+- Save learning state to Supabase
+- Load on app start
 
-## [ ] 2. Test locally
-- Run: `npx serve .`
-- Test Google login button → success
+### Step 7: Security [ ]
+- .env gitignore
+- Supabase RLS policies
+- Rate limits
 
-## [ ] 3. Deploy & Production Test
-- Update Google Console origins for Vercel/GitHub Pages
-- Test deployed version
+### Step 8: UI Updates [ ]
+- Wallet status indicator
+- Supabase sync status
+- Real tx history
 
-## [ ] 4. Completion
-- ✅ OAuth enabled
-- Remove setup error message
-- Update docs
+### Step 9: Testing [ ]
+- Testnet swaps (Base Sepolia first?)
+- Supabase data flow
+- Error recovery
 
-**Status**: 1/4 complete**
+### Step 10: npm install [ ]
+### Step 11: User setup guide [ ]
+### Step 12: Complete! [ ]
+
+**Next:** Step 1-2 (Supabase files + wallet connect)
 
