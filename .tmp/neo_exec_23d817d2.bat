@@ -1,0 +1,1 @@
+cd "c:\Users\admi\OneDrive\Documents\GitHub\Trade-Arena" && npm install

@@ -1,5 +1,5 @@
 # Trade-Arena: Real Wallet + Supabase Integration
-## Status: ✅ In Progress | 4/12 Complete
+
 
 ### Step 1: Supabase Setup [✅]
 - Create supabase.js (client init)
@@ -7,7 +7,7 @@
 - .env.example + .env (user to fill keys)
 - Schema: users, trades, agent_stats tables (via dashboard)
 
-### Step 2: Wallet Fixes [ ]
+
 - app.js: Auto-connect real-wallet.js on load
 - real-wallet.js: Export connectWallet()
 - app.js: Real balance/gas in UI (no sim)
@@ -49,5 +49,5 @@
 ### Step 11: User setup guide [ ]
 ### Step 12: Complete! [ ]
 
-**Next:** Step 1-2 (Supabase files + wallet connect)
+✅ **
 

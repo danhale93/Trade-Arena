@@ -1,0 +1,1 @@
+cd "c:\Users\admi\OneDrive\Documents\GitHub\Trade-Arena" && powershell -Command "(Get-Content package.json -Raw) -replace '\r\n    \"jest\":', ',\r\n    \"jest\":' | Set-Content package.json -NoNewline"

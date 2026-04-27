@@ -1,0 +1,1 @@
+powershell -Command "Get-Content -Path 'c:\Users\admi\OneDrive\Documents\GitHub\Trade-Arena\package.json' -TotalCount 921"

@@ -1,0 +1,1 @@
+cd "c:\Users\admi\OneDrive\Documents\GitHub\Trade-Arena" && node -e "JSON.parse(require('fs').readFileSync('package.json', 'utf8')); console.log('package.json is valid JSON')"
