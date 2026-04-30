@@ -272,6 +272,20 @@ class ContractHelper {
  */
 class SecurityHelper {
     /**
+     * Check if a token symbol is a stablecoin
+     * NOTE: Also exists as instance method on ContractHelper for backwards compatibility
+     */
+    static isStablecoin(tokenSymbol) {
+        const stablecoins = ['USDC', 'USDT', 'DAI', 'USDbC', 'FRAX'];
+        return stablecoins.includes(tokenSymbol);
+    }
+
+    // Instance method alias for convenience
+    isStablecoin(tokenSymbol) {
+        return SecurityHelper.isStablecoin(tokenSymbol);
+    }
+
+    /**
      * Check if transaction might face MEV
      */
     static analyzeMEVRisk(swapDetails) {
@@ -340,10 +354,12 @@ class ArbitrageAnalyzer {
     /**
      * Calculate arbitrage profit considering all fees
      */
-    static calculateArbitrage(buyPrice, sellPrice, amountUSD, gasPrice = 50) {
-        const gasEstimate = 150000; // Wei units
+    static calculateArbitrage(buyPrice, sellPrice, amountUSD, gasPrice = 0.05) {
+        // gasPrice in Gwei — default 0.05 Gwei for Base L2 (was 50 Gwei for Ethereum mainnet)
+        // Base network gas is ~0.001–0.1 Gwei, making small arb trades viable
+        const gasEstimate = 150000; // Gas units
         const gasCost = (gasPrice * gasEstimate) / 1e9; // Convert to ETH
-        const gasCostUSD = gasCost * buyPrice; // Rough conversion
+        const gasCostUSD = gasCost * buyPrice; // Convert to USD
 
         const buyFee = amountUSD * 0.005; // 0.5% buy fee
         const sellFee = amountUSD * 0.005; // 0.5% sell fee

@@ -230,14 +230,15 @@ describe('Contract Helpers - Slippage Estimation', () => {
  */
 describe('Arbitrage Analyzer', () => {
     it('should identify profitable arbitrage', () => {
-        const result = ArbitrageAnalyzer.calculateArbitrage(2500, 2510, 100);
+        // Needs >1% spread after 0.5%+0.5% fees on Base L2
+        const result = ArbitrageAnalyzer.calculateArbitrage(2500, 2540, 100);
         expect(result.netProfit !== undefined).toBe(true);
-        expect(result.isViable).toBe(true);
+        expect(result.isViable).toBe(true); // 1.6% spread covers 1% fees + gas
     });
 
     it('should account for fees in profitability', () => {
-        const profitable = ArbitrageAnalyzer.calculateArbitrage(2500, 2530, 100);
-        const unprofitable = ArbitrageAnalyzer.calculateArbitrage(2500, 2505, 100);
+        const profitable = ArbitrageAnalyzer.calculateArbitrage(2500, 2540, 100);   // 1.6% spread — viable
+        const unprofitable = ArbitrageAnalyzer.calculateArbitrage(2500, 2510, 100); // 0.4% spread — eaten by fees
         
         expect(profitable.netProfit > 0).toBe(true);
         expect(unprofitable.netProfit < 0).toBe(true);

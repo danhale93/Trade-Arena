@@ -10,12 +10,51 @@ const ethers = require('ethers');
 const axios = require('axios');
 const WebSocket = require('websocket').w3cwebsocket;
 
+// ─── Security middleware (install: npm i helmet express-rate-limit) ───────────
+let helmet, rateLimit;
+try { helmet = require('helmet'); } catch(e) { console.warn('⚠️  helmet not installed — run: npm i helmet'); }
+try { rateLimit = require('express-rate-limit'); } catch(e) { console.warn('⚠️  express-rate-limit not installed — run: npm i express-rate-limit'); }
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+// ─── Security headers ────────────────────────────────────────────────────────
+if (helmet) app.use(helmet());
+
+// ─── CORS: restrict to your own domain in production ─────────────────────────
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:3001').split(',');
+app.use(cors({
+    origin: (origin, callback) => {
+        // Allow requests with no origin (Postman, server-to-server)
+        if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+        callback(new Error(`CORS: origin ${origin} not allowed`));
+    },
+    credentials: true
+}));
+
+// ─── Rate limiting ────────────────────────────────────────────────────────────
+if (rateLimit) {
+    const limiter = rateLimit({
+        windowMs: 15 * 60 * 1000, // 15 minutes
+        max: 100,                  // Max 100 requests per window per IP
+        standardHeaders: true,
+        legacyHeaders: false,
+        message: { success: false, error: 'Too many requests — slow down.' }
+    });
+    app.use('/api/', limiter);
+
+    // Stricter limit on trading actions
+    const tradeLimiter = rateLimit({
+        windowMs: 60 * 1000, // 1 minute
+        max: 10,
+        message: { success: false, error: 'Too many trade requests — max 10/min.' }
+    });
+    app.use('/api/execute/', tradeLimiter);
+    app.use('/api/bot/', tradeLimiter);
+}
+
+// ─── Body size limit ──────────────────────────────────────────────────────────
+app.use(express.json({ limit: '100kb' }));
 
 // Configuration
 const RPC_URL = 'https://mainnet.base.org'; // Base network RPC
@@ -350,9 +389,31 @@ function generateId() {
 /**
  * Start Server
  */
+// ─── Global error handler ────────────────────────────────────────────────────
+app.use((err, req, res, next) => {
+    console.error('Unhandled error:', err.message);
+    res.status(err.status || 500).json({ success: false, error: 'Internal server error' });
+});
+
+// ─── 404 handler ──────────────────────────────────────────────────────────────
+app.use((req, res) => {
+    res.status(404).json({ success: false, error: `Route not found: ${req.method} ${req.path}` });
+});
+
+// ─── Crash protection ─────────────────────────────────────────────────────────
+process.on('uncaughtException', (err) => {
+    console.error('💥 Uncaught Exception:', err.message, err.stack);
+    // Don't exit — keep server alive
+});
+
+process.on('unhandledRejection', (reason) => {
+    console.error('💥 Unhandled Promise Rejection:', reason);
+});
+
 app.listen(PORT, () => {
     console.log(`🤖 Trade Arena Backend running on port ${PORT}`);
     console.log(`📊 Market analysis: http://localhost:${PORT}/api/health`);
+    console.log(`🔒 Security: helmet=${!!helmet} rateLimit=${!!rateLimit}`);
 });
 
 module.exports = app;

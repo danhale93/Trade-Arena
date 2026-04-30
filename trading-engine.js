@@ -95,13 +95,16 @@ class TradingEngine {
      * Volatility Analysis & Prediction
      */
     analyzeVolatility(priceHistory) {
+        if (!priceHistory || priceHistory.length < 2) {
+            return { current: '0.00', forecast1h: '0.00', forecast24h: '0.00', trend: 'LOW', recommendation: 'NORMAL' };
+        }
         const returns = [];
         for (let i = 1; i < priceHistory.length; i++) {
             returns.push((priceHistory[i] - priceHistory[i-1]) / priceHistory[i-1]);
         }
 
         // Calculate standard deviation (volatility)
-        const mean = returns.reduce((a, b) => a + b) / returns.length;
+        const mean = returns.reduce((a, b) => a + b, 0) / returns.length;
         const variance = returns.reduce((sq, n) => sq + Math.pow(n - mean, 2)) / returns.length;
         const volatility = Math.sqrt(variance) * 100; // Convert to percentage
 
@@ -121,6 +124,11 @@ class TradingEngine {
      * Risk Management & Position Sizing
      */
     calculatePositionSize(capital, volatility, leverage, riskPercentage = 2) {
+        // Input validation
+        if (!isFinite(capital) || capital < 0) capital = 0;
+        if (!isFinite(volatility) || volatility < 0) volatility = 3;
+        if (!isFinite(leverage) || leverage < 1) leverage = 1;
+
         // Kelly Criterion for position sizing
         const winRate = 0.55; // Assume 55% win rate from historical data
         const avgWin = 1.5;
@@ -153,6 +161,10 @@ class TradingEngine {
      */
     generateTradeSignal(marketData) {
         const { price, volume, rsi, macd, bollinger } = marketData;
+
+        if (!macd || !bollinger) {
+            throw new Error('generateTradeSignal: macd and bollinger are required');
+        }
         
         let signal = 0; // -1 = SELL, 0 = HOLD, 1 = BUY
         let confidence = 0;
@@ -270,10 +282,12 @@ class TradingEngine {
      * Execute Individual Trade
      */
     async executeTrade(bot, opportunity) {
+        const leverageMatch = bot.risk && bot.risk.match(/\d+/);
+        const leverage = leverageMatch ? parseInt(leverageMatch[0]) : 5; // Default 5x if not specified
         const positionSize = this.calculatePositionSize(
             bot.amount,
             opportunity.volatility || 3,
-            parseInt(bot.risk.match(/\d+/)[0])
+            leverage
         );
 
         const trade = {
