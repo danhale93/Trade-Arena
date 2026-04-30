@@ -288,44 +288,204 @@ app.get('/api/market/prices', async (req, res) => {
 });
 
 /**
- * Helper Functions
+ * Price Feed Layer
+ * Primary:   CoinGecko (free, no key, ~1-min cached)
+ * Secondary: 0x Price API (Base network, no key for quotes)
+ * Fallback:  Last known good price (stale cache)
  */
 
-async function fetchDexPrice(token, dex) {
-    try {
-        // Simulated DEX price fetching
-        // In production, would call actual DEX APIs or use Uniswap subgraph
-        const basePrice = { 'WETH': 2500, 'USDC': 1, 'ARB': 0.8, 'OP': 1.5 }[token] || 100;
-        const variance = (Math.random() - 0.5) * 2; // ±1% variance
-        return basePrice * (1 + variance / 100);
-    } catch (e) {
-        console.error(`Error fetching ${dex} price for ${token}:`, e);
-        return null;
-    }
-}
+// ─── In-memory price cache (TTL: 60 seconds) ──────────────────────────────────
+const priceCache = {};
+const CACHE_TTL_MS = 60_000;
 
-async function fetchCoinGeckoPrice(symbol) {
+// Token → CoinGecko ID mapping (extend as needed)
+const COINGECKO_IDS = {
+    'WETH':  'ethereum',
+    'ETH':   'ethereum',
+    'USDC':  'usd-coin',
+    'USDT':  'tether',
+    'DAI':   'dai',
+    'WBTC':  'wrapped-bitcoin',
+    'BTC':   'bitcoin',
+    'ARB':   'arbitrum',
+    'OP':    'optimism',
+    'LINK':  'chainlink',
+    'UNI':   'uniswap',
+    'AAVE':  'aave',
+    'CRV':   'curve-dao-token',
+    'SNX':   'havven',
+    'MKR':   'maker',
+    'COMP':  'compound-governance-token',
+    'BASE':  'base-protocol',
+};
+
+// Token contract addresses on Base mainnet (for 0x fallback)
+const BASE_TOKEN_ADDRESSES = {
+    'WETH':  '0x4200000000000000000000000000000000000006',
+    'USDC':  '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+    'USDT':  '0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2',
+    'DAI':   '0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb',
+    'WBTC':  '0x0555E30da8f98308EdB960aa94C0Db47230d2B9',
+    'ARB':   null, // Not native on Base
+    'LINK':  '0x88Fb150BDc53A65fe94Dea0c9BA0a6dAf8C6e196',
+};
+
+/**
+ * Fetch real price from CoinGecko (free public API, rate limited to ~10 req/min)
+ * Returns USD price or null on failure.
+ */
+async function fetchCoinGeckoSpotPrice(symbol) {
+    const coinId = COINGECKO_IDS[symbol.toUpperCase()];
+    if (!coinId) return null;
+
     try {
-        const coinMap = {
-            'WETH': 'ethereum',
-            'USDC': 'usd-coin',
-            'ARB': 'arbitrum',
-            'OP': 'optimism'
+        const url = `https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd&include_24hr_change=true&include_24hr_vol=true`;
+        const res = await axios.get(url, { timeout: 5000 });
+        const data = res.data[coinId];
+        if (!data || !data.usd) return null;
+
+        return {
+            price: data.usd,
+            change24h: data.usd_24h_change || 0,
+            volume24h: data.usd_24h_vol || 0,
         };
-
-        const coinId = coinMap[symbol];
-        if (!coinId) return null;
-
-        const response = await axios.get(
-            `https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd&include_market_cap=true`
-        );
-
-        return response.data[coinId]?.usd || null;
     } catch (e) {
-        console.error(`CoinGecko error for ${symbol}:`, e.message);
+        console.warn(`[CoinGecko] ${symbol}: ${e.message}`);
         return null;
     }
 }
+
+/**
+ * Fetch price via 0x Price API on Base network (simulates DEX price for arb spread)
+ * Returns USD price or null on failure.
+ * NOTE: 0x charges a small fee on swaps but the price API is free.
+ */
+async function fetch0xPrice(symbol, amountUSD = 100) {
+    const contractAddr = BASE_TOKEN_ADDRESSES[symbol.toUpperCase()];
+    if (!contractAddr) return null;
+
+    try {
+        // Use USDC as sell token to get token price in USD
+        const usdcAddr  = BASE_TOKEN_ADDRESSES['USDC'];
+        const sellAmtWei = (amountUSD * 1e6).toFixed(0); // USDC = 6 decimals
+
+        const url = `https://api.0x.org/swap/v1/price?chainId=8453&sellToken=${usdcAddr}&buyToken=${contractAddr}&sellAmount=${sellAmtWei}`;
+        const res = await axios.get(url, {
+            timeout: 6000,
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        const data = res.data;
+        if (!data || !data.price) return null;
+
+        // data.price = buyToken per sellToken → invert to get USD per buyToken
+        const tokenPriceUSD = amountUSD / parseFloat(data.price) / (amountUSD / 1); // simplified
+        return { price: parseFloat(data.price) > 0 ? amountUSD / parseFloat(data.price) : null };
+    } catch (e) {
+        console.warn(`[0x] ${symbol}: ${e.message}`);
+        return null;
+    }
+}
+
+/**
+ * Get the current USD price for a token.
+ * Uses cache → CoinGecko → 0x → stale cache → hardcoded fallback.
+ * Adds ±0.05–0.3% synthetic spread across DEX "sources" (realistic for same-block arb).
+ */
+async function fetchDexPrice(symbol, dex = 'uniswap') {
+    const key = symbol.toUpperCase();
+    const now  = Date.now();
+
+    // ── 1. Fresh cache ──────────────────────────────────────────────────────────
+    if (priceCache[key] && (now - priceCache[key].ts) < CACHE_TTL_MS) {
+        const base = priceCache[key].price;
+        return addDexSpread(base, dex);
+    }
+
+    // ── 2. CoinGecko (real price) ───────────────────────────────────────────────
+    const cg = await fetchCoinGeckoSpotPrice(key);
+    if (cg && cg.price > 0) {
+        priceCache[key] = { price: cg.price, ts: now, change24h: cg.change24h, volume24h: cg.volume24h, source: 'coingecko' };
+        console.log(`[Price] ${key} = $${cg.price} (CoinGecko)`);
+        return addDexSpread(cg.price, dex);
+    }
+
+    // ── 3. 0x fallback ─────────────────────────────────────────────────────────
+    const zx = await fetch0xPrice(key);
+    if (zx && zx.price > 0) {
+        priceCache[key] = { price: zx.price, ts: now, source: '0x' };
+        console.log(`[Price] ${key} = $${zx.price} (0x)`);
+        return addDexSpread(zx.price, dex);
+    }
+
+    // ── 4. Stale cache (any age) ────────────────────────────────────────────────
+    if (priceCache[key]) {
+        console.warn(`[Price] ${key}: using stale cache ($${priceCache[key].price})`);
+        return addDexSpread(priceCache[key].price, dex);
+    }
+
+    // ── 5. Last resort hardcoded prices (prevents crashes during API downtime) ──
+    const fallback = { 'WETH': 3200, 'ETH': 3200, 'USDC': 1, 'USDT': 1, 'DAI': 1,
+                       'WBTC': 95000, 'BTC': 95000, 'ARB': 0.85, 'OP': 1.6,
+                       'LINK': 14.5, 'UNI': 9.2, 'AAVE': 175, 'CRV': 0.38 }[key];
+    if (fallback) {
+        console.warn(`[Price] ${key}: using hardcoded fallback ($${fallback})`);
+        return addDexSpread(fallback, dex);
+    }
+
+    console.error(`[Price] ${key}: no price source available — returning null`);
+    return null;
+}
+
+/**
+ * Add realistic per-DEX spread to simulate arbitrage opportunities.
+ * Uniswap V3 is tightest; SushiSwap / Curve vary more.
+ * Spread is deterministic per symbol+dex combo so it's stable within a cache window.
+ */
+function addDexSpread(basePrice, dex) {
+    if (basePrice === null) return null;
+    const spreads = {
+        uniswap:   0.0002, // ±0.02% (very tight)
+        sushiswap: 0.0008, // ±0.08%
+        curve:     0.0004, // ±0.04%
+        balancer:  0.0006,
+        default:   0.0005,
+    };
+    const magnitude = spreads[dex.toLowerCase()] || spreads.default;
+    // Pseudo-random but stable per (dex, price) — not truly random
+    const sign = Math.sin(basePrice * dex.length) > 0 ? 1 : -1;
+    return basePrice * (1 + sign * magnitude);
+}
+
+/**
+ * GET /api/prices/:symbols — Real-time multi-token prices
+ * e.g. GET /api/prices/WETH,USDC,ARB
+ */
+app.get('/api/prices/:symbols', async (req, res) => {
+    const symbols = req.params.symbols.split(',').slice(0, 10); // Max 10
+    const results = {};
+
+    await Promise.allSettled(
+        symbols.map(async (sym) => {
+            const key = sym.trim().toUpperCase();
+            // Trigger cache fill
+            await fetchDexPrice(key);
+            if (priceCache[key]) {
+                results[key] = {
+                    price:     priceCache[key].price,
+                    change24h: priceCache[key].change24h?.toFixed(2) || '0.00',
+                    volume24h: priceCache[key].volume24h || 0,
+                    source:    priceCache[key].source,
+                    cachedAt:  priceCache[key].ts,
+                };
+            }
+        })
+    );
+
+    res.json({ success: true, prices: results, timestamp: Date.now() });
+});
+
+
 
 function calculateRisk(spread, amount) {
     // Risk scoring: 0-100
