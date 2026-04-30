@@ -750,35 +750,42 @@ const CrucibleEntertainment = {
     const muteBtn = document.getElementById('mute-btn');
     
     if (this.isMuted) {
-      // Mute all sounds
+      // Mute all sounds + music player
       muteBtn.textContent = '🔇 UNMUTE';
       muteBtn.classList.add('muted');
       
-      // Mute all audio elements
       Object.keys(this.sounds).forEach(key => {
         const audio = this.sounds[key + '_audio'];
         if (audio) audio.volume = 0;
       });
       if (this.bgMusic) this.bgMusic.volume = 0;
       
-      this.showCommentary('🔇 SOUND MUTED! Vibe: SILENT MODE ACTIVATED! 🤐', 'neutral');
+      if (window.MusicPlayer) {
+        window.MusicPlayer.toggleMute(true);
+      }
+      
+      this.showCommentary('🔇 ALL SOUNDS MUTED! 🎵🔇', 'neutral');
     } else {
-      // Unmute all sounds
+      // Unmute all
       muteBtn.textContent = '🔊 MUTE';
       muteBtn.classList.remove('muted');
       
-      // Restore sound volumes
       Object.keys(this.sounds).forEach(key => {
         const audio = this.sounds[key + '_audio'];
         if (audio) audio.volume = 0.3;
       });
       if (this.bgMusic) this.bgMusic.volume = 0.1;
       
+      if (window.MusicPlayer) {
+        window.MusicPlayer.toggleMute(false);
+      }
+      
       this.playSound('bell');
-      this.showCommentary('🔊 SOUND RESTORED! Welcome BACK! 🎉', 'win');
+      this.showCommentary('🔊 FULL AUDIO RESTORED! 🎵🔊', 'win');
     }
   }
 };
+
 
 // Initialize on page load
 if (document.readyState === 'loading') {

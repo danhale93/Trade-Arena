@@ -1,11 +1,12 @@
 {
   "name": "trade-arena-backend",
-  "version": "1.0.0",
-  "description": "Trade Arena - AI Auto Trading Bot Platform Backend",
+  "version": "2.0.0",
+  "description": "Trade Arena v2.0 - MCP Server + WebSocket + AI Trading Platform",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
+    "mcp": "node mcp-server.js",
     "test": "jest"
   },
   "keywords": [
@@ -13,11 +14,16 @@
     "arbitrage",
     "ai",
     "blockchain",
-    "base"
+    "mcp",
+    "websocket",
+    "claude"
   ],
   "author": "Trade Arena",
   "license": "MIT",
   "dependencies": {
+    "@alpacahq/alpaca-trade-api": "^3.1.3",
+    "@anthropic-ai/sdk": "^0.91.0",
+    "@modelcontextprotocol/sdk": "^1.0.0",
     "axios": "^1.4.0",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
@@ -28,6 +34,7 @@
     "websocket": "^1.0.34"
   },
   "devDependencies": {
+    "@supabase/supabase-js": "^2.45.4",
     "jest": "^29.0.0",
     "nodemon": "^2.0.20",
     "workbox-webpack-plugin": "^7.4.0",
