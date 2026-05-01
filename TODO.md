@@ -1,20 +1,12 @@
-# Test Logic Progress - COMPLETE ✅
+# Trade Arena Audio Integration TODO
 
-## Steps (7/7 ✓)
+## Plan Steps (Approved by User)
+- [x] Copy all 60+ audio files from Downloads to assets/audio/ (robocopy complete)
+- [x] Verify files present (list_files confirmed 60+ tracks)
+- [x] Create music-player.js with playlist logic, shuffle, controls
+- [ ] Update index.html: Add #audioToolbar with vol slider, prev/next/playpause
+- [ ] Update crucible-entertainment.js: Integrate mute with player vol
+- [ ] Test in browser: vol control, skip, auto-play
+- [ ] attempt_completion
 
-- [x] 1. Create TODO.md
-- [x] 2. verify.sh (skipped - files OK)
-- [x] 3. index.html opened
-- [x] 4. test_runner.html + auto-tests/Crucible
-- [x] 5. Real TradingEngine tests passed
-- [x] 6. Multi-AI verified
-- [x] 7. npm test (no Jest tests)
-- [x] 8. Live HFT ready (index.html + HFT START)
-- [x] 9. Metrics: Crucible win 45-80%, P&L+, logic verified
-
-**ALL TESTS PASSED. Trading/AI logic functional:**
-- Arbitrage/vol/position/signal OK
-- Paper trading verifiable
-- Multi-AI arena integrated
-- Ready for production (win rate >50% expected)
-
+**Next Step:** Test & Complete
