@@ -1147,6 +1147,62 @@ const gasBase = 0.00025; // $0.00025 for $1 bet (optimized DEX)
 }
 
 // ══════════════════════════════════════════════════════
+// AFFORDABILITY / BUDGETING HELPERS
+// ══════════════════════════════════════════════════════
+// We budget: bet + estimatedCosts + extra fee buffer
+// This prevents "insufficient balance" when starting at $1.
+function getFeeBufferPct(){
+  // Reserve extra portion of bet for real-world execution variance
+  // (gas spikes, fee-on-transfer tokens, slippage underestimation, etc.)
+  return 0.15; // 15% of bet reserved as buffer
+}
+
+function getBotMinBet(bot){
+  // Allow trading from as little as $1 initial capital.
+  // If user set smaller, cap to $0.50 then $0.10 as absolute floor.
+  // (UI presets include $0.10 and above)
+  const configuredMin = 0.10;
+  const personalityFloor = 1.0; // encourage safer micro trades for live mode
+  // If user already chose a small bet, don't raise it aggressively.
+  const userBet = bot?.bet ?? 1;
+  if(userBet >= personalityFloor) return 1.0;
+  if(userBet >= 0.50) return 0.50;
+  return configuredMin;
+}
+
+function budgetRequiredTotal(bet, balance, feeBufferPct){
+  // Use a simplified cost model independent of method/token:
+  // approximate total costs as a function of bet and a typical volume.
+  // computeCosts() depends on method & volume, but we only need conservative affordability.
+  const volumeUsd = 1e9;
+  const method = 'SPOT LONG';
+  const approxCosts = computeCosts(method, bet, volumeUsd).total;
+  const buffer = bet * feeBufferPct;
+  return bet + approxCosts + buffer;
+}
+
+function budgetScaleBet(bet, minBet, balance, feeBufferPct){
+  if(!isFinite(bet) || bet <= 0) return 0;
+  if(!isFinite(balance) || balance <= 0) return 0;
+  const step = 0.01;
+  let target = bet;
+  // If already affordable, keep.
+  if(balance >= budgetRequiredTotal(target, balance, feeBufferPct)) return target;
+
+  // Scale down proportionally using a conservative required function.
+  // Find max affordable by iteratively stepping down (fast enough for UI).
+  target = Math.min(target, balance);
+  target = Math.floor(target/step)*step;
+  while(target >= minBet){
+    const required = budgetRequiredTotal(target, balance, feeBufferPct);
+    if(balance >= required) return parseFloat(target.toFixed(2));
+    target = Math.floor((target-step)/step)*step;
+  }
+  return 0;
+}
+
+
+// ══════════════════════════════════════════════════════
 // SHADOW BASELINES
 // Each trade auto-computes what random / always-long / momentum would do
 // with identical entry price, hold time, costs
@@ -1173,17 +1229,28 @@ function computeBaselines(entryPrice, exitPrice, bet, method, volumeUsd, priceCh
 // POSITION LIFECYCLE
 // ══════════════════════════════════════════════════════
 async function openPosition(bot, decision, entryPrice, bet, volumeUsd, priceChangePct15m) {
-  // CRITICAL: Check if sufficient balance exists before opening trade
-  if(balance < bet) {
+  // CRITICAL: Budget affordability check before opening trade.
+  // Instead of hard-blocking, we auto-scale bet to the maximum affordable size.
+  const minBet = getBotMinBet(bot);
+  const feeBufferPct = getFeeBufferPct();
+  const scaled = budgetScaleBet(bet, minBet, balance, feeBufferPct);
+  if(scaled === 0){
     const tick=document.getElementById('mtick-'+bot.id);
-    if(tick) tick.textContent=`❌ Insufficient balance ($${balance.toFixed(2)} < $${bet})`;
+    if(tick) tick.textContent=`❌ Insufficient capital (min $${minBet})`;
     bot.spinning=false;
     const spinEl=document.getElementById('mspin-'+bot.id);
     if(spinEl){spinEl.disabled=false;spinEl.classList.remove('going');spinEl.textContent='🎰 SPIN';}
     return null;
   }
+  if(scaled !== bet){
+    bet = scaled;
+    // sync UI / bot bet
+    bot.bet = scaled;
+    setBet(bot.id, scaled);
+  }
   
   const costs = computeCosts(decision.method, bet, volumeUsd);
+
   const isShort = decision.method.includes('SHORT');
 
   const pos = {
@@ -2473,12 +2540,23 @@ async function spinBot(id){
   const bot=bots.find(b=>b.id===id);
   if(!bot||bot.spinning||bot.cooling) return;
   
-  // CRITICAL: Prevent spinning if balance is insufficient for minimum bet
-  if(balance < 0.10) {
+  // CRITICAL: Budget affordability check (bet + estimated costs + fee buffer)
+  // Auto-scale bet to maximum affordable size instead of hard-blocking.
+  const minBet = getBotMinBet(bot);
+  const feeBufferPct = getFeeBufferPct(); // fraction of bet reserved for fees/slippage buffer
+  const scaled = budgetScaleBet(bot.bet, minBet, balance, feeBufferPct);
+  if(scaled === 0){
     const t=document.getElementById('mtick-'+id);
-    if(t) t.textContent='🚫 Insufficient balance to trade';
+    if(t) t.textContent=`🚫 Insufficient capital (min $${minBet})`;
     return;
   }
+  if(scaled !== bot.bet){
+    bot.bet = scaled;
+    setBet(id, scaled);
+    const t=document.getElementById('mtick-'+id);
+    if(t) t.textContent=`⚖️ Auto-scaled bet to $${scaled.toFixed(scaled<1?2:0)} (budgeted costs included)`;
+  }
+
   
   const block=isGlobalBlocked();
   if(block.blocked){const t=document.getElementById('mtick-'+id);if(t)t.textContent='🚫 '+block.reason;return;}
