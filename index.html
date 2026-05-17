@@ -1389,62 +1389,92 @@ function updateLiveBalance(){
 
 async function checkExit(pos, bot) {
   if(pos.status!=='open') return;
-  const exitPrice=await getLivePrice(pos.token);
-  if(!exitPrice){ setTimeout(()=>checkExit(pos,bot),30000); return; }
 
-  pos.exitPrice=exitPrice; pos.status='closed'; pos.closedAt=Date.now();
-
-  const delta=pos.direction==='long'
-    ?(exitPrice-pos.entryPrice)/pos.entryPrice
-    :(pos.entryPrice-exitPrice)/pos.entryPrice;
-  pos.rawPnl=pos.bet*delta;
-  pos.netPnl=pos.rawPnl-pos.costs.total;
-  pos.isWin=pos.netPnl>0;
-
-  // Compute shadow baselines
-  pos.baselines=computeBaselines(pos.entryPrice,exitPrice,pos.bet,pos.method,pos.volumeUsd,pos.priceChangePct15m);
-  Object.keys(pos.baselines).forEach(k=>{ if(k!=='cash') baselines[k].trades.push(pos.baselines[k]); });
-
-  // Track agent performance for quant report
-  if(pos.ensemble) trackAgentPerformance(pos.ensemble, pos.isWin);
-
-  // Self-learning: update weights from this trade outcome
-  learnFromTrade(pos);
-
-  // Return the bet amount plus the net profit/loss
-  balance += pos.bet + pos.netPnl;
-  totalPnl += pos.netPnl; 
-  bot.pnl += pos.netPnl;
-  equityHistory.push(parseFloat(balance.toFixed(2)));
-  openPositions=openPositions.filter(p=>p.id!==pos.id);
-  // Reset balance colour and recompute after position closes
-  const balEl=document.getElementById('ghBalance');
-  if(balEl) balEl.style.color='var(--gold)';
-  updateLiveBalance();
-  closedTrades.push(pos);
-
-  pos.isWin?recordWin(bot):recordLoss(bot);
-
-  document.getElementById('opOverlay-'+pos.botId)?.classList.remove('show');
-  const card=document.getElementById('bot-'+pos.botId);
-  if(card&&!openPositions.find(p=>p.botId===pos.botId)) card.classList.remove('has-open');
-
-  updateGlobalBalance(); updateBotPnl(bot); updateQuantReport(); updateOpenCount();
-  showExitResult(pos,bot); addToLog(pos);
-
-  // ── SFX + FX + VOICE on trade close ──
+  // Always run core state updates; never let UI/audio/logging errors block exits.
+  let card = null;
   try {
-    const rect = card ? card.getBoundingClientRect() : null;
-    const cx = rect ? rect.left + rect.width/2 : window.innerWidth/2;
-    const cy = rect ? rect.top + rect.height*0.3 : window.innerHeight*0.3;
+    const exitPrice=await getLivePrice(pos.token);
+    if(!exitPrice){ setTimeout(()=>checkExit(pos,bot),30000); return; }
+
+    pos.exitPrice=exitPrice; pos.status='closed'; pos.closedAt=Date.now();
+
+    const delta=pos.direction==='long'
+      ?(exitPrice-pos.entryPrice)/pos.entryPrice
+      :(pos.entryPrice-exitPrice)/pos.entryPrice;
+    pos.rawPnl=pos.bet*delta;
+    pos.netPnl=pos.rawPnl-pos.costs.total;
+    pos.isWin=pos.netPnl>0;
+
+    // Compute shadow baselines
+    pos.baselines=computeBaselines(pos.entryPrice,exitPrice,pos.bet,pos.method,pos.volumeUsd,pos.priceChangePct15m);
+    Object.keys(pos.baselines).forEach(k=>{ if(k!=='cash') baselines[k].trades.push(pos.baselines[k]); });
+
+    // Track agent performance for quant report
+    if(pos.ensemble) trackAgentPerformance(pos.ensemble, pos.isWin);
+
+    // Self-learning: update weights from this trade outcome
+    learnFromTrade(pos);
+
+    // Return the bet amount plus the net profit/loss
+    balance += pos.bet + pos.netPnl;
+    totalPnl += pos.netPnl;
+    bot.pnl += pos.netPnl;
+    equityHistory.push(parseFloat(balance.toFixed(2)));
+    openPositions=openPositions.filter(p=>p.id!==pos.id);
+
+    // Reset balance colour and recompute after position closes
+    const balEl=document.getElementById('ghBalance');
+    if(balEl) balEl.style.color='var(--gold)';
+    updateLiveBalance();
+    closedTrades.push(pos);
+
+    pos.isWin?recordWin(bot):recordLoss(bot);
+
+    document.getElementById('opOverlay-'+pos.botId)?.classList.remove('show');
+    card=document.getElementById('bot-'+pos.botId);
+    if(card&&!openPositions.find(p=>p.botId===pos.botId)) card.classList.remove('has-open');
+
+    updateGlobalBalance();
+    updateBotPnl(bot);
+    updateQuantReport();
+    updateOpenCount();
+
+    // UI results + ledger are part of the critical user-visible path.
+    // Wrap them so any DOM mismatch doesn't prevent the rest.
+    try{ showExitResult(pos,bot); }catch(e){ console.warn('showExitResult failed', e); }
+    try{ addToLog(pos); }catch(e){ console.warn('addToLog failed', e); }
+
+  } catch(e) {
+    console.error('checkExit core failure:', e);
+
+    // If we crashed after marking status closed, attempt to surface at least the ledger.
+    try{
+      pos.status='closed';
+      if(!closedTrades.includes(pos)) closedTrades.push(pos);
+      updateQuantReport();
+      updateOpenCount();
+      updateGlobalBalance();
+    }catch(_){}
+  }
+
+  // SFX + FX + VOICE + particles should never block exit visibility.
+  try {
+    if(card){
+      card.classList.add(pos.isWin?'winning':'losing');
+      setTimeout(()=>card.classList.remove('winning','losing'),700);
+    }
+
     const earlyReason = pos._earlyExitReason || '';
     const isSL = earlyReason.startsWith('SL');
     const isTP = earlyReason.startsWith('TP');
 
-    if (pos.isWin) {
+    if(pos.isWin) {
       const big = pos.netPnl > 20;
       if (typeof SFX !== 'undefined') big ? SFX.bigWin() : SFX.win();
       if (typeof FX !== 'undefined') {
+        const rect = card ? card.getBoundingClientRect() : null;
+        const cx = rect ? rect.left + rect.width/2 : window.innerWidth/2;
+        const cy = rect ? rect.top + rect.height*0.3 : window.innerHeight*0.3;
         FX.flash('rgba(57,255,20,0.12)', big ? 500 : 300);
         FX.confetti(cx, cy, big ? 28 : 16);
         FX.pnlFlyUp(pos.netPnl, cx - 30, cy);
@@ -1453,17 +1483,21 @@ async function checkExit(pos, bot) {
     } else {
       if (typeof SFX !== 'undefined') isSL ? SFX.stopLoss() : SFX.loss();
       if (typeof FX !== 'undefined') {
+        const rect = card ? card.getBoundingClientRect() : null;
+        const cx = rect ? rect.left + rect.width/2 : window.innerWidth/2;
+        const cy = rect ? rect.top + rect.height*0.3 : window.innerHeight*0.3;
         FX.flash('rgba(255,45,120,0.1)', 400);
         FX.shake(card);
         FX.pnlFlyUp(pos.netPnl, cx - 30, cy);
       }
       if (typeof VOICE !== 'undefined') isSL ? VOICE.stopLoss(bot.id) : VOICE.loss(bot.id, pos.netPnl);
     }
-  } catch(e) {}
 
-  if(card){ card.classList.add(pos.isWin?'winning':'losing'); setTimeout(()=>card.classList.remove('winning','losing'),700); }
-  spawnParticles(pos.isWin,pos.botId); // always show particles now
-  if(crucibleMode&&pos.method!=='HOLD'){ crucibleCount++; updateCrucible(); }
+    spawnParticles(pos.isWin,pos.botId);
+    if(crucibleMode&&pos.method!=='HOLD'){ crucibleCount++; updateCrucible(); }
+  } catch(e) {
+    // ignore
+  }
 }
 
 function showOpenOverlay(botId, pos) {
