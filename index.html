@@ -1,4 +1,4 @@
-/';.<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -565,8 +565,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <span style="font-size:9px;padding:1px 6px;border-radius:10px;background:var(--chrome);border:1px solid var(--border);color:var(--dim)" id="ghBadge">DEMO</span>
     </div>
     <div style="margin-right:4px;text-align:right;flex-shrink:0">
-      <div class="gh-balance" id="ghBalance" style="transition:color .3s">$10,000.00</div>
+      <div class="gh-balance" id="ghBalance" style="transition:color .3s">—</div>
       <div class="gh-pnl pnl-pos" id="ghPnl">+$0.00 today</div>
+      <div style="font-size:7px;color:var(--dim);margin-top:2px">Wallet balance in AUD</div>
     </div>
     <!-- countdown + open trade tally -->
     <div class="gh-ticker" id="ghTicker" style="display:none">
@@ -1307,8 +1308,9 @@ function updateLiveBalance(){
   const balEl=document.getElementById('ghBalance');
   const pnlEl=document.getElementById('ghPnl');
   if(balEl){
+    // This app models everything internally in USD, so we always display USD here.
+    // MetaMask UI display (USD vs crypto) is controlled by MetaMask settings.
     balEl.textContent='$'+displayBalance.toFixed(2);
-    // Flash gold when unrealised is active
     balEl.style.color=unrealised>0?'var(--green)':unrealised<0?'var(--hot)':'var(--gold)';
   }
   if(pnlEl){
@@ -1989,34 +1991,34 @@ async function loginMetaMask(){
     // Create provider
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     
-    // Switch to Base Mainnet (optional, but recommended)
-    s.textContent='⏳ Verifying network…';
-    try { 
+    // Switch to Arbitrum One Mainnet (so balance + trades match user's Arbitrum ETH)
+    s.textContent='⏳ Verifying network (Arbitrum One)…';
+    const ARB_ONE_CHAIN_ID = '0xA4B1'; // 42161
+    try {
       await window.ethereum.request({
         method: 'wallet_switchEthereumChain',
-        params: [{ chainId: '0x2105' }] // Base Mainnet
-      }); 
-    }
-    catch(switchError) { 
+        params: [{ chainId: ARB_ONE_CHAIN_ID }]
+      });
+    } catch (switchError) {
       // Chain doesn't exist, add it
-      if(switchError.code === 4902) {
+      if (switchError.code === 4902) {
         try {
           await window.ethereum.request({
             method: 'wallet_addEthereumChain',
             params: [{
-              chainId: '0x2105',
-              chainName: 'Base Mainnet',
-              rpcUrls: ['https://mainnet.base.org'],
+              chainId: ARB_ONE_CHAIN_ID,
+              chainName: 'Arbitrum One',
+              rpcUrls: ['https://arb1.arbitrum.io/rpc'],
               nativeCurrency: {
-                name: 'Ethereum',
+                name: 'Ether',
                 symbol: 'ETH',
                 decimals: 18
               },
-              blockExplorerUrls: ['https://basescan.org']
+              blockExplorerUrls: ['https://arbiscan.io']
             }]
           });
-        } catch(addError) {
-          console.warn('Could not add Base chain:', addError);
+        } catch (addError) {
+          console.warn('Could not add Arbitrum One chain:', addError);
         }
       }
     }
@@ -2029,16 +2031,42 @@ async function loginMetaMask(){
       const balanceWei = await provider.getBalance(address);
       const balanceETH = parseFloat(ethers.utils.formatEther(balanceWei));
       
-      // Get ETH price in USD
-      const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
-      const priceData = await priceResponse.json();
-      const ethPrice = priceData?.ethereum?.usd || 3200;
-      
-      balanceUSD = balanceETH * ethPrice;
-    } 
+    // Get prices (USD + AUD)
+    // app logic uses USD internally, but UI must show AUD wallet balance.
+    const [usdRes, audRes] = await Promise.all([
+      fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd'),
+      fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=aud')
+    ]);
+    const [usdData, audData] = await Promise.all([usdRes.json(), audRes.json()]);
+
+    const ethPriceUsd = usdData?.ethereum?.usd || 3200;
+    const ethPriceAud = audData?.ethereum?.aud || 5000;
+
+    balanceUSD = balanceETH * ethPriceUsd;
+    const balanceAud = balanceETH * ethPriceAud;
+
+    // Store AUD display separately so we don't affect internal USD-based trading sim.
+    window.__ta_walletBalanceAUD = balanceAud;
+
+    // Update global balances (internal = USD)
+    balance = balanceUSD;
+    startBalance = balanceUSD;
+
+    // Update UI to show AUD
+    const ghBalance = document.getElementById('ghBalance');
+    if(ghBalance){
+      ghBalance.textContent = 'A$' + (balanceAud).toFixed(2);
+      ghBalance.style.color = 'var(--gold)';
+    }
+  } 
     catch(balanceError) { 
       console.warn('Could not fetch balance:', balanceError);
-      // Use default balance
+      // Use default internal balance, but keep UI AUD as fallback.
+    
+      balance = balanceUSD;
+      startBalance = balanceUSD;
+      const ghBalance = document.getElementById('ghBalance');
+      if(ghBalance){ ghBalance.textContent = 'A$' + (balanceUSD).toFixed(2); }
     }
     
     // Update global balance
@@ -2103,7 +2131,14 @@ function setupApp({name,avatar,badge}){
 // BALANCE
 // ══════════════════════════════════════════════════════
 function updateGlobalBalance(){
-  setVal('ghBalance','$'+balance.toFixed(2));
+  // Internal trading sim is USD. Wallet balance UI should be AUD.
+  const aud = window.__ta_walletBalanceAUD;
+  if(aud != null && !isNaN(aud)){
+    setVal('ghBalance','A$'+Number(aud).toFixed(2));
+  } else {
+    setVal('ghBalance','$'+balance.toFixed(2));
+  }
+
   const p=document.getElementById('ghPnl');
   if(p){p.textContent=(totalPnl>=0?'+':'')+'$'+totalPnl.toFixed(2)+' today';p.className='gh-pnl '+(totalPnl>=0?'pnl-pos':'pnl-neg');}
   checkGlobalBreakers();
