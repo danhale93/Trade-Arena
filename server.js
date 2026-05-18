@@ -178,6 +178,7 @@ app.post('/api/execute/swap', async (req, res) => {
         const { fromToken, toToken, amount, slippage } = req.body;
 
         // Simulate swap execution
+
         const expectedOutput = amount * (1 - (slippage || 0.005)); // Account for slippage
         const gasUsed = Math.random() * 150000 + 50000; // 50k - 200k gas
         const gasCost = gasUsed * 0.001; // Simplified (real would use current gas price)
