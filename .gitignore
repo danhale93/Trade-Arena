@@ -1,6 +1,15 @@
-node_modules
-node_modules
-node_modules
-node_modules
-node_modules
-node_modules
+# Dependencies
+node_modules/
+
+# Environment variables (contains sensitive keys)
+.env
+.env.local
+.env.production
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db

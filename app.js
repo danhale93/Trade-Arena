@@ -34,19 +34,35 @@ async function connectWallet() {
             });
         } catch (e) {
             if (e.code === 4902) {
-                showToast('Adding Base Network to MetaMask...', 'info');
+                // Chain not added - add Base network
+                await window.ethereum.request({
+                    method: 'wallet_addEthereumChain',
+                    params: [{
+                        chainId: '0x2105',
+                        chainName: 'Base',
+                        nativeCurrency: {
+                            name: 'Ethereum',
+                            symbol: 'ETH',
+                            decimals: 18
+                        },
+                        rpcUrls: ['https://mainnet.base.org'],
+                        blockExplorerUrls: ['https://basescan.org']
+                    }]
+                });
+            } else if (e.code === 4001) {
+                showToast('Please switch to Base network manually', 'info');
             }
         }
 
-        // Fetch balance
-        userBalance = ethers.utils.formatEther(
-            await provider.getBalance(userAddress)
-        );
+        // Fetch balance (wait for network switch/add to complete)
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const balance = await provider.getBalance(userAddress);
+        userBalance = ethers.utils.formatEther(balance);
 
         loginSuccess();
     } catch (error) {
         console.error('Wallet connection error:', error);
-        showToast('Failed to connect wallet', 'error');
+        showToast('Failed to connect wallet: ' + error.message, 'error');
     }
 }
 
