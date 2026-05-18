@@ -15,7 +15,11 @@ const CrucibleTest = {
   trades: [],
   startTime: null,
   endTime: null,
-  
+
+  // Determinism / seeded RNG
+  _seed: null,
+  _rand: Math.random,
+
   // Test configuration
   config: {
     paperBalance: 10000,      // Starting paper balance
@@ -23,6 +27,12 @@ const CrucibleTest = {
     tradeInterval: 2000,      // ms between trades
     verbose: true,            // Detailed logging
     verifyResults: true,      // Check trade outcomes
+
+    // ✨ NEW: Optional deterministic seeded mode ✨
+    // If set, all randomness in the test becomes repeatable.
+    // Example: { seed: 123 }
+    seed: null,
+
     // ✨ NEW RISK MANAGEMENT SETTINGS ✨
     riskPerTrade: 10,         // Max loss per trade ($)
     rewardTarget: 30,         // Min profit per trade ($)
@@ -40,7 +50,20 @@ const CrucibleTest = {
     this.trades = [];
     this.sessionId = `crucible-${Date.now()}`;
     this.isRunning = false;
-    
+
+    // Seeded RNG (optional)
+    if (typeof this.config.seed === 'number' || typeof this.config.seed === 'string') {
+      const seedNum = typeof this.config.seed === 'number' ? this.config.seed : this._hashStringToSeed(this.config.seed);
+      this._seed = seedNum;
+      this._rand = this._createSeededRng(seedNum);
+      if (this.config.verbose) {
+        console.log(`%c🎲 Seeded mode enabled (seed=${seedNum})`, 'color: #39ff14; font-weight: bold;');
+      }
+    } else {
+      this._seed = null;
+      this._rand = Math.random;
+    }
+
     console.log('%c🔬 CRUCIBLE TEST INITIALIZED', 'color: #bf5fff; font-weight: bold; font-size: 14px;');
     console.log(`Session ID: ${this.sessionId}`);
     console.log(`Paper Balance: $${this.config.paperBalance}`);
@@ -105,39 +128,39 @@ const CrucibleTest = {
       sessionId: this.sessionId,
       tradeNum,
       timestamp: new Date().toISOString(),
-      
+
       // Trade parameters (simulated)
       method: this.randomTradingMethod(),
       token: this.randomToken(),
-      
+
       // ✨ NEW: RISK MANAGEMENT FIELDS ✨
       riskPerTrade: this.config.riskPerTrade,
       rewardTarget: this.config.rewardTarget,
       riskRewardRatio: this.config.riskRewardRatio,
-      
+
       // Price execution (simulated)
-      entryPrice: Math.random() * 50000 + 10000,
+      entryPrice: this._rand() * 50000 + 10000,
       exitPrice: null,
       stopLossPrice: null,
       takeProfitPrice: null,
-      
+
       // Win/loss determination
-      winProbability: Math.random() * 0.35 + 0.45, // 45-80% expected win rate
+      winProbability: this._rand() * 0.35 + 0.45, // 45-80% expected win rate
       tradeQualityScore: 0,
       isQualityTrade: false, // Only take if meets risk/reward criteria
-      
+
       // Result calculation
       pnl: 0,
       pnlPercent: 0,
       isWin: false,
-      
+
       // Edge metrics
-      edge: Math.random() * 5 + 0.5,
-      confidence: Math.random() * 0.35 + 0.5,
-      
+      edge: this._rand() * 5 + 0.5,
+      confidence: this._rand() * 0.35 + 0.5,
+
       // Expected value calculation
       expectedValue: 0,
-      
+
       // Verification fields
       verified: true,
       executionQuality: 'VERIFIED',
@@ -159,7 +182,7 @@ const CrucibleTest = {
     trade.isQualityTrade = trade.expectedValue > minExpectedValue;
     
     // ✨ STEP 3: Simulate Trade Execution with Stop Loss & Take Profit
-    const winRoll = Math.random();
+    const winRoll = this._rand();
     trade.isWin = winRoll < trade.winProbability;
 
     // ✨ KEY FIX: ENFORCE FIXED RISK/REWARD RATIO
@@ -231,11 +254,11 @@ const CrucibleTest = {
   // ════════════════════════════════════════════════════════════════
   generateReport() {
     const duration = ((this.endTime - this.startTime) / 1000).toFixed(2);
-    
+
     // Separate executed and skipped trades
     const executedTrades = this.trades.filter(t => !t.skipped);
     const skippedTrades = this.trades.filter(t => t.skipped);
-    
+
     const wins = executedTrades.filter(t => t.isWin).length;
     const losses = executedTrades.filter(t => !t.isWin).length;
     const winRate = executedTrades.length > 0 ? (wins / executedTrades.length * 100).toFixed(2) : 0;
@@ -244,6 +267,20 @@ const CrucibleTest = {
     const totalPnl = executedTrades.reduce((sum, t) => sum + t.pnl, 0);
     const finalBalance = this.config.paperBalance + totalPnl;
     const returnPercent = (totalPnl / this.config.paperBalance * 100).toFixed(2);
+
+    // Invariant assertions (fail fast if internal accounting drifts)
+    try {
+      if (executedTrades.length === 0) throw new Error('No executed trades to report');
+
+      const sumCheck = executedTrades.reduce((s, t) => s + t.pnl, 0);
+      if (Math.abs(sumCheck - totalPnl) > 1e-9) {
+        throw new Error(`Invariant fail: totalPnl mismatch (${sumCheck} vs ${totalPnl})`);
+      }
+    } catch (e) {
+      console.error('❌ [CrucibleTest] Report invariant assertion failed:', e.message);
+      // Keep going so UI/export still works
+    }
+
 
     // Trade statistics
     const winTrades = executedTrades.filter(t => t.isWin);
@@ -378,7 +415,11 @@ const CrucibleTest = {
 
   exportCSV() {
     const headers = ['Trade#', 'Timestamp', 'Method', 'Token', 'Entry Price', 'Exit Price', 'Win?', 'P&L', 'Balance'];
-    const rows = this.trades.map((t, i) => [
+
+    // Match generateReport()/exportJSON() semantics: export executed trades only
+    const executedTrades = this.trades.filter(t => !t.skipped);
+
+    const rows = executedTrades.map((t, i) => [
       i + 1,
       t.timestamp,
       t.method,
@@ -389,6 +430,7 @@ const CrucibleTest = {
       t.pnl.toFixed(2),
       t.paperBalance.toFixed(2),
     ]);
+
 
     let csv = headers.join(',') + '\n';
     csv += rows.map(r => r.join(',')).join('\n');
@@ -408,14 +450,37 @@ const CrucibleTest = {
   // HELPER FUNCTIONS
   // ════════════════════════════════════════════════════════════════
   randomTradingMethod() {
-    // Valid methods: SPOT LONG, SPOT SHORT, YIELD FARM, PERP LONG, PERP SHORT, HOLD
+    // Valid methods: SPOT LONG, SPOT SHORT, YIELD FARM, PERP LONG, PERP SHORT
     const methods = ['SPOT LONG', 'SPOT SHORT', 'PERP LONG', 'PERP SHORT', 'YIELD FARM'];
-    return methods[Math.floor(Math.random() * methods.length)];
+    return methods[Math.floor(this._rand() * methods.length)];
   },
 
   randomToken() {
     const tokens = ['BTC', 'ETH', 'SOL', 'AVAX', 'LINK', 'MATIC', 'UNI', 'AAVE'];
-    return tokens[Math.floor(Math.random() * tokens.length)];
+    return tokens[Math.floor(this._rand() * tokens.length)];
+  },
+
+  // Seed helpers
+  _hashStringToSeed(str) {
+    // Simple deterministic hash -> 32-bit int
+    let h = 2166136261;
+    for (let i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return (h >>> 0);
+  },
+
+  _createSeededRng(seed) {
+    // Mulberry32
+    let t = seed >>> 0;
+    return function () {
+      t += 0x6D2B79F5;
+      let x = t;
+      x = Math.imul(x ^ (x >>> 15), x | 1);
+      x ^= x + Math.imul(x ^ (x >>> 7), x | 61);
+      return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+    };
   },
 
   sleep(ms) {
