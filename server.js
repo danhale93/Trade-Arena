@@ -523,3 +523,85 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
+
+// ═══════════════════════════════════════════════════════════
+// WALLET BALANCE & STATUS ENDPOINTS
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * GET /api/wallet/balance - Get live MetaMask wallet balance
+ */
+app.get('/api/wallet/balance', async (req, res) => {
+    try {
+        const { address } = req.query;
+        
+        if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'Invalid address parameter' 
+            });
+        }
+        
+        // Get ETH balance
+        const balanceWei = await provider.getBalance(address);
+        const balanceETH = parseFloat(ethers.utils.formatEther(balanceWei));
+        
+        // Get ETH price
+        let ethPriceUSD = 3200;
+        try {
+            const priceResponse = await axios.get(
+                'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd',
+                { timeout: 5000 }
+            );
+            ethPriceUSD = priceResponse.data.ethereum?.usd || 3200;
+        } catch (e) {
+            console.warn('Price fetch failed, using fallback');
+        }
+        
+        const balanceUSD = balanceETH * ethPriceUSD;
+        
+        // Estimate gas for common operations
+        const feeData = await provider.getFeeData();
+        const gasPrice = feeData.gasPrice || ethers.BigNumber.from(30000000000);
+        const estimatedSwapGas = 120000;
+        const gasCostETH = parseFloat(ethers.utils.formatEther(gasPrice.mul(estimatedSwapGas)));
+        const gasCostUSD = gasCostETH * ethPriceUSD;
+        
+        res.json({
+            success: true,
+            wallet: {
+                address: address,
+                balanceETH: balanceETH,
+                balanceUSD: balanceUSD,
+                ethPriceUSD: ethPriceUSD,
+                lastUpdated: Date.now()
+            },
+            gas: {
+                currentPriceGwei: parseFloat(ethers.utils.formatUnits(gasPrice, 'gwei')),
+                estimatedSwapGas: estimatedSwapGas,
+                gasCostETH: gasCostETH,
+                gasCostUSD: gasCostUSD
+            },
+            tradingLimits: {
+                minBetUSD: REAL_WALLET_CONFIG?.trading?.minBetUSD || 1,
+                maxBetUSD: REAL_WALLET_CONFIG?.trading?.maxBetUSD || 500,
+                hasMinimumBalance: balanceETH >= 0.01,
+                canTrade: balanceETH >= gasCostETH + 0.001
+            }
+        });
+    } catch (error) {
+        console.error('Balance fetch error:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
+});
+
+// Note: REAL_WALLET_CONFIG imported from contract-helpers if needed
+const REAL_WALLET_CONFIG = {
+    trading: {
+        minBetUSD: 1,
+        maxBetUSD: 500
+    }
+};
