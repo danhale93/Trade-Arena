@@ -9,6 +9,11 @@ const cors = require('cors');
 const ethers = require('ethers');
 const axios = require('axios');
 const WebSocket = require('websocket').w3cwebsocket;
+const {
+    ContractHelper,
+    PROTOCOLS,
+    ABIS
+} = require('./contract-helpers');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -35,6 +40,24 @@ const DEX_ABI = [
 
 // Initialize provider
 const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
+
+function jsonError(res, statusCode, code, message, details = null) {
+    return res.status(statusCode).json({
+        success: false,
+        error: {
+            code,
+            message,
+            details
+        }
+    });
+}
+
+function assertValidAddress(addr, fieldName) {
+    if (typeof addr !== 'string' || !/^0x[a-fA-F0-9]{40}$/.test(addr)) {
+        throw new Error(`Invalid ${fieldName} address`);
+    }
+}
+
 
 /**
  * API Routes
@@ -167,6 +190,149 @@ app.post('/api/flash-loan/simulate', async (req, res) => {
         res.json({ success: true, opportunity });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+/**
+ * POST /api/exit/execute - Execute real exit (Uniswap V3 router swapExactTokensForTokens)
+ */
+app.post('/api/exit/execute', async (req, res) => {
+    const startedAt = Date.now();
+    try {
+        const {
+            tokenIn,
+            tokenOut,
+            amountIn,
+            amountOutMin,
+            slippageBps,
+            recipient,
+            deadlineSecondsFromNow
+        } = req.body || {};
+
+        // Request validation
+        assertValidAddress(tokenIn, 'tokenIn');
+        assertValidAddress(tokenOut, 'tokenOut');
+        if (recipient !== undefined) assertValidAddress(recipient, 'recipient');
+
+        const amountInNum = typeof amountIn === 'string' ? Number(amountIn) : amountIn;
+        if (!Number.isFinite(amountInNum) || amountInNum <= 0) {
+            return jsonError(res, 400, 'INVALID_AMOUNT_IN', 'amountIn must be a positive number');
+        }
+
+        const amountOutMinProvided = amountOutMin !== undefined;
+        if (amountOutMinProvided) {
+            const amountOutMinNum = typeof amountOutMin === 'string' ? Number(amountOutMin) : amountOutMin;
+            if (!Number.isFinite(amountOutMinNum) || amountOutMinNum < 0) {
+                return jsonError(res, 400, 'INVALID_AMOUNT_OUT_MIN', 'amountOutMin must be a non-negative number');
+            }
+        }
+
+        const bps = slippageBps !== undefined ? slippageBps : 50; // default 0.50%
+        const bpsNum = typeof bps === 'string' ? Number(bps) : bps;
+        if (!Number.isFinite(bpsNum) || bpsNum < 0 || bpsNum > 5000) {
+            return jsonError(res, 400, 'INVALID_SLIPPAGE_BPS', 'slippageBps must be between 0 and 5000');
+        }
+
+        const privateKey = process.env.SERVER_PRIVATE_KEY;
+        if (!privateKey) {
+            return jsonError(
+                res,
+                503,
+                'SERVER_PRIVATE_KEY_MISSING',
+                'SERVER_PRIVATE_KEY not set; refusing to submit on-chain transactions'
+            );
+        }
+
+        const signer = new ethers.Wallet(privateKey, provider);
+        const helper = new ContractHelper(provider, signer);
+
+        const tokenInDetails = helper.getTokenDetails(tokenIn);
+        const tokenOutDetails = helper.getTokenDetails(tokenOut);
+        if (!tokenInDetails) {
+            return jsonError(res, 400, 'UNKNOWN_TOKEN_IN', 'tokenIn not found in supported TOKENS list');
+        }
+        if (!tokenOutDetails) {
+            return jsonError(res, 400, 'UNKNOWN_TOKEN_OUT', 'tokenOut not found in supported TOKENS list');
+        }
+
+        const recipientAddr = recipient || (await signer.getAddress());
+        assertValidAddress(recipientAddr, 'recipient');
+
+        const decimalsIn = tokenInDetails.decimals;
+        const decimalsOut = tokenOutDetails.decimals;
+
+        const amountInWei = ethers.utils.parseUnits(amountInNum.toString(), decimalsIn);
+
+        const estimatedOut = await helper.estimateSwap(tokenInDetails, tokenOutDetails, amountInWei);
+        if (!ethers.BigNumber.isBigNumber(estimatedOut) || estimatedOut.lte(0)) {
+            return jsonError(res, 502, 'ESTIMATION_FAILED', 'Could not estimate output amount');
+        }
+
+        let amountOutMinWei;
+        if (amountOutMinProvided) {
+            const amountOutMinNum = typeof amountOutMin === 'string' ? Number(amountOutMin) : amountOutMin;
+            amountOutMinWei = ethers.utils.parseUnits(amountOutMinNum.toString(), decimalsOut);
+        } else {
+            amountOutMinWei = estimatedOut.mul(10000 - Math.floor(bpsNum)).div(10000);
+        }
+
+        const now = Math.floor(Date.now() / 1000);
+        const deadline = now + (deadlineSecondsFromNow !== undefined ? Number(deadlineSecondsFromNow) : 3600);
+        if (!Number.isFinite(deadline) || deadline <= now) {
+            return jsonError(res, 400, 'INVALID_DEADLINE', 'deadlineSecondsFromNow must be > 0');
+        }
+
+        // Approve router (best-effort)
+        await helper.approveToken(tokenInDetails.address, PROTOCOLS.UNISWAP_V3.router, ethers.constants.MaxUint256);
+
+        const router = new ethers.Contract(
+            PROTOCOLS.UNISWAP_V3.router,
+            ABIS.UNISWAP_V3_ROUTER,
+            signer
+        );
+
+        const swapPath = await helper.getSwapPath(tokenInDetails, tokenOutDetails);
+
+        const tx = await router.swapExactTokensForTokens(
+            amountInWei,
+            amountOutMinWei,
+            swapPath,
+            recipientAddr,
+            deadline
+        );
+
+        const receipt = await tx.wait();
+
+        return res.json({
+            success: true,
+            inputs: {
+                tokenIn,
+                tokenOut,
+                amountIn: amountInNum,
+                amountOutMin: amountOutMinProvided ? amountOutMin : undefined,
+                slippageBps: bpsNum,
+                recipient: recipientAddr,
+                deadline
+            },
+            quote: {
+                estimatedOut: ethers.utils.formatUnits(estimatedOut, decimalsOut),
+                amountOutMin: ethers.utils.formatUnits(amountOutMinWei, decimalsOut)
+            },
+            tx: {
+                hash: tx.hash,
+                status: receipt.status,
+                gasUsed: receipt.gasUsed?.toString?.() ?? null
+            },
+            elapsedMs: Date.now() - startedAt
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            error: {
+                code: 'EXIT_EXECUTE_FAILED',
+                message: error?.message || String(error)
+            }
+        });
     }
 });
 

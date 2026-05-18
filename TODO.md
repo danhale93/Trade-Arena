@@ -1,10 +1,11 @@
-- [ ] Update `crucible-test.js` with deterministic/sàeded mode + invariant assertions for P&L/profitFactor/export consistency
-- [ ] Align `exportCSV()` to export executed (quality) trades only (match `exportJSON()` + report semantics)
-- [ ] Run `node slow-crucible-test.js` and confirm JSON output is generated
-- [ ] Smoke-test browser usage: open `index.html`, run `runCrucibleTest(...)`, then verify console report + export functions
+- [x] Inspect repo for existing trading/testing code (`server.js`, `crucible-test.js`, `contract-helpers.js`).
+- [x] Implement real trading exit engine endpoint:
+  - [x] Add `POST /api/exit/execute` in `server.js`
 
-- [ ] Add `POST /api/exit/execute` in `server.js` that builds real exit calldata and submits on-chain tx using `SERVER_PRIVATE_KEY`
-- [ ] Implement calldata builder for UniswapV3 router `swapExactTokensForTokens` (exit process)
-- [ ] Add request validation + structured responses
-- [ ] Smoke-test endpoint locally with sample payload
+  - [ ] Use `ContractHelper` to estimate minOut and build calldata via Uniswap V3 router
+  - [ ] Sign + submit tx using `SERVER_PRIVATE_KEY`
+  - [ ] Add request validation + structured JSON errors
+  - [ ] Return `{ success, txHash, receipt, inputs, minOut, estimatedOut }`
+- [ ] Add smoke-test script / local curl instructions
+- [ ] Run `node` smoke test (no-op unless private key is present)
 
