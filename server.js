@@ -885,6 +885,121 @@ function generateId() {
 }
 
 /**
+ * POST /api/wrap - Wrap ETH to WETH or unwrap WETH to ETH
+ */
+app.post('/api/wrap', async (req, res) => {
+    const startedAt = Date.now();
+    try {
+        const { direction, amount } = req.body;
+
+        if (!direction || !['wrap', 'unwrap'].includes(direction)) {
+            return jsonError(res, 400, 'INVALID_DIRECTION', 'direction must be "wrap" or "unwrap"');
+        }
+
+        const amountNum = typeof amount === 'string' ? Number(amount) : amount;
+        if (!Number.isFinite(amountNum) || amountNum <= 0) {
+            return jsonError(res, 400, 'INVALID_AMOUNT', 'amount must be positive');
+        }
+
+        const privateKey = process.env.SERVER_PRIVATE_KEY;
+        if (!privateKey) {
+            return jsonError(res, 503, 'SERVER_PRIVATE_KEY_MISSING', 'Server private key not configured');
+        }
+
+        const signer = new ethers.Wallet(privateKey, provider);
+        const wethAddress = TOKENS.WETH.address;
+
+        if (direction === 'wrap') {
+            // Wrap ETH to WETH
+            const wethContract = new ethers.Contract(
+                wethAddress,
+                ['function deposit() payable external'],
+                signer
+            );
+            const valueWei = ethers.utils.parseEther(amountNum.toString());
+            const tx = await wethContract.deposit({ value: valueWei });
+            const receipt = await tx.wait();
+            return res.json({
+                success: true,
+                action: 'wrap',
+                wrapped: amountNum,
+                tx: { hash: tx.hash, status: receipt.status, gasUsed: receipt.gasUsed?.toString() },
+                elapsedMs: Date.now() - startedAt
+            });
+        } else {
+            // Unwrap WETH to ETH
+            const wethContract = new ethers.Contract(
+                wethAddress,
+                ['function withdraw(uint256 wad) external'],
+                signer
+            );
+            const wadWei = ethers.utils.parseEther(amountNum.toString());
+            const tx = await wethContract.withdraw(wadWei);
+            const receipt = await tx.wait();
+            return res.json({
+                success: true,
+                action: 'unwrap',
+                unwrapped: amountNum,
+                tx: { hash: tx.hash, status: receipt.status, gasUsed: receipt.gasUsed?.toString() },
+                elapsedMs: Date.now() - startedAt
+            });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+/**
+ * GET /api/tokens/balances - Get all token balances for an address
+ */
+app.get('/api/tokens/balances', async (req, res) => {
+    try {
+        const { address } = req.query;
+        if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) {
+            return jsonError(res, 400, 'INVALID_ADDRESS', 'Invalid address');
+        }
+
+        const balances = {};
+        const ethBalance = await provider.getBalance(address);
+        balances.ETH = {
+            balance: parseFloat(ethers.utils.formatEther(ethBalance)),
+            raw: ethBalance.toString()
+        };
+
+        // Get ETH price for USD conversion
+        let ethPrice = 3200;
+        try {
+            const resp = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd', { timeout: 5000 });
+            ethPrice = resp.data.ethereum?.usd || 3200;
+        } catch (e) {}
+
+        for (const [symbol, token] of Object.entries(TOKENS)) {
+            if (symbol === 'ETH') continue;
+            try {
+                const contract = new ethers.Contract(token.address, ABIS.ERC20, provider);
+                const balance = await contract.balanceOf(address);
+                balances[symbol] = {
+                    balance: parseFloat(ethers.utils.formatUnits(balance, token.decimals)),
+                    raw: balance.toString()
+                };
+            } catch (e) {
+                balances[symbol] = { balance: 0, raw: '0', error: e.message };
+            }
+        }
+
+        res.json({
+            success: true,
+            address,
+            ethPriceUSD: ethPrice,
+            balances,
+            lastUpdated: Date.now()
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+/**
  * Start Server
  */
 app.listen(PORT, () => {
