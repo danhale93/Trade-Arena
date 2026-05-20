@@ -72,7 +72,7 @@ class MusicPlayer {
       {title: 'MEV Bot Win', src: 'https://assets.mixkit.co/sfx/preview/mixkit-mechanical-arm-cup-2429.mp3'},
       {title: 'Arbitrage Juice', src: 'https://assets.mixkit.co/sfx/preview/mixkit-juicy-pop-3139.mp3'},
       {title: 'Tax Season Loss', src: 'https://assets.mixkit.co/sfx/preview/mixkit-paper-tear-855.mp3'},
-      {title: 'Crypto Tax Return', src: 'https://assets.mixkit.co/sfx/preview/mixkit-happy-party- announcer-3127.mp3'}
+      {title: 'Crypto Tax Return', src: 'https://assets.mixkit.co/sfx/preview/mixkit-happy-party-announcer-3127.mp3'}
     ];
 
     this.currentTrack = 0;
