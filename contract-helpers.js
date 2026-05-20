@@ -31,22 +31,25 @@ const TOKENS = {
         name: 'USD Coin'
     },
     USDbC: {
-        address: '0xd9aAEc860b8293fb2064Ef2953eF989f7f72396f',
+        address: '0xD9aaEC860B8293Fb2064eF2953Ef989F7f72396f',
         symbol: 'USDbC',
         decimals: 6,
-        name: 'USD Base Coin'
+        name: 'USD Base Coin',
+        coingeckoId: 'usd-base-coin'
     },
     DAI: {
-        address: '0x50c5725949A6F48849662A6be79b833364E4661F',
+        address: '0x50c5725949a6f48849662a6be79B833364e4661f',
         symbol: 'DAI',
         decimals: 18,
-        name: 'Dai Stablecoin'
+        name: 'Dai Stablecoin',
+        coingeckoId: 'dai'
     },
     ARB: {
-        address: '0x608D0fC37bDb7Cc6d1e3e7e4f2c0db5e9f0b0e7E',
+        address: '0x608d0FC37bDb7CC6d1e3e7E4F2C0db5e9f0b0E7e',
         symbol: 'ARB',
         decimals: 18,
-        name: 'Arbitrum'
+        name: 'Arbitrum',
+        coingeckoId: 'arbitrum'
     },
     OP: {
         address: '0x4200000000000000000000000000000000000042',

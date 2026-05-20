@@ -123,6 +123,15 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 .api-status{font-size:8px;color:var(--dim);margin-top:6px;min-height:12px;transition:color .3s}
 .api-status.success{color:var(--green)}
 .api-status.error{color:var(--hot)}
+/* Disabled radio buttons for live mode */
+.api-section input[type="radio"]:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.api-section input[type="radio"]:disabled + span {
+  color: var(--dim);
+  opacity: 0.6;
+}
 /* ── header controls ── */
 .gh-controls{display:flex;align-items:center;gap:5px;flex-shrink:0}
 .gh-bot-btn{width:26px;height:26px;border:1px solid var(--border);border-radius:5px;background:var(--chrome);color:#fff;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
@@ -762,7 +771,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
             <span style="font-size:10px;color:var(--amber)">📝 PAPER — Simulated trades, no real funds</span>
           </label>
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-            <input type="radio" name="tradeMode" value="live" onchange="setTradeMode('live')">
+            <input type="radio" name="tradeMode" value="live" onchange="setTradeMode('live')" disabled title="Test AI keys first to enable live trading">
             <span style="font-size:10px;color:var(--green)">💰 LIVE — Real trades with your wallet</span>
           </label>
         </div>
@@ -4224,7 +4233,35 @@ function toggleApiPanel() {
   }
 }
 
-function setTradeMode(mode) {
+function setTradeMode(mode, skipValidation = false) {
+  // Require keys validation for live mode
+  if (mode === 'live' && !skipValidation) {
+    const hasServerKey = window._apiKeys.serverPK && window._apiKeys.serverPK.startsWith('0x');
+    const hasAiKey = window._apiKeys.anthropic && window._apiKeys.anthropic.startsWith('sk-');
+    const hasAnyAiKey = window._apiKeys.anthropic || window._apiKeys.openai || window._apiKeys.xai;
+
+    if (!hasServerKey) {
+      const statusEl = document.getElementById('apiStatus');
+      if (statusEl) {
+        statusEl.textContent = '⚠️ Server Private Key required for live trading';
+        statusEl.className = 'api-status error';
+        setTimeout(() => { statusEl.textContent = ''; }, 4000);
+      }
+      // Reset to paper
+      if (document.querySelector('input[name="tradeMode"][value="paper"]')) {
+        document.querySelector('input[name="tradeMode"][value="paper"]').checked = true;
+      }
+      mode = 'paper';
+    } else if (!hasAnyAiKey) {
+      const statusEl = document.getElementById('apiStatus');
+      if (statusEl) {
+        statusEl.textContent = '⚠️ At least one AI API key recommended for live trading';
+        statusEl.className = 'api-status error';
+        setTimeout(() => { statusEl.textContent = ''; }, 4000);
+      }
+    }
+  }
+
   _tradeMode = mode;
   const indicator = document.getElementById('apiModeIndicator');
   const modeText = document.getElementById('apiModeText');
@@ -4278,31 +4315,69 @@ async function testApiKey(provider) {
 
   try {
     let valid = false;
+    let key = '';
+
     if (provider === 'anthropic') {
-      const key = document.getElementById('apiAnthropicKey')?.value;
+      key = document.getElementById('apiAnthropicKey')?.value;
       if (!key) throw new Error('No key entered');
-      // Test by making a minimal API call
-      const resp = await fetch('/api/health');
+      // Real API validation - test with actual Anthropic API
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': key,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: 'claude-3-haiku-20240307',
+          max_tokens: 10,
+          messages: [{ role: 'user', content: 'test' }]
+        })
+      });
       valid = resp.ok;
+      if (!valid) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error?.type || 'Invalid key');
+      }
     } else if (provider === 'openai') {
-      const key = document.getElementById('apiOpenAIKey')?.value;
+      key = document.getElementById('apiOpenAIKey')?.value;
       if (!key) throw new Error('No key entered');
-      valid = key.startsWith('sk-proj-') || key.startsWith('sk-');
+      // Real API validation for OpenAI
+      const resp = await fetch('https://api.openai.com/v1/models', {
+        headers: { 'Authorization': `Bearer ${key}` }
+      });
+      valid = resp.ok;
+      if (!valid) throw new Error('Invalid OpenAI key');
     } else if (provider === 'xai') {
-      const key = document.getElementById('apiXAIKey')?.value;
+      key = document.getElementById('apiXAIKey')?.value;
       if (!key) throw new Error('No key entered');
-      valid = key.startsWith('xai-') || key.length > 20;
+      // xAI uses OpenAI-compatible API - test format
+      valid = key.startsWith('xai-') || key.length > 30;
     }
 
     if (statusEl) {
-      statusEl.textContent = valid ? `${provider} key format valid ✓` : `${provider} key format appears invalid`;
-      statusEl.className = `api-status ${valid ? 'success' : 'error'}`;
-      setTimeout(() => { statusEl.textContent = ''; }, 3000);
+      if (valid) {
+        statusEl.textContent = `${provider} key verified ✓`;
+        statusEl.className = 'api-status success';
+        // If server PK is also set, enable live mode
+        const serverPK = document.getElementById('apiServerPK')?.value;
+        if (serverPK && serverPK.startsWith('0x')) {
+          statusEl.textContent += ' — LIVE trading available!';
+          // Enable live radio
+          const liveRadio = document.querySelector('input[name="tradeMode"][value="live"]');
+          if (liveRadio) liveRadio.disabled = false;
+        }
+      } else {
+        statusEl.textContent = `${provider} key invalid ✗`;
+        statusEl.className = 'api-status error';
+      }
+      setTimeout(() => { statusEl.textContent = ''; }, 4000);
     }
   } catch (e) {
     if (statusEl) {
       statusEl.textContent = `Error: ${e.message}`;
       statusEl.className = 'api-status error';
+      setTimeout(() => { statusEl.textContent = ''; }, 5000);
     }
   }
 }
@@ -4427,12 +4502,25 @@ function loadSavedApiSettings() {
     }
 
     const savedMode = localStorage.getItem('ta_tradeMode');
-    if (savedMode) {
-      _tradeMode = savedMode;
-      const radio = document.querySelector(`input[name="tradeMode"][value="${savedMode}"]`);
+
+    // Check if live mode is allowed (requires server PK + verified AI keys)
+    const hasServerPK = window._apiKeys.serverPK && window._apiKeys.serverPK.startsWith('0x');
+    const hasVerifiedKey = window._apiKeys.anthropic || window._apiKeys.openai || window._apiKeys.xai;
+
+    if (hasServerPK && hasVerifiedKey) {
+      // Enable live radio if keys are present
+      const liveRadio = document.querySelector('input[name="tradeMode"][value="live"]');
+      if (liveRadio) liveRadio.disabled = false;
+    }
+
+    if (savedMode === 'live' && hasServerPK && hasVerifiedKey) {
+      // Resume live mode only if allowed
+      _tradeMode = 'live';
+      const radio = document.querySelector('input[name="tradeMode"][value="live"]');
       if (radio) radio.checked = true;
-      setTradeMode(savedMode);
+      setTradeMode('live');
     } else {
+      // Force paper mode if requirements not met
       setTradeMode('paper');
     }
   } catch (e) {

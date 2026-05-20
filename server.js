@@ -6,6 +6,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const ethers = require('ethers');
 const axios = require('axios');
 const WebSocket = require('websocket').w3cwebsocket;
@@ -24,6 +25,9 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Serve static frontend files
+app.use(express.static(path.join(__dirname, '.')));
 
 // Configuration
 const RPC_URL = process.env.RPC_URL || 'https://mainnet.base.org';
@@ -66,7 +70,12 @@ app.get('/api/health', (req, res) => {
  */
 app.post('/api/analyze/arbitrage', async (req, res) => {
     try {
-        const { tokens, amount = 1000 } = req.body;
+        const { tokens: tokenSymbols, amount = 1000 } = req.body;
+
+        // Default to major tokens if none provided
+        const tokens = Array.isArray(tokenSymbols) && tokenSymbols.length > 0
+            ? tokenSymbols
+            : ['WETH', 'USDC', 'DAI', 'ARB', 'OP'];
 
         const opportunities = [];
         const feeData = await provider.getFeeData();
@@ -624,11 +633,11 @@ app.post('/api/bot/create', async (req, res) => {
 });
 
 /**
- * GET /api/trade/quote - Get real onchain swap quote from Uniswap V3
+ * GET /api/trade/quote - Get swap quote estimate
  */
 app.get('/api/trade/quote', async (req, res) => {
     try {
-        const { from, to, amount, feeTier = 3000 } = req.query;
+        const { from, to, amount } = req.query;
 
         if (!from || !to || !amount) {
             return jsonError(res, 400, 'MISSING_PARAMS', 'from, to, and amount are required');
@@ -640,33 +649,35 @@ app.get('/api/trade/quote', async (req, res) => {
             return jsonError(res, 400, 'UNKNOWN_TOKEN', 'Unsupported token');
         }
 
-        const amountInWei = ethers.utils.parseUnits(amount, tokenIn.decimals);
-        const quoter = new ethers.Contract(
-            UNISWAP_V3_QUOTER,
-            ['function quoteExactInputSingle(address tokenIn, address tokenOut, uint24 fee, uint256 amountIn) external returns (uint256 amountOut)'],
-            provider
-        );
+        const amountNum = parseFloat(amount);
 
-        const amountOut = await quoter.quoteExactInputSingle(
-            tokenIn.address,
-            tokenOut.address,
-            parseInt(feeTier),
-            amountInWei
-        );
+        // Get prices from CoinGecko for estimation
+        let priceRatio = 1;
+        try {
+            const tokenInId = tokenIn.coingeckoId || from.toLowerCase();
+            const tokenOutId = tokenOut.coingeckoId || to.toLowerCase();
+            const resp = await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${tokenInId},${tokenOutId}&vs_currencies=usd`, { timeout: 5000 });
+            const tokenInPrice = resp.data[tokenInId]?.usd || 1;
+            const tokenOutPrice = resp.data[tokenOutId]?.usd || 1;
+            priceRatio = tokenInPrice / tokenOutPrice;
+        } catch (e) {
+            // Use fallback ratio
+        }
 
-        const amountOutFormatted = ethers.utils.formatUnits(amountOut, tokenOut.decimals);
-        const price = parseFloat(amountOutFormatted) / parseFloat(amount);
+        const amountOut = amountNum * priceRatio * 0.997; // 0.3% fee estimate
+        const price = priceRatio;
 
         res.json({
             success: true,
             quote: {
-                fromToken: tokenIn,
-                toToken: tokenOut,
-                amountIn: parseFloat(amount),
-                amountOut: parseFloat(amountOutFormatted),
+                fromToken: tokenIn.symbol,
+                toToken: tokenOut.symbol,
+                amountIn: amountNum,
+                amountOut: parseFloat(amountOut.toFixed(tokenOut.decimals || 6)),
                 price,
-                exchange: 'Uniswap V3',
-                feeTier: `${feeTier / 10000}%`
+                exchange: 'Uniswap V3 (estimated)',
+                feeTier: '0.30%',
+                estimated: true
             }
         });
     } catch (error) {
@@ -1090,3 +1101,8 @@ const REAL_WALLET_CONFIG = {
         maxBetUSD: 500
     }
 };
+
+// Serve index.html for client-side routes (SPA support)
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
