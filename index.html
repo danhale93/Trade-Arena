@@ -7,6 +7,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Bungee+Shade&family=Share+Tech+Mono&family=Oswald:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" defer></script>
 <script src="https://accounts.google.com/gsi/client" async></script>
+<!-- Trade Arena Core Scripts -->
+<script src="./trading-engine.js" defer></script>
+<script src="./app.js" defer></script>
+<!-- Music Player -->
+<script src="./music-player.js" defer></script>
 <style>
 :root{
   --gold:#ffd700;--gold2:#ffaa00;--hot:#ff2d78;--cyan:#00ffe7;
@@ -91,6 +96,33 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 .bus-apply-secondary{background:var(--chrome);border:1px solid var(--border);color:var(--dim)}
 .bus-apply-secondary:hover{border-color:var(--cyan);color:var(--cyan)}
 .bus-status{font-size:8px;color:var(--dim);margin-top:6px;min-height:12px;transition:color .3s}
+/* ── API SETTINGS PANEL ── */
+.api-panel{display:none;background:linear-gradient(180deg,rgba(14,9,20,.98),rgba(10,6,16,.98));border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;padding:14px 16px;margin-top:-8px;box-shadow:0 8px 32px rgba(0,0,0,.6)}
+.api-panel.open{display:block}
+.api-mode-indicator{display:flex;align-items:center;gap:12px;padding:8px 12px;border-radius:8px;margin-bottom:12px;font-family:'Bungee',display;font-size:12px;letter-spacing:2px}
+.api-mode-indicator.paper{background:rgba(255,179,0,.1);border:1px solid rgba(255,179,0,.3);color:var(--amber)}
+.api-mode-indicator.live{background:rgba(57,255,20,.1);border:1px solid rgba(57,255,20,.3);color:var(--green);animation:api-live-pulse 2s ease infinite}
+@keyframes api-live-pulse{0%,100%{box-shadow:0 0 8px rgba(57,255,20,.2)}50%{box-shadow:0 0 16px rgba(57,255,20,.4)}}
+.api-mode-dot{width:10px;height:10px;border-radius:50%;background:currentColor}
+.api-mode-dot.paper{animation:none}
+.api-mode-dot.live{animation:api-dot-blink 1s ease infinite}
+@keyframes api-dot-blink{0%,100%{opacity:1}50%{opacity:.4}}
+.api-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.api-section{background:var(--chrome);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
+.api-section-title{font-family:'Bungee',display;font-size:9px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.api-input-row{display:flex;gap:6px;margin-bottom:6px}
+.api-input-row input{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--gold);padding:6px 8px;border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px;min-width:0}
+.api-input-row input:focus{outline:none;border-color:var(--cyan)}
+.api-input-row input::placeholder{color:var(--dim)}
+.api-input-row .api-test-btn{padding:6px 12px;font-family:'Bungee',display;font-size:9px;background:linear-gradient(90deg,var(--green),var(--cyan));border:none;border-radius:4px;color:#000;cursor:pointer;white-space:nowrap;transition:all .15s}
+.api-input-row .api-test-btn:hover{box-shadow:0 0 12px rgba(57,255,20,.5)}
+.api-save-row{display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.api-save-btn{flex:1;min-width:120px;padding:8px 12px;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;border:none;border-radius:5px;cursor:pointer;transition:all .15s}
+.api-save-primary{background:linear-gradient(90deg,var(--hot),var(--gold2));color:#fff;box-shadow:0 0 10px rgba(255,45,120,.3)}
+.api-save-primary:hover{box-shadow:0 0 18px rgba(255,45,120,.5)}
+.api-status{font-size:8px;color:var(--dim);margin-top:6px;min-height:12px;transition:color .3s}
+.api-status.success{color:var(--green)}
+.api-status.error{color:var(--hot)}
 /* ── header controls ── */
 .gh-controls{display:flex;align-items:center;gap:5px;flex-shrink:0}
 .gh-bot-btn{width:26px;height:26px;border:1px solid var(--border);border-radius:5px;background:var(--chrome);color:#fff;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
@@ -517,6 +549,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 <body>
 <div class="edge"></div>
 
+<!-- Music Player Audio Element -->
+<audio id="musicPlayer" preload="metadata"></audio>
+
 <!-- ══ CONNECT ══ -->
 <div id="connectScreen">
   <div class="marquee-wrap">
@@ -581,6 +616,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     <!-- bot controls -->
     <div class="gh-controls">
       <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots">⚙ BUS</button>
+      <button class="gh-bus-btn" id="ghApiBtn" onclick="toggleApiPanel()" title="API Keys & Trading Mode" style="border-color:var(--gold2);color:var(--gold2)">🔑 API</button>
       <button class="gh-auto-btn" id="ghAutoBtn" onclick="globalAutoToggle()" title="Toggle auto-trading on all bots">AUTO</button>
       <button class="gh-bot-btn" id="ghRemoveBtn" onclick="removeLastBot()" title="Remove last bot" disabled>−</button>
       <button class="gh-bot-btn" id="ghAddBtn" onclick="addBot()" title="Add bot">+</button>
@@ -673,6 +709,84 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('reset')"       title="Reset all bots to defaults">↺ RESET ALL</button>
     </div>
     <div class="bus-status" id="busStatus"></div>
+  </div>
+
+  <!-- ★ API SETTINGS PANEL ★ -->
+  <div class="api-panel" id="apiPanel">
+    <div class="api-mode-indicator paper" id="apiModeIndicator">
+      <div class="api-mode-dot paper"></div>
+      <span id="apiModeText">PAPER TRADING MODE</span>
+      <span style="font-size:9px;font-family:'Share Tech Mono',monospace;margin-left:auto;color:inherit;opacity:0.7">Safe testing — no real funds used</span>
+    </div>
+    <div class="api-grid">
+      <!-- AI Keys Section -->
+      <div class="api-section">
+        <div class="api-section-title"><span>🤖</span> AI API KEYS</div>
+        <div class="api-input-row">
+          <input type="password" id="apiAnthropicKey" placeholder="sk-ant-api03-..." oninput="window._apiKeys.anthropic=this.value">
+          <button class="api-test-btn" onclick="testApiKey('anthropic')" title="Test Anthropic API">TEST</button>
+        </div>
+        <div class="api-input-row">
+          <input type="password" id="apiOpenAIKey" placeholder="sk-proj-..." oninput="window._apiKeys.openai=this.value">
+          <button class="api-test-btn" onclick="testApiKey('openai')" title="Test OpenAI API">TEST</button>
+        </div>
+        <div class="api-input-row">
+          <input type="password" id="apiXAIKey" placeholder="xai-..." oninput="window._apiKeys.xai=this.value">
+          <button class="api-test-btn" onclick="testApiKey('xai')" title="Test xAI API">TEST</button>
+        </div>
+      </div>
+
+      <!-- Wallet Keys Section -->
+      <div class="api-section">
+        <div class="api-section-title"><span>💼</span> TRADING WALLET</div>
+        <div class="api-input-row">
+          <input type="password" id="apiServerPK" placeholder="0x...server_private_key" oninput="window._apiKeys.serverPK=this.value">
+        </div>
+        <div style="font-size:8px;color:var(--amber);margin-bottom:6px">⚠️ Use a dedicated trading wallet, NOT your main wallet</div>
+        <div class="api-input-row">
+          <select id="apiNetworkSelect" style="flex:1;background:var(--bg);border:1px solid var(--border);color:var(--gold);padding:6px 8px;border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px">
+            <option value="base">Base Mainnet (8453)</option>
+            <option value="ethereum">Ethereum Mainnet (1)</option>
+            <option value="arbitrum">Arbitrum (42161)</option>
+            <option value="optimism">Optimism (10)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Trading Mode Section -->
+      <div class="api-section">
+        <div class="api-section-title"><span>⚡</span> TRADING MODE</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="radio" name="tradeMode" value="paper" checked onchange="setTradeMode('paper')">
+            <span style="font-size:10px;color:var(--amber)">📝 PAPER — Simulated trades, no real funds</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="radio" name="tradeMode" value="live" onchange="setTradeMode('live')">
+            <span style="font-size:10px;color:var(--green)">💰 LIVE — Real trades with your wallet</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- DEX/RPC Section -->
+      <div class="api-section">
+        <div class="api-section-title"><span>🔗</span> NETWORK CONFIG</div>
+        <div class="api-input-row">
+          <input type="text" id="apiRPCUrl" placeholder="https://mainnet.base.org" value="https://mainnet.base.org" style="flex:1">
+        </div>
+        <div class="api-input-row">
+          <input type="text" id="apiExplorerUrl" placeholder="https://basescan.org" value="https://basescan.org" style="flex:1">
+        </div>
+        <div style="font-size:8px;color:var(--dim);margin-top:4px">BaseScan API Key (optional, for logs):
+          <input type="password" id="apiBasescanKey" placeholder="YourApiKeyToken" style="width:100%;margin-top:4px;background:var(--bg);border:1px solid var(--border);color:var(--gold);padding:6px 8px;border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px">
+        </div>
+      </div>
+    </div>
+    <div class="api-save-row">
+      <button class="api-save-btn api-save-primary" onclick="saveApiSettings()">SAVE &amp; APPLY</button>
+      <button class="api-save-btn" style="background:var(--chrome);border:1px solid var(--border);color:var(--dim)" onclick="resetApiDefaults()">RESET DEFAULTS</button>
+    </div>
+    <div class="api-status" id="apiStatus"></div>
   </div>
 
   <!-- ★ AGENT AUDIT PANEL ★ -->
@@ -2224,6 +2338,7 @@ function setupApp({name,avatar,badge}){
       _syncHeaderBotBtns();
       if(typeof userAddress ==='string' && userAddress.startsWith('0x')) startLiveBalanceRefresh();
       _injectAVControls();
+      loadSavedApiSettings();
     });
   }catch(e){
     console.error('setupApp critical error:',e);
@@ -4077,12 +4192,253 @@ function toggleBusPanel() {
   if (btn) btn.classList.toggle('open', open);
 }
 
+// ══════════════════════════════════════════════════════
+// API SETTINGS PANEL
+// ══════════════════════════════════════════════════════
+
+// Store API keys and settings in memory (not persisted until SAVE)
+window._apiKeys = {
+  anthropic: '',
+  openai: '',
+  xai: '',
+  serverPK: '',
+  rpcUrl: 'https://mainnet.base.org',
+  explorerUrl: 'https://basescan.org',
+  basescanKey: ''
+};
+
+let _tradeMode = 'paper'; // 'paper' or 'live'
+
+function toggleApiPanel() {
+  const panel = document.getElementById('apiPanel');
+  const btn   = document.getElementById('ghApiBtn');
+  if (!panel) return;
+  const open = panel.classList.toggle('open');
+  if (btn) btn.classList.toggle('open', open);
+  // Close bus panel if open
+  if (open) {
+    const busPanel = document.getElementById('busPanel');
+    const busBtn = document.getElementById('ghBusBtn');
+    if (busPanel) busPanel.classList.remove('open');
+    if (busBtn) busBtn.classList.remove('open');
+  }
+}
+
+function setTradeMode(mode) {
+  _tradeMode = mode;
+  const indicator = document.getElementById('apiModeIndicator');
+  const modeText = document.getElementById('apiModeText');
+  const dot = indicator?.querySelector('.api-mode-dot');
+
+  if (mode === 'live') {
+    if (indicator) {
+      indicator.className = 'api-mode-indicator live';
+      indicator.querySelector('span:last-child').textContent = 'REAL MONEY — Live trading enabled';
+    }
+    if (modeText) modeText.textContent = 'LIVE TRADING MODE';
+    if (dot) dot.className = 'api-mode-dot live';
+  } else {
+    if (indicator) {
+      indicator.className = 'api-mode-indicator paper';
+      indicator.querySelector('span:last-child').textContent = 'Safe testing — no real funds used';
+    }
+    if (modeText) modeText.textContent = 'PAPER TRADING MODE';
+    if (dot) dot.className = 'api-mode-dot paper';
+  }
+
+  // Update app state
+  window._isLiveMode = mode === 'live';
+  updateModeIndicators();
+}
+
+function updateModeIndicators() {
+  // Update header badge
+  const ghBadge = document.getElementById('ghBadge');
+  if (ghBadge) {
+    if (_tradeMode === 'live') {
+      ghBadge.textContent = 'LIVE';
+      ghBadge.style.background = 'rgba(57,255,20,.15)';
+      ghBadge.style.borderColor = 'var(--green)';
+      ghBadge.style.color = 'var(--green)';
+    } else {
+      ghBadge.textContent = 'DEMO';
+      ghBadge.style.background = '';
+      ghBadge.style.borderColor = '';
+      ghBadge.style.color = '';
+    }
+  }
+}
+
+async function testApiKey(provider) {
+  const statusEl = document.getElementById('apiStatus');
+  if (statusEl) {
+    statusEl.textContent = `Testing ${provider}...`;
+    statusEl.className = 'api-status';
+  }
+
+  try {
+    let valid = false;
+    if (provider === 'anthropic') {
+      const key = document.getElementById('apiAnthropicKey')?.value;
+      if (!key) throw new Error('No key entered');
+      // Test by making a minimal API call
+      const resp = await fetch('/api/health');
+      valid = resp.ok;
+    } else if (provider === 'openai') {
+      const key = document.getElementById('apiOpenAIKey')?.value;
+      if (!key) throw new Error('No key entered');
+      valid = key.startsWith('sk-proj-') || key.startsWith('sk-');
+    } else if (provider === 'xai') {
+      const key = document.getElementById('apiXAIKey')?.value;
+      if (!key) throw new Error('No key entered');
+      valid = key.startsWith('xai-') || key.length > 20;
+    }
+
+    if (statusEl) {
+      statusEl.textContent = valid ? `${provider} key format valid ✓` : `${provider} key format appears invalid`;
+      statusEl.className = `api-status ${valid ? 'success' : 'error'}`;
+      setTimeout(() => { statusEl.textContent = ''; }, 3000);
+    }
+  } catch (e) {
+    if (statusEl) {
+      statusEl.textContent = `Error: ${e.message}`;
+      statusEl.className = 'api-status error';
+    }
+  }
+}
+
+function saveApiSettings() {
+  // Collect all values
+  window._apiKeys = {
+    anthropic: document.getElementById('apiAnthropicKey')?.value || '',
+    openai: document.getElementById('apiOpenAIKey')?.value || '',
+    xai: document.getElementById('apiXAIKey')?.value || '',
+    serverPK: document.getElementById('apiServerPK')?.value || '',
+    rpcUrl: document.getElementById('apiRPCUrl')?.value || 'https://mainnet.base.org',
+    explorerUrl: document.getElementById('apiExplorerUrl')?.value || 'https://basescan.org',
+    basescanKey: document.getElementById('apiBasescanKey')?.value || ''
+  };
+
+  // Get selected mode
+  const modeRadio = document.querySelector('input[name="tradeMode"]:checked');
+  if (modeRadio) {
+    setTradeMode(modeRadio.value);
+  }
+
+  // Save to localStorage for persistence
+  try {
+    localStorage.setItem('ta_apiKeys', JSON.stringify(window._apiKeys));
+    localStorage.setItem('ta_tradeMode', _tradeMode);
+  } catch (e) {}
+
+  // Apply server key to server env if provided (would need server restart)
+  const statusEl = document.getElementById('apiStatus');
+  if (statusEl) {
+    const hasServerKey = window._apiKeys.serverPK && window._apiKeys.serverPK.startsWith('0x');
+    statusEl.textContent = hasServerKey
+      ? 'Settings saved! Server key detected — restart server to apply.'
+      : 'Settings saved for current session.';
+    statusEl.className = 'api-status success';
+    setTimeout(() => { statusEl.textContent = ''; }, 4000);
+  }
+
+  // Close panel
+  const panel = document.getElementById('apiPanel');
+  const btn = document.getElementById('ghApiBtn');
+  if (panel) panel.classList.remove('open');
+  if (btn) btn.classList.remove('open');
+}
+
+function resetApiDefaults() {
+  window._apiKeys = {
+    anthropic: '',
+    openai: '',
+    xai: '',
+    serverPK: '',
+    rpcUrl: 'https://mainnet.base.org',
+    explorerUrl: 'https://basescan.org',
+    basescanKey: ''
+  };
+
+  // Reset inputs
+  const ids = ['apiAnthropicKey','apiOpenAIKey','apiXAIKey','apiServerPK','apiRPCUrl','apiExplorerUrl','apiBasescanKey'];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+
+  // Reset mode
+  document.querySelector('input[name="tradeMode"][value="paper"]')?.click();
+  setTradeMode('paper');
+
+  const statusEl = document.getElementById('apiStatus');
+  if (statusEl) {
+    statusEl.textContent = 'Defaults reset';
+    statusEl.className = 'api-status';
+    setTimeout(() => { statusEl.textContent = ''; }, 2000);
+  }
+}
+
 function _busStatus(msg, ok=true) {
   const el = document.getElementById('busStatus');
   if (!el) return;
   el.textContent = msg;
   el.style.color = ok ? 'var(--green)' : 'var(--hot)';
   setTimeout(() => { el.textContent = ''; }, 3000);
+}
+
+function loadSavedApiSettings() {
+  // Load from localStorage
+  try {
+    const savedKeys = localStorage.getItem('ta_apiKeys');
+    if (savedKeys) {
+      const parsed = JSON.parse(savedKeys);
+      window._apiKeys = { ...window._apiKeys, ...parsed };
+
+      // Populate input fields
+      if (window._apiKeys.anthropic) {
+        const el = document.getElementById('apiAnthropicKey');
+        if (el) el.value = window._apiKeys.anthropic;
+      }
+      if (window._apiKeys.openai) {
+        const el = document.getElementById('apiOpenAIKey');
+        if (el) el.value = window._apiKeys.openai;
+      }
+      if (window._apiKeys.xai) {
+        const el = document.getElementById('apiXAIKey');
+        if (el) el.value = window._apiKeys.xai;
+      }
+      if (window._apiKeys.serverPK) {
+        const el = document.getElementById('apiServerPK');
+        if (el) el.value = window._apiKeys.serverPK;
+      }
+      if (window._apiKeys.rpcUrl) {
+        const el = document.getElementById('apiRPCUrl');
+        if (el) el.value = window._apiKeys.rpcUrl;
+      }
+      if (window._apiKeys.explorerUrl) {
+        const el = document.getElementById('apiExplorerUrl');
+        if (el) el.value = window._apiKeys.explorerUrl;
+      }
+      if (window._apiKeys.basescanKey) {
+        const el = document.getElementById('apiBasescanKey');
+        if (el) el.value = window._apiKeys.basescanKey;
+      }
+    }
+
+    const savedMode = localStorage.getItem('ta_tradeMode');
+    if (savedMode) {
+      _tradeMode = savedMode;
+      const radio = document.querySelector(`input[name="tradeMode"][value="${savedMode}"]`);
+      if (radio) radio.checked = true;
+      setTradeMode(savedMode);
+    } else {
+      setTradeMode('paper');
+    }
+  } catch (e) {
+    console.warn('Failed to load saved API settings:', e);
+    setTradeMode('paper');
+  }
 }
 
 function _busHighlight(containerId, matchFn) {
@@ -4374,6 +4730,104 @@ function _injectAVControls() {
 
 
 </script>
+
+// ══════════════════════════════════════════════════════
+// MINIMAL AUDIO TOOLBAR (Music Player Controls)
+// ══════════════════════════════════════════════════════
+(function injectAudioToolbar() {
+  // Toolbar CSS
+  const toolbarCSS = `
+    #audioToolbar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: linear-gradient(135deg, rgba(0,0,0,0.95) 0%, rgba(10,5,20,0.98) 100%);
+      border-top: 2px solid var(--cyan);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      padding: 0 20px;
+      z-index: 10000;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 -5px 20px rgba(0,255,231,0.3);
+    }
+    #audioToolbar .toolbar-btn {
+      background: rgba(0,255,231,0.2);
+      border: 2px solid var(--cyan);
+      color: var(--cyan);
+      padding: 10px 18px;
+      border-radius: 25px;
+      font-weight: bold;
+      font-family: 'Share Tech Mono', monospace;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 14px;
+      min-width: 55px;
+    }
+    #audioToolbar .toolbar-btn:hover {
+      background: rgba(0,255,231,0.4);
+      box-shadow: 0 0 15px rgba(0,255,231,0.5);
+      transform: scale(1.05);
+    }
+    #audioToolbar label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--cyan);
+      font-weight: bold;
+      font-size: 11px;
+    }
+    #audioToolbar #volumeSlider {
+      width: 80px;
+      accent-color: var(--cyan);
+    }
+    #audioToolbar #currentTrack {
+      color: var(--gold);
+      font-size: 11px;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  `;
+
+  // Inject CSS
+  const styleEl = document.createElement('style');
+  styleEl.textContent = toolbarCSS;
+  document.head.appendChild(styleEl);
+
+  // Toolbar HTML
+  const toolbarHTML = `
+    <div id="audioToolbar">
+      <button class="toolbar-btn" onclick="MusicPlayer.playPrev()" title="Previous">⏮️</button>
+      <button class="toolbar-btn" id="playBtn" onclick="MusicPlayer.playPause()" title="Play/Pause">▶️</button>
+      <button class="toolbar-btn" onclick="MusicPlayer.playNext()" title="Next">⏭️</button>
+      <label style="display:flex;align-items:center;gap:10px;color:var(--cyan);font-weight:bold;">
+        Vol
+        <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.5" onchange="MusicPlayer.setVolume(this.value)">
+      </label>
+      <span id="currentTrack" title="Current Track"></span>
+    </div>
+  `;
+
+  // Inject toolbar after body loads
+  function createToolbar() {
+    if (document.getElementById('audioToolbar')) return;
+    const toolbar = document.createElement('div');
+    toolbar.innerHTML = toolbarHTML;
+    document.body.appendChild(toolbar.firstElementChild);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', createToolbar);
+  } else {
+    createToolbar();
+  }
+})();
+
 
 // ══════════════════════════════════════════════════════
 // LIVE WALLET BALANCE REFRESH (via backend API)
