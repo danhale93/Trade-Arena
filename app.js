@@ -660,3 +660,158 @@ window.addEventListener('load', () => {
         connectWallet();
     }
 });
+
+// ══════════════════════════════════════════════════════
+// TRADE MODE & RADIO INTEGRATION
+// ══════════════════════════════════════════════════════
+
+/**
+ * Trade mode state - controls real vs paper trading
+ */
+window.TRADE_MODE = {
+    isRealTrading: false,  // Starts in TESTNET/PAPER mode
+    hasWallet: false,
+    hasServerKey: false
+};
+
+/**
+ * Toggle between testnet paper trading and mainnet real trading
+ * LIVE LED only turns green if BOTH conditions met:
+ * 1. Toggle is ON (real trading enabled)
+ * 2. App has valid wallet connection AND server private key configured
+ */
+function toggleRealTrading(enabled) {
+    const wasEnabled = window.TRADE_MODE.isRealTrading;
+    window.TRADE_MODE.isRealTrading = enabled;
+    
+    const modeLabel = document.getElementById('ghModeLabel');
+    const liveLed = document.getElementById('ghLiveLed');
+    const toggle = document.getElementById('ghTradeModeToggle');
+    
+    if (enabled) {
+        // Check if we CAN enable real trading
+        const hasWallet = window.ethereum?.selectedAddress || window.userAddress;
+        const hasServerKey = document.getElementById('serverPrivKeyInput')?.value?.startsWith('0x');
+        
+        if (!hasWallet) {
+            showToast('Connect wallet first for real trading', 'error');
+            window.TRADE_MODE.isRealTrading = false;
+            toggle.checked = false;
+            updateTradeModeUI(false);
+            return;
+        }
+        
+        if (!hasServerKey) {
+            showToast('Configure SERVER PRIVATE KEY for real trades', 'error');
+            window.TRADE_MODE.isRealTrading = false;
+            toggle.checked = false;
+            updateTradeModeUI(false);
+            return;
+        }
+        
+        // All good - real trading enabled!
+        showToast('LIVE TRADING ENABLED - Real funds will be used!', 'success');
+    } else {
+        showToast('Switched to PAPER TRADING mode', 'info');
+    }
+    
+    updateTradeModeUI(enabled);
+}
+
+function updateTradeModeUI(isLive) {
+    const modeLabel = document.getElementById('ghModeLabel');
+    const liveLed = document.getElementById('ghLiveLed');
+    
+    if (isLive && window.TRADE_MODE.isRealTrading) {
+        // LIVE - real trading active
+        modeLabel.textContent = 'MAINNET';
+        modeLabel.className = 'gh-lbl on';
+        liveLed.className = 'gh-led on';
+    } else {
+        // PAPER - testnet or not configured
+        modeLabel.textContent = 'TESTNET';
+        modeLabel.className = 'gh-lbl';
+        liveLed.className = 'gh-led';
+    }
+}
+
+// ══════════════════════════════════════════════════════
+// MUSIC PLAYER INTEGRATION WITH HEADER
+// ══════════════════════════════════════════════════════
+
+/**
+ * Sync music player state with header controls
+ */
+function updateHeaderMusicUI() {
+    const playBtn = document.getElementById('ghPlayBtn');
+    const trackName = document.getElementById('ghTrackName');
+    const volSlider = document.getElementById('ghVolume');
+    
+    if (playBtn && MusicPlayer) {
+        // Update play/pause button appearance
+        if (MusicPlayer.isPlaying) {
+            playBtn.classList.add('on');
+            playBtn.textContent = '\u23F8'; // Pause symbol
+        } else {
+            playBtn.classList.remove('on');
+            playBtn.textContent = '\u25B6'; // Play symbol
+        }
+        
+        // Update track name
+        if (trackName && MusicPlayer.tracks[MusicPlayer.currentTrack]) {
+            trackName.textContent = MusicPlayer.tracks[MusicPlayer.currentTrack].title || '\uD83C\uDFB5';
+        }
+        
+        // Sync volume slider
+        if (volSlider && MusicPlayer.volume !== undefined) {
+            volSlider.value = MusicPlayer.volume;
+        }
+    }
+}
+
+/**
+ * Override MusicPlayer methods to sync header
+ */
+const originalPlayPause = MusicPlayer?.playPause;
+if (MusicPlayer) {
+    const _playPause = MusicPlayer.playPause.bind(MusicPlayer);
+    MusicPlayer.playPause = function() {
+        _playPause();
+        updateHeaderMusicUI();
+    };
+    
+    const _playNext = MusicPlayer.playNext.bind(MusicPlayer);
+    MusicPlayer.playNext = function() {
+        _playNext();
+        updateHeaderMusicUI();
+    };
+    
+    const _playPrev = MusicPlayer.playPrev.bind(MusicPlayer);
+    MusicPlayer.playPrev = function() {
+        _playPrev();
+        updateHeaderMusicUI();
+    };
+    
+    const _setVolume = MusicPlayer.setVolume.bind(MusicPlayer);
+    MusicPlayer.setVolume = function(val) {
+        _setVolume(val);
+        updateHeaderMusicUI();
+    };
+    
+    // Also override the updateUI method if exists
+    if (MusicPlayer.updateUI) {
+        const _updateUI = MusicPlayer.updateUI.bind(MusicPlayer);
+        MusicPlayer.updateUI = function() {
+            _updateUI();
+            updateHeaderMusicUI();
+        };
+    }
+}
+
+// Periodic sync for music state
+setInterval(updateHeaderMusicUI, 1000);
+
+// Initial sync on DOM ready
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(updateHeaderMusicUI, 500);
+});

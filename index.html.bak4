@@ -529,25 +529,6 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
 /* ══ STICKY HEADER ══ */
 .global-header{position:sticky;top:0;z-index:9998;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
-.gh-radio{display:flex;align-items:center;gap:6px}
-.gh-rbtn{background:rgba(0,255,231,0.1);border:1px solid var(--cyan);color:var(--cyan);padding:5px 10px;border-radius:4px;font-family:Bungee,sans-serif;font-size:8px;letter-spacing:1px;cursor:pointer;transition:all .2s}
-.gh-rbtn:hover{background:rgba(0,255,231,0.25)}
-.gh-rbtn.on{background:rgba(0,255,231,0.3);box-shadow:0 0 10px rgba(0,255,231,0.4)}
-.gh-vol{width:50px;accent-color:var(--cyan)}
-.gh-tname{font-size:8px;color:var(--gold);max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.gh-toggle{display:flex;align-items:center;gap:5px}
-.gh-sw{position:relative;width:34px;height:16px}
-.gh-sw input{opacity:0;width:0;height:0}
-.gh-sl{position:absolute;inset:0;background:var(--chrome);border:1px solid var(--border);border-radius:16px;transition:.3s}
-.gh-sl::before{content:'';position:absolute;width:10px;height:10px;left:2px;top:2px;background:var(--dim);border-radius:50%;transition:.3s}
-.gh-sw input:checked+.gh-sl{background:rgba(57,255,20,0.2);border-color:var(--green)}
-.gh-sw input:checked+.gh-sl::before{transform:translateX(18px);background:var(--green)}
-.gh-led{width:8px;height:8px;border-radius:50%;background:var(--dim);transition:all .3s}
-.gh-led.on{background:var(--green);box-shadow:0 0 10px var(--green);animation:lpn 1.5s ease-in-out infinite}
-@keyframes lpn{0%,100%{box-shadow:0 0 6px var(--green)}50%{box-shadow:0 0 16px var(--green)}}
-.gh-lbl{font-size:7px;color:var(--dim)}
-.gh-lbl.on{color:var(--green);font-weight:bold}
-
 .gh-radio-control{display:flex;align-items:center;gap:6px;flex-shrink:0}
 .gh-radio-btn{background:rgba(0,255,231,0.1);border:1px solid var(--cyan);color:var(--cyan);padding:5px 10px;border-radius:4px;font-family:'Bungee',display;font-size:8px;letter-spacing:1px;cursor:pointer;transition:all .2s}
 .gh-radio-btn:hover{background:rgba(0,255,231,0.25)}
@@ -671,26 +652,6 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     </div>
     <span class="gen-badge" id="genBadge">GEN 0</span>
     <span id="apiBreakerBadge" style="display:none"></span>
-    
-    <!-- Radio Controls -->
-    <div class="gh-radio" id="ghRadio">
-      <button class="gh-rbtn" id="ghPlayBtn" onclick="MusicPlayer.playPause()" title="Play/Pause Music">&#9654;</button>
-      <button class="gh-rbtn" onclick="MusicPlayer.playNext()" title="Next Track">&#9205;</button>
-      <input type="range" class="gh-vol" id="ghVolume" min="0" max="1" step="0.01" value="0.5" onchange="MusicPlayer.setVolume(this.value)">
-      <span class="gh-tname" id="ghTrackName">&#127925;</span>
-    </div>
-    
-    <!-- Trade Mode Toggle: Mainnet Real Trading vs Testnet Paper Trading -->
-    <div class="gh-toggle">
-      <span class="gh-lbl" id="ghModeLabel">TESTNET</span>
-      <div style="display:flex;align-items:center;gap:4px">
-        <div class="gh-led" id="ghLiveLed"></div>
-        <label class="gh-sw">
-          <input type="checkbox" id="ghTradeModeToggle" onchange="toggleRealTrading(this.checked)">
-          <span class="gh-sl"></span>
-        </label>
-      </div>
-    </div>
   </div>
 
   <!-- ══ BUS SETTINGS PANEL ══ -->
