@@ -19,7 +19,14 @@ const {
     ABIS
 } = require('./contract-helpers');
 
+// Live Trading API modules
+const { LiveTradingAPI } = require('./live-trading-api');
+const { TokenDiscovery, KNOWN_TOKENS } = require('./token-discovery');
+
 const { planEdit, applyPlannedEdit, loadAudit } = require('./agent-code-edit-runner');
+
+// Live Trading Instance (initialized on first request with private key)
+let liveTradingAPI = null;
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -1013,18 +1020,229 @@ app.get('/api/tokens/balances', async (req, res) => {
 });
 
 /**
+ * =============================================================================
+ * LIVE ONCHAIN TRADING API
+ * =============================================================================
+ */
+
+/**
+ * POST /api/live/init - Initialize live trading with private key
+ */
+app.post('/api/live/init', async (req, res) => {
+    try {
+        const { privateKey, slippageTolerance = 0.5 } = req.body;
+
+        if (!privateKey) {
+            return jsonError(res, 400, 'MISSING_KEY', 'Private key is required');
+        }
+
+        if (!privateKey.startsWith('0x') || privateKey.length !== 66) {
+            return jsonError(res, 400, 'INVALID_KEY', 'Invalid private key format');
+        }
+
+        // Initialize live trading API
+        liveTradingAPI = new LiveTradingAPI({
+            privateKey,
+            slippageTolerance
+        });
+
+        const walletInfo = await liveTradingAPI.getWalletInfo();
+
+        res.json({
+            success: true,
+            message: 'Live trading initialized',
+            wallet: {
+                address: walletInfo.address,
+                balanceETH: walletInfo.balanceETH
+            }
+        });
+    } catch (error) {
+        console.error('Live trading init error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+/**
+ * GET /api/live/wallet - Get wallet info
+ */
+app.get('/api/live/wallet', async (req, res) => {
+    if (!liveTradingAPI) {
+        return jsonError(res, 400, 'NOT_INITIALIZED', 'Live trading not initialized. POST /api/live/init first.');
+    }
+
+    try {
+        const info = await liveTradingAPI.getWalletInfo();
+        res.json({ success: true, ...info });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+/**
+ * GET /api/live/balances - Get all token balances
+ */
+app.get('/api/live/balances', async (req, res) => {
+    if (!liveTradingAPI) {
+        return jsonError(res, 400, 'NOT_INITIALIZED', 'Live trading not initialized');
+    }
+
+    try {
+        const balances = await liveTradingAPI.getAllBalances();
+        res.json({ success: true, balances });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+/**
+ * GET /api/live/tokens - Get available tokens
+ */
+app.get('/api/live/tokens', async (req, res) => {
+    if (!liveTradingAPI) {
+        return jsonError(res, 400, 'NOT_INITIALIZED', 'Live trading not initialized');
+    }
+
+    try {
+        const tokens = await liveTradingAPI.tokenDiscovery.discoverPopularTokens();
+        res.json({ success: true, tokens });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+/**
+ * GET /api/live/pairs/:token - Get trading pairs for a token
+ */
+app.get('/api/live/pairs/:token', async (req, res) => {
+    if (!liveTradingAPI) {
+        return jsonError(res, 400, 'NOT_INITIALIZED', 'Live trading not initialized');
+    }
+
+    try {
+        const pairs = await liveTradingAPI.tokenDiscovery.getTradingPairs(req.params.token);
+        res.json({ success: true, pairs });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+/**
+ * POST /api/live/quote - Get swap quote
+ */
+app.post('/api/live/quote', async (req, res) => {
+    if (!liveTradingAPI) {
+        return jsonError(res, 400, 'NOT_INITIALIZED', 'Live trading not initialized');
+    }
+
+    try {
+        const { tokenIn, tokenOut, amountIn } = req.body;
+
+        if (!tokenIn || !tokenOut || !amountIn) {
+            return jsonError(res, 400, 'MISSING_PARAMS', 'tokenIn, tokenOut, and amountIn are required');
+        }
+
+        const quote = await liveTradingAPI.getQuote({ tokenIn, tokenOut, amountIn });
+        res.json(quote);
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+/**
+ * POST /api/live/swap - Execute a swap
+ */
+app.post('/api/live/swap', async (req, res) => {
+    if (!liveTradingAPI) {
+        return jsonError(res, 400, 'NOT_INITIALIZED', 'Live trading not initialized');
+    }
+
+    try {
+        const { tokenIn, tokenOut, amountIn, selectedDex, customSlippage } = req.body;
+
+        if (!tokenIn || !tokenOut || !amountIn) {
+            return jsonError(res, 400, 'MISSING_PARAMS', 'tokenIn, tokenOut, and amountIn are required');
+        }
+
+        if (parseFloat(amountIn) <= 0) {
+            return jsonError(res, 400, 'INVALID_AMOUNT', 'Amount must be greater than 0');
+        }
+
+        console.log(`🔄 SWAP REQUEST: ${amountIn} ${tokenIn} -> ${tokenOut}`);
+
+        const result = await liveTradingAPI.executeSwap({
+            tokenIn,
+            tokenOut,
+            amountIn: parseFloat(amountIn),
+            selectedDex,
+            customSlippage
+        });
+
+        if (result.success) {
+            console.log(`✅ SWAP SUCCESS: ${result.hash}`);
+        } else {
+            console.log(`❌ SWAP FAILED: ${result.error}`);
+        }
+
+        res.json(result);
+    } catch (error) {
+        console.error('Swap error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+/**
+ * GET /api/live/history - Get trade history
+ */
+app.get('/api/live/history', async (req, res) => {
+    if (!liveTradingAPI) {
+        return jsonError(res, 400, 'NOT_INITIALIZED', 'Live trading not initialized');
+    }
+
+    try {
+        const limit = parseInt(req.query.limit) || 50;
+        const history = liveTradingAPI.getTradeHistory(limit);
+        res.json({ success: true, history });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+/**
+ * GET /api/live/order/:orderId - Check order status
+ */
+app.get('/api/live/order/:orderId', async (req, res) => {
+    if (!liveTradingAPI) {
+        return jsonError(res, 400, 'NOT_INITIALIZED', 'Live trading not initialized');
+    }
+
+    try {
+        const status = await liveTradingAPI.checkOrder(req.params.orderId);
+        res.json({ success: true, ...status });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+/**
+ * GET /api/live/known-tokens - Get list of known tokens
+ */
+app.get('/api/live/known-tokens', (req, res) => {
+    const tokens = Object.values(KNOWN_TOKENS);
+    res.json({ success: true, tokens });
+});
+
+/**
+ * =============================================================================
  * Start Server
+ * =============================================================================
  */
 app.listen(PORT, () => {
     console.log(`🤖 Trade Arena Backend running on port ${PORT}`);
     console.log(`📊 Market analysis: http://localhost:${PORT}/api/health`);
+    console.log(`💰 Live Trading: POST /api/live/init with { privateKey }`);
 });
 
 module.exports = app;
-
-// ═══════════════════════════════════════════════════════════
-// WALLET BALANCE & STATUS ENDPOINTS
-// ═══════════════════════════════════════════════════════════
 
 /**
  * GET /api/wallet/balance - Get live MetaMask wallet balance
