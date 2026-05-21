@@ -642,14 +642,14 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         METAMASK / WALLET
       </button>
       <div class="divider">— or —</div>
-      <button class="demo-btn" onclick="loginDemo()">🎮 ENTER DEMO MODE — NO SETUP NEEDED</button>
+      <button class="demo-btn" onclick="loginDemo()">🎮 TRY WITH PAPER TRADING — NO WALLET NEEDED</button>
     </div>
   </div>
   <p id="cStatus" style="min-height:16px;font-size:11px;color:var(--cyan);text-align:center;transition:all .3s"></p>
   <div class="setup-note">
     <strong>Optional: Anthropic API Key</strong> — enables full Claude AI agents. Get one free at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>
     <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-..." style="width:100%;margin-top:5px;padding:5px 8px;background:var(--bg);border:1px solid var(--border);color:var(--cyan);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px;" oninput="if(this.value.trim().startsWith('sk-'))window._userApiKey=this.value.trim()">
-    <span style="color:var(--dim);font-size:8px">Without a key the app uses rule-based signals and still trades. Demo Mode requires no wallet or key.</span>
+    <span style="color:var(--dim);font-size:8px">Without a key the app uses rule-based signals. Paper Trading requires no wallet or key.</span>
   </div>
 </div>
 
@@ -2445,7 +2445,7 @@ async function loginMetaMask(){
 }
 
 function loginDemo(){
-  try{ setupApp({name:'DEMO PLAYER', avatar:null, badge:'🎮 DEMO'}); }
+  try{ setupApp({name:'PAPER TRADER', avatar:null, badge:'PAPER'}); }
   catch(e){ const s=document.getElementById('cStatus'); if(s) s.textContent='❌ '+e.message; console.error('Demo error:',e); }
 }
 
@@ -4526,6 +4526,33 @@ function setTradeMode(mode, skipValidation = false) {
   }
 
   _tradeMode = mode;
+  window._isLiveMode = mode === 'live';
+
+  // Sync header toggle and indicators
+  const led = document.getElementById('ghLiveLed');
+  if (led) led.classList.toggle('on', mode === 'live');
+  const lbl = document.getElementById('ghModeLabel');
+  if (lbl) {
+    lbl.textContent = mode === 'live' ? 'MAINNET' : 'TESTNET';
+    lbl.classList.toggle('on', mode === 'live');
+  }
+  const hdrToggle = document.getElementById('ghTradeModeToggle');
+  if (hdrToggle) hdrToggle.checked = mode === 'live';
+  const ghBadge = document.getElementById('ghBadge');
+  if (ghBadge) {
+    if (mode === 'live') {
+      ghBadge.textContent = '⚠️ LIVE';
+      ghBadge.style.background = 'rgba(57,255,20,.2)';
+      ghBadge.style.borderColor = 'var(--green)';
+      ghBadge.style.color = 'var(--green)';
+    } else {
+      ghBadge.textContent = 'TESTNET';
+      ghBadge.style.background = '';
+      ghBadge.style.borderColor = '';
+      ghBadge.style.color = '';
+    }
+  }
+
   const indicator = document.getElementById('apiModeIndicator');
   const modeText = document.getElementById('apiModeText');
   const dot = indicator?.querySelector('.api-mode-dot');
@@ -4552,20 +4579,69 @@ function setTradeMode(mode, skipValidation = false) {
 }
 
 function updateModeIndicators() {
-  // Update header badge
+  const enabled = _tradeMode === 'live';
+  // LED
+  const led = document.getElementById('ghLiveLed');
+  if (led) led.classList.toggle('on', enabled);
+  // Mode label
+  const lbl = document.getElementById('ghModeLabel');
+  if (lbl) {
+    lbl.textContent = enabled ? 'MAINNET' : 'TESTNET';
+    lbl.classList.toggle('on', enabled);
+  }
+  // Header badge
   const ghBadge = document.getElementById('ghBadge');
   if (ghBadge) {
-    if (_tradeMode === 'live') {
-      ghBadge.textContent = 'LIVE';
-      ghBadge.style.background = 'rgba(57,255,20,.15)';
+    if (enabled) {
+      ghBadge.textContent = '⚠️ LIVE';
+      ghBadge.style.background = 'rgba(57,255,20,.2)';
       ghBadge.style.borderColor = 'var(--green)';
       ghBadge.style.color = 'var(--green)';
     } else {
-      ghBadge.textContent = 'DEMO';
+      ghBadge.textContent = 'TESTNET';
       ghBadge.style.background = '';
       ghBadge.style.borderColor = '';
       ghBadge.style.color = '';
     }
+  }
+}
+
+function toggleRealTrading(enabled) {
+  const mode = enabled ? 'live' : 'paper';
+  _tradeMode = mode;
+
+  // Update header indicators directly (instant feedback before API call)
+  const led = document.getElementById('ghLiveLed');
+  if (led) led.classList.toggle('on', enabled);
+  const lbl = document.getElementById('ghModeLabel');
+  if (lbl) {
+    lbl.textContent = enabled ? 'MAINNET' : 'TESTNET';
+    lbl.classList.toggle('on', enabled);
+  }
+  const toggle = document.getElementById('ghTradeModeToggle');
+  if (toggle) toggle.checked = enabled;
+  window._isLiveMode = enabled;
+  const ghBadge = document.getElementById('ghBadge');
+  if (ghBadge) {
+    if (enabled) {
+      ghBadge.textContent = '⚠️ LIVE';
+      ghBadge.style.background = 'rgba(57,255,20,.2)';
+      ghBadge.style.borderColor = 'var(--green)';
+      ghBadge.style.color = 'var(--green)';
+    } else {
+      ghBadge.textContent = 'TESTNET';
+      ghBadge.style.background = '';
+      ghBadge.style.borderColor = '';
+      ghBadge.style.color = '';
+    }
+  }
+
+  // Sync with backend/API panel
+  try { setTradeMode(mode); } catch(e) {}
+
+  // Warn on live
+  if (enabled) {
+    console.warn('[⚠️ LIVE MODE] Real trading is now ENABLED. All bots will execute real trades.');
   }
 }
 
