@@ -495,6 +495,22 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 .al-msg{flex:1}
 .al-entry.notice{color:var(--amber)}
 .al-entry.suspend{color:var(--hot)}
+/* ── AGENT CODE EDIT PANEL ── */
+.agent-edit-btn{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;font-family:'Bungee',display;font-size:9px;letter-spacing:1px;border:1px solid var(--cyan);color:var(--cyan);background:rgba(0,229,255,.06);border-radius:5px;cursor:pointer;transition:all .2s}
+.agent-edit-btn:hover{background:rgba(0,229,255,.12);color:var(--cyan);border-color:var(--cyan)}
+.agent-edit-btn:disabled{opacity:.4;cursor:not-allowed}
+.agent-panel{display:none;background:linear-gradient(180deg,rgba(14,9,20,.98),rgba(10,6,16,.98));border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;padding:14px 16px;margin-top:-8px;box-shadow:0 8px 32px rgba(0,0,0,.6)}
+.agent-panel.open{display:block}
+.agent-section{background:var(--chrome);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:10px}
+.agent-section-title{font-family:'Bungee',display;font-size:9px;letter-spacing:2px;color:var(--cyan);text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.agent-textarea{width:100%;min-height:72px;background:var(--bg);border:1px solid var(--border);color:var(--cyan);padding:8px 10px;border-radius:6px;font-family:'Share Tech Mono',monospace;font-size:11px;resize:vertical;box-sizing:border-box}
+.agent-textarea:focus{outline:none;border-color:var(--cyan)}
+.agent-preview{background:#0a0a0a;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-family:'Share Tech Mono',monospace;font-size:10px;color:#aaa;white-space:pre-wrap;word-break:break-all;max-height:200px;overflow-y:auto;margin-top:6px}
+.agent-preview.blocked{border-color:var(--hot);color:var(--hot)}
+.agent-status{font-size:9px;color:var(--dim);margin-top:6px;min-height:14px}
+.agent-status.error{color:var(--hot)}
+.agent-status.success{color:var(--green)}
+.agent-files-tag{display:inline-block;font-size:8px;padding:2px 7px;border-radius:10px;background:rgba(0,229,255,.1);border:1px solid rgba(0,229,255,.25);color:var(--cyan);margin:2px}
 .al-entry.reinstate{color:var(--blue)}
 .al-entry.clear{color:var(--green)}
 .al-entry.audit{color:var(--dim)}
@@ -665,6 +681,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     <div class="gh-controls">
       <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots">⚙ BUS</button>
       <button class="gh-bus-btn" id="ghApiBtn" onclick="toggleApiPanel()" title="API Keys & Trading Mode" style="border-color:var(--gold2);color:var(--gold2)">🔑 API</button>
+      <button class="gh-bus-btn" id="ghAgentBtn" onclick="toggleAgentPanel()" title="AI Agent Code Editor" style="border-color:var(--cyan);color:var(--cyan)">🤖 AGENT</button>
       <button class="gh-auto-btn" id="ghAutoBtn" onclick="globalAutoToggle()" title="Toggle auto-trading on all bots">AUTO</button>
       <button class="gh-bot-btn" id="ghRemoveBtn" onclick="removeLastBot()" title="Remove last bot" disabled>−</button>
       <button class="gh-bot-btn" id="ghAddBtn" onclick="addBot()" title="Add bot">+</button>
@@ -933,6 +950,51 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         <button onclick="resetLearning()" style="padding:5px 12px;font-family:'Bungee',display;font-size:9px;background:none;border:1px solid var(--border);color:var(--dim);border-radius:4px;cursor:pointer;letter-spacing:1px">RESET WEIGHTS</button>
         <button onclick="exportLearning()" style="padding:5px 12px;font-family:'Bungee',display;font-size:9px;background:none;border:1px solid var(--purple);color:var(--purple);border-radius:4px;cursor:pointer;letter-spacing:1px">EXPORT MODEL</button>
         <span style="font-size:8px;color:var(--dim);align-self:center">Weights auto-persist in browser storage</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ★ AGENT CODE EDIT PANEL ★ -->
+  <div class="agent-panel" id="agentPanel">
+    <div class="agent-section">
+      <div class="agent-section-title"><span>🤖</span> AI CODE EDITOR</div>
+      <div style="font-size:9px;color:var(--dim);margin-bottom:6px">Describe the change you want. The AI will preview a diff before applying.</div>
+      <textarea class="agent-textarea" id="agentRequest" placeholder="e.g. Increase riskMultiplier for Conservative bots from 0.5 to 0.75"></textarea>
+      <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center">
+        <span style="font-size:8px;color:var(--dim)">Scope:</span>
+        <label style="font-size:8px;color:var(--dim);display:flex;align-items:center;gap:3px"><input type="checkbox" class="agent-scope-check" value="server.js" checked> server.js</label>
+        <label style="font-size:8px;color:var(--dim);display:flex;align-items:center;gap:3px"><input type="checkbox" class="agent-scope-check" value="contract-helpers.js" checked> contract-helpers.js</label>
+        <label style="font-size:8px;color:var(--dim);display:flex;align-items:center;gap:3px"><input type="checkbox" class="agent-scope-check" value="trading-engine.js"> trading-engine.js</label>
+        <label style="font-size:8px;color:var(--dim);display:flex;align-items:center;gap:3px"><input type="checkbox" class="agent-scope-check" value="app.js"> app.js</label>
+        <label style="font-size:8px;color:var(--dim);display:flex;align-items:center;gap:3px"><input type="checkbox" class="agent-scope-check" value="music-player.js"> music-player.js</label>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center">
+        <button class="agent-edit-btn" id="agentPlanBtn" onclick="agentPlanEdit()"><span>📋</span> PREVIEW DIFF</button>
+        <button class="agent-edit-btn" id="agentApplyBtn" onclick="agentApplyEdit()" disabled style="opacity:0.5"><span>✅</span> APPLY</button>
+        <button class="agent-edit-btn" onclick="agentClearAll()" style="border-color:var(--dim);color:var(--dim)"><span>✕</span> CLEAR</button>
+      </div>
+    </div>
+
+    <!-- Diff Preview -->
+    <div class="agent-section" id="agentPreviewSection" style="display:none">
+      <div class="agent-section-title"><span>🔍</span> DIFF PREVIEW</div>
+      <div id="agentPolicyStatus" style="font-size:9px;margin-bottom:6px"></div>
+      <div id="agentFilesTagged" style="margin-bottom:6px"></div>
+      <div class="agent-preview" id="agentDiffPreview">Loading...</div>
+    </div>
+
+    <!-- Status -->
+    <div class="agent-status" id="agentStatus"></div>
+
+    <!-- Recent Audits -->
+    <div class="agent-section" style="margin-top:4px">
+      <div class="agent-section-title" style="font-size:8px"><span>📜</span> POLICY &amp; SAFETY</div>
+      <div style="font-size:8px;color:var(--dim);line-height:1.6">
+        • Changes run through <span style="color:var(--cyan)">git apply</span> — never direct filesystem writes<br>
+        • Syntax verified with <span style="color:var(--cyan)">node -c</span> after every apply<br>
+        • Auto-rollback on failure via <span style="color:var(--cyan)">git checkout</span><br>
+        • All attempts audited to <span style="color:var(--cyan)">.agent_audit/</span><br>
+        • Secrets (env, keys) are blocked — diff will be rejected
       </div>
     </div>
   </div>
@@ -4289,6 +4351,148 @@ function toggleApiPanel() {
     const busBtn = document.getElementById('ghBusBtn');
     if (busPanel) busPanel.classList.remove('open');
     if (busBtn) busBtn.classList.remove('open');
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// AGENT CODE EDIT PANEL
+// ══════════════════════════════════════════════════════
+let _agentPendingPlan = null;
+
+function toggleAgentPanel() {
+  const panel = document.getElementById('agentPanel');
+  const btn   = document.getElementById('ghAgentBtn');
+  if (!panel) return;
+  const open = panel.classList.toggle('open');
+  if (btn) btn.classList.toggle('open', open);
+  // Close bus panel if open
+  if (open) {
+    const busPanel = document.getElementById('busPanel');
+    const busBtn = document.getElementById('ghBusBtn');
+    if (busPanel) busPanel.classList.remove('open');
+    if (busBtn) busBtn.classList.remove('open');
+  }
+}
+
+function agentGetScopes() {
+  const checks = document.querySelectorAll('.agent-scope-check:checked');
+  return Array.from(checks).map(c => c.value);
+}
+
+function agentSetStatus(msg, type) {
+  const el = document.getElementById('agentStatus');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'agent-status' + (type ? ' ' + type : '');
+}
+
+function agentClearAll() {
+  _agentPendingPlan = null;
+  document.getElementById('agentRequest').value = '';
+  document.getElementById('agentPreviewSection').style.display = 'none';
+  document.getElementById('agentApplyBtn').disabled = true;
+  document.getElementById('agentApplyBtn').style.opacity = '0.5';
+  agentSetStatus('');
+}
+
+async function agentPlanEdit() {
+  const request = document.getElementById('agentRequest').value.trim();
+  const scopes = agentGetScopes();
+  if (!request) { agentSetStatus('Please describe the change first.', 'error'); return; }
+  if (scopes.length === 0) { agentSetStatus('Please select at least one scope file.', 'error'); return; }
+
+  const planBtn = document.getElementById('agentPlanBtn');
+  const prevSection = document.getElementById('agentPreviewSection');
+  const preview = document.getElementById('agentDiffPreview');
+  const policyStatus = document.getElementById('agentPolicyStatus');
+  const filesTagged = document.getElementById('agentFilesTagged');
+
+  planBtn.disabled = true;
+  agentSetStatus('Planning…', '');
+  preview.textContent = 'Thinking…';
+  prevSection.style.display = 'block';
+
+  try {
+    const res = await fetch('/api/agent/edit/plan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ request, scopes })
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      preview.textContent = 'Error: ' + (data.error || res.statusText);
+      preview.classList.add('blocked');
+      policyStatus.textContent = '';
+      filesTagged.innerHTML = '';
+      agentSetStatus('Planning failed.', 'error');
+    } else {
+      _agentPendingPlan = data;
+      preview.textContent = data.diffPreview || '(no diff generated)';
+      preview.classList.toggle('blocked', data.policyStatus !== 'OK');
+      policyStatus.innerHTML = data.policyStatus === 'OK'
+        ? '<span style="color:var(--green)">✅ Policy OK</span>'
+        : '<span style="color:var(--hot)">🚫 ' + (data.policyError || 'Blocked') + '</span>';
+      filesTagged.innerHTML = (data.touchedFiles || []).map(f =>
+        '<span class="agent-files-tag">' + f + '</span>'
+      ).join('');
+      agentSetStatus(
+        data.policyStatus === 'OK'
+          ? `Plan ready. auditId: ${data.auditId}`
+          : 'Diff blocked by policy.',
+        data.policyStatus === 'OK' ? 'success' : 'error'
+      );
+      document.getElementById('agentApplyBtn').disabled = data.policyStatus !== 'OK';
+      document.getElementById('agentApplyBtn').style.opacity = data.policyStatus === 'OK' ? '1' : '0.5';
+    }
+  } catch (e) {
+    preview.textContent = 'Network error: ' + e.message;
+    preview.classList.add('blocked');
+    agentSetStatus('Network error.', 'error');
+  } finally {
+    planBtn.disabled = false;
+  }
+}
+
+async function agentApplyEdit() {
+  if (!_agentPendingPlan) { agentSetStatus('No plan to apply. Click PREVIEW DIFF first.', 'error'); return; }
+  const scopes = agentGetScopes();
+  const applyBtn = document.getElementById('agentApplyBtn');
+  const preview = document.getElementById('agentDiffPreview');
+
+  applyBtn.disabled = true;
+  agentSetStatus('Applying… verify in progress…', '');
+
+  try {
+    const res = await fetch('/api/agent/edit/apply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        auditId: _agentPendingPlan.auditId,
+        requestHash: _agentPendingPlan.requestHash,
+        diff: _agentPendingPlan.diffPreview,
+        scopes: scopes
+      })
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      preview.textContent = '✅ Changes applied and verified successfully.';
+      preview.classList.remove('blocked');
+      agentSetStatus('Applied successfully. Verification passed.', 'success');
+      _agentPendingPlan = null;
+    } else {
+      preview.textContent = '❌ Apply failed: ' + (data.error || 'unknown error');
+      preview.classList.add('blocked');
+      agentSetStatus('Apply failed: ' + (data.error || 'verification error'), 'error');
+    }
+  } catch (e) {
+    preview.textContent = 'Network error: ' + e.message;
+    preview.classList.add('blocked');
+    agentSetStatus('Network error.', 'error');
+  } finally {
+    applyBtn.disabled = false;
+    applyBtn.style.opacity = '1';
   }
 }
 
