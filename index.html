@@ -511,6 +511,16 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 .agent-status.error{color:var(--hot)}
 .agent-status.success{color:var(--green)}
 .agent-files-tag{display:inline-block;font-size:8px;padding:2px 7px;border-radius:10px;background:rgba(0,229,255,.1);border:1px solid rgba(0,229,255,.25);color:var(--cyan);margin:2px}
+/* Per-key inline test status */
+.key-inline-status{font-size:9px;font-family:'Share Tech Mono',monospace;margin-left:8px;flex-shrink:0;transition:all .3s}
+.ki-testing{color:var(--dim)}
+.ki-ok{color:var(--green)}
+.ki-bad{color:var(--hot)}
+.api-test-btn{padding:4px 10px;font-family:'Bungee',display;font-size:8px;letter-spacing:1px;border:1px solid var(--border);color:var(--dim);background:var(--chrome);border-radius:4px;cursor:pointer;transition:all .2s;white-space:nowrap}
+.api-test-btn:hover{border-color:var(--cyan);color:var(--cyan)}
+.api-getkey-link{font-size:8px;font-family:'Share Tech Mono',monospace;color:var(--cyan);text-decoration:none;padding:2px 0;border-bottom:1px solid rgba(0,229,255,.3);transition:all .2s}
+.api-getkey-link:hover{color:var(--gold);border-bottom-color:var(--gold)}
+.api-divider{height:1px;background:rgba(255,255,255,.06);margin:4px 0}
 .al-entry.reinstate{color:var(--blue)}
 .al-entry.clear{color:var(--green)}
 .al-entry.audit{color:var(--dim)}
@@ -806,18 +816,29 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     <div class="api-grid">
       <!-- AI Keys Section -->
       <div class="api-section">
-        <div class="api-section-title"><span>🤖</span> AI API KEYS</div>
+        <div class="api-section-title"><span>🤖</span> AI API KEYS — GET FREE KEYS BELOW</div>
         <div class="api-input-row">
-          <input type="password" id="apiAnthropicKey" placeholder="sk-ant-api03-..." oninput="window._apiKeys.anthropic=this.value">
+          <input type="password" id="apiAnthropicKey" placeholder="sk-ant-api03-..." oninput="window._apiKeys.anthropic=this.value" style="flex:1">
           <button class="api-test-btn" onclick="testApiKey('anthropic')" title="Test Anthropic API">TEST</button>
         </div>
+        <div class="api-input-row" style="justify-content:flex-start;gap:6px;margin-bottom:6px">
+          <a href="https://console.anthropic.com/api-keys" target="_blank" class="api-getkey-link">📋 Anthropic console.anthropic.com → API Keys</a>
+        </div>
+        <div class="api-divider"></div>
         <div class="api-input-row">
-          <input type="password" id="apiOpenAIKey" placeholder="sk-proj-..." oninput="window._apiKeys.openai=this.value">
+          <input type="password" id="apiOpenAIKey" placeholder="sk-proj-..." oninput="window._apiKeys.openai=this.value" style="flex:1">
           <button class="api-test-btn" onclick="testApiKey('openai')" title="Test OpenAI API">TEST</button>
         </div>
+        <div class="api-input-row" style="justify-content:flex-start;gap:6px;margin-bottom:6px">
+          <a href="https://platform.openai.com/api-keys" target="_blank" class="api-getkey-link">📋 OpenAI platform.openai.com → API Keys</a>
+        </div>
+        <div class="api-divider"></div>
         <div class="api-input-row">
-          <input type="password" id="apiXAIKey" placeholder="xai-..." oninput="window._apiKeys.xai=this.value">
+          <input type="password" id="apiXAIKey" placeholder="xai-..." oninput="window._apiKeys.xai=this.value" style="flex:1">
           <button class="api-test-btn" onclick="testApiKey('xai')" title="Test xAI API">TEST</button>
+        </div>
+        <div class="api-input-row" style="justify-content:flex-start;gap:6px">
+          <a href="https://console.x.ai" target="_blank" class="api-getkey-link">📋 xAI console.x.ai → API Keys</a>
         </div>
       </div>
 
@@ -4646,11 +4667,17 @@ function toggleRealTrading(enabled) {
 }
 
 async function testApiKey(provider) {
-  const statusEl = document.getElementById('apiStatus');
-  if (statusEl) {
-    statusEl.textContent = `Testing ${provider}...`;
-    statusEl.className = 'api-status';
-  }
+  // Inline status element next to the input row
+  const rowMap = {
+    anthropic: 'apiAnthropicKey',
+    openai: 'apiOpenAIKey',
+    xai: 'apiXAIKey'
+  };
+  const row = document.getElementById(rowMap[provider])?.closest('.api-input-row');
+  const inlineEl = row?.querySelector('.key-inline-status') || createInlineStatus(row, provider);
+
+  inlineEl.textContent = 'Testing…';
+  inlineEl.className = 'key-inline-status ki-testing';
 
   try {
     let valid = false;
@@ -4658,8 +4685,7 @@ async function testApiKey(provider) {
 
     if (provider === 'anthropic') {
       key = document.getElementById('apiAnthropicKey')?.value;
-      if (!key) throw new Error('No key entered');
-      // Real API validation - test with actual Anthropic API
+      if (!key) throw new Error('No key');
       const resp = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
@@ -4670,53 +4696,91 @@ async function testApiKey(provider) {
         body: JSON.stringify({
           model: 'claude-3-haiku-20240307',
           max_tokens: 10,
-          messages: [{ role: 'user', content: 'test' }]
+          messages: [{ role: 'user', content: 'ping' }]
         })
       });
       valid = resp.ok;
       if (!valid) {
         const err = await resp.json().catch(() => ({}));
-        throw new Error(err.error?.type || 'Invalid key');
+        throw new Error(err.error?.message || err.error?.type || `HTTP ${resp.status}`);
       }
     } else if (provider === 'openai') {
       key = document.getElementById('apiOpenAIKey')?.value;
-      if (!key) throw new Error('No key entered');
-      // Real API validation for OpenAI
+      if (!key) throw new Error('No key');
       const resp = await fetch('https://api.openai.com/v1/models', {
         headers: { 'Authorization': `Bearer ${key}` }
       });
       valid = resp.ok;
-      if (!valid) throw new Error('Invalid OpenAI key');
+      if (!valid) throw new Error(`HTTP ${resp.status}`);
     } else if (provider === 'xai') {
       key = document.getElementById('apiXAIKey')?.value;
-      if (!key) throw new Error('No key entered');
-      // xAI uses OpenAI-compatible API - test format
-      valid = key.startsWith('xai-') || key.length > 30;
+      if (!key) throw new Error('No key');
+      // xAI Grok uses OpenAI-compatible endpoint
+      const resp = await fetch('https://api.x.ai/v1/models', {
+        headers: { 'Authorization': `Bearer ${key}` }
+      });
+      valid = resp.ok;
+      if (!valid) throw new Error(`HTTP ${resp.status}`);
     }
 
-    if (statusEl) {
-      if (valid) {
-        statusEl.textContent = `${provider} key verified ✓`;
+    if (valid) {
+      inlineEl.textContent = '✅ Activated';
+      inlineEl.className = 'key-inline-status ki-ok';
+      // Reflect in header badge if this is the first AI key
+      updateGlobalLiveReadiness();
+      // Also update the API status bar
+      const statusEl = document.getElementById('apiStatus');
+      if (statusEl) {
+        statusEl.textContent = `✅ ${provider.charAt(0).toUpperCase() + provider.slice(1)} key activated`;
         statusEl.className = 'api-status success';
-        // If server PK is also set, enable live mode
-        const serverPK = document.getElementById('apiServerPK')?.value;
-        if (serverPK && serverPK.startsWith('0x')) {
-          statusEl.textContent += ' — LIVE trading available!';
-          // Enable live radio
-          const liveRadio = document.querySelector('input[name="tradeMode"][value="live"]');
-          if (liveRadio) liveRadio.disabled = false;
-        }
-      } else {
-        statusEl.textContent = `${provider} key invalid ✗`;
-        statusEl.className = 'api-status error';
       }
-      setTimeout(() => { statusEl.textContent = ''; }, 4000);
+    } else {
+      throw new Error('Invalid');
     }
   } catch (e) {
+    inlineEl.textContent = '❌ ' + e.message;
+    inlineEl.className = 'key-inline-status ki-bad';
+    const statusEl = document.getElementById('apiStatus');
     if (statusEl) {
-      statusEl.textContent = `Error: ${e.message}`;
+      statusEl.textContent = `❌ ${provider} test failed: ${e.message}`;
       statusEl.className = 'api-status error';
-      setTimeout(() => { statusEl.textContent = ''; }, 5000);
+    }
+  }
+}
+
+function createInlineStatus(row, provider) {
+  if (!row) return null;
+  const el = document.createElement('span');
+  el.className = 'key-inline-status';
+  el.style.cssText = 'font-size:9px;font-family:"Share Tech Mono",monospace;margin-left:8px;flex-shrink:0';
+  row.appendChild(el);
+  return el;
+}
+
+function updateGlobalLiveReadiness() {
+  // Called whenever a key is successfully tested — update the live radio enablement
+  const serverPK = document.getElementById('apiServerPK')?.value;
+  const hasServerPK = serverPK && serverPK.startsWith('0x');
+  const hasAiKey = !!(
+    (document.getElementById('apiAnthropicKey')?.value?.startsWith('sk-')) ||
+    (document.getElementById('apiOpenAIKey')?.value?.startsWith('sk-')) ||
+    (document.getElementById('apiXAIKey')?.value?.startsWith('xai-'))
+  );
+
+  const liveRadio = document.querySelector('input[name="tradeMode"][value="live"]');
+  if (liveRadio && hasServerPK) {
+    liveRadio.disabled = false;
+  }
+
+  // Show readiness in status bar
+  const statusEl = document.getElementById('apiStatus');
+  if (statusEl && !statusEl.classList.contains('ki-ok') && !statusEl.classList.contains('ki-bad')) {
+    if (hasServerPK && hasAiKey) {
+      statusEl.textContent = '✅ LIVE trading ready — Server PK + AI key confirmed';
+      statusEl.className = 'api-status success';
+    } else if (hasAiKey) {
+      statusEl.textContent = '✅ AI key active — add Server PK to enable LIVE';
+      statusEl.className = 'api-status';
     }
   }
 }
