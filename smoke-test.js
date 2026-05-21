@@ -42,11 +42,13 @@ async function testExitValidation() {
         {
             label: 'missing tokenIn',
             body: { tokenOut: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', amountIn: '1000' },
+            expectHttp: 400,
             expectError: true
         },
         {
             label: 'invalid tokenIn address',
             body: { tokenIn: 'bad', tokenOut: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', amountIn: '1000' },
+            expectHttp: 400,
             expectError: true
         },
         {

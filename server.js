@@ -318,10 +318,10 @@ app.post('/api/exit/execute', async (req, res) => {
             deadlineSecondsFromNow
         } = req.body || {};
 
-        // Request validation
-        assertValidAddress(tokenIn, 'tokenIn');
-        assertValidAddress(tokenOut, 'tokenOut');
-        if (recipient !== undefined) assertValidAddress(recipient, 'recipient');
+        // Request validation — return 400 on bad addresses instead of 500
+        try { assertValidAddress(tokenIn, 'tokenIn'); } catch (e) { return jsonError(res, 400, 'INVALID_TOKEN_IN', e.message); }
+        try { assertValidAddress(tokenOut, 'tokenOut'); } catch (e) { return jsonError(res, 400, 'INVALID_TOKEN_OUT', e.message); }
+        if (recipient !== undefined) { try { assertValidAddress(recipient, 'recipient'); } catch (e) { return jsonError(res, 400, 'INVALID_RECIPIENT', e.message); } }
 
         const amountInNum = typeof amountIn === 'string' ? Number(amountIn) : amountIn;
         if (!Number.isFinite(amountInNum) || amountInNum <= 0) {
@@ -365,7 +365,7 @@ app.post('/api/exit/execute', async (req, res) => {
         }
 
         const recipientAddr = recipient || (await signer.getAddress());
-        assertValidAddress(recipientAddr, 'recipient');
+        try { assertValidAddress(recipientAddr, 'recipient'); } catch (e) { return jsonError(res, 400, 'INVALID_RECIPIENT', e.message); }
 
         const decimalsIn = tokenInDetails.decimals;
         const decimalsOut = tokenOutDetails.decimals;

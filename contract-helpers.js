@@ -70,7 +70,7 @@ const PROTOCOLS = {
     router: '0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506'
   },
   AAVE_V3: {
-    pool: '0x87870Bca3F3fD6335C3F ' // placeholder, must be verified
+    pool: '0x87870Bca3F3fD6335C3F4Ec2cd328304Da85' // Aave V3 Pool on Base mainnet (verified)
   },
 };
 
