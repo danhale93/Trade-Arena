@@ -19,6 +19,8 @@ const {
     ABIS
 } = require('./contract-helpers');
 
+const { planEdit, applyPlannedEdit, loadAudit } = require('./agent-code-edit-runner');
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -1101,6 +1103,79 @@ const REAL_WALLET_CONFIG = {
         maxBetUSD: 500
     }
 };
+
+// ═══════════════════════════════════════════════════════════
+// IN-APP AGENT EDIT ENDPOINTS
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * POST /api/agent/edit/plan - Plan a code edit (preview diff, no changes)
+ */
+app.post('/api/agent/edit/plan', async (req, res) => {
+    try {
+        const { request: agentRequest, scopes } = req.body;
+
+        if (!agentRequest || typeof agentRequest !== 'string') {
+            return res.status(400).json({ success: false, error: '"request" string is required' });
+        }
+
+        if (!scopes || !Array.isArray(scopes) || scopes.length === 0) {
+            return res.status(400).json({ success: false, error: '"scopes" array is required' });
+        }
+
+        const result = await planEdit({ agentRequest, scopes });
+
+        res.json({
+            success: true,
+            auditId: result.auditId,
+            requestHash: result.requestHash,
+            diffHash: result.diffHash,
+            diffPreview: result.diffPreview,
+            policyWarnings: result.policyWarnings,
+            touchedFiles: result.touchedFiles,
+            policyStatus: result.policyStatus,
+            policyError: result.policyError
+        });
+    } catch (error) {
+        console.error('Agent plan error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+/**
+ * POST /api/agent/edit/apply - Apply a planned diff
+ */
+app.post('/api/agent/edit/apply', async (req, res) => {
+    try {
+        const { auditId, requestHash, diff, scopes } = req.body;
+
+        if (!auditId || !requestHash || !diff || !scopes) {
+            return res.status(400).json({ success: false, error: 'auditId, requestHash, diff, and scopes are required' });
+        }
+
+        const result = await applyPlannedEdit({ diffText: diff, scopes, auditId, requestHash });
+
+        if (result.ok) {
+            res.json({ success: true, auditId: result.audit.auditId, touchedFiles: result.audit.touchedFiles });
+        } else {
+            res.status(400).json({ success: false, error: result.error, auditId: result.audit?.auditId });
+        }
+    } catch (error) {
+        console.error('Agent apply error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+/**
+ * GET /api/agent/edit/audit/:id - Get audit record
+ */
+app.get('/api/agent/edit/audit/:id', (req, res) => {
+    const audit = loadAudit(req.params.id);
+    if (!audit) {
+        return res.status(404).json({ success: false, error: 'Audit not found' });
+    }
+    res.json({ success: true, audit });
+});
 
 // Serve index.html for client-side routes (SPA support)
 app.get('*', (req, res) => {

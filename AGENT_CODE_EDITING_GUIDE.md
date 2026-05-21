@@ -51,5 +51,6 @@ Response includes:
 ## Notes / Implementation work left
 - `agent-code-edit-runner.js` currently stubs the LLM diff generation.
   - Replace `generateDiffFromLLM()` with your LLM provider call.
-- The UI panel depends on `index.html` content; backend endpoints work independently.
+- Backend endpoints are fully implemented and wired (see server.js).
+- Remaining: UI panel integration into `index.html`.
 
