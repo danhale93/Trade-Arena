@@ -1,11 +1,16 @@
-- [x] Inspect repo for existing trading/testing code (`server.js`, `crucible-test.js`, `contract-helpers.js`).
-- [x] Implement real trading exit engine endpoint:
-  - [x] Add `POST /api/exit/execute` in `server.js`
+# TODO - In-app AI agent for code/settings edits
 
-  - [x] Use `ContractHelper` to estimate minOut and build calldata via Uniswap V3 router
-- [x] Sign + submit tx using `SERVER_PRIVATE_KEY`
-- [x] Add request validation + structured JSON errors
-- [x] Return `{ success, txHash, receipt, inputs, minOut, estimatedOut }`
-- [x] Add smoke-test script / local curl instructions
-- [x] Run `node` smoke test (no-op unless private key is present)
+## Plan steps
+- [x] 1) Add backend endpoints: /api/agent/edit/plan, /api/agent/edit/apply, /api/agent/edit/audit/:id
+
+- [x] 2) Implement server-side agent edit runner module (LLM->diff->policy->git apply->verification->audit)
+
+- [x] 3) Add strict policy/scope checks + secret redaction
+
+
+- [ ] 4) Verify verification/rollback behavior (plan-only first)
+- [ ] 5) UI integration: detect control panel presence in index.html; if present add panel
+- [ ] 6) Smoke test: start server, call /api/health, run plan-only request, then apply a trivial safe change
+- [x] 7) Add documentation: AGENT_CODE_EDITING_GUIDE.md
+
 
