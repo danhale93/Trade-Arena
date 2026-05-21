@@ -221,6 +221,160 @@ setInterval(broadcastPrices, 30000);
 // Mount MCP routes
 setupExpressRoutes(app);
 
+// ════════════════════════════════════════════════════════════════════════════════
+// ROADMAP ORCHESTRATION (Supabase-backed learning + dual-track decisions)
+// ════════════════════════════════════════════════════════════════════════════════
+
+const { decideTrade } = require('./roadmapOrchestrator');
+const { getLearningState, upsertLearningState, insertTrade } = require('./supabaseRepository');
+
+// Persisted learning state: frontends/agents can query current generation.
+app.post('/api/ai/learning-state', async (req, res) => {
+  try {
+    const { userId = 'anonymous' } = req.body || {};
+
+    const { configured, state } = await getLearningState({ userId });
+
+    // If this request also includes learning updates, write them.
+    if (req.body && req.body.update) {
+      const { learningGeneration, learningLog, agentWeights, agentStats } = req.body.update;
+      await upsertLearningState({
+        userId,
+        learningGeneration,
+        learningLog,
+        agentWeights,
+        agentStats,
+      });
+    }
+
+    return res.json({ configured, userId, state });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// Decide: choose best Turtle/Hare candidate using MCP opportunity analysis.
+app.post('/api/trade/decide', async (req, res) => {
+  try {
+    const {
+      userId = 'anonymous',
+      currentBalance = 50,
+      startingCapital = 50,
+      stageOverride,
+      trackAPreference = 'TURTLE',
+      maxCandidates = 5,
+      symbols = ['BTC', 'ETH', 'SOL', 'ARB', 'DOGE'],
+    } = req.body || {};
+
+    const symbolsUpper = Array.isArray(symbols) ? symbols.map(s => String(s).toUpperCase()) : ['ETH'];
+
+    // Pull learning state (for potential future weighting tweaks)
+    await getLearningState({ userId });
+
+    // Analyze a small set of opportunities using MCP handler directly.
+    const opportunities = [];
+
+    // Call the MCP analyze_opportunity logic in-process by hitting our existing Express MCP endpoint.
+    // This avoids duplicating parsing; still uses the exact risk logic.
+    // If you want a pure in-process import later, we can refactor.
+    const fetch = global.fetch || (await import('node-fetch')).default;
+
+    for (const sym of symbolsUpper.slice(0, maxCandidates)) {
+      // We try all strategies and take the best confidence via orchestrator.
+      const strategies = ['ARBITRAGE', 'MOMENTUM', 'VOLATILITY', 'GRID', 'HYBRID'];
+      for (const strategy of strategies) {
+        const r = await fetch(`http://localhost:${process.env.PORT || 3001}/api/mcp/tool/analyze_opportunity`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            symbol: sym,
+            strategy,
+            timeframe: '24h',
+          }),
+        });
+        const data = await r.json();
+        if (data && !data.error) {
+          opportunities.push({
+            ...data,
+            symbol: sym,
+            strategy,
+          });
+        }
+      }
+    }
+
+    // Keep top opportunities by heuristic risk/impact (or just truncate).
+    opportunities.sort((a, b) => (Math.abs(b?.priceChanges?.['24h'] ?? 0) - Math.abs(a?.priceChanges?.['24h'] ?? 0)));
+    const topOpps = opportunities.slice(0, 12);
+
+    const decision = decideTrade({
+      startingCapital,
+      currentBalance: Number(currentBalance) || startingCapital,
+      opportunities: topOpps,
+      stageOverride,
+    });
+
+    return res.json({ decision, userId, stage: decision.stage });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// Execute: paper trade via MCP execute_trade; then persist to Supabase.
+app.post('/api/trade/execute', async (req, res) => {
+  try {
+    const {
+      userId = 'anonymous',
+      trade,
+      paper = true,
+    } = req.body || {};
+
+    if (!trade) return res.status(400).json({ error: 'Missing trade payload' });
+
+    const { symbol, side, amountUsd, strategyForMcp, method, leverage, confidence } = trade;
+
+    const fetch = global.fetch || (await import('node-fetch')).default;
+
+    const r = await fetch(`http://localhost:${process.env.PORT || 3001}/api/mcp/tool/execute_trade`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        symbol,
+        side,
+        amount: amountUsd,
+        botId: null,
+        strategy: strategyForMcp || method || 'HYBRID',
+        paper: !!paper,
+        type: 'MARKET',
+      }),
+    });
+
+    const result = await r.json();
+    if (!result || result.error) {
+      return res.status(500).json({ error: result?.error || 'Trade execution failed' });
+    }
+
+    // Persist to Supabase (learning/trades)
+    await insertTrade({
+      userId,
+      trade: {
+        botId: null,
+        token: symbol,
+        method: method || strategyForMcp || 'HYBRID',
+        entryPrice: result.trade?.price,
+        exitPrice: null,
+        pnl: result.trade?.pnl ?? null,
+        timestamp: result.trade?.timestamp,
+      },
+    }).catch(() => {});
+
+    return res.json({ success: true, execution: result, meta: { leverage, confidence } });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+
 // Legacy MCP proxy endpoint (enhanced)
 app.post('/api/mcp/agent', async (req, res) => {
   if (!anthropic) {

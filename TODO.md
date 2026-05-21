@@ -1,53 +1,28 @@
-# Trade-Arena: Real Wallet + Supabase Integration
+# TODO — Trade Arena $50 → $1M roadmap (Dual-Track Turtle/Hare)
 
+## Plan approval: Implement Supabase-backed orchestration
 
-### Step 1: Supabase Setup [✅]
-- Create supabase.js (client init)
-- package.json: add @supabase/supabase-js
-- .env.example + .env (user to fill keys)
-- Schema: users, trades, agent_stats tables (via dashboard)
-
-
-- app.js: Auto-connect real-wallet.js on load
-- real-wallet.js: Export connectWallet()
-- app.js: Real balance/gas in UI (no sim)
-
-### Step 3: Real Trading [ ]
-- app.js spinBot(): !demo → contract-helpers.executeSwap()
-- Micro trades: $0.1-5 ETH on Base UniswapV3
-- Tx confirm/error handling
-
-### Step 4: Supabase Frontend [ ]
-- app.js: Supabase auth (email/anon)
-- Log trades/agent votes to Supabase
-- Load agent_weights from Supabase
-
-### Step 5: Backend Supabase [ ]
-- server.js: Supabase server client (if exists)
-- /api/trades endpoint (realtime)
-
-### Step 6: Persistence [ ]
-- Save learning state to Supabase
-- Load on app start
-
-### Step 7: Security [ ]
-- .env gitignore
-- Supabase RLS policies
-- Rate limits
-
-### Step 8: UI Updates [ ]
-- Wallet status indicator
-- Supabase sync status
-- Real tx history
-
-### Step 9: Testing [ ]
-- Testnet swaps (Base Sepolia first?)
-- Supabase data flow
-- Error recovery
-
-### Step 10: npm install [ ]
-### Step 11: User setup guide [ ]
-### Step 12: Complete! [ ]
-
-✅ **
+1. Add backend Supabase client + repository
+   - Create `supabaseClient.js`
+   - Create `supabaseRepository.js`
+2. Add roadmap orchestrator + gating
+   - Create `roadmapOrchestrator.js`
+   - Create `aiConfidence.js` (scoring + thresholds)
+3. Add new backend endpoints
+   - Edit `server.js`:
+     - `POST /api/ai/learning-state` (get/upsert)
+     - `POST /api/trade/decide` (candidate selection + Turtle/Hare + stage gating)
+     - `POST /api/trade/execute` (MCP execute_trade + persist trade)
+4. Wire frontend AUTO mode to backend
+   - Edit `index-new.html` to call backend endpoints instead of browser-random decisions
+5. Add migration/schema instructions (documentation)
+   - Document required Supabase tables (learning_state, trades, bots)
+6. Test end-to-end
+   - `npm test` (if applicable)
+   - `npm start` backend
+   - Load UI and enable AUTO mode
+   - Verify:
+     - `/api/trade/decide` returns HOLD/EXECUTE
+     - `/api/trade/execute` returns trade result
+     - Supabase rows are created/updated (if configured)
 
