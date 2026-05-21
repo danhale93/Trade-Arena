@@ -68,16 +68,16 @@ class WalletManager {
     while (attempt < maxRetries) {
       attempt++;
       try {
-        // Get gas prices if not provided
-        let gasSettings = {};
-        if (!maxFeePerGas) {
-          const feeData = await this.provider.getFeeData();
-          gasSettings = {
-            maxFeePerGas: feeData.maxFeePerGas || ethers.utils.parseUnits('50', 'gwei'),
-            maxPriorityFeePerGas: priorityFee || feeData.maxPriorityFeePerGas || ethers.utils.parseUnits('2', 'gwei')
-          };
+        // Base uses legacy gas pricing - use minimum 5 gwei to avoid failures
+        let gasPrice;
+        if (maxFeePerGas) {
+          gasPrice = maxFeePerGas;
         } else {
-          gasSettings = { maxFeePerGas, maxPriorityFeePerGas: priorityFee };
+          const feeData = await this.provider.getFeeData();
+          const fetchedPrice = feeData.gasPrice || ethers.utils.parseUnits('30', 'gwei');
+          // Ensure minimum 5 gwei on Base
+          const minPrice = ethers.utils.parseUnits('5', 'gwei');
+          gasPrice = fetchedPrice.lt(minPrice) ? minPrice : fetchedPrice;
         }
 
         // Estimate gas if not provided
@@ -93,7 +93,7 @@ class WalletManager {
 
         const tx = {
           ...txParams,
-          ...gasSettings,
+          gasPrice: gasPrice,
           gasLimit: gas,
           nonce: await this.getNonce(),
           chainId: (await this.provider.getNetwork()).chainId

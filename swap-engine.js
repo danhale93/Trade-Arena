@@ -80,17 +80,17 @@ class SwapEngine {
     this.contracts.uniswapV2 = new ethers.Contract(
       DEX_CONFIG.UNISWAP_V2.router,
       ABIS.UNISWAP_V2_ROUTER,
-      this.provider
+      this.wallet.wallet
     );
 
     // Uniswap V3 Router
     this.contracts.uniswapV3 = new ethers.Contract(
       DEX_CONFIG.UNISWAP_V3.router,
       ABIS.UNISWAP_V3_ROUTER,
-      this.provider
+      this.wallet.wallet
     );
 
-    // Uniswap V3 Quoter
+    // Uniswap V3 Quoter (read-only)
     this.contracts.uniswapV3Quoter = new ethers.Contract(
       DEX_CONFIG.UNISWAP_V3.quoter,
       ABIS.UNISWAP_V3_QUOTER,
@@ -101,7 +101,7 @@ class SwapEngine {
     this.contracts.sushiSwap = new ethers.Contract(
       DEX_CONFIG.SUSHISWAP.router,
       ABIS.UNISWAP_V2_ROUTER,
-      this.provider
+      this.wallet.wallet
     );
   }
 
@@ -150,13 +150,12 @@ class SwapEngine {
     }
 
     console.log(`🔓 Approving ${spender} to spend tokens...`);
-    const token = this.getTokenContract(tokenAddress);
-    const contractWithSigner = token.connect(this.wallet.wallet);
+    const token = new ethers.Contract(tokenAddress, ABIS.ERC20, this.wallet.wallet);
 
     // Approve max uint256
-    const tx = await this.wallet.executeTransaction({
+    const tx = await this.walletManager.executeTransaction({
       to: tokenAddress,
-      data: contractWithSigner.interface.encodeFunctionData('approve', [
+      data: token.interface.encodeFunctionData('approve', [
         spender,
         ethers.constants.MaxUint256
       ])
@@ -283,11 +282,26 @@ class SwapEngine {
       };
     } else {
       // Uniswap V2 / SushiSwap
+      let contract;
+      if (dex === 'SUSHISWAP') {
+        contract = this.contracts.sushiSwap;
+      } else {
+        contract = this.contracts[dex.toLowerCase()] || this.contracts.uniswapV2;
+      }
+      
+      // Get token decimals for correct conversion
+      const tokenInInfo = await this.getTokenInfo(tokenIn);
+      const tokenOutInfo = await this.getTokenInfo(tokenOut);
+      const amountInWei = ethers.utils.parseUnits(amountIn.toString(), tokenInInfo.decimals);
+      // Round minAmountOut to token decimals to avoid parseFixed underflow
+      const minOutRounded = parseFloat(minAmountOut.toFixed(tokenOutInfo.decimals));
+      const minOutWei = ethers.utils.parseUnits(minOutRounded.toString(), tokenOutInfo.decimals);
+      
       txData = {
         to: dexConfig.router,
-        data: this.contracts[dex.toLowerCase()].interface.encodeFunctionData('swapExactTokensForTokens', [
-          amountInStr,
-          ethers.utils.parseUnits(minAmountOut.toString(), 18),
+        data: contract.interface.encodeFunctionData('swapExactTokensForTokens', [
+          amountInWei,
+          minOutWei,
           [tokenIn, tokenOut],
           recipient,
           deadline
@@ -330,7 +344,8 @@ class SwapEngine {
 
       const tokenOutInfo = await this.getTokenInfo(tokenOut);
       const expectedOut = parseFloat(ethers.utils.formatUnits(route.amountOut, tokenOutInfo.decimals));
-      const minOut = expectedOut * (1 - slippage / 100);
+      // Round to token decimals to avoid overflow errors
+      const minOut = parseFloat(expectedOut.toFixed(tokenOutInfo.decimals)) * (1 - slippage / 100);
 
       console.log(`📊 Route: ${route.dex}, Expected out: ${expectedOut.toFixed(6)} ${tokenOutInfo.symbol}`);
 
