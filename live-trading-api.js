@@ -85,15 +85,24 @@ class LiveTradingAPI {
 
     try {
       // Get token info
-      const tokenInInfo = await this.tokenDiscovery.getToken(tokenIn);
-      const tokenOutInfo = await this.tokenDiscovery.getToken(tokenOut);
+      let tokenInInfo = await this.tokenDiscovery.getToken(tokenIn);
+      let tokenOutInfo = await this.tokenDiscovery.getToken(tokenOut);
+
+      // Handle native ETH (convert to WETH address for trading)
+      if (tokenIn?.toUpperCase() === 'ETH' || tokenIn?.toLowerCase() === 'eth') {
+        tokenInInfo = { ...KNOWN_TOKENS.WETH, isNative: true };
+      }
+      if (tokenOut?.toUpperCase() === 'ETH' || tokenOut?.toLowerCase() === 'eth') {
+        tokenOutInfo = { ...KNOWN_TOKENS.WETH };
+      }
 
       if (!tokenInInfo || !tokenOutInfo) {
         throw new Error('Token not found');
       }
 
-      // Convert amount to wei
-      const amountInWei = ethers.utils.parseUnits(amountIn.toString(), tokenInInfo.decimals);
+      // Convert amount to wei (handle both string and number)
+      const amountNum = typeof amountIn === 'string' ? parseFloat(amountIn) : amountIn;
+      const amountInWei = ethers.utils.parseEther(amountNum.toString());
 
       // Get best route from all DEXes
       const routes = await this._getAllRoutes(tokenInInfo.address, tokenOutInfo.address, amountInWei);
@@ -138,36 +147,91 @@ class LiveTradingAPI {
     const routes = [];
 
     try {
-      // Uniswap V3
-      const v3Routes = await this._getUniswapV3Route(tokenIn, tokenOut, amountIn);
-      if (v3Routes) routes.push(...v3Routes);
-    } catch (e) {}
-
-    try {
-      // Uniswap V2
-      const v2Route = await this.swapEngine.getBestRoute(tokenIn, tokenOut, amountIn, 'UNISWAP_V2');
+      // Uniswap V2 (most reliable for basic swaps)
+      const v2Route = await this._getUniswapV2Route(tokenIn, tokenOut, amountIn);
       if (v2Route) routes.push(v2Route);
-    } catch (e) {}
+    } catch (e) {
+      console.log('V2 route error:', e.message.substring(0, 100));
+    }
 
     try {
       // SushiSwap
-      const sushiRoute = await this.swapEngine.getBestRoute(tokenIn, tokenOut, amountIn, 'SUSHISWAP');
+      const sushiRoute = await this._getSushiSwapRoute(tokenIn, tokenOut, amountIn);
       if (sushiRoute) routes.push(sushiRoute);
-    } catch (e) {}
+    } catch (e) {
+      console.log('SushiSwap route error:', e.message.substring(0, 100));
+    }
+
+    try {
+      // Uniswap V3 (try all fee tiers)
+      const v3Routes = await this._getUniswapV3Route(tokenIn, tokenOut, amountIn);
+      if (v3Routes && v3Routes.length > 0) routes.push(...v3Routes);
+    } catch (e) {
+      console.log('V3 route error:', e.message.substring(0, 100));
+    }
 
     // Sort by best output
-    routes.sort((a, b) => b.amountOut.sub(a.amountOut));
+    if (routes.length > 0) {
+      routes.sort((a, b) => b.amountOut.sub(a.amountOut));
+    }
     return routes;
+  }
+
+  // Get Uniswap V2 route
+  async _getUniswapV2Route(tokenIn, tokenOut, amountIn) {
+    const ROUTER = '0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24';
+    const abi = ['function getAmountsOut(uint amountIn, address[] memory path) external view returns (uint[] memory amounts)'];
+    const router = new ethers.Contract(ROUTER, abi, this.provider);
+    
+    const path = [tokenIn, tokenOut];
+    const amounts = await router.getAmountsOut(amountIn, path);
+    
+    if (amounts && amounts.length > 1 && amounts[1].gt(0)) {
+      return {
+        dex: 'Uniswap V2',
+        dexKey: 'UNISWAP_V2',
+        amountOut: amounts[1],
+        path,
+        gasEstimate: 130000
+      };
+    }
+    return null;
+  }
+
+  // Get SushiSwap route
+  async _getSushiSwapRoute(tokenIn, tokenOut, amountIn) {
+    const ROUTER = '0x6BDED42c6DA8FBf0d2bA55B2fa120C5e0c8D7891';
+    const abi = ['function getAmountsOut(uint amountIn, address[] memory path) external view returns (uint[] memory amounts)'];
+    const router = new ethers.Contract(ROUTER, abi, this.provider);
+    
+    const path = [tokenIn, tokenOut];
+    const amounts = await router.getAmountsOut(amountIn, path);
+    
+    if (amounts && amounts.length > 1 && amounts[1].gt(0)) {
+      return {
+        dex: 'SushiSwap',
+        dexKey: 'SUSHISWAP',
+        amountOut: amounts[1],
+        path,
+        gasEstimate: 140000
+      };
+    }
+    return null;
   }
 
   // Get Uniswap V3 route
   async _getUniswapV3Route(tokenIn, tokenOut, amountIn) {
+    const QUOTER = '0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a';
     const fees = [500, 3000, 10000];
     const routes = [];
 
+    // Use simpler ABI
+    const abi = ['function quoteExactInputSingle(address, address, uint24, uint256, uint160) external returns (uint256)'];
+    const quoter = new ethers.Contract(QUOTER, abi, this.provider);
+
     for (const fee of fees) {
       try {
-        const quote = await this.swapEngine.contracts.uniswapV3Quoter.callStatic.quoteExactInputSingle(
+        const quote = await quoter.callStatic.quoteExactInputSingle(
           tokenIn,
           tokenOut,
           fee,
@@ -183,6 +247,7 @@ class LiveTradingAPI {
             fee,
             gasEstimate: 150000
           });
+          break; // Take the first successful quote
         }
       } catch (e) {
         // Try next fee
@@ -194,9 +259,12 @@ class LiveTradingAPI {
 
   // Estimate price impact
   _estimatePriceImpact(amountIn, amountOut, tokenIn, tokenOut) {
-    // Simplified price impact calculation
-    const valueIn = parseFloat(ethers.utils.formatUnits(amountIn, tokenIn.decimals));
-    const valueOut = parseFloat(ethers.utils.formatUnits(amountOut, tokenOut.decimals));
+    // Handle both string/number amountIn and BigNumber amountOut
+    const valueIn = typeof amountIn === 'string' || typeof amountIn === 'number' 
+      ? parseFloat(amountIn.toString()) 
+      : parseFloat(ethers.utils.formatUnits(amountIn, tokenIn.decimals || 18));
+    
+    const valueOut = ethers.utils.formatUnits(amountOut, tokenOut.decimals || 6);
     
     // Assume 1:1 pricing for stablecoins, real pricing for others
     let expectedRate = 1;
@@ -313,6 +381,55 @@ class LiveTradingAPI {
   // Get trade history
   getTradeHistory(limit = 50) {
     return this.tradeHistory.slice(-limit);
+  }
+
+  // Wrap ETH to WETH
+  async wrapETH(amountETH) {
+    try {
+      const WETH = '0x4200000000000000000000000000000000000006';
+      const amountWei = ethers.utils.parseEther(amountETH.toString());
+      
+      const tx = await this.walletManager.executeTransaction({
+        to: WETH,
+        data: '0xd0e30db0', // deposit()
+        value: amountWei
+      });
+
+      return {
+        success: true,
+        action: 'wrap',
+        amountETH,
+        amountWei: amountWei.toString(),
+        hash: tx.hash,
+        message: `Wrapped ${amountETH} ETH to WETH`
+      };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Unwrap WETH to ETH
+  async unwrapWETH(amountETH) {
+    try {
+      const WETH = '0x4200000000000000000000000000000000000006';
+      const amountWei = ethers.utils.parseEther(amountETH.toString());
+      
+      const tx = await this.walletManager.executeTransaction({
+        to: WETH,
+        data: '0x2e1a7d4d' + ethers.utils.defaultAbiCoder.encode(['uint256'], [amountWei]).slice(2)
+      });
+
+      return {
+        success: true,
+        action: 'unwrap',
+        amountETH,
+        amountWei: amountWei.toString(),
+        hash: tx.hash,
+        message: `Unwrapped ${amountETH} WETH to ETH`
+      };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
   }
 
   // Check order status

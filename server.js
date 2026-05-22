@@ -1144,6 +1144,7 @@ app.post('/api/live/quote', async (req, res) => {
         const quote = await liveTradingAPI.getQuote({ tokenIn, tokenOut, amountIn });
         res.json(quote);
     } catch (error) {
+        console.error('Quote error:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });
@@ -1224,11 +1225,49 @@ app.get('/api/live/order/:orderId', async (req, res) => {
 });
 
 /**
- * GET /api/live/known-tokens - Get list of known tokens
+ * POST /api/live/wrap - Wrap ETH to WETH
  */
-app.get('/api/live/known-tokens', (req, res) => {
-    const tokens = Object.values(KNOWN_TOKENS);
-    res.json({ success: true, tokens });
+app.post('/api/live/wrap', async (req, res) => {
+    if (!liveTradingAPI) {
+        return jsonError(res, 400, 'NOT_INITIALIZED', 'Live trading not initialized');
+    }
+
+    try {
+        const { amount } = req.body;
+
+        if (!amount || parseFloat(amount) <= 0) {
+            return jsonError(res, 400, 'INVALID_AMOUNT', 'Amount must be greater than 0');
+        }
+
+        const result = await liveTradingAPI.wrapETH(parseFloat(amount));
+        res.json(result);
+    } catch (error) {
+        console.error('Wrap error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+/**
+ * POST /api/live/unwrap - Unwrap WETH to ETH
+ */
+app.post('/api/live/unwrap', async (req, res) => {
+    if (!liveTradingAPI) {
+        return jsonError(res, 400, 'NOT_INITIALIZED', 'Live trading not initialized');
+    }
+
+    try {
+        const { amount } = req.body;
+
+        if (!amount || parseFloat(amount) <= 0) {
+            return jsonError(res, 400, 'INVALID_AMOUNT', 'Amount must be greater than 0');
+        }
+
+        const result = await liveTradingAPI.unwrapWETH(parseFloat(amount));
+        res.json(result);
+    } catch (error) {
+        console.error('Unwrap error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
 });
 
 /**

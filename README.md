@@ -69,3 +69,5 @@ See `AGENT_CODE_EDITING_GUIDE.md` for details.
 - `TRADE_ISSUES_DIAGNOSTIC.md` — Diagnostic guide for trade issues
 - `DOCUMENTATION_INDEX.md` — Full documentation index
 - `TODO.md` — Active development tasks
+---
+_Deployed by GitHub Actions on Fri May 22 00:29:47 UTC 2026_
