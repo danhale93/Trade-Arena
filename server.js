@@ -36,6 +36,24 @@ const DEX_ABI = [
     'function swapExactTokensForTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts)'
 ];
 
+/** Deployment queue for confirmed deposits */
+const deploymentEvents = [];
+
+function queueBotDeployment(deposit) {
+    const event = {
+        id: generateId(),
+        type: 'BOT_DEPLOYMENT_TRIGGERED',
+        status: 'QUEUED',
+        source: 'moonpay',
+        created: Date.now(),
+        deposit
+    };
+
+    deploymentEvents.unshift(event);
+    if (deploymentEvents.length > 50) deploymentEvents.pop();
+    return event;
+}
+
 // Initialize provider
 const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
 
@@ -48,6 +66,66 @@ const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
  */
 app.get('/api/health', (req, res) => {
     res.json({ status: 'OK', timestamp: Date.now() });
+});
+
+/**
+ * GET /api/deployments - Recent deposit-triggered deployment events
+ */
+app.get('/api/deployments', (req, res) => {
+    res.json({
+        success: true,
+        deployments: deploymentEvents
+    });
+});
+
+/**
+ * POST /api/webhooks/moonpay/deposit - MoonPay deposit confirmation hook
+ */
+app.post('/api/webhooks/moonpay/deposit', (req, res) => {
+    try {
+        const signature = req.headers['x-moonpay-signature'];
+        const expectedSecret = process.env.MOONPAY_WEBHOOK_SECRET || '';
+
+        if (expectedSecret && signature !== expectedSecret) {
+            return res.status(401).json({ success: false, error: 'Invalid webhook signature' });
+        }
+
+        const payload = req.body || {};
+        const status = String(payload.status || payload.state || '').toLowerCase();
+        const amount = Number(payload.amount || payload.cryptoAmount || payload.fiatAmount || 0);
+        const currency = String(payload.currency || payload.cryptoCurrency || 'USDC').toUpperCase();
+        const destination = payload.walletAddress || payload.address || payload.destinationAddress || '';
+        const reference = payload.transactionId || payload.id || payload.reference || null;
+
+        const isConfirmed = ['completed', 'complete', 'confirmed', 'succeeded', 'success'].includes(status);
+
+        if (!isConfirmed) {
+            return res.json({
+                success: true,
+                received: true,
+                ignored: true,
+                reason: 'Deposit not confirmed yet'
+            });
+        }
+
+        const deployment = queueBotDeployment({
+            reference,
+            currency,
+            amount,
+            destination,
+            source: 'moonpay',
+            confirmedAt: Date.now()
+        });
+
+        res.json({
+            success: true,
+            received: true,
+            deployment,
+            message: 'Deposit confirmed and deployment queued'
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
 });
 
 /**
