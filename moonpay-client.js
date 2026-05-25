@@ -9,8 +9,8 @@
  */
 
 const MOONPAY_CONFIG = {
-    // TODO: Replace with your actual MoonPay API key
-    apiKey: 'YOUR_MOONPAY_API_KEY',
+    // MoonPay test key for development
+    apiKey: 'pk_test_5rdSBYM23wRwK1L3icX9RqYdypJ6jGEC',
     // TODO: Replace with your secret key for webhooks
     secretKey: 'YOUR_MOONPAY_SECRET_KEY',
     // Base mainnet

@@ -99,7 +99,7 @@ function openMoonpay() {
         } else {
             showToast('Opening MoonPay...', 'info');
             // Open MoonPay in new window
-            window.open('https://buy.moonpay.com?apiKey=pk_live_123456789', '_blank');
+window.open('https://buy.moonpay.com?apiKey=pk_test_5rdSBYM23wRwK1L3icX9RqYdypJ6jGEC', '_blank');
         }
     } catch (error) {
         console.error('MoonPay error:', error);

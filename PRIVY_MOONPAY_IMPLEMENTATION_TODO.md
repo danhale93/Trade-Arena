@@ -1,6 +1,6 @@
 # Privy + MoonPay Implementation TODO
 
-## Status: ✅ COMPLETED
+## Status: ✅ COMPLETED (TESTING WITH MOONPAY TEST KEY)
 
 ## Implementation Phases
 
@@ -66,13 +66,15 @@ const PRIVY_CONFIG = {
 };
 ```
 
-### MoonPay Config (placeholder):
+### MoonPay Config (Active - Test Key):
 ```javascript
 const MOONPAY_CONFIG = {
-  publishableKey: 'pk_live_...',
-  environment: 'production'
+  apiKey: 'pk_test_5rdSBYM23wRwK1L3icX9RqYdypJ6jGEC', // MoonPay test key
+  environment: 'sandbox' // Use 'production' for live
 };
 ```
+
+> **NOTE:** Test key is active. Replace with live key for production deployment.
 
 ## Acceptance Criteria Status:
 1. ✅ User can sign in with Google/Apple without seeing any blockchain
