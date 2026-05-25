@@ -3,6 +3,43 @@
  * AI-Powered Market Analysis & Risk Management
  */
 
+// ACOUSTIC CORE: UI Update Functions
+function updateVaultDisplay(balance, startBalance = 10000) {
+    const vaultFill = document.getElementById('vaultFill');
+    const vaultBalance = document.getElementById('vaultBalance');
+    if (vaultFill) {
+        const fill = Math.min((balance / startBalance) * 100, 100);
+        vaultFill.style.height = fill + '%';
+    }
+    if (vaultBalance) vaultBalance.textContent = '$' + balance.toFixed(2);
+}
+
+function renderPadGrid() {
+    const grid = document.getElementById('padGrid');
+    if (!grid) return;
+    const bots = window.bots || tradingEngine.bots;
+    grid.innerHTML = bots.map((bot, i) => {
+        const agentId = String(i + 1).padStart(2, '0');
+        const pnl = parseFloat(bot.totalProfit || bot.pnl || 0);
+        const pnlClass = pnl >= 0 ? 'text-green-400' : 'text-red-400';
+        const padState = pnl > 0 ? 'pad-hit' : pnl < 0 ? 'pad-miss' : i < 3 ? 'pad-active' : '';
+        return `<div class="pad ${padState}" id="pad-${bot.id}">
+          <span class="pad-agent-id">AG-${agentId}</span>
+          <span class="pad-pnl ${pnlClass}">${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}</span>
+        </div>`;
+    }).join('');
+    const count = document.getElementById('matrixCount');
+    if (count) count.textContent = (bots.length || 0) + ' ACTIVE';
+}
+
+// Initialize on load
+window.addEventListener('load', () => {
+    setTimeout(() => {
+        updateVaultDisplay(10000, 10000);
+        renderPadGrid();
+    }, 500);
+});
+
 class TradingEngine {
     constructor() {
         this.bots = [];
@@ -292,7 +329,7 @@ class TradingEngine {
             profitPercent: 0
         };
 
-        try {
+try {
             // Simulate execution (in real app, would call smart contracts)
             trade.status = 'EXECUTED';
             trade.executedTime = Date.now();
@@ -306,6 +343,20 @@ class TradingEngine {
             trade.profitPercent = Number(((simulatedProfit / parseFloat(trade.size)) * 100).toFixed(2));
             trade.status = 'CLOSED';
             trade.closedTime = Date.now();
+            
+            // ACOUSTIC CORE: Play audio on trade close
+            if (typeof acousticAudio !== 'undefined') {
+                acousticAudio.init();
+                if (trade.profit > 0) acousticAudio.win(bot.id, trade.profit);
+                else acousticAudio.loss(bot.id);
+                // Check for global bell milestones
+                const totalProfit = this.bots.reduce((sum, b) => sum + (b.totalProfit || 0), 0);
+                acousticAudio.checkMilestones(totalProfit);
+                // Update vault display
+                if (typeof updateVaultDisplay === 'function') {
+                    updateVaultDisplay(10000 + totalProfit, 10000);
+                }
+            }
         } catch (e) {
             trade.status = 'FAILED';
             trade.error = e.message;
@@ -410,5 +461,75 @@ class TradingEngine {
     }
 }
 
-// Global instance
+// ACOUSTIC CORE - Audio Engine
+class AcousticCoreAudio {
+    constructor() {
+        this.ctx = null;
+        this.volume = 0.5;
+        this.muted = false;
+        this.initialized = false;
+        this.milestones = { lastBell: 0 };
+    }
+
+    init() {
+        if (this.initialized) return;
+        try {
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            this.initialized = true;
+        } catch(e) { console.warn('Audio not supported:', e); }
+    }
+
+    playTone(freq, duration, type = 'sine', vol = null) {
+        if (!this.ctx || this.muted) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+        const v = vol || this.volume;
+        gain.gain.setValueAtTime(v * 0.3, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + duration);
+    }
+
+    tradeOpen(botId) {
+        const pitch = 440 + (botId % 16) * 50;
+        this.playTone(pitch, 0.15, 'square', 0.2);
+        setTimeout(() => this.playTone(pitch * 1.5, 0.1, 'square', 0.15), 80);
+    }
+
+    win(botId, pnl) {
+        const pitch = 523 + (botId % 16) * 30;
+        this.playTone(pitch, 0.2, 'sine');
+        setTimeout(() => this.playTone(pitch * 1.25, 0.15, 'sine'), 100);
+        setTimeout(() => this.playTone(pitch * 1.5, 0.25, 'sine'), 200);
+    }
+
+    loss(botId) {
+        const pitch = 330 - (botId % 16) * 20;
+        this.playTone(pitch, 0.3, 'sawtooth', 0.25);
+        setTimeout(() => this.playTone(pitch * 0.7, 0.2, 'sawtooth', 0.2), 150);
+    }
+
+    bell() {
+        [880, 1100, 1300, 1500].forEach((f, i) => {
+            setTimeout(() => this.playTone(f, 0.15, 'sine', 0.3), i * 100);
+        });
+    }
+
+    checkMilestones(balance) {
+        if (this.muted || !this.ctx) return;
+        const milestone = Math.floor(balance / 100);
+        const last = Math.floor(this.milestones.lastBell / 100);
+        if (milestone > last) { this.bell(); this.milestones.lastBell = balance; }
+    }
+
+    toggleMute() { this.muted = !this.muted; return this.muted; }
+    setVolume(val) { this.volume = Math.max(0, Math.min(1, val)); }
+}
+
+// Global instances
 const tradingEngine = new TradingEngine();
+const acousticAudio = new AcousticCoreAudio();

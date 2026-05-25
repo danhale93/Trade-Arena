@@ -17,6 +17,9 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
+// Serve static files from root directory
+app.use(express.static(__dirname));
+
 // Configuration
 const RPC_URL = 'https://mainnet.base.org'; // Base network RPC
 const AAVE_FLASH_LOAN_ADDRESS = '0x794a61358D6845594F94dc1DB02A252b5b4814aD'; // Base Aave

@@ -1,10 +1,10 @@
-/';.<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>TRADE ARENA — AI TRADING FLOOR</title>
-<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Bungee+Shade&family=Share+Tech+Mono&family=Oswald:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Bungee+Shade&family=JetBrains+Mono:wght@400;700&family=Oswald:wght@400;700&family=Share+Tech+Mono&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" defer></script>
 <script src="https://accounts.google.com/gsi/client" async></script>
 <style>
@@ -42,8 +42,17 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 .g-icon{width:20px;height:20px;flex-shrink:0}
 .mm-btn{width:100%;padding:12px 18px;display:flex;align-items:center;justify-content:center;gap:10px;background:linear-gradient(135deg,#f6851b,#e2761b);border:none;border-radius:8px;cursor:pointer;font-family:'Bungee',display;font-size:13px;letter-spacing:2px;color:#fff;box-shadow:0 2px 12px rgba(246,133,27,.3);transition:all .15s}
 .mm-btn:hover{box-shadow:0 4px 20px rgba(246,133,27,.6)}
+.cb-btn{width:100%;padding:12px 18px;display:flex;align-items:center;justify-content:center;gap:10px;background:linear-gradient(135deg,#0052FF,#0044CC);border:none;border-radius:8px;cursor:pointer;font-family:'Bungee',display;font-size:13px;letter-spacing:2px;color:#fff;box-shadow:0 2px 12px rgba(0,82,255,.3);transition:all .15s;margin-top:4px}
+.cb-btn:hover{box-shadow:0 4px 20px rgba(0,82,255,.6)}
 .demo-btn{width:100%;padding:10px;background:transparent;border:1px dashed var(--border);border-radius:8px;cursor:pointer;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--dim);transition:all .15s}
 .demo-btn:hover{border-color:var(--cyan);color:var(--cyan);background:rgba(0,255,231,.04)}
+/* OSKO On/Off Ramp Buttons */
+.onramp-btn,.offramp-btn{width:48%;padding:10px;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;border:none;border-radius:6px;cursor:pointer;transition:all .15s}
+.onramp-btn{background:linear-gradient(135deg,#00d4ff,#0099ff);color:#fff}
+.onramp-btn:hover{box-shadow:0 0 16px rgba(0,212,255,.5)}
+.offramp-btn{background:linear-gradient(135deg,#00ff9d,#00cc7a);color:#000}
+.offramp-btn:hover{box-shadow:0 0 16px rgba(0,255,157,.5)}
+.fiat-ramp-row{display:flex;gap:8px;margin-top:4px}
 .divider{display:flex;align-items:center;gap:8px;font-size:10px;color:var(--dim)}
 .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
 #cStatus{font-size:11px;color:var(--cyan);text-align:center;min-height:14px}
@@ -213,7 +222,42 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 .global-kill-btn{width:100%;padding:8px;font-family:'Bungee',display;font-size:12px;letter-spacing:2px;background:linear-gradient(180deg,#c00030,#7a001e);border:none;border-radius:6px;color:#fff;cursor:pointer;box-shadow:0 2px 0 #400010,0 0 16px rgba(255,0,48,.4);transition:all .1s;margin-top:4px}
 .global-kill-btn:hover{box-shadow:0 2px 0 #400010,0 0 28px rgba(255,0,48,.7)}
 
-/* BOT GRID */
+/* THE VAULT - Acoustic Core Balance Display */
+/* Pot of Gold visual */
+.vault-pot{display:flex;align-items:flex-end;justify-content:center;gap:4px;margin-bottom:8px;min-height:36px}
+.vault-coin{width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#ffd700,#b8860b);box-shadow:inset -2px -2px 4px rgba(0,0,0,.3),0 0 6px rgba(255,215,0,.4);position:relative}
+.vault-coin::after{content:'$';font-size:9px;font-weight:700;color:#704200;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
+/* Rainbow */
+.vault-rainbow{position:absolute;top:-50px;left:-10%;width:120%;height:60px;opacity:.12;pointer-events:none;background:linear-gradient(90deg,red,orange,yellow,green,blue,indigo,violet);border-radius:50%;filter:blur(15px)}
+.vault-hero{background:linear-gradient(180deg,#1a0d00,#050508);border:2px solid var(--gold);border-radius:16px;padding:16px;margin-bottom:12px;position:relative;overflow:hidden}
+.vault-label{font-size:9px;color:var(--gold);letter-spacing:3px;text-transform:uppercase;margin-bottom:8px}
+.vault-container{height:120px;background:rgba(0,0,0,.4);border-radius:12px;position:relative;overflow:hidden}
+.vault-fill{position:absolute;bottom:0;left:0;right:0;height:0%;background:linear-gradient(180deg,#fbbf24,#ff8c00);transition:height .8s cubic-bezier(.34,1.56,.64,1)}
+.vault-hero.live-mode .vault-fill{background:linear-gradient(180deg,#ff2d78,#ff0044)}
+.vault-balance-display{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.vault-balance{font-family:'Bungee',display;font-size:28px;color:#fff;text-shadow:0 2px 20px rgba(251,191,36,.5)}
+.vault-label-small{font-size:8px;color:var(--dim);letter-spacing:2px;display:block;margin-top:2px}
+
+
+/* AGENT/MACHINE MATRIX - Pad Grid */
+.matrix-section{margin-bottom:12px}
+.matrix-header{display:flex;justify-content:space-between;font-size:9px;color:var(--dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}
+.matrix-count{color:var(--cyan)}
+.pad-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-top:8px}
+.pad{background:var(--chrome);border:1px solid var(--border);border-radius:8px;padding:8px 4px;text-align:center;transition:all .3s ease;min-height:52px;cursor:pointer}
+.pad:hover{border-color:var(--cyan)}
+.pad-agent-id{font-size:8px;color:var(--dim);display:block}
+.pad-pnl{font-family:'Bungee',display;font-size:10px;display:block;margin-top:2px;color:#fff}
+.pad-active{border-color:var(--cyan);box-shadow:0 0 12px rgba(0,255,231,.4);animation:padPulse 1s ease infinite}
+.pad-hit{border-color:var(--green);box-shadow:0 0 8px rgba(57,255,20,.3);background:rgba(57,255,20,.08)}
+.pad-hit .pad-pnl{color:var(--green)}
+.pad-miss{border-color:rgba(255,45,120,.3);opacity:.6;background:rgba(255,45,120,.04)}
+.pad-miss .pad-pnl{color:#ff2d78}
+@keyframes padPulse{0%,100%{box-shadow:0 0 12px rgba(0,255,231,.4)}50%{box-shadow:0 0 20px rgba(0,255,231,.7)}}
+@media(max-width:640px){.pad-grid{grid-template-columns:repeat(4,1fr)} .vault-balance{font-size:22px}}
+@media(min-width:641px) and (max-width:900px){.pad-grid{grid-template-columns:repeat(6,1fr)}}
+
+/*BOT GRID*/
 .bot-grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(285px,1fr))}
 
 /* ══ MACHINE ══ */
@@ -538,12 +582,20 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         SIGN IN WITH GOOGLE
       </button>
       <div class="divider">— or —</div>
-      <button class="mm-btn" onclick="loginMetaMask()">
+<button class="mm-btn" onclick="loginMetaMask()">
         <svg width="20" height="20" viewBox="0 0 318 318"><path d="M274 35L174 109l19-44z" fill="#E17726"/><path d="M44 35l99 75-18-44z" fill="#E27625"/><path d="M234 218l-27 41 58 16 17-56z" fill="#E27625"/><path d="M36 219l17 56 57-16-26-41z" fill="#E27625"/><path d="M107 143l-17 25 60 3-2-64z" fill="#E27625"/><path d="M211 143l-42-37-2 64 60-3z" fill="#E27625"/></svg>
-        METAMASK / WALLET
+        METAMASK
+      </button>
+      <button class="cb-btn" onclick="loginCoinbase()">
+        <svg width="20" height="20" viewBox="0 0 48 48"><circle cx="24" cy="24" r="24" fill="#0052FF"/><path d="M24 12c-1.5 0-2.7.9-3.3 2.2l-4.3-2.6c.8-1.9 2.6-3.1 4.7-3.1 2.9 0 5.2 2.3 5.2 5.2s-2.3 5.2-5.2 5.2c-1.5 0-2.8-.6-3.8-1.6l-4.1 2.5c1.7 1.8 4.1 2.9 6.8 2.9 4.4 0 8-3.6 8-8s-3.6-8-8-8zm-1.1 10c2.5 0 4.5-2 4.5-4.5s-2-4.5-4.5-4.5-4.5 2-4.5 4.5 2 4.5 4.5 4.5z" fill="#fff"/></svg>
+        COINBASE
       </button>
       <div class="divider">— or —</div>
-      <button class="demo-btn" onclick="loginDemo()">🎮 ENTER DEMO MODE — NO SETUP NEEDED</button>
+<button class="demo-btn" onclick="loginDemo()">🎮 ENTER DEMO MODE — NO SETUP NEEDED</button>
+            <div class="fiat-ramp-row">
+              <button class="onramp-btn" onclick="openOskoRamp('onramp')">OSKO BUY</button>
+              <button class="offramp-btn" onclick="openOskoRamp('offramp')">OSKO SELL</button>
+            </div>
     </div>
   </div>
   <p id="cStatus" style="min-height:16px;font-size:11px;color:var(--cyan);text-align:center;transition:all .3s"></p>
@@ -562,7 +614,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     <div class="gh-avatar" id="ghAvatar">👤</div>
     <div style="flex:1;overflow:hidden;min-width:60px">
       <div class="gh-name" id="ghName">—</div>
-      <span style="font-size:9px;padding:1px 6px;border-radius:10px;background:var(--chrome);border:1px solid var(--border);color:var(--dim)" id="ghBadge">DEMO</span>
+<span style="font-size:9px;padding:1px 6px;border-radius:10px;background:var(--chrome);border:1px solid var(--border);color:var(--dim)" id="ghBadge">DEMO</span>
+      <span style="font-size:8px;padding:1px 5px;border-radius:8px;background:rgba(0,255,231,.08);border:1px solid rgba(0,255,231,.2);color:var(--cyan);display:none" id="ghNetwork">BASE</span>
     </div>
     <div style="margin-right:4px;text-align:right;flex-shrink:0">
       <div class="gh-balance" id="ghBalance" style="transition:color .3s">$10,000.00</div>
@@ -915,6 +968,28 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         <tr id="cd-row-2"><td>Another streak</td><td>24 hrs — manual reset</td><td>Something is wrong</td></tr>
       </table>
       <button class="global-kill-btn" id="killBtn" onclick="globalKill()">🔴 EMERGENCY STOP ALL BOTS</button>
+    </div>
+  </div>
+
+<!-- AGENT/MACHINE MATRIX - Pad Grid -->
+  <div class="matrix-section">
+    <div class="matrix-header">
+      <span>AGENT/MACHINE MATRIX</span>
+      <span class="matrix-count" id="matrixCount">0 ACTIVE</span>
+    </div>
+    <div class="pad-grid" id="padGrid">
+      <!-- Pads render dynamically when bots are added -->
+    </div>
+  </div>
+
+<!-- AGENT/MACHINE MATRIX - Pad Grid -->
+  <div class="matrix-section">
+    <div class="matrix-header">
+      <span>AGENT/MACHINE MATRIX</span>
+      <span class="matrix-count" id="matrixCount">0 ACTIVE</span>
+    </div>
+    <div class="pad-grid" id="padGrid">
+      <!-- Pads render dynamically when bots are added -->
     </div>
   </div>
 
@@ -2071,7 +2146,48 @@ async function loginMetaMask(){
 
 function loginDemo(){
   try{ setupApp({name:'DEMO PLAYER', avatar:null, badge:'🎮 DEMO'}); }
-  catch(e){ const s=document.getElementById('cStatus'); if(s) s.textContent='❌ '+e.message; console.error('Demo error:',e); }
+catch(e){ const s=document.getElementById('cStatus'); if(s) s.textContent='❌ '+e.message; console.error('Demo error:',e); }
+}
+
+// Coinbase Wallet login - checks for window.coinbaseWalletExtension
+async function loginCoinbase(){
+  const s=document.getElementById('cStatus'); if(!s) return;
+  try{
+    if(window.coinbaseWalletExtension){
+      const a=await window.coinbaseWalletExtension.request({method:'eth_requestAccounts'});
+      if(a&&a[0]){
+        w=window.coinbaseWalletExtension;walletAddress=a[0];
+        s.innerHTML=`🔗 <a href="${etherscanBase}${walletAddress}" target="_blank" style="color:var(--accent)">${walletAddress.slice(0,6)}...${walletAddress.slice(-4)}</a><br>✅ Coinbase Wallet connected!`;
+        if(p) p.classList.add('live');return;
+      }
+    }else{s.innerHTML='⚠️ Coinbase Wallet not found.<br><a href="https://www.coinbase.com/wallet" target="_blank" style="color:var(--hot)">Install Coinbase Wallet</a>';}
+  }catch(e){s.innerHTML='❌ '+e.message;console.error('Coinbase error:',e);}
+}
+
+// OSKO Fiat On/Off Ramp Functions
+function openOskoRamp(type) {
+  const s = document.getElementById('cStatus');
+  if(!s) return;
+  
+  // Determine URL based on ramp type
+  let url;
+  if(type === 'onramp') {
+    // Buy ETH - opens Ramp's buy widget
+    url = 'https://buy.ramp.network/?ref=tradearena&swapAsset=ETH&fiatCurrency=USD';
+    s.innerHTML = '💳 Opening OSKO On-Ramp...<br><span style="font-size:9px;color:var(--dim)">Buy ETH with card, receive in connected wallet</span>';
+  } else {
+    // Sell - check if wallet connected first
+    if(!window.ethereum?.selectedAddress) {
+      s.innerHTML = '⚠️ Connect wallet first to sell.<br><button onclick="loginMetaMask()" style="margin-top:8px;padding:6px 12px;background:var(--hot);border:none;border-radius:4px;color:#fff;cursor:pointer">CONNECT WALLET</button>';
+      return;
+    }
+    // Sell - opens Ramp's sell widget
+    url = `https://sell.ramp.network/?ref=tradearena&cryptoAsset=ETH&walletAddress=${window.ethereum.selectedAddress}`;
+    s.innerHTML = '💵 Opening OSKO Off-Ramp...<br><span style="font-size:9px;color:var(--dim)">Sell ETH, receive USD to bank</span>';
+  }
+  
+  // Open in new tab
+  window.open(url, '_blank');
 }
 
 function setupApp({name,avatar,badge}){
