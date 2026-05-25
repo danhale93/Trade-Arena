@@ -610,10 +610,17 @@ function initAppRebuildV42() {
 
   console.log('%c🚀 TRADE ARENA v4.2 INITIALIZING...', 'color: #39ff14; font-weight: bold; font-size: 14px;');
 
-  // Initialize all subsystems
+// Initialize all subsystems
   balanceUpdater = new BalanceUpdater();
   autoRecovery = new AutoRecovery();
   realMarketPricing = new RealMarketPricing();
+
+  // ACOUSTIC Audio-Visual System
+  if (typeof ACOUSTICCore !== 'undefined') {
+    window.ACOUSTIC = new ACOUSTICCore();
+    window.ACOUSTIC.init();
+    console.log('%c→ ACOUSTIC Audio-Visual System ONLINE', 'color: #ff00ff;');
+  }
 
   // Auto-save game state every 30 seconds
   setInterval(() => {
@@ -647,6 +654,15 @@ if (document.readyState === 'loading') {
 // ══════════════════════════════════════════════════════
 
 window.TradeArenaApp = {
+  // ACOUSTIC Audio-Visual Control
+  ACOUSTIC: {
+    getInstance: () => window.ACOUSTIC,
+    toggle: () => window.ACOUSTIC ? window.ACOUSTIC.toggle() : null,
+    setVolume: (vol) => window.ACOUSTIC ? window.ACOUSTIC.setVolume(vol) : null,
+    playEvent: (event) => window.ACOUSTIC ? window.ACOUSTIC.playEvent(event) : null,
+    isEnabled: () => window.ACOUSTIC ? window.ACOUSTIC.isEnabled : false
+  },
+
   // Global auto control (replaces master switch)
   toggleMaster: () => { if (typeof globalAutoToggle === 'function') globalAutoToggle(); },
   enableAllBots: () => { if (!_ghAutoOn && typeof globalAutoToggle === 'function') globalAutoToggle(); },
