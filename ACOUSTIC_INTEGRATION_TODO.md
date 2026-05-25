@@ -1,4 +1,4 @@
-# ACOUSTIC Integration TODO
+ # ACOUSTIC Integration TODO
 
 ## Completed Steps
 - [x] Add script tags to index.html (sfx-engine.js, fx-engine.js, voice-engine.js, audio-engine.js, ACOUSTIC_CORE.js)

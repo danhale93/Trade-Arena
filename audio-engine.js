@@ -17,10 +17,19 @@ class AudioEngine {
     this.initialized = false;
   }
 
-  async init() {
-    if (this.initialized) return;
+async init() {
+    // Return promise if already initialized
+    if (this.initialized) {
+      return Promise.resolve();
+    }
     
-    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    // Create audio context (requires user interaction in modern browsers)
+    try {
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    } catch (e) {
+      console.error('[AudioEngine] Failed to create AudioContext:', e);
+      return Promise.reject(e);
+    }
     this.masterGain = this.ctx.createGain();
     this.masterGain.gain.value = 0.7;
     this.masterGain.connect(this.ctx.destination);
@@ -71,6 +80,7 @@ class AudioEngine {
     }
     
     this.initialized = true;
+    return Promise.resolve();
   }
 
   createReverbImpulse() {
@@ -241,6 +251,18 @@ class AudioEngine {
   }
 }
 
-// Global instance
+// Global instance - create the AudioEngine instance
 window.AudioEngine = AudioEngine;
-window.audioEngine = null;
+window.audioEngine = new AudioEngine();
+
+// Auto-init on first user interaction (needed for modern browsers)
+document.addEventListener('click', function initAudioOnClick() {
+  if (window.audioEngine && !window.audioEngine.initialized) {
+    window.audioEngine.init().then(() => {
+      console.log('[AudioEngine] Ready');
+    }).catch(e => {
+      console.warn('[AudioEngine] Init failed:', e);
+    });
+  }
+  document.removeEventListener('click', initAudioOnClick);
+}, { once: true });
