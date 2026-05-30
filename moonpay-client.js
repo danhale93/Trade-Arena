@@ -1,4 +1,3 @@
-/**
  * MoonPay Fiat On-Ramp Integration
  * Converts fiat → USDC on Base without user seeing blockchain complexity
  * 
@@ -94,11 +93,19 @@ function moonpayBuyCrypto(walletAddress, amount) {
 
 /**
  * Open MoonPay widget with SDK
+ * @param {number} amount - Amount in USD
+ * @param {string} currency - Crypto currency (default: 'usdc')
  */
-function openMoonPayWidget(walletAddress, amount) {
+function openMoonPayWidget(amount, currency = 'usdc') {
+    const walletAddress = getPrivyAddress();
+    if (!walletAddress) {
+        console.error('[MoonPay] No wallet address');
+        showToast('Please sign in first', 'error');
+        return;
+    }
     const widget = new window.MoonPayWidget({
         apiKey: MOONPAY_CONFIG.apiKey,
-        currency: MOONPAY_CONFIG.cryptoCurrency,
+        currency: currency,
         network: MOONPAY_CONFIG.network,
         amount: amount,
         walletAddress: walletAddress,
@@ -111,7 +118,7 @@ function openMoonPayWidget(walletAddress, amount) {
     
     widget.on('complete', (transaction) => {
         console.log('[MoonPay] Transaction complete:', transaction);
-        onMoonPayDepositSuccess(transaction);
+        handleDepositSuccess(transaction);
     });
     
     widget.on('failed', (error) => {
@@ -180,10 +187,11 @@ function showPendingDeposit(walletAddress, amount) {
 /**
  * Handle successful deposit (called from webhook or callback)
  */
-function onMoonPayDepositSuccess(transaction) {
-    console.log('[MoonPay] Deposit success!', transaction);
+function handleDepositSuccess(walletAddress) {
+    console.log('[MoonPay] Deposit success!', { walletAddress });
     
-    const amount = transaction?.cryptoAmount || transaction?.amount || MOONPAY_CONFIG.defaultAmount;
+    // Get amount from pending deposit
+    const amount = pendingDeposit?.amount || MOONPAY_CONFIG.defaultAmount;
     
     // Clear pending
     pendingDeposit = null;
@@ -202,6 +210,25 @@ function onMoonPayDepositSuccess(transaction) {
     if (statusEl) {
         statusEl.innerHTML = `✅ ${amount} USDC ready to trade!`;
     }
+}
+
+/**
+ * Get fee breakdown for a given amount
+ * @param {number} amount - Deposit amount in USD
+ * @returns {Object} Fee breakdown
+ */
+function getFeeBreakdown(amount) {
+    const moonPayFee = amount * 0.035; // 3.5% average
+    const networkFee = MOONPAY_CONFIG.networkFee;
+    const total = amount + moonPayFee + networkFee;
+    
+    return {
+        baseAmount: amount,
+        moonPayFee: moonPayFee,
+        networkFee: networkFee,
+        total: total,
+        moonPayFeePercent: (moonPayFee / amount) * 100
+    };
 }
 
 /**
