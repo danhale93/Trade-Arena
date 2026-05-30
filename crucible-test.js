@@ -16,6 +16,14 @@ const CrucibleTest = {
   startTime: null,
   endTime: null,
   
+  // Regime classification data storage
+  priceHistory: {
+    closes: [],
+    highs: [],
+    lows: [],
+    timestamps: []
+  },
+  
   // Test configuration
   config: {
     paperBalance: 10000,      // Starting paper balance

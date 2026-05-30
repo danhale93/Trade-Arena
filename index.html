@@ -13,6 +13,35 @@
   --green:#39ff14;--amber:#ffb300;--blue:#4488ff;--purple:#bf5fff;
   --bg:#06030a;--panel:#0e0914;--chrome:#160f1e;--border:#241830;--dim:#6a5878;
 }
+/* Demo-first UI enhancements */
+.g-btn{
+  background:linear-gradient(135deg,#4285F4,#3367D6)!important;
+  color:white!important;
+  font-weight:bold!important;
+  box-shadow:0 4px 12px rgba(66,133,244,.4)!important;
+  border:none!important
+}
+.g-btn:hover{
+  transform:scale(1.03)!important;
+  box-shadow:0 6px 16px rgba(66,133,244,.6)!important
+}
+.demo-btn{
+  border-style:dotted!important;
+  opacity:0.7!important;
+  font-size:10px!important
+}
+.demo-btn:hover{
+  opacity:0.9!important;
+  background:rgba(0,255,231,.02)!important
+}
+#advancedSettings{display:none!important}
+.advanced-toggle{
+  display:block!important;
+  text-align:center!important;
+  margin-top:12px!important;
+  color:var(--dim)!important;
+  font-size:10px!important
+}
 *{box-sizing:border-box;margin:0;padding:0}
 html{overflow-y:auto;height:100%}
 body{background:var(--bg);font-family:'Share Tech Mono',monospace;color:#fff;min-height:100vh;
@@ -597,10 +626,21 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       </button>
       <div class="divider">— or —</div>
       <button class="demo-btn" onclick="loginDemo()">🎮 ENTER DEMO MODE — NO SETUP NEEDED</button>
+      <div class="advanced-toggle" onclick="document.getElementById('advancedSettings').style.display = 'block'; this.style.display = 'none';">
+        ⚙️ Advanced Settings
+      </div>
       <div class="fiat-ramp-row">
         <button class="onramp-btn" onclick="window.openMoonpay && window.openMoonpay()">💳 DEPOSIT USDC</button>
         <button class="offramp-btn" onclick="openOskoRamp('offramp')">💵 WITHDRAW</button>
       </div>
+    </div>
+    <!-- Advanced Settings (hidden by default) -->
+    <div id="advancedSettings" style="display:none;margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
+      <div class="divider">— Advanced Settings —</div>
+      <button class="mm-btn" onclick="loginMetaMask()" style="width:100%;">
+        <svg width="20" height="20" viewBox="0 0 318 318"><path d="M274 35L174 109l19-44z" fill="#E17726"/><path d="M44 35l99 75-18-44z" fill="#E27625"/><path d="M234 218l-27 41 58 16 17-56z" fill="#E27625"/><path d="M36 219l17 56 57-16-26-41z" fill="#E27625"/><path d="M107 143l-17 25 60 3-2-64z" fill="#E27625"/><path d="M211 143l-42-37-2 64 60-3z" fill="#E27625"/></svg>
+        METAMASK
+      </button>
     </div>
   </div>
   <p id="cStatus" style="min-height:16px;font-size:11px;color:var(--cyan);text-align:center;transition:all .3s"></p>
@@ -4352,5 +4392,11 @@ function _injectAVControls() {
 <script src="voice-engine.js" defer></script>
 <script src="audio-engine.js" defer></script>
 <script src="ACOUSTIC_CORE.js" defer></script>
+<script>
+// Auto-start demo mode on page load for demo-first experience
+document.addEventListener('DOMContentLoaded', function() {
+  loginDemo();
+});
+</script>
 </body>
 </html>

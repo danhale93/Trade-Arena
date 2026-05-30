@@ -41,21 +41,30 @@ window.addEventListener('load', () => {
 });
 
 class TradingEngine {
-    constructor() {
-        this.bots = [];
-        this.trades = [];
-        this.marketData = {};
-        this.opportunities = [];
-        this.activeSessions = new Map();
-    }
+     constructor() {
+         this.bots = [];
+         this.trades = [];
+         this.marketData = {};
+         this.opportunities = [];
+         this.activeSessions = new Map();
+         // Stablecoins to block from trading
+         this.stablecoins = ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'FRAX', 'USDP'];
+     }
+     
+     // Filter out stablecoins from trading pairs
+     filterStablecoins(pairs) {
+         return pairs.filter(pair => !this.stablecoins.includes(pair.token));
+     }
 
     /**
      * AI Market Analysis - Detect Arbitrage Opportunities
      */
     async detectArbitrageOpportunities(marketPairs) {
-        const opportunities = [];
-        
-        for (let pair of marketPairs) {
+        // Filter out stablecoins from trading
+        const filteredPairs = this.filterStablecoins(marketPairs);
+         const opportunities = [];
+         
+         for (let pair of filteredPairs) {
             try {
                 // Fetch from multiple DEX APIs
                 const dex1Price = await this.fetchPrice(pair.token, 'uniswap');
