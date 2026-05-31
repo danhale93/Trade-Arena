@@ -1872,30 +1872,34 @@ async function runCrucibleBatch() {
     crucibleCount = 0;
     updateCrucible();
     
-    // Run batch of trades
-    const startBalance = balance;
-    let tradesRun = 0;
-    
-    for(let i = 0; i < tradeCount && balance > 0; i++) {
-      // Pick a random bot that can trade
-      const availableBots = bots.filter(b => !b.spinning && !b.cooling && balance >= 0.10);
-      if(availableBots.length === 0) {
-        console.log(`Crucible: Stopped at ${tradesRun} trades (no available bots)`);
-        break;
-      }
-      
-      const bot = availableBots[Math.floor(Math.random() * availableBots.length)];
-      
-      // Use a default bet if none selected
-      if(!bot.bet || bot.bet < 0.10) bot.bet = 1.00;
-      
-      // Run the trade
-      await spinBot(bot.id);
-      tradesRun++;
-      
-      // Wait for trade to settle
-      await new Promise(r => setTimeout(r, 500 + Math.random() * 1000));
-    }
+     // Run batch of trades
+     const startBalance = balance;
+     let tradesRun = 0;
+     
+     for(let i = 0; i < tradeCount && balance > 0; i++) {
+       // Pick a random bot that can trade
+       const availableBots = bots.filter(b => !b.spinning && !b.cooling && balance >= 0.10);
+       if(availableBots.length === 0) {
+         console.log(`Crucible: Stopped at ${tradesRun} trades (no available bots)`);
+         break;
+       }
+       
+       const bot = availableBots[Math.floor(Math.random() * availableBots.length)];
+       
+       // Use a default bet if none selected
+       if(!bot.bet || bot.bet < 0.10) bot.bet = 1.00;
+       
+       // Run the trade
+       await spinBot(bot.id);
+       tradesRun++;
+       
+       // Update live progress
+       crucibleCount = tradesRun;
+       updateCrucible();
+       
+       // Wait for trade to settle
+       await new Promise(r => setTimeout(r, 500 + Math.random() * 1000));
+     }
     
     const endBalance = balance;
     const pnl = endBalance - startBalance;
