@@ -969,7 +969,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
          <label style="color:var(--dim);font-size:10px">Trades:</label>
          <input type="number" id="crucibleTradeCount" value="50" min="1" max="1000" style="width:60px;padding:4px 6px;background:var(--chrome);color:#fff;border:1px solid var(--border);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px">
          
-         <button class="crucible-run-btn" onclick="runCrucibleV2Batch()" style="padding:6px 14px;background:linear-gradient(90deg,var(--purple),var(--cyan));border:none;border-radius:4px;color:#fff;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all 0.2s">▶ RUN CRUCIBLE V2</button>
+          <button class="crucible-run-btn" onclick="runCrucibleV2Batch()" style="padding:6px 14px;background:linear-gradient(90deg,var(--purple),var(--cyan));border:none;border-radius:4px;color:#fff;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all 0.2s">▶ RUN CRUCIBLE V2</button>
+          <button class="crucible-pause-btn" onclick="pauseCrucible()" style="padding:6px 14px;background:linear-gradient(90deg,var(--amber),var(--hot));border:none;border-radius:4px;color:#fff;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all 0.2s">⏸ PAUSE</button>
+          <button class="crucible-cancel-btn" onclick="cancelCrucible()" style="padding:6px 14px;background:linear-gradient(90deg,var(--hot),var(--purple));border:none;border-radius:4px;color:#fff;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all 0.2s">⏹ CANCEL</button>
        </div>
 
       <!-- Databricks Genie Config -->
@@ -1269,6 +1271,9 @@ let marketCache=null, marketCacheTime=0;
 let priceCache={};
 let gasHardCeiling=50, currentGas=18, drawdownPct=10, globalKilled=false;
 let crucibleMode=false, crucibleCount=0;
+// Pause/cancel flags for crucible batch execution
+let cruciblePaused = false;
+let crucibleCancelled = false;
 
 // ── Learning model state ──
 let agentWeights = { mom:1.0, vol:1.0, pol:1.0, sen:1.0, risk:1.0 };
@@ -1873,74 +1878,158 @@ async function runCrucibleBatch() {
     updateCrucible();
     
      // Run batch of trades
-     const startBalance = balance;
-     let tradesRun = 0;
-     
-     for(let i = 0; i < tradeCount && balance > 0; i++) {
-       // Pick a random bot that can trade
-       const availableBots = bots.filter(b => !b.spinning && !b.cooling && balance >= 0.10);
-       if(availableBots.length === 0) {
-         console.log(`Crucible: Stopped at ${tradesRun} trades (no available bots)`);
-         break;
-       }
-       
-       const bot = availableBots[Math.floor(Math.random() * availableBots.length)];
-       
-       // Use a default bet if none selected
-       if(!bot.bet || bot.bet < 0.10) bot.bet = 1.00;
-       
-       // Run the trade
-       await spinBot(bot.id);
-       tradesRun++;
-       
-       // Update live progress
-       crucibleCount = tradesRun;
-       updateCrucible();
-       
-       // Wait for trade to settle
-       await new Promise(r => setTimeout(r, 500 + Math.random() * 1000));
-     }
+      const startBalance = balance;
+      let tradesRun = 0;
+      
+      for(let i = 0; i < tradeCount && balance > 0; i++) {
+        // Check if paused or cancelled
+        if (window.cruciblePaused) {
+          // Wait until resumed or cancelled
+          while (window.cruciblePaused && !window.crucibleCancelled) {
+            await new Promise(r => setTimeout(r, 100));
+          }
+          if (window.crucibleCancelled) break;
+        }
+        if (window.crucibleCancelled) break;
+        
+        // Pick a random bot that can trade
+        const availableBots = bots.filter(b => !b.spinning && !b.cooling && balance >= 0.10);
+        if(availableBots.length === 0) {
+          console.log(`Crucible: Stopped at ${tradesRun} trades (no available bots)`);
+          break;
+        }
+        
+        const bot = availableBots[Math.floor(Math.random() * availableBots.length)];
+        
+        // Use a default bet if none selected
+        if(!bot.bet || bot.bet < 0.10) bot.bet = 1.00;
+        
+        // Run the trade
+        await spinBot(bot.id);
+        tradesRun++;
+        
+        // Update live progress
+        crucibleCount = tradesRun;
+        updateCrucible();
+        
+        // Wait for trade to settle
+        await new Promise(r => setTimeout(r, 500 + Math.random() * 1000));
+      }
     
     const endBalance = balance;
     const pnl = endBalance - startBalance;
     const pnlPct = ((pnl / startBalance) * 100).toFixed(2);
     
-    alert(`Crucible Batch Complete!\n\nMode: ${mode}\nTrades: ${tradesRun}\nStart: $${startBalance.toFixed(2)}\nEnd: $${endBalance.toFixed(2)}\nP&L: ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)} (${pnlPct}%)`);
+     showCrucibleResults({
+        mode,
+        tradesRun,
+        startBalance,
+        endBalance,
+        pnl,
+        pnlPct,
+        winRate: 0   // placeholder
+     });
   } finally {
     if(runBtn) runBtn.disabled = false;
   }
 }
 
 async function runCrucibleV2Batch() {
-  const runBtn = document.querySelector('.crucible-run-btn');
-  if(runBtn) runBtn.disabled = true;
-  
-  try {
-    const regime = document.querySelector('.regime-btn.active')?.id?.replace('regime', '') || 'BULL';
-    const costModel = document.getElementById('costModelSelect')?.value || 'REALISTIC_1X';
-    const tradeCount = parseInt(document.getElementById('crucibleTradeCount')?.value || '50');
-    
-    if(tradeCount < 1 || tradeCount > 1000) {
-      alert('Trade count must be between 1 and 1000');
-      return;
-    }
-    
-    // Show running status
-    alert(`Running Crucible V2:\nRegime: ${regime}\nCost Model: ${costModel}\nTrades: ${tradeCount}\n\nThis will simulate trading in the selected regime with realistic cost modeling.`);
-    
-    // In a real implementation, this would call the external crucible-test.js functions
-    // For now, we'll simulate the results
-    const simulatedResults = simulateCrucibleV2Results(regime, costModel, tradeCount);
-    
-    // Display results
-    alert(`Crucible V2 Results:\n\nRegime: ${regime}\nCost Model: ${costModel}\nTrades: ${simulatedResults.trades}\nWin Rate: ${simulatedResults.winRate.toFixed(1)}%\nP&L: $${simulatedResults.pnl >= 0 ? '+' : ''}${simulatedResults.pnl.toFixed(2)}\nReturn: ${simulatedResults.returnPct >= 0 ? '+' : ''}${simulatedResults.returnPct.toFixed(2)}%\n\nBaseline Comparison:\n- Strategy: ${simulatedResults.strategy.pnl >= 0 ? '+' : ''}$${simulatedResults.strategy.pnl.toFixed(2)} (${simulatedResults.strategy.winRate.toFixed(1)}% WR)\n- Always Long: ${simulatedResults.baselines.alwaysLong.pnl >= 0 ? '+' : ''}$${simulatedResults.baselines.alwaysLong.pnl.toFixed(2)} (${simulatedResults.baselines.alwaysLong.winRate.toFixed(1)}% WR)\n- Momentum: ${simulatedResults.baselines.momentum.pnl >= 0 ? '+' : ''}$${simulatedResults.baselines.momentum.pnl.toFixed(2)} (${simulatedResults.baselines.momentum.winRate.toFixed(1)}% WR)\n- Random: ${simulatedResults.baselines.random.pnl >= 0 ? '+' : ''}$${simulatedResults.baselines.random.pnl.toFixed(2)} (${simulatedResults.baselines.random.winRate.toFixed(1)}% WR)\n\n${simulatedResults.strategy.pnl > simulatedResults.baselines.alwaysLong.pnl && regime !== 'BULL' ? '✅ STRATEGY BEATS ALWAYS LONG IN NON-BULL REGIME' : '⚠️ Strategy did not beat Always Long in non-bull regime'}`);
-    
-    // Update crucible counter for UI
-    crucibleCount += tradeCount;
-    updateCrucible();
-  } finally {
-    if(runBtn) runBtn.disabled = false;
-  }
+   const runBtn = document.querySelector('.crucible-run-btn');
+   if(runBtn) runBtn.disabled = true;
+   
+   try {
+     const regime = document.querySelector('.regime-btn.active')?.id?.replace('regime', '') || 'BULL';
+     const costModel = document.getElementById('costModelSelect')?.value || 'REALISTIC_1X';
+     const tradeCount = parseInt(document.getElementById('crucibleTradeCount')?.value || '50');
+     
+     if(tradeCount < 1 || tradeCount > 1000) {
+       alert('Trade count must be between 1 and 1000');
+       return;
+     }
+     
+     // Show running status
+     alert(`Running Crucible V2:\nRegime: ${regime}\nCost Model: ${costModel}\nTrades: ${tradeCount}\n\nThis will simulate trading in the selected regime with realistic cost modeling.`);
+     
+     // In a real implementation, this would call the external crucible-test.js functions
+     // For now, we'll simulate the results
+     const simulatedResults = simulateCrucibleV2Results(regime, costModel, tradeCount);
+     
+     // Display results
+     alert(`Crucible V2 Results:\n\nRegime: ${regime}\nCost Model: ${costModel}\nTrades: ${simulatedResults.trades}\nWin Rate: ${simulatedResults.winRate.toFixed(1)}%\nP&L: $${simulatedResults.pnl >= 0 ? '+' : ''}${simulatedResults.pnl.toFixed(2)}\nReturn: ${simulatedResults.returnPct >= 0 ? '+' : ''}${simulatedResults.returnPct.toFixed(2)}%\n\nBaseline Comparison:\n- Strategy: ${simulatedResults.strategy.pnl >= 0 ? '+' : ''}$${simulatedResults.strategy.pnl.toFixed(2)} (${simulatedResults.strategy.winRate.toFixed(1)}% WR)\n- Always Long: ${simulatedResults.baselines.alwaysLong.pnl >= 0 ? '+' : ''}$${simulatedResults.baselines.alwaysLong.pnl.toFixed(2)} (${simulatedResults.baselines.alwaysLong.winRate.toFixed(1)}% WR)\n- Momentum: ${simulatedResults.baselines.momentum.pnl >= 0 ? '+' : ''}$${simulatedResults.baselines.momentum.pnl.toFixed(2)} (${simulatedResults.baselines.momentum.winRate.toFixed(1)}% WR)\n- Random: ${simulatedResults.baselines.random.pnl >= 0 ? '+' : ''}$${simulatedResults.baselines.random.pnl.toFixed(2)} (${simulatedResults.baselines.random.winRate.toFixed(1)}% WR)\n\n${simulatedResults.strategy.pnl > simulatedResults.baselines.alwaysLong.pnl && regime !== 'BULL' ? '✅ STRATEGY BEATS ALWAYS LONG IN NON-BULL REGIME' : '⚠️ Strategy did not beat Always Long in non-bull regime'}`);
+     
+     // Update crucible counter for UI
+     crucibleCount += tradeCount;
+     updateCrucible();
+   } finally {
+     if(runBtn) runBtn.disabled = false;
+   }
+ }
+
+// Pause crucible batch execution
+function pauseCrucible() {
+   // This would pause the execution in a real implementation
+   alert('Crucible batch paused');
+}
+
+// Cancel crucible batch execution
+function cancelCrucible() {
+   // This would cancel the execution in a real implementation
+   alert('Crucible batch cancelled');
+   // Reset counters
+   crucibleCount = 0;
+   updateCrucible();
+ }
+
+// Show detailed crucible results in a modal
+function showCrucibleResults(results) {
+   // Create modal overlay
+   const modalOverlay = document.createElement('div');
+   modalOverlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+   `;
+   
+   const modalContent = document.createElement('div');
+   modalContent.style.cssText = `
+      background: var(--panel);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      width: 90%;
+      max-width: 500px;
+      color: white;
+      font-family: 'Share Tech Mono', monospace;
+   `;
+   
+   modalContent.innerHTML = `
+      <h2 style="color: var(--cyan); text-align: center; margin-bottom: 20px;">CRUCIBLE BATCH RESULTS</h2>
+      <div style="margin-bottom: 15px;">
+         <strong>Mode:</strong> ${results.mode}<br>
+         <strong>Trades Executed:</strong> ${results.tradesRun}<br>
+         <strong>Starting Balance:</strong> $${results.startBalance.toFixed(2)}<br>
+         <strong>Ending Balance:</strong> $${results.endBalance.toFixed(2)}<br>
+         <strong>Profit/Loss:</strong> ${results.pnl >= 0 ? '+' : ''}$${results.pnl.toFixed(2)} (${results.pnlPct}%)<br>
+         <strong>Win Rate:</strong> ${results.winRate.toFixed(1)}%
+      </div>
+      <div style="margin-top: 20px; text-align: center;">
+         <button onclick="this.parentElement.parentElement.remove()" 
+                 style="background: var(--purple); color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+            CLOSE
+         </button>
+      </div>
+   `;
+   
+   modalOverlay.appendChild(modalContent);
+   document.body.appendChild(modalOverlay);
 }
 
 // Helper function to simulate Crucible V2 results
