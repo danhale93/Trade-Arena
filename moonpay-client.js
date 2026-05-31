@@ -1,3 +1,4 @@
+/**
  * MoonPay Fiat On-Ramp Integration
  * Converts fiat → USDC on Base without user seeing blockchain complexity
  * 
