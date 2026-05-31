@@ -1,4 +1,4 @@
-/**
+w2/**
  * TRADE ARENA - Main Application Logic
  * Bot Management, UI Control & Real-time Updates
  */
@@ -249,13 +249,88 @@ function openMoonpay() {
         } else {
             showToast('Opening MoonPay...', 'info');
             // Open MoonPay in new window
-window.open('https://buy.moonpay.com?apiKey=pk_test_5rdSBYM23wRwK1L3icX9RqYdypJ6jGEC', '_blank');
+        window.open('https://buy.moonpay.com?apiKey=pk_test_5rdSBYM23wRwK1L3icX9RqYdypJ6jGEC', '_blank');
         }
     } catch (error) {
         console.error('MoonPay error:', error);
         window.open('https://buy.moonpay.com', '_blank');
     }
 }
+
+// Fiat Deposit Flow Functions
+function openDepositFlow(amount) {
+    try {
+        // Update fee breakdown display
+        updateFeeBreakdownDisplay(amount);
+        
+        // Show fee breakdown
+        document.getElementById('feeBreakdown').style.display = 'block';
+        document.getElementById('depositError').style.display = 'none';
+        
+        // Open MoonPay widget for USDC on Base
+        if (window.MoonpayWidget) {
+            window.MoonpayWidget.open({
+                baseCurrency: 'USD',
+                quoteCurrency: 'USDC',
+                baseAmount: amount.toString(),
+                recipient: userAddress || '',
+                redirectUrl: window.location.origin + '/success.html'
+            });
+        } else {
+            // Fallback to direct MoonPay URL
+            const moonpayUrl = `https://buy.moonpay.com?apiKey=pk_test_5rdSBYM23wRwK1L3icX9RqYdypJ6jGEC&baseCurrency=USD&quoteCurrency=USDC&baseAmount=${amount}&recipient=${userAddress || ''}&redirectUrl=${window.location.origin}/success.html`;
+            window.open(moonpayUrl, '_blank');
+        }
+        
+        // Show toast
+        showToast(`Opening deposit for $${amount} USDC...`, 'info');
+    } catch (error) {
+        console.error('Deposit flow error:', error);
+        showDepositError('Failed to open deposit flow. Please try again.');
+    }
+}
+
+function onDepositComplete() {
+    // Hide fee breakdown
+    document.getElementById('feeBreakdown').style.display = 'none';
+    
+    // Show success toast
+    showToast('Deposit successful! USDC has been added to your wallet.', 'success');
+    
+    // Refresh balance if needed
+    // In a real implementation, we would check for new transactions
+    // For now, we'll just show a success message
+}
+
+function showDepositError(message) {
+    document.getElementById('errorMessage').textContent = message;
+    document.getElementById('depositError').style.display = 'block';
+    document.getElementById('feeBreakdown').style.display = 'none';
+}
+
+function retryDeposit() {
+    // Hide error and show fee breakdown again
+    document.getElementById('depositError').style.display = 'none';
+    document.getElementById('feeBreakdown').style.display = 'block';
+}
+
+function updateFeeBreakdownDisplay(amount) {
+    const moonpayFee = (amount * 0.035).toFixed(2); // 3.5%
+    const networkFee = '1.50'; // Fixed network fee
+    const total = (parseFloat(amount) + parseFloat(moonpayFee) + parseFloat(networkFee)).toFixed(2);
+    
+    document.getElementById('depositAmountDisplay').textContent = `$${parseFloat(amount).toFixed(2)}`;
+    document.getElementById('moonpayFeeDisplay').textContent = `$${moonpayFee}`;
+    document.getElementById('networkFeeDisplay').textContent = `$${networkFee}`;
+    document.getElementById('totalAmountDisplay').textContent = `$${total}`;
+}
+
+// Expose to window for HTML onclick
+window.openDepositFlow = openDepositFlow;
+window.onDepositComplete = onDepositComplete;
+window.showDepositError = showDepositError;
+window.retryDeposit = retryDeposit;
+window.updateFeeBreakdownDisplay = updateFeeBreakdownDisplay;
 
 // Expose to window for HTML onclick
 window.openMoonpay = openMoonpay;

@@ -675,6 +675,54 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-..." style="width:100%;margin-top:5px;padding:5px 8px;background:var(--bg);border:1px solid var(--border);color:var(--cyan);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px;" oninput="if(this.value.trim().startsWith('sk-'))window._userApiKey=this.value.trim()">
     <span style="color:var(--dim);font-size:8px">Without a key the app uses rule-based signals and still trades. Demo Mode requires no wallet or key.</span>
   </div>
+  
+  <!-- Fiat Deposit Section -->
+  <div id="depositSection" style="margin-top:16px;padding:12px;border-top:1px solid var(--border);">
+    <div class="divider">💰 Fiat Deposit (USDC on Base)</div>
+    
+    <!-- Deposit Buttons -->
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+      <button class="onramp-btn" onclick="openDepositFlow(50)" style="flex:1;min-width:120px;">
+        Deposit $50
+      </button>
+      <button class="onramp-btn" onclick="openDepositFlow(100)" style="flex:1;min-width:120px;">
+        Deposit $100
+      </button>
+    </div>
+    
+    <!-- Fee Breakdown Display -->
+    <div id="feeBreakdown" style="background:rgba(255,170,0,.07);border:1px solid rgba(255,170,0,.2);border-radius:8px;padding:10px;margin-bottom:12px;display:none;">
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--dim);margin-bottom:4px;">
+        <span>Deposit Amount:</span>
+        <span id="depositAmountDisplay">$50.00</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--dim);margin-bottom:4px;">
+        <span>MoonPay Fee (3.5%):</span>
+        <span id="moonpayFeeDisplay">$1.75</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--dim);margin-bottom:4px;">
+        <span>Network Fee:</span>
+        <span id="networkFeeDisplay">$1.50</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--dim);font-weight:bold;">
+        <span>Total:</span>
+        <span id="totalAmountDisplay">$53.25</span>
+      </div>
+    </div>
+    
+    <!-- Error State -->
+    <div id="depositError" style="background:rgba(255,45,120,.07);border:1px solid rgba(255,45,120,.2);border-radius:8px;padding:10px;color:var(--hot);display:none;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="currentColor"/>
+        </svg>
+        <span id="errorMessage">Deposit failed. Please try again.</span>
+      </div>
+      <button class="demo-btn" onclick="retryDeposit()" style="width:100%;">
+        Retry Deposit
+      </button>
+    </div>
+  </div>
 </div>
 
 <!-- ══ MAIN APP ══ -->
