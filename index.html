@@ -749,13 +749,14 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <span class="gh-queue-num" id="ghQueueNum">0</span>
       <span class="gh-queue-lbl">open</span>
     </div>
-    <!-- bot controls -->
-    <div class="gh-controls">
-      <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots">⚙ BUS</button>
-      <button class="gh-auto-btn" id="ghAutoBtn" onclick="globalAutoToggle()" title="Toggle auto-trading on all bots">AUTO</button>
-      <button class="gh-bot-btn" id="ghRemoveBtn" onclick="removeLastBot()" title="Remove last bot" disabled>−</button>
-      <button class="gh-bot-btn" id="ghAddBtn" onclick="addBot()" title="Add bot">+</button>
-    </div>
+     <!-- bot controls -->
+     <div class="gh-controls">
+       <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots">⚙ BUS</button>
+       <button class="gh-auto-btn" id="ghAutoBtn" onclick="globalAutoToggle()" title="Toggle auto-trading on all bots">AUTO</button>
+       <button class="gh-bot-btn" id="ghRemoveBtn" onclick="removeLastBot()" title="Remove last bot" disabled>−</button>
+       <button class="gh-bot-btn" id="ghAddBtn" onclick="addBot()" title="Add bot">+</button>
+       <button class="gh-bot-btn" id="musicToggleBtn" onclick="toggleBackgroundMusic()" title="Toggle background music">🎵</button>
+     </div>
     <span class="gen-badge" id="genBadge">GEN 0</span>
     <span id="apiBreakerBadge" style="display:none"></span>
   </div>

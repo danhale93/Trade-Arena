@@ -31,6 +31,49 @@ async function privyInit() {
     }
 }
 
+// Background music control
+let bgMusic = null;
+let bgMusicInitialized = false;
+
+// Initialize background music on first user interaction
+function initBackgroundMusic() {
+    if (bgMusicInitialized) return;
+    if (window.CrucibleEntertainment && window.CrucibleEntertainment.bgMusic) {
+        bgMusic = window.CrucibleEntertainment.bgMusic;
+        bgMusicInitialized = true;
+        console.log('[Music] Background music initialized');
+    }
+}
+
+// Toggle background music playback
+function toggleBackgroundMusic() {
+    // Initialize if not done
+    if (!bgMusicInitialized) {
+        initBackgroundMusic();
+    }
+    if (!bgMusic) {
+        console.warn('Background music not available');
+        return;
+    }
+    if (bgMusic.paused) {
+        bgMusic.play().catch(e => console.log('Audio play failed:', e));
+        // Update button UI
+        const btn = document.getElementById('musicToggleBtn');
+        if (btn) {
+            btn.title = 'Pause background music';
+            // Optional: change appearance
+            btn.style.color = 'var(--cyan)';
+        }
+    } else {
+        bgMusic.pause();
+        const btn = document.getElementById('musicToggleBtn');
+        if (btn) {
+            btn.title = 'Play background music';
+            btn.style.color = 'var(--dim)';
+        }
+    }
+}
+
 // Initialize demo mode - auto-start trading on load
 function initDemoMode() {
     console.log('[Demo] Initializing demo mode...');
