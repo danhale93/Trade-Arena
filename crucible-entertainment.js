@@ -117,6 +117,7 @@ const CrucibleEntertainment = {
     this.createUIContainer();
     this.loadSounds();
     this.setupAnimationFramework();
+    this.initSynth();
     console.log('%c🎬 ENTERTAINMENT SYSTEM LOADED - GET READY FOR FIREWORKS! 🎆', 
       'color: #ff00ff; font-size: 20px; font-weight: bold; text-shadow: 0 0 10px #ff00ff;');
   },
@@ -750,34 +751,112 @@ const CrucibleEntertainment = {
     const muteBtn = document.getElementById('mute-btn');
     
     if (this.isMuted) {
-      // Mute all sounds
       muteBtn.textContent = '🔇 UNMUTE';
       muteBtn.classList.add('muted');
       
-      // Mute all audio elements
       Object.keys(this.sounds).forEach(key => {
         const audio = this.sounds[key + '_audio'];
         if (audio) audio.volume = 0;
       });
       if (this.bgMusic) this.bgMusic.volume = 0;
+      if (this.synthCtx) this.synthCtx.state = 'suspended';
       
       this.showCommentary('🔇 SOUND MUTED! Vibe: SILENT MODE ACTIVATED! 🤐', 'neutral');
     } else {
-      // Unmute all sounds
       muteBtn.textContent = '🔊 MUTE';
       muteBtn.classList.remove('muted');
       
-      // Restore sound volumes
       Object.keys(this.sounds).forEach(key => {
         const audio = this.sounds[key + '_audio'];
         if (audio) audio.volume = 0.3;
       });
       if (this.bgMusic) this.bgMusic.volume = 0.1;
+      if (this.synthCtx) this.synthCtx.resume();
       
       this.playSound('bell');
       this.showCommentary('🔊 SOUND RESTORED! Welcome BACK! 🎉', 'win');
     }
-  }
+  },
+
+  // ─── Web Audio API Synthesizer ──────────────────────────
+  initSynth() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      this.synthCtx = ctx;
+      this.synthMasterGain = ctx.createGain();
+      this.synthMasterGain.gain.value = 0.12;
+      this.synthMasterGain.connect(ctx.destination);
+      this.synthTelemetry = {
+        totalNotes: 0,
+        lastFreq: 0,
+        lastDuration: 0,
+        lastWaveform: 'unknown',
+        events: []
+      };
+      console.log('%c🎛️ Synthesizer engine ACTIVE', 'color: #ff00ff; font-weight: bold;');
+    } catch (e) {
+      console.warn('[Synth] Web Audio API unavailable:', e);
+      this.synthCtx = null;
+    }
+  },
+
+  synthNote(freq, duration, waveform = 'sine', freqEnd = null) {
+    if (!this.synthCtx) return null;
+    const t = this.synthCtx.currentTime;
+    const osc = this.synthCtx.createOscillator();
+    const gain = this.synthCtx.createGain();
+    osc.type = waveform;
+    osc.frequency.setValueAtTime(freq, t);
+    if (freqEnd) osc.frequency.linearRampToValueAtTime(freqEnd, t + duration);
+    gain.gain.setValueAtTime(0.6, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+    osc.connect(gain);
+    gain.connect(this.synthMasterGain);
+    osc.start(t);
+    osc.stop(t + duration);
+    const telemetry = {
+      freq, freqEnd, duration, waveform,
+      time: new Date().toISOString()
+    };
+    this.synthTelemetry.totalNotes++;
+    this.synthTelemetry.lastFreq = freq;
+    this.synthTelemetry.lastDuration = duration;
+    this.synthTelemetry.lastWaveform = waveform;
+    this.synthTelemetry.events.push(telemetry);
+    if (this.synthTelemetry.events.length > 100) this.synthTelemetry.events.shift();
+    return telemetry;
+  },
+
+  playSynthWin() {
+    // C-E-G major triad arpeggio
+    this.synthNote(523.25, 0.15, 'triangle');
+    this.synthNote(659.25, 0.15, 'triangle', 783.99);
+    this.synthNote(783.99, 0.25, 'triangle');
+    this.synthNote(1046.50, 0.35, 'sine');
+  },
+
+  playSynthLoss() {
+    // Descending minor tones
+    this.synthNote(311.13, 0.2, 'sawtooth', 196.0);
+    this.synthNote(196.0, 0.3, 'sawtooth', 130.81);
+    this.synthNote(130.81, 0.4, 'triangle');
+  },
+
+  playSynthTrade() {
+    this.synthNote(880, 0.06, 'square');
+    this.synthNote(1200, 0.08, 'square');
+  },
+
+  playSynthJackpot() {
+    // Fanfare: rapid ascending scale
+    [523.25, 659.25, 783.99, 1046.50, 1318.51].forEach((f, i) => {
+      this.synthNote(f, 0.12, 'triangle', f * 1.02);
+    });
+  },
+
+  getSynthTelemetry() {
+    return this.synthTelemetry || null;
+  },
 };
 
 // Initialize on page load

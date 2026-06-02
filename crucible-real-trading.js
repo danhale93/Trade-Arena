@@ -228,12 +228,11 @@ const CrucibleRealTrading = {
       entrySignal: false,
       exitSignal: false,
       direction: 'NEUTRAL',
-      confidence: 50, // Default 50% confidence for all trades
+      confidence: 50,
       strategy: null,
       rationale: '',
     };
     
-    // Update volatility regime
     if (indicators.volatility > 3) {
       this.aiState.volatilityRegime = 'HIGH';
     } else if (indicators.volatility > 1.5) {
@@ -242,42 +241,53 @@ const CrucibleRealTrading = {
       this.aiState.volatilityRegime = 'LOW';
     }
     
-    // SIMPLIFIED SIGNAL GENERATION: Ensure trades always execute
-    // We just need to prove the system works with real data
+    let strategy = null;
+    let direction = 'NEUTRAL';
+    let confidence = 0;
     
-    // Use RSI + Momentum to decide direction
-    const rsiAboveMiddle = indicators.rsi > 50;
-    const momentumPositive = indicators.momentum > 0;
-    
-    // Generate signal based on simple rules
-    if (rsiAboveMiddle || momentumPositive) {
-      // Bias towards LONG
-      signals.entrySignal = true;
-      signals.direction = 'LONG';
-      signals.strategy = 'MOMENTUM_LONG';
-      // Confidence: RSI distance from 50 (0-50 points) + momentum (0-50 points)
-      // Max 100% confidence when both indicators strongly support entry
-      const rsiDistance = Math.min(50, Math.abs(indicators.rsi - 50) * 2); // 0-50 (double the distance)
-      const momentumStrength = Math.min(50, Math.abs(indicators.momentum * 5)); // 0-50 (momentum * 5)
-      signals.confidence = Math.min(100, rsiDistance + momentumStrength);
-      signals.rationale = `RSI ${indicators.rsi.toFixed(1)} | Momentum ${indicators.momentum.toFixed(2)}%`;
-    } else {
-      // Bias towards SHORT
-      signals.entrySignal = true;
-      signals.direction = 'SHORT';
-      signals.strategy = 'MOMENTUM_SHORT';
+    if ((indicators.rsi < 35 || indicators.rsi > 65) && Math.abs(indicators.momentum) > 0.1) {
+      if (indicators.rsi < 35 && indicators.momentum > 0) {
+        direction = 'LONG';
+        strategy = 'MOMENTUM_LONG';
+      } else if (indicators.rsi > 65 && indicators.momentum < 0) {
+        direction = 'SHORT';
+        strategy = 'MOMENTUM_SHORT';
+      } else if (indicators.rsi < 35) {
+        direction = 'LONG';
+        strategy = 'MEAN_REVERSION';
+      } else if (indicators.rsi > 65) {
+        direction = 'SHORT';
+        strategy = 'MEAN_REVERSION';
+      }
+      
       const rsiDistance = Math.min(50, Math.abs(indicators.rsi - 50) * 2);
       const momentumStrength = Math.min(50, Math.abs(indicators.momentum * 5));
-      signals.confidence = Math.min(100, rsiDistance + momentumStrength);
-      signals.rationale = `RSI ${indicators.rsi.toFixed(1)} | Momentum ${indicators.momentum.toFixed(2)}%`;
+      confidence = Math.min(100, rsiDistance + momentumStrength);
     }
     
-    // Ensure minimum confidence threshold
-    if (signals.confidence < 30) {
-      signals.confidence = 30; // Always at least 30% confidence
+    if (Math.abs(indicators.trendStrength) > 1.5 && indicators.volatility > 2 && !strategy) {
+      strategy = 'VOLATILITY_BREAKOUT';
+      direction = indicators.trendStrength > 0 ? 'LONG' : 'SHORT';
+      confidence = Math.min(100, Math.abs(indicators.trendStrength) * 20);
     }
     
-    // Apply AI adaptation to thresholds
+    if (!strategy) {
+      return {
+        entrySignal: false,
+        exitSignal: false,
+        direction: 'NEUTRAL',
+        confidence: 0,
+        strategy: null,
+        rationale: `RSI ${indicators.rsi.toFixed(1)} | Mom ${indicators.momentum.toFixed(2)}% | No edge`,
+      };
+    }
+    
+    signals.entrySignal = true;
+    signals.direction = direction;
+    signals.strategy = strategy;
+    signals.confidence = Math.max(30, confidence);
+    signals.rationale = `RSI ${indicators.rsi.toFixed(1)} | Mom ${indicators.momentum.toFixed(2)}% | Trend ${indicators.trendStrength.toFixed(2)}%`;
+    
     if (this.config.enableAdaptiveThresholds) {
       signals.confidence *= this.aiState.entryAdaptation;
       signals.confidence = Math.min(100, signals.confidence);
@@ -469,9 +479,22 @@ const CrucibleRealTrading = {
     }
     
     this.trades.push(trade);
-    this.tradeState.lastTradeTime = Date.now();
-    
-    return trade;
+      this.tradeState.lastTradeTime = Date.now();
+      
+      // Play appropriate sounds (audio + synth)
+      const ent = window.CrucibleEntertainment;
+      if (ent) {
+        if (trade.isWin) {
+          ent.playSound('win');
+          ent.playSynthWin?.();
+        } else {
+          ent.playSound('loss');
+          ent.playSynthLoss?.();
+        }
+        ent.ticker?.updateTradeCount(this.trades.filter(t => t.executed).length);
+      }
+      
+      return trade;
   },
   
   // ════════════════════════════════════════════════════════════════

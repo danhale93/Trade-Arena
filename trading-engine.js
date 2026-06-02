@@ -10,6 +10,11 @@ class TradingEngine {
         this.marketData = {};
         this.opportunities = [];
         this.activeSessions = new Map();
+        this.riskLimits = {
+            maxDailyLossPct: 10,
+            maxOpportunityAgeMs: 45000,
+            minSignalConfidence: 0.6
+        };
     }
 
     /**
@@ -26,7 +31,7 @@ class TradingEngine {
                 const cexPrice = await this.fetchPrice(pair.token, 'binance');
 
                 const priceDiff = Math.abs(dex1Price - dex2Price) / Math.min(dex1Price, dex2Price);
-                const profitMargin = priceDiff * 100 - 0.5; // Subtract 0.5% for fees
+                const profitMargin = Number((priceDiff * 100 - 0.5).toFixed(2)); // Profit % after fees
 
                 if (profitMargin > 0.3) { // >0.3% profit after fees
                     opportunities.push({
@@ -121,8 +126,9 @@ class TradingEngine {
      * Risk Management & Position Sizing
      */
     calculatePositionSize(capital, volatility, leverage, riskPercentage = 2) {
-        // Kelly Criterion for position sizing
-        const winRate = 0.55; // Assume 55% win rate from historical data
+// Dynamic Kelly: Use bot's historical winRate or default
+        const historicalWinRate = 0.55; // Default Kelly win rate
+        const winRate = Math.max(0.4, Math.min(0.75, historicalWinRate));
         const avgWin = 1.5;
         const avgLoss = 1.0;
         
@@ -185,7 +191,7 @@ class TradingEngine {
         // NOTE: previous code compared `volume > volume * 1.5` (always false).
         // If caller provides an average/historical volume value (avgVolume) use that
         // to detect unusually large volume spikes. Otherwise skip this check.
-        if (marketData.avgVolume && volume > marketData.avgVolume * 1.5) { // Above average
+        if (marketData.avgVolume && volume > marketData.avgVolume * 1.5) { // Volume spike detected
             confidence += 0.2;
         }
 
@@ -201,6 +207,10 @@ class TradingEngine {
      * Bot Execution & Trade Management
      */
     async executeBot(bot) {
+        if (bot.liveMode === true && bot.liveTradingEnabled !== true) {
+            throw new Error('Live trading blocked: explicit liveTradingEnabled flag is required');
+        }
+
         const session = {
             id: this.generateId(),
             botId: bot.id,
@@ -238,7 +248,7 @@ class TradingEngine {
                     case 'Grid Trading':
                     case 'Hybrid (Auto-Select)':
                         const signal = this.generateTradeSignal(marketData);
-                        if (signal.confidence > 0.6) {
+                        if (signal.confidence > this.riskLimits.minSignalConfidence) {
                             trade = await this.executeTrade(bot, signal);
                         }
                         break;
@@ -267,67 +277,81 @@ class TradingEngine {
     }
 
     /**
-     * Execute Individual Trade
-     */
-    async executeTrade(bot, opportunity) {
-        const positionSize = this.calculatePositionSize(
-            bot.amount,
-            opportunity.volatility || 3,
-            parseInt(bot.risk.match(/\d+/)[0])
-        );
+      * Execute Individual Trade
+      */
+     async executeTrade(bot, opportunity) {
+         const trade = {
+             id: this.generateId(),
+             botId: bot.id,
+             type: opportunity.type || 'MARKET',
+             entry: opportunity.buyPrice || opportunity.price,
+             exit: opportunity.sellPrice || null,
+             size: 0,
+             leverage: 0,
+             stopLoss: 0,
+             takeProfit: 0,
+             timestamp: Date.now(),
+             status: 'PENDING',
+             profit: 0,
+             profitPercent: 0
+         };
 
-        const trade = {
-            id: this.generateId(),
-            botId: bot.id,
-            type: opportunity.type || 'MARKET',
-            entry: opportunity.buyPrice || opportunity.price,
-            exit: opportunity.sellPrice || null,
-            size: positionSize.size,
-            leverage: positionSize.leverage,
-            stopLoss: positionSize.stopLoss,
-            takeProfit: positionSize.takeProfit,
-            timestamp: Date.now(),
-            status: 'PENDING',
-            profit: 0,
-            profitPercent: 0
-        };
+         try {
+             const parsedRisk = this.parseRiskLeverage(bot.risk);
+             const positionSize = this.calculatePositionSize(
+                 bot.amount,
+                 opportunity.volatility || 3,
+                 parsedRisk
+             );
 
-        try {
-            // Simulate execution (in real app, would call smart contracts)
-            trade.status = 'EXECUTED';
-            trade.executedTime = Date.now();
-            
-            // Simulate profit based on opportunity margin
-            // opportunity.profitMargin is a percentage (e.g. 1.2 for 1.2%).
-            const margin = Number(opportunity.profitMargin) || 0.5; // percent
-            const simulatedProfit = (margin / 100) * parseFloat(trade.size) * 0.8; // 80% realized
+             if (opportunity.timestamp && opportunity.ttl) {
+                 const age = Date.now() - opportunity.timestamp;
+                 if (age > Math.min(opportunity.ttl, this.riskLimits.maxOpportunityAgeMs)) {
+                     trade.status = 'EXPIRED';
+                     trade.profit = 0;
+                     trade.timestamp = Date.now();
+                     this.trades.push(trade);
+                     return trade;
+                 }
+             }
 
-            trade.profit = Number(simulatedProfit.toFixed(4));
-            trade.profitPercent = Number(((simulatedProfit / parseFloat(trade.size)) * 100).toFixed(2));
-            trade.status = 'CLOSED';
-            trade.closedTime = Date.now();
-        } catch (e) {
-            trade.status = 'FAILED';
-            trade.error = e.message;
-        }
+             trade.size = positionSize.size;
+             trade.leverage = positionSize.leverage;
+             trade.stopLoss = positionSize.stopLoss;
+             trade.takeProfit = positionSize.takeProfit;
 
-        this.trades.push(trade);
-        return trade;
-    }
+             trade.status = 'EXECUTED';
+             trade.executedTime = Date.now();
 
-    /**
-     * Execute Flash Loan Strategy
-     */
-    async executeFlashLoan(bot, opportunity) {
-        const trade = {
-            id: this.generateId(),
-            botId: bot.id,
-            type: 'FLASH_LOAN',
-            loanAmount: opportunity.loanAmount,
-            timestamp: Date.now(),
-            status: 'PENDING',
-            profit: 0
-        };
+             const margin = Number(opportunity.profitMargin) || 0.5;
+             const simulatedProfit = (margin / 100) * parseFloat(trade.size) * 0.8;
+
+             trade.profit = Number(simulatedProfit.toFixed(4));
+             trade.profitPercent = Number(((simulatedProfit / parseFloat(trade.size)) * 100).toFixed(2));
+             trade.status = 'CLOSED';
+             trade.closedTime = Date.now();
+         } catch (e) {
+             trade.status = 'FAILED';
+             trade.error = e.message;
+         }
+
+         this.trades.push(trade);
+         return trade;
+     }
+
+     /**
+      * Execute Flash Loan Strategy
+      */
+     async executeFlashLoan(bot, opportunity) {
+         const trade = {
+             id: this.generateId(),
+             botId: bot.id,
+             type: 'FLASH_LOAN',
+             loanAmount: opportunity.loanAmount,
+             timestamp: Date.now(),
+             status: 'PENDING',
+             profit: 0
+         };
 
         try {
             // Simulate flash loan execution
@@ -379,7 +403,7 @@ class TradingEngine {
 
     async fetchPrice(token, exchange) {
         const basePrice = { WETH: 2500, USDC: 1, ARB: 0.8, OP: 1.5 }[token] || 100;
-        const variance = (Math.random() - 0.5) * 2; // ±1% variance between exchanges
+        const variance = (Math.random() - 0.5) * 3; // ±1.5% dynamic variance
         return basePrice * (1 + variance / 100);
     }
 
@@ -399,6 +423,15 @@ class TradingEngine {
     calculateRiskScore(volatility, profitMargin) {
         // 0-100 risk score
         return Math.min(100, volatility * 10 + (5 - profitMargin) * 5);
+    }
+
+    parseRiskLeverage(riskLabel) {
+        if (typeof riskLabel !== 'string') return 2;
+        const match = riskLabel.match(/\d+/);
+        if (!match) return 2;
+        const value = Number(match[0]);
+        if (!Number.isFinite(value) || value <= 0) return 2;
+        return Math.min(20, value);
     }
 
     generateId() {

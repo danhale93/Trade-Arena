@@ -11,6 +11,162 @@ let currentTab = 'dashboard';
 // Chart instances
 let marketChart, performanceChart, profitChart;
 
+// ═══════════════════════════════════════════════════════════
+// PRIVY AUTHENTICATION
+// ═══════════════════════════════════════════════════════════
+let privyUser = null;
+let privyProvider = null;
+
+async function initPrivy() {
+  if (typeof window.Privy === 'undefined') {
+    console.warn('[Privy] SDK not loaded yet');
+    setTimeout(initPrivy, 500);
+    return;
+  }
+  try {
+    const privy = new window.Privy('YOUR_PRIVY_APP_ID');
+    await privy.init();
+    privyProvider = privy;
+    privyUser = await privy.getUser();
+    if (privyUser) {
+      console.log('[Privy] Already authenticated:', privyUser.email || privyUser.wallet?.address);
+      setupApp({
+        name: privyUser.email?.split('@')[0] || 'PrivyUser',
+        avatar: '🔐',
+        badge: 'PRIVY',
+        walletAddress: privyUser.wallet?.address || null,
+        isAppWallet: false,
+        privyUser: privyUser
+      });
+    }
+  } catch (e) {
+    console.warn('[Privy] Init failed:', e.message);
+  }
+}
+
+async function loginPrivy() {
+  const s = document.getElementById('cStatus');
+  s.style.color = 'var(--cyan)';
+  s.textContent = '⏳ Opening Privy...';
+  if (typeof window.Privy === 'undefined') {
+    s.textContent = '❌ Privy SDK not loaded. Check your internet connection.';
+    return;
+  }
+  try {
+    if (!privyProvider) {
+      privyProvider = new window.Privy('YOUR_PRIVY_APP_ID');
+      await privyProvider.init();
+    }
+    await privyProvider.login();
+    privyUser = await privyProvider.getUser();
+    if (privyUser) {
+      const addr = privyUser.wallet?.address;
+      if (addr) {
+        provider = new ethers.providers.Web3Provider(window.ethereum || privyProvider.getEthereumProvider?.());
+        signer = provider.getSigner();
+        userAddress = addr;
+        await provider.getBalance(addr).then(b => {
+          userBalance = ethers.utils.formatEther(b);
+        });
+      }
+      loginSuccess();
+      setupApp({
+        name: privyUser.email?.split('@')[0] || 'PrivyUser',
+        avatar: '🔐',
+        badge: 'PRIVY',
+        walletAddress: addr || null,
+        isAppWallet: false,
+        privyUser: privyUser
+      });
+      console.log('[Privy] Logged in:', privyUser.email || addr);
+    }
+  } catch (e) {
+    s.style.color = 'var(--hot)';
+    s.textContent = '❌ Privy login failed: ' + e.message;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// MULTI-NETWORK SUPPORT (Base + Moonbase/Moonbeam)
+// ═══════════════════════════════════════════════════════════
+const NETWORKS = {
+  BASE: {
+    id: 8453,
+    chainId: '0x2105',
+    name: 'Base Mainnet',
+    rpcUrl: 'https://mainnet.base.org',
+    explorerUrl: 'https://basescan.org',
+    currency: { name: 'ETH', symbol: 'ETH', decimals: 18 }
+  },
+  MOONBASE: {
+    id: 1287,
+    chainId: '0x507',
+    name: 'Moonbase Alpha',
+    rpcUrl: 'https://rpc.api.moonbase.moonbeam.network',
+    explorerUrl: 'https://moonbase.moonscan.io',
+    currency: { name: 'DEV', symbol: 'DEV', decimals: 18 }
+  },
+  MOONBEAM: {
+    id: 1284,
+    chainId: '0x504',
+    name: 'Moonbeam',
+    rpcUrl: 'https://rpc.api.moonbeam.network',
+    explorerUrl: 'https://moonscan.io',
+    currency: { name: 'GLMR', symbol: 'GLMR', decimals: 18 }
+  }
+};
+
+let currentNetwork = NETWORKS.BASE;
+
+async function switchNetwork(networkKey) {
+  const net = NETWORKS[networkKey];
+  if (!net) return;
+  currentNetwork = net;
+  try {
+    await window.ethereum?.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: net.chainId }]
+    });
+    showToast(`Switched to ${net.name}`, 'success');
+    document.querySelectorAll('.net-btn').forEach(b => b.classList.remove('border-[var(--cyan)]', 'text-[var(--cyan)]'));
+    document.getElementById('netBtn-' + networkKey)?.classList.add('border-[var(--cyan)]', 'text-[var(--cyan)]');
+  } catch (e) {
+    if (e.code === 4902) {
+      await window.ethereum?.request({
+        method: 'wallet_addEthereumChain',
+        params: [{
+          chainId: net.chainId,
+          chainName: net.name,
+          rpcUrls: [net.rpcUrl],
+          blockExplorerUrls: [net.explorerUrl],
+          nativeCurrency: net.currency
+        }]
+      });
+    }
+  }
+}
+
+// Override connectWallet to use current network
+const _origConnectWallet = connectWallet;
+connectWallet = async function() {
+  try {
+    if (!window.ethereum) {
+      showToast('Please install MetaMask', 'error');
+      return;
+    }
+    provider = new ethers.providers.Web3Provider(window.ethereum);
+    await provider.send('eth_requestAccounts', []);
+    signer = provider.getSigner();
+    userAddress = await signer.getAddress();
+    await switchNetwork(currentNetwork === NETWORKS.MOONBEAM ? 'MOONBEAM' : currentNetwork === NETWORKS.MOONBASE ? 'MOONBASE' : 'BASE');
+    userBalance = ethers.utils.formatEther(await provider.getBalance(userAddress));
+    loginSuccess();
+  } catch (error) {
+    console.error('Wallet connection error:', error);
+    showToast('Failed to connect wallet', 'error');
+  }
+};
+
 /**
  * WALLET & AUTHENTICATION
  */

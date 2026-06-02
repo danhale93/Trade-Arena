@@ -17,44 +17,46 @@ const BASE_CONFIG = {
 };
 
 // Token Addresses on Base
-const TOKENS = {
-    WETH: {
-        address: '0x4200000000000000000000000000000000000006',
-        symbol: 'WETH',
-        decimals: 18,
-        name: 'Wrapped Ethereum'
-    },
-    USDC: {
-        address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
-        symbol: 'USDC',
-        decimals: 6,
-        name: 'USD Coin'
-    },
-    USDbC: {
-        address: '0xd9aAEc860b8293fb2064Ef2953eF989f7f72396f',
-        symbol: 'USDbC',
-        decimals: 6,
-        name: 'USD Base Coin'
-    },
-    DAI: {
-        address: '0x50c5725949A6F48849662A6be79b833364E4661F',
-        symbol: 'DAI',
-        decimals: 18,
-        name: 'Dai Stablecoin'
-    },
-    ARB: {
-        address: '0x608D0fC37bDb7Cc6d1e3e7e4f2c0db5e9f0b0e7E',
-        symbol: 'ARB',
-        decimals: 18,
-        name: 'Arbitrum'
-    },
-    OP: {
-        address: '0x4200000000000000000000000000000000000042',
-        symbol: 'OP',
-        decimals: 18,
-        name: 'Optimism'
-    }
-};
+if (typeof TOKENS === 'undefined') {
+    var TOKENS = {
+        WETH: {
+            address: '0x4200000000000000000000000000000000000006',
+            symbol: 'WETH',
+            decimals: 18,
+            name: 'Wrapped Ethereum'
+        },
+        USDC: {
+            address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+            symbol: 'USDC',
+            decimals: 6,
+            name: 'USD Coin'
+        },
+        USDbC: {
+            address: '0xd9aAEc860b8293fb2064Ef2953eF989f7f72396f',
+            symbol: 'USDbC',
+            decimals: 6,
+            name: 'USD Base Coin'
+        },
+        DAI: {
+            address: '0x50c5725949A6F48849662A6be79b833364E4661F',
+            symbol: 'DAI',
+            decimals: 18,
+            name: 'Dai Stablecoin'
+        },
+        ARB: {
+            address: '0x608D0fC37bDb7Cc6d1e3e7e4f2c0db5e9f0b0e7E',
+            symbol: 'ARB',
+            decimals: 18,
+            name: 'Arbitrum'
+        },
+        OP: {
+            address: '0x4200000000000000000000000000000000000042',
+            symbol: 'OP',
+            decimals: 18,
+            name: 'Optimism'
+        }
+    };
+}
 
 // DEX & Protocol Addresses on Base
 const PROTOCOLS = {
