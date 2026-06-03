@@ -1,0 +1,401 @@
+<!-- ACOUSTIC CORE - Synth Pad Grid for Trade Signals -->
+<!-- Add this to index.html after the vault section -->
+
+<style>
+/* Synth Pad Sequencer Grid */
+.synth-pad-section {
+  background: linear-gradient(180deg, #0a0612, #050508);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.synth-pad-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.synth-pad-title {
+  font-family: 'Bungee', display;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--cyan);
+}
+
+.synth-pad-controls {
+  display: flex;
+  gap: 6px;
+}
+
+.synth-pad-btn {
+  padding: 4px 10px;
+  font-family: 'Bungee', display;
+  font-size: 8px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--dim);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.synth-pad-btn:hover {
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+
+.synth-pad-btn.active {
+  background: rgba(0, 255, 231, 0.15);
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+
+/* 8x16 Pad Grid */
+.pad-sequencer {
+  display: grid;
+  grid-template-columns: repeat(16, 1fr);
+  gap: 3px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 8px;
+}
+
+.pad-cell {
+  aspect-ratio: 1;
+  min-height: 18px;
+  background: var(--chrome);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pad-cell:hover {
+  border-color: var(--cyan);
+}
+
+.pad-cell.active {
+  background: rgba(0, 255, 231, 0.25);
+  border-color: var(--cyan);
+  box-shadow: 0 0 8px rgba(0, 255, 231, 0.4);
+}
+
+.pad-cell.hit {
+  background: rgba(57, 255, 20, 0.3);
+  border-color: var(--green);
+  box-shadow: 0 0 6px rgba(57, 255, 20, 0.4);
+}
+
+.pad-cell.miss {
+  background: rgba(255, 45, 120, 0.25);
+  border-color: var(--hot);
+}
+
+.pad-cell.triggered {
+  animation: padTrigger 0.3s ease;
+}
+
+@keyframes padTrigger {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+/* BPM Control */
+.bpm-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.bpm-label {
+  font-size: 8px;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.bpm-slider {
+  flex: 1;
+  height: 4px;
+  -webkit-appearance: none;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
+}
+
+.bpm-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  background: var(--cyan);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.bpm-value {
+  font-family: 'Oswald', sans-serif;
+  font-size: 12px;
+  color: var(--cyan);
+  min-width: 36px;
+  text-align: right;
+}
+
+/* Step indicator */
+.step-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.step-label {
+  font-size: 7px;
+  color: var(--dim);
+}
+
+.step-bar {
+  flex: 1;
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.step-progress {
+  height: 100%;
+  background: linear-gradient(90deg, var(--purple), var(--cyan));
+  transition: width 0.1s linear;
+}
+
+.step-count {
+  font-size: 8px;
+  color: var(--purple);
+}
+</style>
+
+<!-- Synth Pad Grid HTML -->
+<div class="synth-pad-section">
+  <div class="synth-pad-header">
+    <span class="synth-pad-title">🎹 SYNTH PAD SEQUENCER</span>
+    <div class="synth-pad-controls">
+      <button class="synth-pad-btn" id="playBtn" onclick="togglePlayback()">▶ PLAY</button>
+      <button class="synth-pad-btn" id="stopBtn" onclick="stopPlayback()">■ STOP</button>
+    </div>
+  </div>
+  
+  <!-- 8 Rows × 16 Steps Grid -->
+  <div class="pad-sequencer" id="padSequencer"></div>
+  
+  <!-- BPM Control -->
+  <div class="bpm-control">
+    <span class="bpm-label">BPM</span>
+    <input type="range" class="bpm-slider" id="bpmSlider" min="60" max="180" value="120" oninput="updateBpm(this.value)">
+    <span class="bpm-value" id="bpmValue">120</span>
+  </div>
+  
+  <!-- Step Indicator -->
+  <div class="step-indicator">
+    <span class="step-label">STEP</span>
+    <div class="step-bar"><div class="step-progress" id="stepProgress" style="width:0%"></div></div>
+    <span class="step-count" id="stepCount">0 / 16</span>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// SYNTH PAD SEQUENCER - Trade Signal Visualization
+// ══════════════════════════════════════════════════════
+
+// Initialize pad grid
+function initPadGrid() {
+  const grid = document.getElementById('padSequencer');
+  if (!grid) return;
+  
+  grid.innerHTML = '';
+  
+  // Create 8 rows × 16 columns
+  for (let row = 0; row < 8; row++) {
+    for (let step = 0; step < 16; step++) {
+      const cell = document.createElement('div');
+      cell.className = 'pad-cell';
+      cell.dataset.row = row;
+      cell.dataset.step = step;
+      cell.onclick = () => togglePadCell(row, step);
+      grid.appendChild(cell);
+    }
+  }
+}
+
+// Toggle individual pad cell
+function togglePadCell(row, step) {
+  const index = row * 16 + step;
+  const cell = document.querySelectorAll('.pad-cell')[index];
+  if (cell) {
+    cell.classList.toggle('active');
+  }
+}
+
+// Playback controls
+let isPlaying = false;
+let bpm = 120;
+let currentStep = 0;
+let playbackInterval = null;
+
+function togglePlayback() {
+  if (isPlaying) {
+    stopPlayback();
+  } else {
+    startPlayback();
+  }
+}
+
+function startPlayback() {
+  if (isPlaying) return;
+  
+  isPlaying = true;
+  document.getElementById('playBtn').classList.add('active');
+  document.getElementById('playBtn').textContent = '⏸ PAUSE';
+  
+  // Initialize audio engine if available
+  if (window.audioEngine) {
+    window.audioEngine.init().then(() => {
+      window.audioEngine.start();
+    });
+  }
+  
+  const intervalMs = (60000 / bpm) / 4; // 16th notes
+  
+  playbackInterval = setInterval(() => {
+    advanceStep();
+  }, intervalMs);
+}
+
+function stopPlayback() {
+  isPlaying = false;
+  document.getElementById('playBtn').classList.remove('active');
+  document.getElementById('playBtn').textContent = '▶ PLAY';
+  
+  if (window.audioEngine) {
+    window.audioEngine.stop();
+  }
+  
+  if (playbackInterval) {
+    clearInterval(playbackInterval);
+    playbackInterval = null;
+  }
+  
+  currentStep = 0;
+  updateStepIndicator();
+}
+
+function advanceStep() {
+  // Flash current step column
+  const cells = document.querySelectorAll('.pad-cell');
+  const stepStart = currentStep;
+  
+  for (let row = 0; row < 8; row++) {
+    const cell = cells[row * 16 + stepStart];
+    if (cell && cell.classList.contains('active')) {
+      cell.classList.add('triggered');
+      setTimeout(() => cell.classList.remove('triggered'), 150);
+      
+      // Trigger audio if available
+      if (window.audioEngine) {
+        window.audioEngine.triggerPad(row, 0.7);
+      }
+    }
+  }
+  
+  currentStep = (currentStep + 1) % 16;
+  updateStepIndicator();
+}
+
+function updateStepIndicator() {
+  const progress = (currentStep / 16) * 100;
+  const stepProgress = document.getElementById('stepProgress');
+  const stepCount = document.getElementById('stepCount');
+  
+  if (stepProgress) stepProgress.style.width = progress + '%';
+  if (stepCount) stepCount.textContent = currentStep + ' / 16';
+}
+
+function updateBpm(value) {
+  bpm = parseInt(value);
+  const bpmValue = document.getElementById('bpmValue');
+  if (bpmValue) bpmValue.textContent = value;
+  
+  if (window.audioEngine) {
+    window.audioEngine.setBpm(bpm);
+  }
+  
+  // Restart playback if running
+  if (isPlaying) {
+    stopPlayback();
+    startPlayback();
+  }
+}
+
+// ══════════════════════════════════════════════
+// Trade Result → Pad Propagation
+// Called when a trade closes to flash the pad
+// ══════════════════════════════════════════════
+
+function propagateTradeResult(trade) {
+  if (!trade || !trade.botId) return;
+  
+  // Map bot to row (0-7)
+  const row = (trade.botId - 1) % 8;
+  
+  // Determine which steps are active based on trade result
+  const cells = document.querySelectorAll('.pad-cell');
+  const steps = [];
+  
+  if (trade.isWin) {
+    // Win: activate a pattern (e.g., steps 4, 8, 12)
+    steps.push(4, 8, 12);
+  } else {
+    // Loss: activate different pattern (e.g., steps 2, 6, 10, 14)
+    steps.push(2, 6, 10, 14);
+  }
+  
+  // Flash the cells
+  steps.forEach(step => {
+    const cell = cells[row * 16 + step];
+    if (cell) {
+      cell.classList.add(trade.isWin ? 'hit' : 'miss');
+      setTimeout(() => {
+        cell.classList.remove('hit', 'miss');
+      }, 800);
+    }
+  });
+  
+  // Trigger audio pad
+  if (window.audioEngine) {
+    const intensity = trade.isWin ? 1 : 0.5;
+    window.audioEngine.triggerPad(row, intensity, {
+      botId: trade.botId,
+      pnl: trade.netPnl,
+      isWin: trade.isWin
+    });
+  }
+}
+
+// Initialize on load
+window.addEventListener('load', () => {
+  initPadGrid();
+  
+  // Auto-start if enabled
+  if (localStorage.getItem('synthPadAutoPlay') === 'true') {
+    startPlayback();
+  }
+});
+</script>

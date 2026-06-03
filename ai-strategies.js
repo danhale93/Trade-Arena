@@ -25,12 +25,12 @@ const AI_STRATEGIES = {
     }
   },
   
-  // Bot strategy profiles
+  // Bot strategy profiles (using valid methods: SPOT LONG, SPOT SHORT, YIELD FARM, PERP LONG, PERP SHORT, HOLD)
   profiles: {
     // SCALPER: Fast, low-hold, minimal risk
     SCALPER: {
-      methods: ['ARBITRAGE', 'FLASH LOAN'],
-      methodWeights: [0.7, 0.3],
+      methods: ['SPOT LONG', 'SPOT SHORT'],
+      methodWeights: [0.6, 0.4],
       baseBetMultiplier: 0.8,
       edgeRange: [1.0, 3.5],
       maxDrawdown: 200, // Stop after $200 loss
@@ -62,7 +62,7 @@ const AI_STRATEGIES = {
     
     // CONSERVATIVE: Low risk, steady
     CONSERVATIVE: {
-      methods: ['ARBITRAGE', 'YIELD FARM'],
+      methods: ['SPOT LONG', 'YIELD FARM'],
       methodWeights: [0.6, 0.4],
       baseBetMultiplier: 0.5,
       edgeRange: [0.8, 2.5],
@@ -73,7 +73,7 @@ const AI_STRATEGIES = {
     
     // BALANCED: Mix everything
     BALANCED: {
-      methods: ['ARBITRAGE', 'SPOT LONG', 'YIELD FARM', 'FLASH LOAN'],
+      methods: ['SPOT LONG', 'PERP LONG', 'YIELD FARM', 'SPOT SHORT'],
       methodWeights: [0.25, 0.25, 0.25, 0.25],
       baseBetMultiplier: 1.0,
       edgeRange: [1.2, 4.0],
@@ -82,9 +82,9 @@ const AI_STRATEGIES = {
       volatilityAdaptation: 'BALANCED'
     },
 
-    // NICHE: NFT & alternative strategies
+    // NICHE: Alternative strategies
     NICHE: {
-      methods: ['NFT FLIP', 'YIELD FARM', 'SPOT LONG'],
+      methods: ['PERP SHORT', 'YIELD FARM', 'SPOT LONG'],
       methodWeights: [0.3, 0.4, 0.3],
       baseBetMultiplier: 1.2,
       edgeRange: [1.5, 5.5],
@@ -180,8 +180,8 @@ function selectAdaptiveMethod(strategy, marketConditions, botState) {
   
   switch (marketConditions.condition) {
     case 'STABLE':
-      // Favor arbitrage in stable markets
-      methodSelection = methods.includes('ARBITRAGE') ? 'ARBITRAGE' : methods[0];
+      // Favor YIELD FARM in stable markets (low volatility arbitrage equivalent)
+      methodSelection = methods.includes('YIELD FARM') ? 'YIELD FARM' : methods[0];
       break;
       
     case 'EXPLOSIVE_UP':
@@ -194,13 +194,13 @@ function selectAdaptiveMethod(strategy, marketConditions, botState) {
       // Avoid trades or go short
       if (methods.includes('PERP SHORT')) methodSelection = 'PERP SHORT';
       else if (methods.includes('SPOT SHORT')) methodSelection = 'SPOT SHORT';
-      else methodSelection = 'ARBITRAGE'; // Safe fallback
+      else methodSelection = 'YIELD FARM'; // Safe fallback
       break;
       
     case 'VOLATILE':
-      // Favor flash loans and tight spreads in volatility
-      if (methods.includes('FLASH LOAN')) methodSelection = 'FLASH LOAN';
-      else if (methods.includes('ARBITRAGE')) methodSelection = 'ARBITRAGE';
+      // Favor short positions and spreads in volatility
+      if (methods.includes('SPOT SHORT')) methodSelection = 'SPOT SHORT';
+      else if (methods.includes('YIELD FARM')) methodSelection = 'YIELD FARM';
       break;
       
     case 'TRENDING_UP':
@@ -211,12 +211,12 @@ function selectAdaptiveMethod(strategy, marketConditions, botState) {
       
     case 'TRENDING_DOWN':
       // Avoid momentum or go short
-      methodSelection = 'ARBITRAGE';
+      methodSelection = 'YIELD FARM';
       break;
       
     case 'LOW_LIQUIDITY':
       // Avoid all risky methods
-      methodSelection = 'ARBITRAGE';
+      methodSelection = 'YIELD FARM';
       break;
   }
   
