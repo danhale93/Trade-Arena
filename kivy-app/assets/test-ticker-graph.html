@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎯 Ticker Graph Test</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #06030a;
+      color: #fff;
+      font-family: 'Share Tech Mono', monospace;
+      padding: 20px;
+    }
+    .container { max-width: 1000px; margin: 0 auto; }
+    h1 { margin-bottom: 20px; color: #ffd700; }
+    .test-section {
+      background: #0e0914;
+      border: 1px solid #241830;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 10px;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 10px 20px;
+      background: linear-gradient(90deg, #ff2d78, #ffaa00);
+      border: none;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: 'Oswald', sans-serif;
+      font-weight: bold;
+    }
+    button:hover { transform: scale(1.05); }
+    button:active { transform: translateY(2px); }
+    #tickerGraphCanvas {
+      width: 100%;
+      height: 280px;
+      background: rgba(0,0,0,.3);
+      border: 1px solid #241830;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    #tickerLegend {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 6px;
+      padding: 8px;
+      background: #160f1e;
+      border: 1px solid #241830;
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      font-size: 9px;
+    }
+    .ticker-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 6px;
+      border-radius: 4px;
+      background: rgba(255,255,255,.02);
+      border: 1px solid #241830;
+    }
+    .ticker-legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      border: 1px solid rgba(255,255,255,.3);
+    }
+    .log {
+      background: #160f1e;
+      border: 1px solid #241830;
+      padding: 10px;
+      border-radius: 6px;
+      max-height: 200px;
+      overflow-y: auto;
+      font-size: 10px;
+      font-family: monospace;
+    }
+    .log-entry { margin: 5px 0; color: #00ffe7; }
+    .log-error { color: #ff2d78; }
+    .log-success { color: #39ff14; }
+    .status {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .status-item {
+      padding: 10px;
+      background: #160f1e;
+      border: 1px solid #241830;
+      border-radius: 6px;
+      font-size: 10px;
+    }
+    .status-item strong { color: #ffd700; }
+    .green { color: #39ff14; }
+    .red { color: #ff2d78; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🎯 Ticker Graph Test Suite</h1>
+
+  <div class="test-section">
+    <h2>📊 System Status</h2>
+    <div class="status" id="statusPanel"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>🎮 Test Controls</h2>
+    <div class="controls">
+      <button onclick="testInit()">1. Initialize Ticker</button>
+      <button onclick="testAddBot()">2. Add Test Bot</button>
+      <button onclick="testRecordTrade()">3. Record Trade</button>
+      <button onclick="testMultipleTrades()">4. Multiple Trades</button>
+      <button onclick="testReset()">5. Reset</button>
+      <button onclick="testConsoleDebug()">6. Debug</button>
+    </div>
+  </div>
+
+  <div class="test-section">
+    <h2>📈 Ticker Graph</h2>
+    <div id="tickerGraphCanvas"></div>
+    <div id="tickerLegend"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>📝 Test Log</h2>
+    <div class="log" id="testLog"></div>
+  </div>
+</div>
+
+<script>
+// Mock bots array (since we're testing in isolation)
+window.bots = [];
+let botIdCounter = 0;
+
+// Test logging
+const logs = [];
+function addLog(message, type = 'info') {
+  const timestamp = new Date().toLocaleTimeString();
+  const entry = `[${timestamp}] ${message}`;
+  logs.unshift(entry);
+  console.log(entry);
+  
+  const logEl = document.getElementById('testLog');
+  if (logEl) {
+    let html = '';
+    logs.forEach(log => {
+      const className = log.includes('✅') ? 'log-success' : 
+                       log.includes('❌') || log.includes('Error') ? 'log-error' : 
+                       'log-entry';
+      html += `<div class="${className}">${log}</div>`;
+    });
+    logEl.innerHTML = html;
+  }
+}
+
+// Update status display
+function updateStatus() {
+  const status = {
+    tickerExists: typeof tickerGraph !== 'undefined',
+    initialized: tickerGraph?.initialized || false,
+    hasCanvas: tickerGraph?.canvas !== null,
+    hasContext: tickerGraph?.ctx !== null,
+    botCount: bots.length,
+    historyCount: Object.keys(tickerGraph?.botHistory || {}).length,
+    totalTrades: Object.values(tickerGraph?.botHistory || {}).reduce((sum, arr) => sum + arr.length, 0)
+  };
+
+  const statusPanel = document.getElementById('statusPanel');
+  let html = '';
+  
+  for (const [key, value] of Object.entries(status)) {
+    const valueClass = value === true || (typeof value === 'number' && value > 0) ? 'green' : value === false ? 'red' : '';
+    const displayValue = typeof value === 'boolean' ? (value ? '✅ YES' : '❌ NO') : value;
+    html += `
+      <div class="status-item">
+        <strong>${key}:</strong> <span class="${valueClass}">${displayValue}</span>
+      </div>
+    `;
+  }
+  
+  statusPanel.innerHTML = html;
+}
+
+// Test 1: Initialize
+function testInit() {
+  addLog('🔧 Test 1: Initializing ticker graph...', 'info');
+  try {
+    if (!tickerGraph) {
+      addLog('❌ tickerGraph object not found!', 'error');
+      return;
+    }
+    const result = tickerGraph.init();
+    if (result) {
+      addLog('✅ Ticker initialized successfully', 'success');
+    } else {
+      addLog('⚠️ Init returned false but no error', 'info');
+    }
+    updateStatus();
+  } catch (error) {
+    addLog(`❌ Error: ${error.message}`, 'error');
+  }
+}
+
+// Test 2: Add bot
+function testAddBot() {
+  addLog('🤖 Test 2: Adding test bot...', 'info');
+  try {
+    botIdCounter++;
+    const botId = botIdCounter;
+    bots.push({ id: botId, pnl: 0 });
+    
+    if (tickerGraph) {
+      tickerGraph.assignBotColors();
+      addLog(`✅ Bot #${botId} added, color: ${tickerGraph.botColors[botId]}`, 'success');
+    } else {
+      addLog('⚠️ Added bot but tickerGraph not ready', 'info');
+    }
+    updateStatus();
+  } catch (error) {
+    addLog(`❌ Error: ${error.message}`, 'error');
+  }
+}
+
+// Test 3: Record single trade
+function testRecordTrade() {
+  addLog('📊 Test 3: Recording trade...', 'info');
+  try {
+    if (bots.length === 0) {
+      addLog('⚠️ No bots to trade with, adding one first...', 'info');
+      testAddBot();
+    }
+    
+    const botId = bots[0].id;
+    const pnl = Math.random() * 100 - 50; // Random -50 to +50
+    
+    if (tickerGraph && tickerGraph.recordTrade) {
+      tickerGraph.recordTrade(botId, pnl);
+      addLog(`✅ Trade recorded: Bot #${botId}, P&L: $${pnl.toFixed(2)}`, 'success');
+    } else {
+      addLog('❌ recordTrade method not available', 'error');
+    }
+    updateStatus();
+  } catch (error) {
+    addLog(`❌ Error: ${error.message}`, 'error');
+  }
+}
+
+// Test 4: Multiple trades
+function testMultipleTrades() {
+  addLog('📈 Test 4: Simulating multiple trades...', 'info');
+  try {
+    if (bots.length === 0) {
+      testAddBot();
+    }
+    
+    // Add 2 more bots if only 1
+    while (bots.length < 3) {
+      botIdCounter++;
+      bots.push({ id: botIdCounter, pnl: 0 });
+    }
+    
+    tickerGraph.assignBotColors();
+    addLog(`✅ Now have ${bots.length} bots`, 'success');
+    
+    // Record 10 random trades
+    for (let i = 0; i < 10; i++) {
+      const bot = bots[Math.floor(Math.random() * bots.length)];
+      const pnl = (Math.random() * 60 - 15);
+      tickerGraph.recordTrade(bot.id, pnl);
+    }
+    
+    addLog(`✅ Recorded 10 trades across ${bots.length} bots`, 'success');
+    updateStatus();
+  } catch (error) {
+    addLog(`❌ Error: ${error.message}`, 'error');
+  }
+}
+
+// Test 5: Reset
+function testReset() {
+  addLog('🔄 Test 5: Resetting...', 'info');
+  try {
+    tickerGraph.reset();
+    bots = [];
+    botIdCounter = 0;
+    addLog('✅ Reset complete', 'success');
+    updateStatus();
+  } catch (error) {
+    addLog(`❌ Error: ${error.message}`, 'error');
+  }
+}
+
+// Test 6: Debug info
+function testConsoleDebug() {
+  addLog('🔍 Test 6: Debug Info...', 'info');
+  console.log('=== DEBUG INFO ===');
+  console.log('tickerGraph:', tickerGraph);
+  console.log('bots:', bots);
+  console.log('botHistory:', tickerGraph?.botHistory);
+  console.log('botColors:', tickerGraph?.botColors);
+  console.log('botActionLogs:', tickerGraph?.botActionLogs);
+  addLog('✅ Debug info logged to console (F12)', 'success');
+}
+
+// Initialize on load
+window.addEventListener('load', () => {
+  addLog('🚀 Test page loaded', 'info');
+  addLog('📌 Click buttons to run tests', 'info');
+  updateStatus();
+});
+</script>
+
+</body>
+</html>

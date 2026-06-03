@@ -1,0 +1,16 @@
+{
+  "name": "Trade Arena - AI Trading Bot",
+  "short_name": "TradeArena",
+  "description": "AI-powered trading arena with HFT bots, arbitrage, flash loans",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#06030a",
+  "theme_color": "#00ffe7",
+  "icons": [
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDE5MiAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9Ijk2IiBjeT0iOTYiIHI9Ijk2IiBmaWxsPSIjRkY1QTAwIi8+CjxjaXJjbGUgY3g9Ijk2IiBjeT0iOTYiIHI9Ijc2IiBmaWxsPSIjRjYzQjAwIi8+CjxjaXJjbGUgY3g9Ijk2IiBjeT0iOTYiIHI9IjU2IiBmaWxsPSIjRkZEMUMwIi8+CjxjaXJjbGUgY3g9Ijk2IiBjeT0iOTYiIHI9IjM2IiBmaWxsPSIjRkZENjAwIi8+CjxjaXJjbGUgY3g9Ijk2IiBjeT0iOTYiIHI9IjE2IiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}

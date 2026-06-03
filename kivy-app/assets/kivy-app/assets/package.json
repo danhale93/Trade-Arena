@@ -1,0 +1,17 @@
+{
+  "name": "trade-arena",
+  "version": "4.0.0",
+  "description": "Multi-AI Trading Arena with Ridges Integration",
+  "main": "index.html",
+  "scripts": {
+    "proxy": "node proxy.js",
+    "serve": "npx serve .",
+    "dev": "concurrently \"npm run proxy\" \"npm run serve\"",
+    "test": "node tests.js"
+  },
+  "devDependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5",
+    "concurrently": "^8.2.2"
+  }
+}
