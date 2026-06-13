@@ -339,6 +339,38 @@ const TRADE_OLYMPICS = {
     return this.getLeaderboard("elo").slice(0, limit);
   },
 
+  getGlobalWeights() {
+    this._ensureInitialized();
+    const standings = Object.values(this.STANDINGS);
+    if (!standings.length) return [];
+
+    const rawWeights = standings.map((standing) => {
+      const eloScore = Math.pow(10, (standing.elo - 1200) / 400);
+      const winRateScore = standing.totalTrades
+        ? 0.75 + standing.overallWinRate
+        : 1;
+      const pnlScore = standing.totalTrades
+        ? Math.max(0.5, Math.min(1.5, 1 + standing.avgTradeValue / 100))
+        : 1;
+      const score = Math.max(0.0001, eloScore * winRateScore * pnlScore);
+      return { standing, score };
+    });
+
+    const totalScore = rawWeights.reduce((sum, item) => sum + item.score, 0);
+    return rawWeights
+      .map(({ standing, score }) => ({
+        model: standing.model,
+        provider: standing.provider,
+        elo: standing.elo,
+        weight: score / totalScore,
+        weightPct: Number(((score / totalScore) * 100).toFixed(2)),
+        totalTrades: standing.totalTrades,
+        totalPnL: standing.totalPnL,
+        winRate: standing.overallWinRate,
+      }))
+      .sort((a, b) => b.weight - a.weight);
+  },
+
   getSummary() {
     const standings = Object.values(this.STANDINGS);
     const totalTrades = standings.reduce(

@@ -20,6 +20,14 @@ const {
   classifyRegime,
   validateAllRegimes,
 } = require("./crucible-test.js");
+const { TRADE_OLYMPICS } = require("./trade-olympics.js");
+const {
+  ARENA_COMPETITION,
+  BOT_AI_MODELS,
+  MODEL_SELECTION,
+  callAIModel,
+  getModelConfig,
+} = require("./multi-ai-arena.js");
 
 const tests = [];
 let currentSuite = "";
@@ -352,6 +360,135 @@ describe("Crucible Regime Coverage", () => {
       expect(trade.verified).toBe(true);
       expect([30, -10, 0]).toContain(trade.pnl);
     });
+  });
+});
+
+describe("Self-Evolving ELO Tournament System", () => {
+  const tournamentModels = [
+    { name: "ALPHA", provider: "test", elo: 1200 },
+    { name: "BETA", provider: "test", elo: 1200 },
+    { name: "GAMMA", provider: "test", elo: 1200 },
+  ];
+
+  it("initializes brackets and normalized global weights", () => {
+    const summary = TRADE_OLYMPICS.reset({
+      models: tournamentModels,
+      persist: false,
+      silent: true,
+    });
+
+    expect(summary.totalModels).toBe(3);
+    expect(summary.totalBrackets).toBe(
+      TRADE_OLYMPICS.METHODS.length *
+        TRADE_OLYMPICS.TOKENS.length *
+        TRADE_OLYMPICS.EDGE_TIERS.length,
+    );
+
+    const assignment = TRADE_OLYMPICS.getModelForTrade("ARBITRAGE", "BTC", 2);
+    expect(assignment.isOlympics).toBe(true);
+    expect(["ALPHA", "BETA", "GAMMA"].includes(assignment.model)).toBe(true);
+
+    const weights = TRADE_OLYMPICS.getGlobalWeights();
+    const totalWeight = weights.reduce((sum, item) => sum + item.weight, 0);
+
+    expect(weights.length).toBe(3);
+    expect(totalWeight).toBeGreaterThan(0.999);
+    expect(totalWeight).toBeLessThan(1.001);
+  });
+
+  it("evolves ELO standings and global weights after tournaments", () => {
+    TRADE_OLYMPICS.reset({
+      models: tournamentModels,
+      persist: false,
+      silent: true,
+    });
+
+    const tournament = TRADE_OLYMPICS.runEloTournament({
+      rounds: 2,
+      random: () => 0.9,
+    });
+    const leaderboard = TRADE_OLYMPICS.getEloLeaderboard();
+    const weights = TRADE_OLYMPICS.getGlobalWeights();
+
+    expect(tournament.matches.length).toBe(6);
+    expect(TRADE_OLYMPICS.MATCH_LOG.length).toBe(6);
+    expect(leaderboard[0].elo).toBeGreaterThan(1200);
+    expect(weights[0].model).toBe(leaderboard[0].model);
+    expect(weights[0].weight).toBeGreaterThan(
+      weights[weights.length - 1].weight,
+    );
+  });
+
+  it("records trade matchups into bracket stats and ELO ratings", () => {
+    TRADE_OLYMPICS.reset({
+      models: tournamentModels.slice(0, 2),
+      persist: false,
+      silent: true,
+    });
+
+    const assignment = TRADE_OLYMPICS.getModelForTrade("SPOT LONG", "ETH", 2);
+    const opponent = assignment.model === "ALPHA" ? "BETA" : "ALPHA";
+    const beforeElo = TRADE_OLYMPICS.STANDINGS[assignment.model].elo;
+    const entry = TRADE_OLYMPICS.recordTrade(assignment.bracket, {
+      outcome: "WIN",
+      pnl: 25,
+      edge: 2,
+      model: assignment.model,
+      opponentModel: opponent,
+      opponentPnl: -10,
+    });
+
+    expect(entry.outcome).toBe("WIN");
+    expect(TRADE_OLYMPICS.BRACKETS[assignment.bracket].trades).toBe(1);
+    expect(TRADE_OLYMPICS.BRACKETS[assignment.bracket].wins).toBe(1);
+    expect(TRADE_OLYMPICS.STANDINGS[assignment.model].totalTrades).toBe(1);
+    expect(TRADE_OLYMPICS.STANDINGS[assignment.model].elo).toBeGreaterThan(
+      beforeElo,
+    );
+  });
+});
+
+describe("Multi-AI Arena Global Weights", () => {
+  it("loads ELO model metadata for weighted model selection", () => {
+    expect(getModelConfig("gpt-5-turbo").elo).toBe(1400);
+    expect(getModelConfig("qwen-72b").elo).toBe(1090);
+
+    const originalRandom = Math.random;
+    Math.random = () => 0;
+    try {
+      expect(MODEL_SELECTION.eloWeighted()).toBe("gpt-5-turbo");
+    } finally {
+      Math.random = originalRandom;
+    }
+  });
+
+  it("records model outcomes into arena competition stats", async () => {
+    ARENA_COMPETITION.modelStats = {};
+    Object.keys(BOT_AI_MODELS).forEach((botId) => delete BOT_AI_MODELS[botId]);
+
+    const originalRandom = Math.random;
+    Math.random = () => 0.01;
+    try {
+      const decision = await callAIModel(
+        [
+          {
+            symbol: "ETH",
+            current_price: 2500,
+            price_change_percentage_24h: 1,
+            total_volume: 1000000000,
+          },
+        ],
+        100,
+        42,
+      );
+
+      const stats = ARENA_COMPETITION.modelStats[decision.aiModel];
+      expect(stats.baseTrades).toBe(1);
+      expect(stats.wins).toBe(1);
+      expect(stats.eloRating).toBe(getModelConfig(decision.aiModel).elo);
+    } finally {
+      Math.random = originalRandom;
+    }
   });
 });
 

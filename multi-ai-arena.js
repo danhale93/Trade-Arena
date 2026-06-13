@@ -6,6 +6,33 @@
  */
 
 // ════════════════════════════════════════════════════════════════════════════════
+// NODE/BROWSER DEPENDENCIES
+// ════════════════════════════════════════════════════════════════════════════════
+
+const ARENA_PERSONALITY_TRAITS = (() => {
+  if (typeof globalThis !== 'undefined' && globalThis.MODEL_PERSONALITY_TRAITS) {
+    return globalThis.MODEL_PERSONALITY_TRAITS;
+  }
+  if (typeof module !== 'undefined' && module.exports) {
+    try {
+      return require('./model-personality-traits.js');
+    } catch (error) {
+      return {};
+    }
+  }
+  return {};
+})();
+
+let nodeBotDecisionGenerator = null;
+if (typeof module !== 'undefined' && module.exports) {
+  try {
+    nodeBotDecisionGenerator = require('./advanced-bot-engine.js').generateBotSpecificDecision;
+  } catch (error) {
+    nodeBotDecisionGenerator = null;
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
 // LM ARENA MODEL REGISTRY
 // Based on real LM Arena ELO ratings (March 2026)
 // ════════════════════════════════════════════════════════════════════════════════
@@ -397,41 +424,66 @@ const ARENA_COMPETITION = {
 // DECISION ENGINE WITH MODEL-SPECIFIC TRAITS
 // ════════════════════════════════════════════════════════════════════════════════
 
+function getBotDecisionGenerator() {
+  if (typeof generateBotSpecificDecision !== 'undefined') return generateBotSpecificDecision;
+  return nodeBotDecisionGenerator;
+}
+
+function generateDefaultDecision(botProfile, bet) {
+  return {
+    token: 'ETH',
+    token_emoji: '🤖',
+    method: 'ARBITRAGE',
+    method_emoji: '🔄',
+    size_label: 'SAFE',
+    edge_pct: 1.2,
+    win_probability: 0.55,
+    reasoning: 'Default model-safe trade',
+    strategy_detail: 'Node/browser fallback decision',
+    outcome: 'WIN',
+    pnl_multiplier: Math.max(0.1, bet * 0.005),
+    botProfile: botProfile || 'BALANCED'
+  };
+}
+
 function generateModelSpecificDecision(botId, botProfile, modelName, marketData, bet, botStrategy) {
-  // Get model configuration
-  const modelConfig = getModelConfig(modelName);
-  if (!modelConfig) return fallbackDecision(bet, botProfile, modelName);
-  
+  const assignedModelName = modelName || ARENA_COMPETITION.getBestModelForProfile(botProfile);
+  const modelConfig = getModelConfig(assignedModelName) || getModelConfig('claude-3.5-sonnet');
+  const finalModelName = getModelConfig(assignedModelName) ? assignedModelName : 'claude-3.5-sonnet';
+
   // Get personality traits
-  const personality = BOT_MODEL_ASSIGNMENT.personalityTraits[modelConfig.personality] || 
+  const personality = BOT_MODEL_ASSIGNMENT.personalityTraits[modelConfig.personality] ||
                       BOT_MODEL_ASSIGNMENT.personalityTraits['BALANCED'];
-  
+
   // Generate base decision using profile-based engine
-  const baseDecision = generateBotSpecificDecision(botId, botProfile, marketData, bet, botStrategy);
-  
+  const botDecisionGenerator = getBotDecisionGenerator();
+  const baseDecision = botDecisionGenerator
+    ? botDecisionGenerator(botId, botProfile, marketData, bet, botStrategy)
+    : generateDefaultDecision(botProfile, bet);
+
   // Apply model-specific adjustments
   const adjustedDecision = {
     ...baseDecision,
     // Apply personality multipliers
     edge_pct: baseDecision.edge_pct * personality.edgeMultiplier,
-    win_probability: Math.max(0.35, Math.min(0.75, 
+    win_probability: Math.max(0.35, Math.min(0.75,
       baseDecision.win_probability * (personality.riskAversion < 1 ? 1.1 : 0.95)
     )),
-    
+
     // Add model identification
-    aiModel: modelName,
+    aiModel: finalModelName,
     modelProvider: modelConfig.provider,
     modelPersonality: modelConfig.personality,
     modelElo: modelConfig.elo,
-    modelTier: getModelTier(modelName),
-    
+    modelTier: getModelTier(finalModelName),
+
     // Add model reasoning
     modelReasoning: `${modelConfig.personality} approach: ${modelConfig.characteristics}`,
-    
+
     // Apply speed penalty/bonus to decision time
     decisionTimeMs: modelConfig.speedMs
   };
-  
+
   return adjustedDecision;
 }
 
@@ -539,7 +591,9 @@ async function callAIModel(marketData, bet, botId) {
 
     // Apply model-specific personality adjustments
     if (modelConfig && modelConfig.personality) {
-      const personality = MODEL_PERSONALITY_TRAITS[modelConfig.personality] || {};
+      const personality = ARENA_PERSONALITY_TRAITS[modelConfig.personality] ||
+        BOT_MODEL_ASSIGNMENT.personalityTraits[modelConfig.personality] ||
+        {};
       decision.edge_pct *= personality.edgeMultiplier || 1.0;
       decision.win_probability *= (1 - (personality.riskAversion || 1.0) * 0.1);
       decision.aiModel = modelName;
@@ -548,6 +602,10 @@ async function callAIModel(marketData, bet, botId) {
       decision.modelPersonality = modelConfig.personality;
       decision.olympicsBracket = olympicsBracket;
       decision.isOlympicsMatch = !!olympicsBracket;
+    }
+
+    if (ARENA_COMPETITION && ARENA_COMPETITION.initializeModel) {
+      ARENA_COMPETITION.initializeModel(modelName, botId, botProfile);
     }
 
     // Record trade result in Trade Olympics if applicable
@@ -563,9 +621,10 @@ async function callAIModel(marketData, bet, botId) {
     // Record in standard arena as well
     if (ARENA_COMPETITION && ARENA_COMPETITION.recordTrade) {
       const tradeResult = {
-        outcome: decision.outcome === 'WIN' ? 1 : -1,
+        isWin: decision.outcome === 'WIN',
         pnl: (decision.pnl_multiplier || 0) * bet,
-        edge: decision.edge_pct || 0
+        edge: decision.edge_pct || 0,
+        method: decision.method
       };
       ARENA_COMPETITION.recordTrade(modelName, botId, tradeResult);
     }
