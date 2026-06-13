@@ -28,6 +28,22 @@ const {
   callAIModel,
   getModelConfig,
 } = require("./multi-ai-arena.js");
+const { calculateSlippage } = require("./real-wallet.js");
+const { CrucibleRealTrading } = require("./crucible-real-trading.js");
+const {
+  createRiskState,
+  recordOpportunityResult,
+  getRiskAdjustment,
+} = require("./arb-risk-engine.js");
+const {
+  americanToProbability,
+  removeVig,
+  findSportsPredictionEdges,
+} = require("./sports-odds-arb.js");
+const {
+  calculateFlashLoanArb,
+  scanCrossDexFlashArb,
+} = require("./cross-dex-arb-scanner.js");
 
 const tests = [];
 let currentSuite = "";
@@ -489,6 +505,212 @@ describe("Multi-AI Arena Global Weights", () => {
     } finally {
       Math.random = originalRandom;
     }
+  });
+});
+
+describe("Live-Data Trade Logic Safety & Self-Correction", () => {
+  it("resets real-trading session state before each run", async () => {
+    await CrucibleRealTrading.init({ startingBalance: 75, enableAILearning: true });
+    CrucibleRealTrading.tradeState.wins = 99;
+    CrucibleRealTrading.aiState.riskMultiplier = 0.5;
+    CrucibleRealTrading.aiState.adjustments.push({ reason: "test" });
+
+    await CrucibleRealTrading.init({ startingBalance: 50, enableAILearning: true });
+
+    expect(CrucibleRealTrading.tradeState.currentBalance).toBe(50);
+    expect(CrucibleRealTrading.tradeState.wins).toBe(0);
+    expect(CrucibleRealTrading.tradeState.losses).toBe(0);
+    expect(CrucibleRealTrading.aiState.riskMultiplier).toBe(1);
+    expect(CrucibleRealTrading.aiState.adjustments.length).toBe(0);
+  });
+
+  it("tracks bad trades and self-corrects risk exposure", async () => {
+    await CrucibleRealTrading.init({ startingBalance: 50, enableAILearning: true });
+
+    const crypto = { symbol: "ETH" };
+    const indicators = {
+      currentPrice: 2500,
+      volatility: 2,
+      rsi: 72,
+      momentum: -1.2,
+      trendStrength: -2,
+    };
+    const signals = {
+      strategy: "MOMENTUM_SHORT",
+      direction: "SHORT",
+      confidence: 80,
+    };
+
+    const originalRandom = Math.random;
+    Math.random = () => 0.99; // force stop-loss path
+    try {
+      for (let i = 0; i < 4; i++) {
+        const size = CrucibleRealTrading.calculatePositionSize(indicators, signals);
+        await CrucibleRealTrading.executeTrade(crypto, indicators, signals, size);
+      }
+    } finally {
+      Math.random = originalRandom;
+    }
+
+    const perf = CrucibleRealTrading.aiState.strategyPerformance.MOMENTUM_SHORT;
+    expect(perf.losses).toBe(4);
+    expect(perf.consecutiveLosses).toBe(4);
+    expect(CrucibleRealTrading.aiState.entryAdaptation).toBeLessThan(1);
+    expect(CrucibleRealTrading.aiState.riskMultiplier).toBeLessThan(1);
+    expect(CrucibleRealTrading.aiState.adjustments.length).toBeGreaterThan(0);
+    expect(CrucibleRealTrading.aiState.adjustments.at(-1).reason).toBe(
+      "underperforming_strategy",
+    );
+  });
+
+  it("keeps drawdown-based position sizing non-negative", async () => {
+    await CrucibleRealTrading.init({ startingBalance: 50, enableAILearning: true });
+    CrucibleRealTrading.tradeState.maxDrawdownPercent = 40;
+
+    const size = CrucibleRealTrading.calculatePositionSize(
+      { volatility: 6 },
+      { confidence: 80 },
+    );
+
+    expect(size).toBeGreaterThanOrEqual(0);
+    expect(size).toBeLessThanOrEqual(CrucibleRealTrading.tradeState.equity * 0.5);
+  });
+
+  it("caps live wallet slippage estimates before any order is sent", () => {
+    const slippage = calculateSlippage(1000, 25, "PERP SHORT");
+
+    expect(Number(slippage.percent)).toBeLessThanOrEqual(2);
+    expect(slippage.method).toBe("PERP SHORT");
+  });
+});
+
+describe("Cross-Market Arbitrage Dry Run Scanners", () => {
+  it("converts odds, removes vig, and finds sports prediction-market edge", () => {
+    expect(Number(americanToProbability(-150).toFixed(4))).toBe(0.6);
+
+    const fair = removeVig([
+      { name: "Team A", price: -150 },
+      { name: "Team B", price: 130 },
+    ]);
+    const fairTotal = fair.reduce((sum, outcome) => sum + outcome.fairProbability, 0);
+    expect(fairTotal).toBeGreaterThan(0.999);
+    expect(fairTotal).toBeLessThan(1.001);
+
+    const riskState = createRiskState({ minNetEdge: 0.03, minNetProfitUSD: 1 });
+    const opportunities = findSportsPredictionEdges({
+      riskState,
+      sportsbookEvents: [
+        {
+          id: "game-1",
+          sport_key: "basketball_nba",
+          home_team: "Team A",
+          away_team: "Team B",
+          bookmakers: [
+            {
+              key: "sharp",
+              markets: [
+                {
+                  key: "h2h",
+                  outcomes: [
+                    { name: "Team A", price: -160 },
+                    { name: "Team B", price: 140 },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      predictionMarkets: [
+        {
+          eventId: "game-1",
+          outcome: "Team A",
+          yesPrice: 0.54,
+          noPrice: 0.47,
+          liquidityUSD: 5000,
+        },
+      ],
+      config: { minNetEdge: 0.03, minLiquidityUSD: 1000, maxSizeUSD: 100 },
+    });
+
+    expect(opportunities.length).toBe(1);
+    expect(opportunities[0].side).toBe("YES");
+    expect(opportunities[0].status).toBe("CANDIDATE");
+    expect(opportunities[0].netEdge).toBeGreaterThan(0.03);
+    expect(opportunities[0].executionMode).toBe("PREFUNDED_USDC");
+  });
+
+  it("calculates viable cross-DEX flash-loan arbitrage after all costs", async () => {
+    const economics = calculateFlashLoanArb({
+      borrowAmountUSD: 10000,
+      buyQuote: { amountOut: 5, slippageUSD: 1 },
+      sellQuote: { amountOut: 10045, slippageUSD: 1 },
+      config: { gasUSD: 3, mevBufferUSD: 2, minNetProfitUSD: 10, minROI: 0.0015 },
+    });
+
+    expect(economics.netProfitUSD).toBeGreaterThan(10);
+    expect(economics.isViable).toBe(true);
+
+    const quoteProvider = async ({ dex, side, amountIn }) => {
+      if (side === "buy") {
+        return {
+          dex,
+          amountOut: amountIn / 2000,
+          slippageUSD: 1,
+          liquidityUSD: 250000,
+          timestamp: 1000,
+        };
+      }
+      return {
+        dex,
+        amountOut: amountIn * 2009,
+        slippageUSD: 1,
+        liquidityUSD: 250000,
+        timestamp: 1000,
+      };
+    };
+
+    const opportunities = await scanCrossDexFlashArb({
+      quoteProvider,
+      tokens: [{ symbol: "USDC" }, { symbol: "WETH" }],
+      dexes: ["Uniswap", "Aerodrome"],
+      borrowAmountsUSD: [10000],
+      riskState: createRiskState({ minNetProfitUSD: 10, minNetEdge: 0.0015, maxTradeSizeUSD: 20000 }),
+      config: { gasUSD: 3, mevBufferUSD: 2, minNetProfitUSD: 10, minROI: 0.0015 },
+      now: 1000,
+    });
+
+    expect(opportunities.length).toBeGreaterThan(0);
+    expect(opportunities[0].status).toBe("CANDIDATE");
+    expect(opportunities[0].dryRunOnly).toBe(true);
+    expect(opportunities[0].executionMode).toBe("FLASH_LOAN");
+  });
+
+  it("self-corrects and cools down arbitrage strategies after losses", () => {
+    const now = Date.now();
+    const riskState = createRiskState({ cooldownMs: 60000 });
+
+    recordOpportunityResult(
+      riskState,
+      {
+        strategy: "CROSS_DEX_FLASH_LOAN_ARB",
+        netPnlUSD: -12,
+        estimatedSlippageUSD: 1,
+        actualSlippageUSD: 2,
+      },
+      now,
+    );
+    recordOpportunityResult(
+      riskState,
+      { strategy: "CROSS_DEX_FLASH_LOAN_ARB", netPnlUSD: -8 },
+      now + 1,
+    );
+
+    const adjustment = getRiskAdjustment(riskState, "CROSS_DEX_FLASH_LOAN_ARB", now + 2);
+    expect(adjustment.blocked).toBe(true);
+    expect(adjustment.reasons).toContain("strategy_cooldown");
+    expect(adjustment.riskMultiplier).toBeLessThan(1);
+    expect(adjustment.minEdgeBump).toBeGreaterThan(0);
   });
 });
 

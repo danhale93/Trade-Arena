@@ -43,7 +43,9 @@ const CrucibleRealTrading = {
     entryAdaptation: 1.0,  // Entry threshold adjustment
     exitAdaptation: 1.0,   // Exit threshold adjustment
     feeAdaptation: 1.0,    // Fee consideration in sizing
+    riskMultiplier: 1.0,   // Position-size correction after bad trades
     strategyPerformance: {},
+    adjustments: [],
     learningRate: 0.08,
     minProfitableWinRate: 0.45,  // Need >45% to keep strategy
   },
@@ -97,17 +99,33 @@ const CrucibleRealTrading = {
   // ════════════════════════════════════════════════════════════════
   async init(config = {}) {
     this.config = { ...this.config, ...config };
-    this.tradeState.currentBalance = this.config.startingBalance;
-    this.tradeState.equity = this.config.startingBalance;
+    this.tradeState = {
+      currentBalance: this.config.startingBalance,
+      equity: this.config.startingBalance,
+      maxEquity: this.config.startingBalance,
+      minEquity: this.config.startingBalance,
+      maxDrawdown: 0,
+      maxDrawdownPercent: 0,
+      openPosition: null,
+      lastTradeTime: Date.now(),
+      totalTrades: 0,
+      wins: 0,
+      losses: 0,
+    };
     this.trades = [];
     this.sessionId = `crucible-real-${Date.now()}`;
-    
+    this.aiState.entryAdaptation = 1.0;
+    this.aiState.exitAdaptation = 1.0;
+    this.aiState.feeAdaptation = 1.0;
+    this.aiState.riskMultiplier = 1.0;
+    this.aiState.adjustments = [];
+
     // Initialize strategy performance
     this.aiState.strategyPerformance = {
-      'MOMENTUM_LONG': { trades: 0, wins: 0, losses: 0, totalPnL: 0, profitFactor: 0 },
-      'MOMENTUM_SHORT': { trades: 0, wins: 0, losses: 0, totalPnL: 0, profitFactor: 0 },
-      'MEAN_REVERSION': { trades: 0, wins: 0, losses: 0, totalPnL: 0, profitFactor: 0 },
-      'VOLATILITY_BREAKOUT': { trades: 0, wins: 0, losses: 0, totalPnL: 0, profitFactor: 0 },
+      'MOMENTUM_LONG': { trades: 0, wins: 0, losses: 0, consecutiveLosses: 0, totalPnL: 0, profitFactor: 0 },
+      'MOMENTUM_SHORT': { trades: 0, wins: 0, losses: 0, consecutiveLosses: 0, totalPnL: 0, profitFactor: 0 },
+      'MEAN_REVERSION': { trades: 0, wins: 0, losses: 0, consecutiveLosses: 0, totalPnL: 0, profitFactor: 0 },
+      'VOLATILITY_BREAKOUT': { trades: 0, wins: 0, losses: 0, consecutiveLosses: 0, totalPnL: 0, profitFactor: 0 },
     };
     
     console.log('%c📊 CRUCIBLE REAL TRADING ENGINE INITIALIZED', 'color: #00ff88; font-weight: bold; font-size: 16px;');
@@ -338,13 +356,16 @@ const CrucibleRealTrading = {
     // Max drawdown protection: Reduce position if underwater
     const drawdownPercent = this.tradeState.maxDrawdownPercent || 0;
     if (drawdownPercent > 15) {
-      // If drawdown > 15%, scale positions down
-      const recoveryFactor = (20 - drawdownPercent) / 20; // 0.25 to 1.0
+      // If drawdown > 15%, scale positions down without ever going negative.
+      const recoveryFactor = Math.max(0.25, Math.min(1, (25 - drawdownPercent) / 10));
       positionSize *= recoveryFactor;
     }
-    
-    // Ensure we don't exceed 50% of equity
-    return Math.min(positionSize, this.tradeState.equity * 0.5);
+
+    // Self-correction after bad trades scales future exposure down.
+    positionSize *= this.aiState.riskMultiplier || 1.0;
+
+    // Ensure we don't exceed 50% of equity and never return negative size.
+    return Math.max(0, Math.min(positionSize, this.tradeState.equity * 0.5));
   },
   
   // ════════════════════════════════════════════════════════════════
@@ -466,8 +487,10 @@ const CrucibleRealTrading = {
       stratPerf.totalPnL += trade.pnlAUD;
       if (trade.isWin) {
         stratPerf.wins++;
+        stratPerf.consecutiveLosses = 0;
       } else {
         stratPerf.losses++;
+        stratPerf.consecutiveLosses = (stratPerf.consecutiveLosses || 0) + 1;
       }
       
       if (stratPerf.trades > 0) {
@@ -482,7 +505,7 @@ const CrucibleRealTrading = {
       this.tradeState.lastTradeTime = Date.now();
       
       // Play appropriate sounds (audio + synth)
-      const ent = window.CrucibleEntertainment;
+      const ent = typeof window !== 'undefined' ? window.CrucibleEntertainment : null;
       if (ent) {
         if (trade.isWin) {
           ent.playSound('win');
@@ -502,25 +525,48 @@ const CrucibleRealTrading = {
   // ════════════════════════════════════════════════════════════════
   adaptThresholdsBasedOnPerformance(stratPerf, signals, trade) {
     if (!this.config.enableAILearning) return;
-    
+
     const winRate = stratPerf.wins / Math.max(1, stratPerf.trades);
-    const profitFactor = stratPerf.profitFactor || 0;
-    
-    // If strategy is underperforming, reduce entry threshold (more trades but still selective)
-    if (winRate < 0.45 && stratPerf.trades > 3) {
-      // Underperforming - make entry slightly less aggressive
+    const wasBadTrade = !trade.isWin || trade.pnlAUD < 0;
+    let reason = null;
+
+    if (wasBadTrade) {
       this.aiState.entryAdaptation *= 0.98;
-      console.log(`⚠️ Strategy ${signals.strategy} underperforming (WR: ${(winRate*100).toFixed(1)}%). Reducing entry adaptation.`);
+      this.aiState.riskMultiplier *= stratPerf.consecutiveLosses >= 2 ? 0.88 : 0.95;
+      reason = stratPerf.consecutiveLosses >= 2 ? 'consecutive_losses' : 'loss';
     }
-    // If strategy is overperforming, increase confidence in entry
-    else if (winRate > 0.65 && stratPerf.trades > 3) {
-      // Overperforming - increase position sizing slightly
-      this.aiState.entryAdaptation *= 1.02;
-      console.log(`✅ Strategy ${signals.strategy} overperforming (WR: ${(winRate*100).toFixed(1)}%). Increasing entry adaptation.`);
+
+    // If strategy is underperforming, become more selective and cut exposure.
+    if (winRate < this.aiState.minProfitableWinRate && stratPerf.trades > 3) {
+      this.aiState.entryAdaptation *= 0.98;
+      this.aiState.riskMultiplier *= 0.92;
+      reason = 'underperforming_strategy';
+      console.log(`⚠️ Strategy ${signals.strategy} underperforming (WR: ${(winRate*100).toFixed(1)}%). Reducing entry/risk exposure.`);
     }
-    
-    // Clamp adaptation between 0.8 and 1.2 (±20%)
-    this.aiState.entryAdaptation = Math.min(1.2, Math.max(0.8, this.aiState.entryAdaptation));
+    // If strategy is overperforming, slowly restore confidence without exceeding caps.
+    else if (!wasBadTrade && winRate > 0.65 && stratPerf.trades > 3) {
+      this.aiState.entryAdaptation *= 1.01;
+      this.aiState.riskMultiplier *= 1.01;
+      reason = 'overperforming_strategy';
+      console.log(`✅ Strategy ${signals.strategy} overperforming (WR: ${(winRate*100).toFixed(1)}%). Restoring risk gradually.`);
+    }
+
+    // Clamp adaptations.
+    this.aiState.entryAdaptation = Math.min(1.2, Math.max(0.75, this.aiState.entryAdaptation));
+    this.aiState.riskMultiplier = Math.min(1.1, Math.max(0.5, this.aiState.riskMultiplier));
+
+    if (reason) {
+      this.aiState.adjustments.push({
+        timestamp: new Date().toISOString(),
+        tradeId: trade.id,
+        strategy: signals.strategy,
+        reason,
+        winRate,
+        entryAdaptation: this.aiState.entryAdaptation,
+        riskMultiplier: this.aiState.riskMultiplier,
+      });
+      if (this.aiState.adjustments.length > 100) this.aiState.adjustments.shift();
+    }
   },
   
   // ════════════════════════════════════════════════════════════════
@@ -546,7 +592,7 @@ const CrucibleRealTrading = {
     this.startTime = Date.now();
     
     // 🎬 STARTUP ENTERTAINMENT 🎬
-    if (window.CrucibleEntertainment) {
+    if (typeof window !== 'undefined' && window.CrucibleEntertainment) {
       window.CrucibleEntertainment.startSession();
     }
 
@@ -616,7 +662,7 @@ const CrucibleRealTrading = {
           );
           
           // 🎬 ENTERTAINMENT INTEGRATION 🎬
-          if (window.CrucibleEntertainment) {
+          if (typeof window !== 'undefined' && window.CrucibleEntertainment) {
             const x = window.innerWidth * 0.5 + (Math.random() - 0.5) * 400;
             const y = window.innerHeight * 0.3 + (Math.random() - 0.5) * 200;
             
@@ -788,6 +834,10 @@ async function runCrucibleReal(customConfig = {}) {
   await CrucibleRealTrading.start();
   
   return CrucibleRealTrading.trades;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { CrucibleRealTrading, runCrucibleReal };
 }
 
 console.log('%c✅ Crucible Real Trading Engine Loaded', 'color: #00ff88; font-weight: bold;');
