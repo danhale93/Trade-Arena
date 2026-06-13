@@ -724,19 +724,33 @@ class TradingEngine {
 
             
 
-            // Simulate profit based on opportunity margin
+            // Calculate actual profit based on entry and exit prices
+            let actualProfit = 0;
+            if (trade.entry !== null && trade.exit !== null) {
+                // For long positions: profit = (exitPrice - entryPrice) * size * leverage
+                const priceDifference = parseFloat(trade.exit) - parseFloat(trade.entry);
+                actualProfit = priceDifference * parseFloat(trade.size) * parseFloat(trade.leverage);
+                
+                // Subtract fees (estimated)
+                const fees = Math.abs(actualProfit) * 0.001; // 0.1% fee estimate
+                actualProfit -= fees;
+            } else {
+                // Fallback to simulated calculation if prices aren't available
+                const margin = Number(opportunity.profitMargin) || 0.5; // percent
+                actualProfit = (margin / 100) * parseFloat(trade.size) * 0.8; // 80% realized
+            }
 
-            // opportunity.profitMargin is a percentage (e.g. 1.2 for 1.2%).
-
-            const margin = Number(opportunity.profitMargin) || 0.5; // percent
-
-            const simulatedProfit = (margin / 100) * parseFloat(trade.size) * 0.8; // 80% realized
-
-
-
-            trade.profit = Number(simulatedProfit.toFixed(4));
-
-            trade.profitPercent = Number(((simulatedProfit / parseFloat(trade.size)) * 100).toFixed(2));
+            trade.profit = Number(actualProfit.toFixed(4));
+            trade.profitPercent = trade.size > 0 ? Number(((actualProfit / parseFloat(trade.size)) * 100).toFixed(2)) : 0;
+            
+            // Update bot's totalProfit
+            const botIndex = this.bots.findIndex(b => b.id === trade.botId);
+            if (botIndex !== -1) {
+                if (!this.bots[botIndex].totalProfit) {
+                    this.bots[botIndex].totalProfit = 0;
+                }
+                this.bots[botIndex].totalProfit += trade.profit;
+            }
 
             trade.status = 'CLOSED';
 
@@ -835,8 +849,17 @@ class TradingEngine {
             
 
             trade.status = 'COMPLETED';
-
+            
             trade.closedTime = Date.now();
+            
+            // Update bot's totalProfit
+            const botIndex = this.bots.findIndex(b => b.id === trade.botId);
+            if (botIndex !== -1) {
+                if (!this.bots[botIndex].totalProfit) {
+                    this.bots[botIndex].totalProfit = 0;
+                }
+                this.bots[botIndex].totalProfit += parseFloat(trade.profit);
+            }
 
         } catch (e) {
 
