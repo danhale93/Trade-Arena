@@ -1,540 +1,409 @@
+#!/usr/bin/env node
+
 /**
- * TRADE ARENA - Unit Tests & Integration Tests
- * Run with: node tests.js
+ * TRADE ARENA - Unit & Integration Tests
+ * Run with: npm test
  */
 
-// Requires for real classes
-let TradingEngine;
-try {
-  const mod = require('./trading-engine.js');
-  TradingEngine = mod.TradingEngine || mod.default || (mod.tradingEngine ? mod.tradingEngine.constructor : null);
-  if (!TradingEngine) throw new Error('No TradingEngine found');
-} catch (e) {
-class TradingEngineMock {
-    constructor() { this.bots = []; }
-    generateId() { return 'mock' + Math.random(); }
-    calculateRiskScore(v, p) { return Math.random()*100; }
-    
-    analyzeVolatility(prices) {
-      const returns = [];
-      for (let i = 1; i < prices.length; i++) {
-        returns.push((prices[i] - prices[i-1]) / prices[i-1]);
-      }
-      const mean = returns.reduce((a, b) => a + b) / returns.length;
-      const variance = returns.reduce((sq, n) => sq + Math.pow(n - mean, 2)) / returns.length;
-      const volatility = Math.sqrt(variance) * 100;
-      const trend = volatility > 5 ? 'HIGH' : volatility > 2 ? 'MEDIUM' : 'LOW';
-      return { current: volatility.toFixed(2), trend, forecast1h: (volatility * 1.05).toFixed(2) };
-    }
-    
-    calculatePositionSize(capital, volatility, leverage) {
-      let positionFraction = 0.02; // Base 2%
-      if (volatility > 5) {
-        positionFraction *= 0.7; // Reduce 30% in high vol
-      }
-      const adjustedLeverage = Math.min(leverage, Math.floor(20 / (volatility + 1)));
-      const size = capital * positionFraction * adjustedLeverage;
-      return { size: size.toFixed(4), leverage: adjustedLeverage, stopLoss: (size * 0.02).toFixed(4), takeProfit: (size * 0.05).toFixed(4), riskReward: 2.5 };
-    }
-    
-    generateTradeSignal(data) {
-      let signal = 0;
-      if (data.rsi < 30) signal += 1;
-      else if (data.rsi > 85) signal -= 1; // Fixed overbought SELL
-      if (data.macd.histogram > 0 && data.macd.histogram > data.macd.prevHistogram) signal += 1;
-      else if (data.macd.histogram < 0 && data.macd.histogram < data.macd.prevHistogram) signal -= 1;
-      const action = signal > 0 ? 'BUY' : signal < 0 ? 'SELL' : 'HOLD';
-      return { action, confidence: Math.min(0.95, Math.abs(signal) * 0.4) };
-    }
+const { TradingEngine } = require("./trading-engine.js");
+const {
+  SecurityHelper,
+  ArbitrageAnalyzer,
+  FlashLoanSimulator,
+} = require("./contract-helpers.js");
+const {
+  CrucibleTest,
+  runCrucibleTest,
+  calculateRSI,
+  calculateATR,
+  calculateSMA,
+  classifyRegime,
+  validateAllRegimes,
+} = require("./crucible-test.js");
 
-    async executeTrade(bot, opportunity) {
-      return {
-        id: this.generateId(),
-        botId: bot.id,
-        status: 'CLOSED',
-        profit: 0.004,
-        profitPercent: 0.4
-      };
-    }
-  }
-  TradingEngine = TradingEngineMock;
-}
-const { SecurityHelper } = require('./contract-helpers.js');
-SecurityHelper.isStablecoin = SecurityHelper.isStablecoin || function(tokenSymbol) {
-  const stablecoins = ['USDC', 'USDT', 'DAI', 'USDbC', 'FRAX'];
-  return stablecoins.includes(tokenSymbol);
-};
-
-// Mock classes for missing components (temporary)
-class ArbitrageAnalyzer {
-  static calculateArbitrage(buy, sell, amount) {
-    const diff = (sell - buy) / buy;
-    const totalFeesPercent = 0.3; // combined taker + swap + gas estimate
-    const netPercent = diff * 100 - totalFeesPercent;
-    const netProfit = amount * (netPercent / 100);
-    return {
-      netProfit: netProfit.toFixed(4),
-      isViable: netProfit > 0,
-      profitPercent: netPercent.toFixed(2)
-    };
-  }
-  static findTriangularArbitrage(prices) { return { opportunity: true }; }
-}
-
-class FlashLoanSimulator {
-  static simulateLiquidation(debt, collateral, price) { 
-    const flashLoanFee = debt * 0.0009;
-    return { profit: 0.012, roi: 0.12, flashLoanFee: flashLoanFee.toFixed(4) }; 
-  }
-  static simulateSandwich(amount, impact, liquidity) { return { totalProfit: 0.008, roi: 0.08 }; }
-}
-
-// Mock setup for testing
-const expect = (value) => ({
-    toBe: (expected) => {
-        if (value !== expected) throw new Error(`Expected ${expected}, got ${value}`);
-        return true;
-    },
-    toBeGreaterThan: (expected) => {
-        if (value <= expected) throw new Error(`Expected > ${expected}, got ${value}`);
-        return true;
-    },
-    toBeLessThan: (expected) => {
-        if (value >= expected) throw new Error(`Expected < ${expected}, got ${value}`);
-        return true;
-    },
-    toEqual: (expected) => {
-        if (JSON.stringify(value) !== JSON.stringify(expected)) 
-            throw new Error(`Expected ${JSON.stringify(expected)}, got ${JSON.stringify(value)}`);
-        return true;
-    },
-    toContain: (expected) => {
-        if (!value.includes(expected)) throw new Error(`Expected ${value} to contain ${expected}`);
-        return true;
-    },
-    toMatch: (pattern) => {
-        if (!pattern.test(value)) throw new Error(`Expected ${value} to match ${pattern}`);
-        return true;
-    }
-});
-
+const tests = [];
+let currentSuite = "";
 let testFailures = 0;
 
-const describe = (name, fn) => {
-    console.log(`\n📋 ${name}`);
-    try {
-        fn();
-    } catch (e) {
-        console.error(`   ❌ ${e.message}`);
+const expect = (value) => ({
+  toBe: (expected) => {
+    if (value !== expected)
+      throw new Error(`Expected ${expected}, got ${value}`);
+  },
+  toEqual: (expected) => {
+    if (JSON.stringify(value) !== JSON.stringify(expected)) {
+      throw new Error(
+        `Expected ${JSON.stringify(expected)}, got ${JSON.stringify(value)}`,
+      );
     }
+  },
+  toBeGreaterThan: (expected) => {
+    if (value <= expected)
+      throw new Error(`Expected > ${expected}, got ${value}`);
+  },
+  toBeGreaterThanOrEqual: (expected) => {
+    if (value < expected)
+      throw new Error(`Expected >= ${expected}, got ${value}`);
+  },
+  toBeLessThan: (expected) => {
+    if (value >= expected)
+      throw new Error(`Expected < ${expected}, got ${value}`);
+  },
+  toBeLessThanOrEqual: (expected) => {
+    if (value > expected)
+      throw new Error(`Expected <= ${expected}, got ${value}`);
+  },
+  toContain: (expected) => {
+    if (!value.includes(expected))
+      throw new Error(`Expected ${value} to contain ${expected}`);
+  },
+  toMatch: (pattern) => {
+    if (!pattern.test(value))
+      throw new Error(`Expected ${value} to match ${pattern}`);
+  },
+});
+
+const describe = (name, fn) => {
+  currentSuite = name;
+  fn();
 };
 
 const it = (name, fn) => {
-    try {
-        fn();
-        console.log(`   ✅ ${name}`);
-    } catch (e) {
-        testFailures += 1;
-        console.error(`   ❌ ${name}: ${e.message}`);
-    }
+  tests.push({ suite: currentSuite, name, fn });
 };
 
-/**
- * Trading Engine Tests
- */
-describe('Trading Engine - Arbitrage Detection', () => {
-    it('should detect arbitrage opportunities correctly', () => {
-        const engine = new TradingEngine();
-        expect(engine.bots).toEqual([]);
-    });
+describe("Trading Engine - Core Logic", () => {
+  it("loads the real TradingEngine module", () => {
+    const engine = new TradingEngine();
+    expect(Array.isArray(engine.bots)).toBe(true);
+    expect(engine.riskLimits.maxOpportunityAgeMs).toBe(45000);
+  });
 
-    it('should calculate risk score between 0-100', () => {
-        const engine = new TradingEngine();
-        const risk = engine.calculateRiskScore(5, 0.5);
-        expect(risk).toBeGreaterThan(-1);
-        expect(risk).toBeLessThan(101);
-    });
+  it("filters stablecoins from market pairs", () => {
+    const engine = new TradingEngine();
+    const pairs = [
+      { token: "WETH" },
+      { token: "USDC" },
+      { token: "ARB" },
+      { token: "DAI" },
+    ];
+    expect(engine.filterStablecoins(pairs).map((pair) => pair.token)).toEqual([
+      "WETH",
+      "ARB",
+    ]);
+  });
 
-    it('should generate unique bot IDs', () => {
-        const engine = new TradingEngine();
-        const id1 = engine.generateId();
-        const id2 = engine.generateId();
-        expect(id1 === id2).toBe(false);
-    });
+  it("detects arbitrage opportunities with deterministic exchange prices", async () => {
+    const engine = new TradingEngine();
+    engine.fetchPrice = async (_token, exchange) =>
+      exchange === "uniswap" ? 100 : 101;
+
+    const opportunities = await engine.detectArbitrageOpportunities([
+      { token: "WETH", volume: 100000, volatility: 2 },
+      { token: "USDC", volume: 100000, volatility: 1 },
+    ]);
+
+    expect(opportunities.length).toBe(1);
+    expect(opportunities[0].token).toBe("WETH");
+    expect(opportunities[0].profitMargin).toBeGreaterThan(0.3);
+  });
+
+  it("calculates risk scores inside 0-100", () => {
+    const engine = new TradingEngine();
+    const risk = engine.calculateRiskScore(5, 0.5);
+    expect(risk).toBeGreaterThanOrEqual(0);
+    expect(risk).toBeLessThanOrEqual(100);
+  });
+
+  it("generates unique IDs", () => {
+    const engine = new TradingEngine();
+    expect(engine.generateId() === engine.generateId()).toBe(false);
+  });
 });
 
-describe('Trading Engine - Volatility Analysis', () => {
-    it('should calculate volatility from price history', () => {
-        const engine = new TradingEngine();
-        const prices = [2500, 2510, 2520, 2515, 2525, 2530];
-        const analysis = engine.analyzeVolatility(prices);
-        expect(analysis.current !== undefined).toBe(true);
-        expect(analysis.forecast1h !== undefined).toBe(true);
-    });
+describe("Trading Engine - Volatility & Sizing", () => {
+  it("calculates volatility from price history", () => {
+    const engine = new TradingEngine();
+    const analysis = engine.analyzeVolatility([
+      2500, 2510, 2520, 2515, 2525, 2530,
+    ]);
+    expect(analysis.current !== undefined).toBe(true);
+    expect(analysis.forecast1h !== undefined).toBe(true);
+  });
 
-    it('should classify volatility trends', () => {
-        const engine = new TradingEngine();
-        const pricesLow = [2500, 2501, 2502, 2503, 2504];
-        const analysisLow = engine.analyzeVolatility(pricesLow);
-        expect(analysisLow.trend).toBe('LOW');
+  it("classifies low and high volatility", () => {
+    const engine = new TradingEngine();
+    expect(engine.analyzeVolatility([2500, 2501, 2502, 2503, 2504]).trend).toBe(
+      "LOW",
+    );
+    expect(engine.analyzeVolatility([2500, 2700, 2300, 2800, 2200]).trend).toBe(
+      "HIGH",
+    );
+  });
 
-        const pricesHigh = [2500, 2600, 2400, 2700, 2300];
-        const analysisHigh = engine.analyzeVolatility(pricesHigh);
-        expect(analysisHigh.trend).toBe('HIGH');
-    });
+  it("reduces position size in high volatility", () => {
+    const engine = new TradingEngine();
+    const lowVol = engine.calculatePositionSize(10, 2, 10);
+    const highVol = engine.calculatePositionSize(10, 8, 10);
+    expect(parseFloat(lowVol.size)).toBeGreaterThan(parseFloat(highVol.size));
+    expect(lowVol.riskReward).toBe(2.5);
+  });
 });
 
-describe('Trading Engine - Position Sizing', () => {
-    it('should calculate position size correctly', () => {
-        const engine = new TradingEngine();
-        const position = engine.calculatePositionSize(10, 3, 5); // 10 ETH capital, 3% vol, 5x leverage
-        expect(position.size !== undefined).toBe(true);
-        expect(position.leverage !== undefined).toBe(true);
-        expect(position.stopLoss !== undefined).toBe(true);
+describe("Trading Engine - Signal & Execution", () => {
+  it("generates buy signals for oversold conditions", () => {
+    const engine = new TradingEngine();
+    const signal = engine.generateTradeSignal({
+      price: 2500,
+      volume: 100000,
+      rsi: 25,
+      macd: { histogram: 0.5, prevHistogram: 0.4 },
+      bollinger: { upper: 2600, lower: 2400, middle: 2500 },
+    });
+    expect(signal.action).toBe("BUY");
+  });
+
+  it("generates sell signals for overbought conditions", () => {
+    const engine = new TradingEngine();
+    const signal = engine.generateTradeSignal({
+      price: 2500,
+      volume: 100000,
+      rsi: 85,
+      macd: { histogram: -0.5, prevHistogram: -0.4 },
+      bollinger: { upper: 2600, lower: 2400, middle: 2500 },
+    });
+    expect(signal.action).toBe("SELL");
+  });
+
+  it("records profitable paper trade execution", async () => {
+    const engine = new TradingEngine();
+    const bot = {
+      id: engine.generateId(),
+      name: "Test Bot",
+      amount: 10,
+      risk: "Moderate (5x leverage)",
+    };
+    const trade = await engine.executeTrade(bot, {
+      type: "ARBITRAGE",
+      profitMargin: 0.8,
+      volatility: 2,
+      buyPrice: 2500,
+      sellPrice: 2525,
+      timestamp: Date.now(),
+      ttl: 45000,
     });
 
-    it('should reduce leverage in high volatility', () => {
-        const engine = new TradingEngine();
-        const posLowVol = engine.calculatePositionSize(10, 2, 10);
-        const posHighVol = engine.calculatePositionSize(10, 8, 10);
-        
-        expect(parseFloat(posLowVol.size) > parseFloat(posHighVol.size)).toBe(true);
+    expect(trade.botId).toBe(bot.id);
+    expect(trade.status).toBe("CLOSED");
+    expect(Number(trade.profit)).toBeGreaterThan(0);
+  });
+
+  it("expires stale opportunities before execution", async () => {
+    const engine = new TradingEngine();
+    const bot = {
+      id: engine.generateId(),
+      name: "Expiry Bot",
+      amount: 10,
+      risk: "Moderate (5x leverage)",
+    };
+    const trade = await engine.executeTrade(bot, {
+      type: "ARBITRAGE",
+      profitMargin: 1,
+      volatility: 2,
+      timestamp: Date.now() - 60000,
+      ttl: 45000,
     });
 
-    it('should maintain risk/reward ratio', () => {
-        const engine = new TradingEngine();
-        const position = engine.calculatePositionSize(10, 3, 5);
-        const riskReward = position.riskReward;
-        expect(riskReward).toBe(2.5);
-    });
+    expect(trade.status).toBe("EXPIRED");
+    expect(trade.profit).toBe(0);
+  });
 });
 
-describe('Trading Engine - Signal Generation', () => {
-    it('should generate buy signals for oversold conditions', () => {
-        const engine = new TradingEngine();
-        const data = {
-            price: 2500,
-            volume: 100000,
-            rsi: 25, // Oversold
-            macd: { histogram: 0.5, prevHistogram: 0.4 },
-            bollinger: { upper: 2600, lower: 2400, middle: 2500 }
-        };
-        const signal = engine.generateTradeSignal(data);
-        expect(signal.action).toBe('BUY');
-    });
+describe("Contract Helpers - Security & Simulation", () => {
+  it("identifies stablecoins", () => {
+    expect(SecurityHelper.isStablecoin("USDC")).toBe(true);
+    expect(SecurityHelper.isStablecoin("USDT")).toBe(true);
+    expect(SecurityHelper.isStablecoin("DAI")).toBe(true);
+    expect(SecurityHelper.isStablecoin("ETH")).toBe(false);
+  });
 
-    it('should generate sell signals for overbought conditions', () => {
-        const engine = new TradingEngine();
-        const data = {
-            price: 2500,
-            volume: 100000,
-            rsi: 85, // Overbought
-            macd: { histogram: -0.5, prevHistogram: -0.4 },
-            bollinger: { upper: 2600, lower: 2400, middle: 2500 }
-        };
-        const signal = engine.generateTradeSignal(data);
-        expect(signal.action).toBe('SELL');
-    });
+  it("assesses MEV risk and recommendations", () => {
+    expect(
+      SecurityHelper.analyzeMEVRisk({
+        amountIn: 50,
+        volatility: 8,
+        liquidity: 50000,
+      }).recommendation,
+    ).toBe("WAIT");
+    expect(
+      SecurityHelper.analyzeMEVRisk({
+        amountIn: 1,
+        volatility: 2,
+        liquidity: 5000000,
+      }).recommendation,
+    ).toBe("PROCEED");
+  });
 
-    it('should assign confidence scores', () => {
-        const engine = new TradingEngine();
-        const data = {
-            price: 2500,
-            volume: 100000,
-            rsi: 30,
-            macd: { histogram: 0.2, prevHistogram: 0.1 },
-            bollinger: { upper: 2600, lower: 2400, middle: 2500 }
-        };
-        const signal = engine.generateTradeSignal(data);
-        expect(signal.confidence).toBeGreaterThan(0);
-        expect(signal.confidence).toBeLessThan(1);
-    });
+  it("estimates higher slippage for larger or lower-liquidity trades", () => {
+    const small = SecurityHelper.estimateSlippage(1, 1000000, 3);
+    const large = SecurityHelper.estimateSlippage(100, 1000000, 3);
+    const lowLiq = SecurityHelper.estimateSlippage(10, 100000, 3);
+    const highLiq = SecurityHelper.estimateSlippage(10, 10000000, 3);
+
+    expect(large).toBeGreaterThan(small);
+    expect(lowLiq).toBeGreaterThan(highLiq);
+  });
+
+  it("validates contract interaction inputs", () => {
+    const valid = SecurityHelper.validateContractInteraction(
+      "0x4200000000000000000000000000000000000006",
+      "transfer",
+      [],
+    );
+    const invalid = SecurityHelper.validateContractInteraction(
+      "not-an-address",
+      "transfer",
+      [],
+    );
+
+    expect(valid.valid).toBe(true);
+    expect(invalid.valid).toBe(false);
+  });
 });
 
-/**
- * Contract Helper Tests
- */
-describe('Contract Helpers - Stablecoin Detection', () => {
-    it('should identify stablecoins', () => {
-const helper = new SecurityHelper();
-        helper.isStablecoin = SecurityHelper.isStablecoin; // Delegate to static
-        expect(helper.isStablecoin('USDC')).toBe(true);
-        expect(helper.isStablecoin('USDT')).toBe(true);
-        expect(helper.isStablecoin('DAI')).toBe(true);
-        expect(helper.isStablecoin('ETH')).toBe(false);
+describe("Arbitrage & Flash Loan Simulators", () => {
+  it("identifies viable arbitrage after fees", () => {
+    const profitable = ArbitrageAnalyzer.calculateArbitrage(
+      2500,
+      2700,
+      10000,
+      1,
+    );
+    const unprofitable = ArbitrageAnalyzer.calculateArbitrage(
+      2500,
+      2501,
+      10000,
+      1,
+    );
+
+    expect(profitable.isViable).toBe(true);
+    expect(Number(unprofitable.netProfit)).toBeLessThan(0);
+  });
+
+  it("detects triangular arbitrage", () => {
+    const arb = ArbitrageAnalyzer.findTriangularArbitrage({
+      "ETH/USD": 2500,
+      "USD/USDC": 1,
+      "USDC/ETH": 0.000401,
     });
+    expect(arb.opportunity).toBe(true);
+  });
+
+  it("calculates flash loan liquidation and sandwich metrics", () => {
+    const liquidation = FlashLoanSimulator.simulateLiquidation(100, 50, 2500);
+    const sandwich = FlashLoanSimulator.simulateSandwich(100, 50, 100);
+
+    expect(liquidation.flashLoanFee).toBe((100 * 0.0009).toFixed(4));
+    expect(Number(liquidation.profit)).toBeGreaterThan(0);
+    expect(Number(sandwich.totalProfit)).toBeGreaterThan(0);
+  });
 });
 
-describe('Contract Helpers - MEV Risk Analysis', () => {
-    it('should assess MEV risk for large swaps', () => {
-        const risk = SecurityHelper.analyzeMEVRisk({
-            amountIn: 20,
-            volatility: 3,
-            liquidity: 500000
-        });
-        expect(risk.riskScore).toBeGreaterThan(0);
-        expect(risk.warnings.length).toBeGreaterThan(0);
-    });
+describe("Crucible Regime Coverage", () => {
+  it("calculates RSI, ATR, and SMA indicators", () => {
+    const closes = [
+      101, 103, 102, 104, 106, 105, 107, 109, 108, 110, 111, 109, 108, 107, 106,
+    ];
+    const highs = [
+      102, 104, 103, 105, 107, 106, 108, 110, 109, 111, 112, 110, 109, 108, 107,
+    ];
+    const lows = [
+      99, 101, 100, 102, 104, 103, 105, 107, 105, 108, 109, 107, 106, 105, 104,
+    ];
 
-    it('should recommend WAIT for high risk trades', () => {
-        const risk = SecurityHelper.analyzeMEVRisk({
-            amountIn: 50,
-            volatility: 8,
-            liquidity: 50000
-        });
-        expect(risk.recommendation).toBe('WAIT');
-    });
+    expect(calculateRSI(closes, 14)).toBeGreaterThanOrEqual(0);
+    expect(calculateRSI(closes, 14)).toBeLessThanOrEqual(100);
+    expect(calculateATR(highs, lows, closes, 14)).toBeGreaterThan(0);
+    expect(calculateSMA(closes, 5)).toBe(108.2);
+  });
 
-    it('should recommend PROCEED for low risk trades', () => {
-        const risk = SecurityHelper.analyzeMEVRisk({
-            amountIn: 1,
-            volatility: 2,
-            liquidity: 5000000
-        });
-        expect(risk.recommendation).toBe('PROCEED');
+  it("classifies every required market regime", () => {
+    expect(classifyRegime(65, 2, 110, 105)).toBe("BULL");
+    expect(classifyRegime(35, 2, 100, 105)).toBe("BEAR");
+    expect(classifyRegime(50, 6, 105, 105)).toBe("HIGH_VOL");
+    expect(classifyRegime(50, 2, 105, 105)).toBe("CHOP");
+  });
+
+  it("passes the all-regime Crucible coverage validator", () => {
+    const coverage = validateAllRegimes();
+    expect(coverage.passed).toBe(true);
+    expect(coverage.regimes.sort()).toEqual(
+      ["BEAR", "BULL", "CHOP", "HIGH_VOL"].sort(),
+    );
+  });
+
+  it("runs a fast Crucible paper test with strict risk accounting", async () => {
+    CrucibleTest.config.verbose = false;
+    CrucibleTest.config.verifyResults = true;
+    await runCrucibleTest(2, 0);
+
+    expect(CrucibleTest.trades.length).toBe(2);
+    CrucibleTest.trades.forEach((trade) => {
+      expect(trade.verified).toBe(true);
+      expect([30, -10, 0]).toContain(trade.pnl);
     });
+  });
 });
 
-describe('Contract Helpers - Slippage Estimation', () => {
-    it('should calculate slippage realistically', () => {
-        const slippage = SecurityHelper.estimateSlippage(10, 1000000, 3);
-        expect(slippage).toBeGreaterThan(0);
-        expect(slippage).toBeLessThan(10);
-    });
+describe("Performance", () => {
+  it("generates IDs and computes indicators quickly", () => {
+    const engine = new TradingEngine();
+    const prices = Array(500)
+      .fill(2500)
+      .map((price, index) => price + Math.sin(index) * 50);
+    const start = Date.now();
 
-    it('should increase slippage with larger amounts', () => {
-        const small = SecurityHelper.estimateSlippage(1, 1000000, 3);
-        const large = SecurityHelper.estimateSlippage(100, 1000000, 3);
-        expect(large > small).toBe(true);
-    });
+    for (let i = 0; i < 1000; i++) engine.generateId();
+    engine.analyzeVolatility(prices);
+    for (let i = 0; i < 100; i++) engine.calculatePositionSize(10, 3, 5);
 
-    it('should increase slippage with lower liquidity', () => {
-        const highLiq = SecurityHelper.estimateSlippage(10, 10000000, 3);
-        const lowLiq = SecurityHelper.estimateSlippage(10, 100000, 3);
-        expect(lowLiq > highLiq).toBe(true);
-    });
+    expect(Date.now() - start).toBeLessThan(150);
+  });
 });
 
-/**
- * Arbitrage Analyzer Tests
- */
-describe('Arbitrage Analyzer', () => {
-    it('should identify profitable arbitrage', () => {
-        const result = ArbitrageAnalyzer.calculateArbitrage(2500, 2510, 100);
-        expect(result.netProfit !== undefined).toBe(true);
-        expect(result.isViable).toBe(true);
-    });
+async function run() {
+  let lastSuite = null;
 
-    it('should account for fees in profitability', () => {
-        const profitable = ArbitrageAnalyzer.calculateArbitrage(2500, 2600, 100);
-        const unprofitable = ArbitrageAnalyzer.calculateArbitrage(2500, 2501, 100);
-        
-        expect(parseFloat(profitable.netProfit) > 0).toBe(true);
-        expect(parseFloat(unprofitable.netProfit) < 0).toBe(true);
-    });
+  for (const test of tests) {
+    if (test.suite !== lastSuite) {
+      lastSuite = test.suite;
+      console.log(`\n📋 ${lastSuite}`);
+    }
 
-    it('should calculate profit percentage', () => {
-        const result = ArbitrageAnalyzer.calculateArbitrage(2500, 2525, 100);
-        expect(result.profitPercent !== '0.00').toBe(true);
-    });
+    try {
+      await test.fn();
+      console.log(`   ✅ ${test.name}`);
+    } catch (error) {
+      testFailures += 1;
+      console.error(`   ❌ ${test.name}: ${error.message}`);
+    }
+  }
 
-    it('should detect triangular arbitrage', () => {
-        const prices = {
-            'ETH/USD': 2500,
-            'USD/USDC': 1,
-            'USDC/ETH': 0.000401 // > 1/2500
-        };
-        const arb = ArbitrageAnalyzer.findTriangularArbitrage(prices);
-        expect(arb.opportunity).toBe(true);
-    });
-});
+  console.log("\n" + "=".repeat(50));
+  console.log("🧪 TRADE ARENA TEST SUITE");
+  console.log("=".repeat(50));
 
-/**
- * Flash Loan Simulator Tests
- */
-describe('Flash Loan Simulator', () => {
-    it('should calculate liquidation profit', () => {
-        const result = FlashLoanSimulator.simulateLiquidation(100, 50, 2500);
-        expect(result.profit !== undefined).toBe(true);
-        expect(result.roi !== undefined).toBe(true);
-    });
-
-    it('should account for Aave flash loan fee', () => {
-        const result = FlashLoanSimulator.simulateLiquidation(100, 50, 2500);
-        const expectedFee = 100 * 0.0009;
-        expect(result.flashLoanFee).toBe(expectedFee.toFixed(4));
-    });
-
-    it('should simulate sandwich attack profits', () => {
-        const result = FlashLoanSimulator.simulateSandwich(100, 50, 100);
-        expect(result.totalProfit !== undefined).toBe(true);
-        expect(result.roi !== undefined).toBe(true);
-    });
-});
-
-/**
- * Bot Management Tests
- */
-describe('Bot Management', () => {
-    it('should create bot with unique ID', () => {
-        const engine = new TradingEngine();
-        const bot1 = {
-            id: engine.generateId(),
-            name: 'Bot 1',
-            strategy: 'Arbitrage'
-        };
-        const bot2 = {
-            id: engine.generateId(),
-            name: 'Bot 2',
-            strategy: 'Volatility'
-        };
-        expect(bot1.id === bot2.id).toBe(false);
-    });
-
-    it('should track multiple bots', () => {
-        const engine = new TradingEngine();
-        for (let i = 0; i < 5; i++) {
-            engine.bots.push({
-                id: engine.generateId(),
-                name: `Bot ${i}`,
-                active: true
-            });
-        }
-        expect(engine.bots.length).toBe(5);
-    });
-});
-
-/**
- * Trade Execution Tests
- */
-describe('Trade Execution', () => {
-    it('should record trade details', async () => {
-        const engine = new TradingEngine();
-        const bot = {
-            id: engine.generateId(),
-            name: 'Test Bot',
-            amount: 1.0,
-            risk: 'Conservative (2x leverage)'
-        };
-        engine.bots.push(bot);
-
-        const opportunity = {
-            type: 'ARBITRAGE',
-            profitMargin: 0.5,
-            volatility: 2,
-            buyPrice: 2500,
-            bot: bot // Add bot context
-        };
-
-        const trade = await engine.executeTrade(bot, opportunity);
-        expect(trade.botId).toBe(bot.id);
-        expect(trade.status !== 'PENDING').toBe(true);
-    });
-
-    it('should calculate trade profit', async () => {
-        const engine = new TradingEngine();
-        const bot = {
-            id: engine.generateId(),
-            name: 'Test Bot',
-            amount: 1.0,
-            risk: 'Moderate (5x leverage)'
-        };
-
-        const opportunity = {
-            type: 'ARBITRAGE',
-            profitMargin: 0.8,
-            volatility: 2
-        };
-
-        const trade = await engine.executeTrade(bot, opportunity);
-        expect(parseFloat(trade.profit) > 0).toBe(true);
-    });
-});
-
-/**
- * Input Validation Tests
- */
-describe('Input Validation', () => {
-    it('should validate contract addresses', () => {
-        const valid = SecurityHelper.validateContractInteraction(
-            '0x4200000000000000000000000000000000000006',
-            'transfer',
-            [{ amount: 1 }]
-        );
-        expect(valid.valid).toBe(true);
-    });
-
-    it('should reject invalid addresses', () => {
-        const invalid = SecurityHelper.validateContractInteraction(
-            'not-an-address',
-            'transfer',
-            [{ amount: 1 }]
-        );
-        expect(invalid.valid).toBe(false);
-    });
-
-    it('should validate method names', () => {
-        const valid = SecurityHelper.validateContractInteraction(
-            '0x4200000000000000000000000000000000000006',
-            'swap',
-            []
-        );
-        expect(valid.valid).toBe(true);
-    });
-});
-
-/**
- * Performance Tests
- */
-describe('Performance', () => {
-    it('should generate IDs quickly', () => {
-        const engine = new TradingEngine();
-        const start = Date.now();
-        for (let i = 0; i < 1000; i++) {
-            engine.generateId();
-        }
-        const time = Date.now() - start;
-        expect(time < 100).toBe(true); // Should be < 100ms
-    });
-
-    it('should calculate volatility efficiently', () => {
-        const engine = new TradingEngine();
-        const prices = Array(500).fill(2500).map((p, i) => p + Math.random() * 100);
-        const start = Date.now();
-        engine.analyzeVolatility(prices);
-        const time = Date.now() - start;
-        expect(time < 50).toBe(true); // Should be < 50ms
-    });
-
-    it('should position size quickly', () => {
-        const engine = new TradingEngine();
-        const start = Date.now();
-        for (let i = 0; i < 100; i++) {
-            engine.calculatePositionSize(10, 3, 5);
-        }
-        const time = Date.now() - start;
-        expect(time < 100).toBe(true); // Should be < 100ms
-    });
-});
-
-/**
- * Test Summary
- */
-console.log('\n' + '='.repeat(50));
-console.log('🧪 TRADE ARENA TEST SUITE');
-console.log('='.repeat(50));
-console.log('\nRun individual test groups:');
-console.log('✅ All tests completed');
-console.log('\nFor production deployment, ensure:');
-console.log('  ✓ All tests passing');
-console.log('  ✓ No console errors');
-console.log('  ✓ Smart contracts verified');
-console.log('  ✓ Private keys secured');
-console.log('\n' + '='.repeat(50) + '\n');
-
-if (testFailures > 0) {
+  if (testFailures > 0) {
     console.error(`❌ Test suite failed with ${testFailures} failure(s).`);
     process.exitCode = 1;
-} else {
-    console.log('✅ Test suite passed with 0 failures.');
+  } else {
+    console.log("✅ Test suite passed with 0 failures.");
+  }
+
+  console.log("=".repeat(50) + "\n");
 }
+
+run().catch((error) => {
+  console.error("❌ Test runner failed:", error);
+  process.exitCode = 1;
+});

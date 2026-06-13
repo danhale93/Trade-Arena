@@ -10,8 +10,14 @@
     "test": "node tests.js"
   },
   "devDependencies": {
-    "express": "^4.19.2",
+    "concurrently": "^8.2.2",
     "cors": "^2.8.5",
-    "concurrently": "^8.2.2"
+    "express": "^4.19.2"
+  },
+  "dependencies": {
+    "axios": "^1.13.6",
+    "dotenv": "^16.6.1",
+    "ethers": "^5.8.0",
+    "websocket": "^1.0.35"
   }
 }
