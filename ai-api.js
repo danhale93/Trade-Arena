@@ -9,7 +9,7 @@ const AI_CONFIG = {
   apiKey: process.env.ANTHROPIC_API_KEY || null,
   model: 'claude-sonnet-4-20250514',
   maxTokens: 400,
-  endpoint: 'https://api.anthropic.com/v1/messages',
+endpoint: 'http://localhost:3001/api/claude',
 };
 
 /**

@@ -121,6 +121,22 @@ const LM_ARENA_MODELS = {
       costPer1kTokens: 0.015,
       speedMs: 1500,
       contextWindow: 200000
+    },
+    'ridges-agent-b33e': {
+      provider: 'Ridges',
+      elo: 1320,
+      category: 'decentralized',
+      personality: 'DECENTRALIZED',
+      characteristics: 'Decentralized AI agent on Bittensor-like network',
+      strengths: ['Distributed Compute', 'Miner Hotkey Optimized', 'Agent Competition'],
+      weaknesses: ['Network Latency', 'API Maturing'],
+      apiEndpoint: 'https://api.ridges.ai/v1/chat/completions',
+      costPer1kTokens: 0.002,
+      speedMs: 900,
+      contextWindow: 128000,
+      agentId: 'b33e1810-8cac-4dba-8ffc-199ef5f53a29',
+      minerHotkey: '5FdzCQW3KA6MfgxQ6WB7FUMaMfKzR1LBE9n3tTuzfjMUnmjX',
+      validatorHotkey: '5Djyacas3eWLPhCKsS3neNSJonzfxJmD3gcrMTFDc4eHsn62'
     }
   },
 

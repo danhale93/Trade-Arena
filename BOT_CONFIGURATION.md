@@ -318,5 +318,27 @@ Your trading bot now has:
 **Questions?** Edit the bot config and refresh your browser!  
 **Want more bots?** You can expand the `bots` object to add more personalities!
 
+### 🤖 Advanced: AI Model Assignment (New!)
+**Configure which AI model your bot uses:**
+
+**File:** `multi-ai-arena.js` → `LM_ARENA_MODELS` & `BOT_MODEL_ASSIGNMENT`
+
+**New: Ridges Decentralized AI**
+- **Model Name**: `'ridges-agent-b33e'`
+- **ELO**: 1320 (TIER_2)
+- **Perfect for**: HFT, AGGRESSIVE bots (distributed compute)
+- **Auto-assigned**: Trade Olympics brackets
+- **Config**: `ridges-config.js`
+
+**Customize Bot Assignment:**
+```javascript
+'AGGRESSIVE': {
+  preferred: 'ridges-agent-b33e',  // ← Assign Ridges!
+  alternatives: ['grok-3', 'gpt-5-turbo']
+}
+```
+
+**Leaderboard:** `ARENA_COMPETITION.getLeaderboard()` → Track Ridges vs Claude/GPT!
+
 **Status:** 🟢 READY TO ROCK  
-**Last Updated:** March 16, 2026
+**Last Updated:** March 16, 2026 w/ Ridges integration

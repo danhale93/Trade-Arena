@@ -206,7 +206,7 @@ Respond ONLY with JSON, no markdown:
   }
   
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+const res = await fetch('http://localhost:3001/api/claude', {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
