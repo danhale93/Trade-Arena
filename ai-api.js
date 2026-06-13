@@ -133,12 +133,26 @@ function sanitizeDecision(parsed, bet) {
     'PERP SHORT',
   ];
   const sizeLabels = ['SNIPER', 'DEGEN', 'SAFE', 'YOLO', 'HEDGE', 'SURF'];
+  
+  // Validated emoji map with safe fallbacks
+  const validEmojis = {
+    '💎': true, '🐸': true, '🐕': true, '⚡': true, '🚀': true, '💀': true, '🦊': true, '🔥': true,
+    '🔄': true, '📈': true, '📉': true, '🌾': true, '🎯': true, '💣': true, '🛡️': true, '⚖️': true,
+    '✨': true, '🔬': true, '👁️': true, '🎵': true, '🤖': true, '💵': true, '🖼️': true,
+  };
+  
+  // Sanitize emoji - ensure it's valid
+  const sanitizeEmoji = (emoji) => {
+    if (!emoji || typeof emoji !== 'string') return '💎';
+    const trimmed = emoji.trim();
+    return validEmojis[trimmed] ? trimmed : '💎';
+  };
 
-  return {
-    token: parsed.token || 'ETH',
-    token_emoji: parsed.token_emoji || '💎',
+  const sanitized = {
+    token: (parsed.token || 'ETH').toUpperCase().slice(0, 10),
+    token_emoji: sanitizeEmoji(parsed.token_emoji),
     method: methods.includes(parsed.method) ? parsed.method : 'ARBITRAGE',
-    method_emoji: parsed.method_emoji || '🔄',
+    method_emoji: sanitizeEmoji(parsed.method_emoji),
     size_label: sizeLabels.includes(parsed.size_label) ? parsed.size_label : 'SAFE',
     edge_pct: Math.max(0.5, Math.min(8.5, parseFloat(parsed.edge_pct) || 2.0)),
     win_probability: Math.max(0.35, Math.min(0.75, parseFloat(parsed.win_probability) || 0.55)),
@@ -147,6 +161,17 @@ function sanitizeDecision(parsed, bet) {
     outcome: (parsed.outcome || 'WIN').toUpperCase() === 'WIN' ? 'WIN' : 'LOSS',
     pnl_multiplier: Math.max(-0.9, Math.min(3.5, parseFloat(parsed.pnl_multiplier) || 0.8)),
   };
+  
+  // Validate logic: outcome must match probability
+  if (sanitized.win_probability > 0.5 && sanitized.outcome === 'LOSS') {
+    console.warn('⚠️ Trading Logic Issue: Win probability > 50% but outcome is LOSS. Correcting...');
+    sanitized.outcome = 'WIN';
+  } else if (sanitized.win_probability <= 0.5 && sanitized.outcome === 'WIN') {
+    console.warn('⚠️ Trading Logic Issue: Win probability <= 50% but outcome is WIN. Correcting...');
+    sanitized.outcome = 'LOSS';
+  }
+  
+  return sanitized;
 }
 
 /**
