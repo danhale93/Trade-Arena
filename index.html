@@ -11,6 +11,13 @@
 :root{
   --gold:#ffd700;--gold2:#ffaa00;--hot:#ff2d78;--cyan:#00ffe7;
   --green:#39ff14;--amber:#ffb300;--blue:#4488ff;--purple:#bf5fff;
+}
+/* Focus-visible for better accessibility */
+*:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+:root {
   --bg:#06030a;--panel:#0e0914;--chrome:#160f1e;--border:#241830;--dim:#6a5878;
 }
 /* Demo-first UI enhancements */
@@ -753,9 +760,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
      <div class="gh-controls">
        <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots">⚙ BUS</button>
        <button class="gh-auto-btn" id="ghAutoBtn" onclick="globalAutoToggle()" title="Toggle auto-trading on all bots">AUTO</button>
-       <button class="gh-bot-btn" id="ghRemoveBtn" onclick="removeLastBot()" title="Remove last bot" disabled>−</button>
-       <button class="gh-bot-btn" id="ghAddBtn" onclick="addBot()" title="Add bot">+</button>
-       <button class="gh-bot-btn" id="musicToggleBtn" onclick="toggleBackgroundMusic()" title="Toggle background music">🎵</button>
+       <button class="gh-bot-btn" id="ghRemoveBtn" onclick="removeLastBot()" title="Remove last bot" aria-label="Remove last bot" disabled>−</button>
+       <button class="gh-bot-btn" id="ghAddBtn" onclick="addBot()" title="Add bot" aria-label="Add new bot">+</button>
+       <button class="gh-bot-btn" id="musicToggleBtn" onclick="toggleBackgroundMusic()" title="Toggle background music" aria-label="Toggle background music">🎵</button>
      </div>
     <span class="gen-badge" id="genBadge">GEN 0</span>
     <span id="apiBreakerBadge" style="display:none"></span>
@@ -1519,6 +1526,7 @@ function updateLiveBalance(){
   const pnlEl=document.getElementById('ghPnl');
   if(balEl){
     balEl.textContent='$'+displayBalance.toFixed(2);
+    balEl.title=`Realised: $${balance.toFixed(2)} | Unrealised: $${unrealised.toFixed(2)}`;
     // Flash gold when unrealised is active
     balEl.style.color=unrealised>0?'var(--green)':unrealised<0?'var(--hot)':'var(--gold)';
   }
@@ -2510,7 +2518,7 @@ function setupApp({name,avatar,badge}){
     if(cs) cs.style.display='none';
     if(app){ app.style.display='flex'; app.style.flexDirection='column'; }
     try{ setVal('ghName',name); setVal('ghBadge',badge); }catch(e){}
-    if(avatar){ try{ const a=document.getElementById('ghAvatar'); if(a){ a.innerHTML=''; const img=document.createElement('img'); img.src=avatar; img.style.cssText='width:26px;height:26px;border-radius:50%;object-fit:cover'; img.onerror=function(){ a.innerHTML='👤'; }; a.appendChild(img); } }catch(e){} }
+    if(avatar){ try{ const a=document.getElementById('ghAvatar'); if(a){ a.innerHTML=''; const img=document.createElement('img'); img.src=avatar; img.alt='User avatar'; img.style.cssText='width:26px;height:26px;border-radius:50%;object-fit:cover'; img.onerror=function(){ a.innerHTML='👤'; }; a.appendChild(img); } }catch(e){} }
     equityHistory=[balance];
     try{ updateGlobalBalance(); }catch(e){ console.warn('balance:',e); }
     try{ updateBreakers(); }catch(e){ console.warn('breakers:',e); }
@@ -2532,7 +2540,11 @@ function setupApp({name,avatar,badge}){
 // BALANCE
 // ══════════════════════════════════════════════════════
 function updateGlobalBalance(){
-  setVal('ghBalance','$'+balance.toFixed(2));
+  const balEl=document.getElementById('ghBalance');
+  if(balEl){
+    balEl.textContent='$'+balance.toFixed(2);
+    balEl.title=`Realised: $${balance.toFixed(2)} | Unrealised: $0.00`;
+  }
   const p=document.getElementById('ghPnl');
   if(p){p.textContent=(totalPnl>=0?'+':'')+'$'+totalPnl.toFixed(2)+' today';p.className='gh-pnl '+(totalPnl>=0?'pnl-pos':'pnl-neg');}
   checkGlobalBreakers();
@@ -2642,7 +2654,7 @@ function renderBot(bot){
     <div class="mutation-badge" id="mbadge-${bot.id}">🧬 ADAPTED</div>
     <div class="m-head">
       <div style="display:flex;align-items:center;gap:5px"><span class="m-id">BOT #${bot.id}</span><span class="m-pnl" id="mpnl-${bot.id}">$0.00</span></div>
-      <div style="display:flex;align-items:center;gap:4px"><div class="m-ticker" id="mtick-${bot.id}">READY</div><button class="m-close" onclick="removeBot(${bot.id})">✕</button></div>
+      <div style="display:flex;align-items:center;gap:4px"><div class="m-ticker" id="mtick-${bot.id}">READY</div><button class="m-close" onclick="removeBot(${bot.id})" aria-label="Remove bot ${bot.id}">✕</button></div>
     </div>
     <div style="position:relative">
       <div class="m-reels" id="mreels-${bot.id}">
@@ -2691,7 +2703,7 @@ function renderBot(bot){
         <div style="display:flex;gap:4px;align-items:center">
           <button class="auto-btn" id="mauto-${bot.id}" onclick="toggleAuto(${bot.id})">AUTO</button>
           <button class="spin-btn" id="mspin-${bot.id}" onclick="spinBot(${bot.id})" style="padding:6px 12px;font-size:11px">🎰 SPIN</button>
-          <button class="m-gear-btn" id="mgear-${bot.id}" onclick="toggleBotSettings(${bot.id})" title="Bot settings">⚙</button>
+          <button class="m-gear-btn" id="mgear-${bot.id}" onclick="toggleBotSettings(${bot.id})" title="Bot settings" aria-label="Bot ${bot.id} settings">⚙</button>
         </div>
       </div>
       <div class="m-dropdown" id="mdrop-${bot.id}">
@@ -4640,9 +4652,9 @@ function _injectAVControls() {
   wrap.style.cssText = 'display:flex;gap:4px;flex-shrink:0';
   const btnStyle = 'width:26px;height:26px;border:1px solid var(--border);border-radius:4px;background:var(--chrome);color:var(--dim);font-size:13px;cursor:pointer;transition:all .15s';
   wrap.innerHTML = `
-    <button id="sfxBtn" style="${btnStyle}" class="${SFX.enabled?'av-on':''}" title="${SFX.enabled?'Sound ON':'Sound OFF'}"
+    <button id="sfxBtn" style="${btnStyle}" class="${SFX.enabled?'av-on':''}" title="${SFX.enabled?'Sound ON':'Sound OFF'}" aria-label="Toggle sound effects"
       onclick="const on=SFX.toggle();this.classList.toggle('av-on',on);this.title=on?'Sound ON':'Sound OFF'">🔊</button>
-    <button id="voiceBtn" style="${btnStyle}" class="${VOICE.enabled?'av-on':''}" title="${VOICE.enabled?'Voice ON':'Voice OFF'}"
+    <button id="voiceBtn" style="${btnStyle}" class="${VOICE.enabled?'av-on':''}" title="${VOICE.enabled?'Voice ON':'Voice OFF'}" aria-label="Toggle voice feedback"
       onclick="const on=VOICE.toggle();this.classList.toggle('av-on',on);this.title=on?'Voice ON':'Voice OFF'">🎙️</button>`;
   const gen = document.getElementById('genBadge');
   if (gen) hdr.insertBefore(wrap, gen); else hdr.appendChild(wrap);
