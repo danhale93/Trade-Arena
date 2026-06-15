@@ -11,8 +11,6 @@
 const PRIVY_CONFIG = {
     // Privy App ID from dashboard.privy.com
     appId: 'cmpl1hc0k00ui0djsr3qo8gg8',
-    // Privy App Secret
-    appSecret: 'privy_app_secret_2FZh6yCkySG5LiNFGKnpLj1An5gnXmsyF5mWDi2T9oX8kQb2tq6ufJb1fHhLjcNRRoJQDUQXRL2jh1WXkzYdkTTz',
     // JWKS URL for token verification
     jwksUrl: 'https://auth.privy.io/api/v1/apps/cmpl1hc0k00ui0djsr3qo8gg8/jwks.json',
     // Base mainnet ONLY - NO network dropdown
