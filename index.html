@@ -1298,6 +1298,19 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 </div>
 
 <script>
+/**
+ * Helper to escape HTML and prevent XSS
+ */
+function escapeHTML(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 // ══════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════
@@ -1787,10 +1800,10 @@ function showExitResult(pos, bot) {
     amtEl.textContent='-$'+netAbs.toFixed(2); amtEl.style.color='var(--hot)';
   }
   detEl.innerHTML=
-    `${pos.method} · ${pos.token} (${pos.direction}) <span class="regime-badge regime-${(pos.regime||'chop').toLowerCase()}">${pos.regime||'?'}</span><br>`+
+    `${escapeHTML(pos.method)} · ${escapeHTML(pos.token)} (${escapeHTML(pos.direction)}) <span class="regime-badge regime-${escapeHTML(pos.regime||'chop').toLowerCase()}">${escapeHTML(pos.regime||'?')}</span><br>`+
     `$${pos.entryPrice.toFixed(pos.entryPrice<1?5:2)} → $${pos.exitPrice.toFixed(pos.exitPrice<1?5:2)} (${pricePct}%)<br>`+
     `<span style="color:#555">Gas $${pos.costs.gas.toFixed(2)} · Slip ${pos.costs.slippagePct.toFixed(2)}% · Spread $${pos.costs.spread.toFixed(2)}</span>`+
-    (pos.polSignal&&pos.polSignal.signal!=='NEUTRAL'?`<br><span style="color:#888;font-size:7px">🏛️ Pol: ${pos.polSignal.reasoning}</span>`:'');
+    (pos.polSignal&&pos.polSignal.signal!=='NEUTRAL'?`<br><span style="color:#888;font-size:7px">🏛️ Pol: ${escapeHTML(pos.polSignal.reasoning)}</span>`:'');
 
   // Baseline comparison on result card
   const bl=pos.baselines;
@@ -3297,9 +3310,9 @@ function renderPolFeed(filings){
       <span style="color:${(f.type||'').toLowerCase().includes('purchase')?'var(--green)':'var(--hot)'}">
         ${(f.type||'').toLowerCase().includes('purchase')?'▲':'▼'}
       </span>
-      <span style="color:#aaa;flex:1">${(f.representative||'Unknown').split(' ').slice(0,2).join(' ')}</span>
-      <span style="color:var(--gold);min-width:40px">${f.ticker||'?'}</span>
-      <span style="color:var(--dim);font-size:7px">${f.transaction_date||''}</span>
+      <span style="color:#aaa;flex:1">${escapeHTML((f.representative||'Unknown').split(' ').slice(0,2).join(' '))}</span>
+      <span style="color:var(--gold);min-width:40px">${escapeHTML(f.ticker||'?')}</span>
+      <span style="color:var(--dim);font-size:7px">${escapeHTML(f.transaction_date||'')}</span>
     </div>`).join('');
 }
 
@@ -5062,7 +5075,11 @@ async function sendVoiceCommand() {
 
   const cmd = input.value.trim();
   const userMsg = document.createElement('div');
-  userMsg.innerHTML = `<span style="color:var(--cyan)">You:</span> ${cmd}`;
+  const userLabel = document.createElement('span');
+  userLabel.style.color = 'var(--cyan)';
+  userLabel.textContent = 'You: ';
+  userMsg.appendChild(userLabel);
+  userMsg.appendChild(document.createTextNode(cmd));
   chat.appendChild(userMsg);
   input.value = '';
   chat.scrollTop = chat.scrollHeight;
@@ -5146,7 +5163,11 @@ Respond in JSON format:
   }
 
   const agentMsg = document.createElement('div');
-  agentMsg.innerHTML = `<span style="color:var(--purple)">Agent:</span> ${aiResponse.reply}`;
+  const agentLabel = document.createElement('span');
+  agentLabel.style.color = 'var(--purple)';
+  agentLabel.textContent = 'Agent: ';
+  agentMsg.appendChild(agentLabel);
+  agentMsg.appendChild(document.createTextNode(aiResponse.reply));
   chat.appendChild(agentMsg);
   chat.scrollTop = chat.scrollHeight;
   status.textContent = 'Connected & Ready';
