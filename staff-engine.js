@@ -373,16 +373,24 @@ function renderStaffPanel() {
 async function sendStaffQuery() {
     const input = document.getElementById('staffInput');
     const responseBox = document.getElementById('staffResponse');
+    const btn = document.getElementById('staffSendBtn');
     if (!input || !input.value.trim() || !window.STAFF) return;
 
     const query = input.value.trim();
     input.value = '';
 
+    if (btn) { btn.disabled = true; btn.textContent = '...'; }
     responseBox.style.display = 'block';
     responseBox.textContent = 'Thinking...';
 
-    const reply = await window.STAFF.handleSupportQuery(query);
-    responseBox.textContent = reply;
+    try {
+        const reply = await window.STAFF.handleSupportQuery(query);
+        responseBox.textContent = reply;
+    } catch (e) {
+        responseBox.textContent = "I'm having trouble connecting to the concierge. Please try again.";
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'ASK'; }
+    }
 
     // SFX
     if (typeof window.SFX !== 'undefined') window.SFX.tick();

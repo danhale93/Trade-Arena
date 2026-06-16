@@ -1193,8 +1193,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <div style="margin-top:15px; padding-top:15px; border-top:1px solid var(--border);">
         <div style="font-size:9px; color:var(--cyan); font-family:'Bungee'; margin-bottom:8px; letter-spacing:1px;">TALK TO STAFF (CONCIERGE)</div>
         <div style="display:flex; gap:8px;">
-          <input type="text" id="staffInput" placeholder="I lost money on that last trade, why?" style="flex:1; background:var(--bg); border:1px solid var(--border); color:#fff; padding:8px; border-radius:6px; font-family:inherit; font-size:10px;">
-          <button onclick="sendStaffQuery()" style="background:var(--cyan); color:#000; border:none; border-radius:6px; padding:0 15px; font-family:'Bungee'; font-size:10px; cursor:pointer;">ASK</button>
+          <input type="text" id="staffInput" aria-label="Staff query input" onkeydown="if(event.key==='Enter')sendStaffQuery()" placeholder="I lost money on that last trade, why?" style="flex:1; background:var(--bg); border:1px solid var(--border); color:#fff; padding:8px; border-radius:6px; font-family:inherit; font-size:10px;">
+          <button id="staffSendBtn" onclick="sendStaffQuery()" aria-label="Send staff query" style="background:var(--cyan); color:#000; border:none; border-radius:6px; padding:0 15px; font-family:'Bungee'; font-size:10px; cursor:pointer;">ASK</button>
         </div>
         <div id="staffResponse" style="margin-top:10px; padding:10px; background:rgba(0,255,231,0.05); border-radius:6px; font-size:10px; color:#ccc; display:none; border-left:2px solid var(--cyan);"></div>
       </div>
@@ -5039,8 +5039,8 @@ document.addEventListener('DOMContentLoaded', function() {
   <div class="va-input-area" style="flex-direction:column; gap:5px;">
     <button id="vaListenBtn" onclick="window.GEMINI_VOICE.toggleListening()" style="width:100%; padding:10px; background:var(--cyan); border:none; border-radius:6px; font-family:'Bungee'; font-size:10px; cursor:pointer;">🎤 PUSH TO TALK</button>
     <div style="display:flex; gap:8px; width:100%">
-      <input type="text" class="va-input" id="vaInput" placeholder="Command the fleet...">
-      <button class="va-send" onclick="sendVoiceCommand()">SEND</button>
+      <input type="text" class="va-input" id="vaInput" aria-label="Voice agent command input" onkeydown="if(event.key==='Enter')sendVoiceCommand()" placeholder="Command the fleet...">
+      <button id="vaSendBtn" class="va-send" onclick="sendVoiceCommand()" aria-label="Send voice agent command">SEND</button>
     </div>
   </div>
 </div>
@@ -5058,6 +5058,7 @@ async function sendVoiceCommand() {
   const input = document.getElementById('vaInput');
   const chat = document.getElementById('vaChat');
   const status = document.getElementById('vaStatus');
+  const btn = document.getElementById('vaSendBtn');
   if (!input || !input.value.trim()) return;
 
   const cmd = input.value.trim();
@@ -5067,11 +5068,13 @@ async function sendVoiceCommand() {
   input.value = '';
   chat.scrollTop = chat.scrollHeight;
 
+  if (btn) { btn.disabled = true; btn.textContent = '...'; }
   status.textContent = 'Agent Thinking...';
 
-  // Real LLM AI Floor Manager
-  const apiKey = getApiKey();
-  const systemPrompt = `You are the AI Floor Manager for Trade Arena. You have FULL AGENCY over the trading floor.
+  try {
+    // Real LLM AI Floor Manager
+    const apiKey = getApiKey();
+    const systemPrompt = `You are the AI Floor Manager for Trade Arena. You have FULL AGENCY over the trading floor.
 Your goal is to assist the user in managing their fleet of ${bots.length} trading bots.
 
 CURRENT STATE:
@@ -5098,16 +5101,15 @@ Respond in JSON format:
   "reasoning": "Internal reasoning for your choice"
 }`;
 
-  let aiResponse;
+    let aiResponse;
 
-  if (!apiKey) {
-    // Fallback if no API key
-    aiResponse = {
-      reply: "I'm operating in rule-based fallback mode (no API key). " + (cmd.toLowerCase().includes('balance') ? `Your balance is $${balance.toFixed(2)}.` : "How can I help with the fleet?"),
-      action: cmd.toLowerCase().includes('stop') ? 'EMERGENCY_STOP' : 'NONE'
-    };
-  } else {
-    try {
+    if (!apiKey) {
+      // Fallback if no API key
+      aiResponse = {
+        reply: "I'm operating in rule-based fallback mode (no API key). " + (cmd.toLowerCase().includes('balance') ? `Your balance is $${balance.toFixed(2)}.` : "How can I help with the fleet?"),
+        action: cmd.toLowerCase().includes('stop') ? 'EMERGENCY_STOP' : 'NONE'
+      };
+    } else {
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
@@ -5124,35 +5126,40 @@ Respond in JSON format:
       });
       const data = await res.json();
       aiResponse = JSON.parse((data.content?.[0]?.text || '{}').replace(/```json|```/g, '').trim());
-    } catch (e) {
-      console.error('Floor Manager LLM Error:', e);
-      aiResponse = { reply: "I'm having trouble connecting to my cognitive core, but I'm still monitoring the telemetry.", action: 'NONE' };
     }
-  }
 
-  // Handle Actions
-  switch (aiResponse.action) {
-    case 'SHOW_FLEET': toggleFleetView(); break;
-    case 'EMERGENCY_STOP': globalKill(); break;
-    case 'GENERATE_REPORT': generatePitchReport(); break;
-    case 'OPEN_ARENA': togglePanel('elo'); break;
-    case 'OPEN_TASKS': togglePanel('task'); break;
-    case 'OPEN_STAFF': togglePanel('staff'); break;
-    case 'CLAIM_FAUCET': if (typeof claimFaucet === 'function') claimFaucet(); break;
-    case 'EXECUTE_TRADE':
-      const b = bots.find(bot => !bot.spinning && !bot.cooling);
-      if (b) spinBot(b.id);
-      break;
-  }
+    // Handle Actions
+    switch (aiResponse.action) {
+      case 'SHOW_FLEET': toggleFleetView(); break;
+      case 'EMERGENCY_STOP': globalKill(); break;
+      case 'GENERATE_REPORT': generatePitchReport(); break;
+      case 'OPEN_ARENA': togglePanel('elo'); break;
+      case 'OPEN_TASKS': togglePanel('task'); break;
+      case 'OPEN_STAFF': togglePanel('staff'); break;
+      case 'CLAIM_FAUCET': if (typeof claimFaucet === 'function') claimFaucet(); break;
+      case 'EXECUTE_TRADE':
+        const b = bots.find(bot => !bot.spinning && !bot.cooling);
+        if (b) spinBot(b.id);
+        break;
+    }
 
-  const agentMsg = document.createElement('div');
-  agentMsg.innerHTML = `<span style="color:var(--purple)">Agent:</span> ${aiResponse.reply}`;
-  chat.appendChild(agentMsg);
-  chat.scrollTop = chat.scrollHeight;
-  status.textContent = 'Connected & Ready';
+    const agentMsg = document.createElement('div');
+    agentMsg.innerHTML = `<span style="color:var(--purple)">Agent:</span> ${aiResponse.reply}`;
+    chat.appendChild(agentMsg);
+    chat.scrollTop = chat.scrollHeight;
 
-  if (typeof VOICE !== 'undefined' && VOICE.enabled) {
-    VOICE.speak(aiResponse.reply);
+    if (typeof VOICE !== 'undefined' && VOICE.enabled) {
+      VOICE.speak(aiResponse.reply);
+    }
+  } catch (e) {
+    console.error('Floor Manager LLM Error:', e);
+    const agentMsg = document.createElement('div');
+    agentMsg.innerHTML = `<span style="color:var(--hot)">Agent:</span> I'm having trouble connecting to my cognitive core, but I'm still monitoring the telemetry.`;
+    chat.appendChild(agentMsg);
+    chat.scrollTop = chat.scrollHeight;
+  } finally {
+    status.textContent = 'Connected & Ready';
+    if (btn) { btn.disabled = false; btn.textContent = 'SEND'; }
   }
 }
 </script>
