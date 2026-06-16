@@ -256,6 +256,35 @@ function updateWalletUI() {
         // Show USD balance instead of ETH
         balanceEl.textContent = '$10,000.00';
     }
+
+    // Header updates
+    const ghName = document.getElementById('ghName');
+    if (ghName && privyUser) {
+        // Display email or name from Google/Apple provider
+        const name = privyUser.email || (privyUser.google?.email) || (privyUser.apple?.email) || privyUser.name || 'User';
+        ghName.textContent = name.split('@')[0].toUpperCase();
+        ghName.title = name;
+
+        // Avatar update
+        const ghAvatar = document.getElementById('ghAvatar');
+        const picture = privyUser.picture || privyUser.google?.picture || privyUser.apple?.picture;
+        if (ghAvatar && picture) {
+            ghAvatar.innerHTML = `<img src="${picture}" style="width:26px;height:26px;border-radius:50%;object-fit:cover" onerror="this.parentElement.innerHTML='👤'">`;
+        }
+    }
+
+    const ghBadge = document.getElementById('ghBadge');
+    if (ghBadge) {
+        ghBadge.textContent = 'LIVE';
+        ghBadge.style.background = 'rgba(0, 255, 231, 0.1)';
+        ghBadge.style.color = 'var(--cyan)';
+        ghBadge.style.borderColor = 'var(--cyan)';
+    }
+
+    const ghBalance = document.getElementById('ghBalance');
+    if (ghBalance) {
+        ghBalance.textContent = '$10,000.00';
+    }
     
     const userAddrEl = document.getElementById('userAddr');
     if (userAddrEl && privyWalletAddress) {

@@ -2720,10 +2720,11 @@ function openOskoRamp(type) {
 }
 
 window.onPrivyReady = function(user, walletAddress) {
+  const displayName = user.email || (user.google?.email) || (user.apple?.email) || user.name || (walletAddress ? walletAddress.substring(0, 6) + '...' + walletAddress.substring(38) : 'USER');
   setupApp({
-    name: user.name || (walletAddress ? walletAddress.substring(0, 6) + '...' + walletAddress.substring(38) : 'Privy User'),
-    avatar: user.avatar,
-    badge: user.provider ? '🔵 ' + user.provider.toUpperCase() : '🔵 PRIVY',
+    name: displayName.split('@')[0].toUpperCase(),
+    avatar: user.picture || user.google?.picture || user.apple?.picture || user.avatar,
+    badge: 'LIVE',
     address: walletAddress
   });
 };
