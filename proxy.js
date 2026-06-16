@@ -43,6 +43,60 @@ app.post('/api/openai', async (req, res) => {
   }
 });
 
+app.post('/api/gemini', async (req, res) => {
+  try {
+    const model = req.body.model || 'gemini-1.5-flash';
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY || ''}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: req.body.contents,
+        generationConfig: req.body.generationConfig
+      })
+    });
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+const fs = require('fs');
+const path = require('path');
+
+app.post('/api/maintenance/log', (req, res) => {
+  const { agent, message, level } = req.body;
+  const logDir = path.join(__dirname, '.jules');
+  if (!fs.existsSync(logDir)) fs.mkdirSync(logDir);
+
+  const logFile = agent === 'SENTINEL' ? 'sentinel.md' : 'maintenance.md';
+  const logPath = path.join(logDir, logFile);
+
+  const entry = `\n## ${new Date().toISOString()} - [${level || 'INFO'}] ${agent}\n${message}\n`;
+  fs.appendFileSync(logPath, entry);
+
+  res.json({ success: true });
+});
+
+app.post('/api/maintenance/patch', async (req, res) => {
+  const { filepath, patch, description } = req.body;
+  try {
+    const fullPath = path.join(__dirname, filepath);
+    if (!fs.existsSync(fullPath)) throw new Error('File not found');
+
+    // In a real self-healing system, we would validate the patch
+    // For this implementation, we log the intent and could apply it
+    console.log(`[Developer Agent] Patch requested for ${filepath}: ${description}`);
+
+    // Simple overwrite for this demo-scale self-healing
+    // fs.writeFileSync(fullPath, patch);
+
+    res.json({ success: true, message: 'Patch received and logged for review' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 const port = 3001;
 app.listen(port, () => {
   console.log(`🚀 Proxy server running at http://localhost:${port}`);
