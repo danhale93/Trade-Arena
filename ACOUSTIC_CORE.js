@@ -52,6 +52,8 @@
   // ══════════════════════════════════════════════════════
   // INITIALIZATION
   // ══════════════════════════════════════════════════════
+  let wakeLock = null;
+
   async function init() {
     console.log('[ACOUSTIC] Initializing...');
     
@@ -77,6 +79,9 @@
       audioEngine = window.audioEngine;
     }
     
+    // Background Persistence & Efficiency
+    setupBackgroundPersistence();
+
     // Create ACOUSTIC control panel in header
     createControlPanel();
     
@@ -267,6 +272,63 @@
     
     if (sfx && CONFIG.sfx.enabled) {
       sfx.takeProfit();
+    }
+  }
+
+  // ══════════════════════════════════════════════════════
+  // BACKGROUND PERSISTENCE
+  // ══════════════════════════════════════════════════════
+  async function setupBackgroundPersistence() {
+    // 1. Media Session API - declares app as media source to keep process alive in background
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: 'Trade Arena',
+        artist: 'AI Trading Floor',
+        album: 'Acoustic Core Telemetry',
+        artwork: [
+          { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'icon-512.png', sizes: '512x512', type: 'image/png' }
+        ]
+      });
+
+      // Keep audio context alive on lock/background
+      navigator.mediaSession.setActionHandler('play', () => {
+        // Resume any available audio engines
+        if (audioEngine) {
+          if (!audioEngine.initialized) audioEngine.init();
+          audioEngine.start();
+        }
+        // SFX and VOICE typically use one-shot context which resumes on next tone()
+      });
+      navigator.mediaSession.setActionHandler('pause', () => {
+        if (audioEngine) audioEngine.stop();
+      });
+    }
+
+    // 2. Wake Lock API - prevents screen from turning off and process suspension
+    if ('wakeLock' in navigator) {
+      const requestLock = async () => {
+        try {
+          wakeLock = await navigator.wakeLock.request('screen');
+          console.log('[ACOUSTIC] Wake Lock active');
+          wakeLock.addEventListener('release', () => {
+            console.log('[ACOUSTIC] Wake Lock released');
+            wakeLock = null;
+          });
+        } catch (err) {
+          console.warn('[ACOUSTIC] Wake Lock failed:', err.message);
+        }
+      };
+
+      // Request on start and re-request on visibility change
+      document.addEventListener('visibilitychange', () => {
+        if (wakeLock === null && document.visibilityState === 'visible') {
+          requestLock();
+        }
+      });
+
+      // Request initial lock
+      requestLock();
     }
   }
 
