@@ -58,19 +58,19 @@
     // Load engines if they exist
     if (window.SFX) {
       sfx = window.SFX;
-      if (sfx.setVolume) sfx.setVolume(CONFIG.sfx.volume);
-      if (sfx.setMuted) sfx.setMuted(!CONFIG.sfx.enabled);
+      sfx.setVolume(CONFIG.sfx.volume);
+      sfx.setMuted(!CONFIG.sfx.enabled);
     }
     
     if (window.FX) {
       fx = window.FX;
-      if (fx.enable) fx.enable();
+      fx.enable();
     }
     
     if (window.VOICE) {
       voice = window.VOICE;
-      if (voice.setVolume) voice.setVolume(CONFIG.voice.volume);
-      if (voice.setMuted) voice.setMuted(CONFIG.voice.muted);
+      voice.setVolume(CONFIG.voice.volume);
+      voice.setMuted(CONFIG.voice.muted);
     }
     
     if (window.audioEngine) {
@@ -80,30 +80,6 @@
     // Create ACOUSTIC control panel in header
     createControlPanel();
     
-    // Global Unlock for AudioContext
-    const unlock = async () => {
-      console.log('[ACOUSTIC] User interaction detected, unlocking audio...');
-
-      // Initialize engines if needed
-      if (sfx && sfx.init) await sfx.init().catch(e => console.warn('SFX init failed', e));
-      if (voice && voice.init) await voice.init().catch(e => console.warn('VOICE init failed', e));
-      if (audioEngine && audioEngine.init) await audioEngine.init().catch(e => console.warn('AudioEngine init failed', e));
-
-      // Resume contexts
-      [sfx?.ctx, voice?.ctx, audioEngine?.ctx].forEach(ctx => {
-        if (ctx && ctx.state === 'suspended') {
-          ctx.resume().then(() => console.log(`[ACOUSTIC] AudioContext resumed: ${ctx.constructor.name}`));
-        }
-      });
-
-      // If audio engine was already enabled, start it
-      if (CONFIG.audio.enabled && audioEngine && audioEngine.start) {
-        audioEngine.start();
-      }
-    };
-    document.addEventListener('click', unlock, { once: true });
-    document.addEventListener('touchstart', unlock, { once: true });
-
     console.log('[ACOUSTIC] Initialized');
   }
 
@@ -129,7 +105,7 @@
       <button class="gh-bot-btn" id="acoustic-voice-btn" onclick="ACOUSTIC.toggleVOICE()" title="Toggle voice announcements">
         🗣️
       </button>
-      <button class="gh-bot-btn" id="acoustic-audio-btn" onclick="ACOUSTIC.toggleAudio()" title="Toggle synth pad sequencer">
+      <button class="gh-bot-btn" id="acoustic-audio-btn" onclick="toggleAudio()" title="Toggle synth pad sequencer">
         🎹
       </button>
     `;
@@ -153,7 +129,7 @@
     const btn = document.getElementById('acoustic-sfx-btn');
     if (btn) {
       btn.textContent = CONFIG.sfx.enabled ? '🔊' : '🔇';
-      btn.classList.toggle('av-on', CONFIG.sfx.enabled);
+      btn.style.color = CONFIG.sfx.enabled ? 'var(--cyan)' : 'var(--dim)';
     }
   }
 
@@ -165,7 +141,7 @@
     
     const btn = document.getElementById('acoustic-fx-btn');
     if (btn) {
-      btn.classList.toggle('av-on', CONFIG.fx.enabled);
+      btn.style.color = CONFIG.fx.enabled ? 'var(--cyan)' : 'var(--dim)';
     }
   }
 
@@ -178,7 +154,7 @@
     
     const btn = document.getElementById('acoustic-voice-btn');
     if (btn) {
-      btn.classList.toggle('av-on', CONFIG.voice.enabled);
+      btn.style.color = CONFIG.voice.enabled ? 'var(--cyan)' : 'var(--dim)';
       btn.textContent = CONFIG.voice.enabled ? '🗣️' : '🤐';
     }
   }
@@ -197,7 +173,7 @@
     
     const btn = document.getElementById('acoustic-audio-btn');
     if (btn) {
-      btn.classList.toggle('av-on', CONFIG.audio.enabled);
+      btn.style.color = CONFIG.audio.enabled ? 'var(--cyan)' : 'var(--dim)';
     }
   }
 
@@ -234,14 +210,11 @@
     if (fx && CONFIG.fx.enabled) {
       fx.flash(CONFIG.fx.flashWin, isBigWin ? 500 : 300);
       
-      // Get position for confetti and P&L fly up
+      // Get position for confetti
       const card = document.getElementById('bot-' + botId);
       if (card) {
         const rect = card.getBoundingClientRect();
-        const cx = rect.left + rect.width/2;
-        const cy = rect.top + rect.height*0.3;
-        fx.confetti(cx, cy, isBigWin ? 28 : 16);
-        if (fx.pnlFlyUp) fx.pnlFlyUp(pnl, cx - 30, cy);
+        fx.confetti(rect.left + rect.width/2, rect.top + rect.height*0.3, isBigWin ? 28 : 16);
       }
     }
     
@@ -270,11 +243,7 @@
       
       const card = document.getElementById('bot-' + botId);
       if (card) {
-        const rect = card.getBoundingClientRect();
-        const cx = rect.left + rect.width/2;
-        const cy = rect.top + rect.height*0.3;
         fx.shake(card, CONFIG.fx.shakeDuration);
-        if (fx.pnlFlyUp) fx.pnlFlyUp(pnl, cx - 30, cy);
       }
     }
     
