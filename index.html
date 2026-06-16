@@ -829,6 +829,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     </div>
      <!-- bot controls -->
      <div class="gh-controls">
+         <button class="gh-bus-btn" onclick="togglePanel('staff')" title="Application Maintenance & Support">👷 STAFF</button>
        <button class="gh-bus-btn" onclick="togglePanel('task')" title="Earn Trade Credits">💰 EARN</button>
        <button class="gh-bus-btn" onclick="togglePanel('elo')" title="ELO Arena - Recursive Improvement">🏆 ARENA</button>
        <button class="gh-bus-btn" id="voiceAgentBtn" onclick="toggleVoiceAgent()" title="AI Floor Manager (Voice Chat)">🎙️ AGENT</button>
@@ -1147,6 +1148,55 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
           <button class="export-btn export-json" onclick="exportJSON()">📋 EXPORT JSON</button>
           <button class="export-btn" id="pitchReportBtn" onclick="generatePitchReport()" style="background:linear-gradient(90deg,var(--purple),var(--blue));color:#fff;box-shadow:0 0 10px rgba(191,95,255,.2)">📊 PITCH REPORT</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ★ STAFF OPERATIONS PANEL ★ -->
+  <div class="cpanel" id="staffPanel">
+    <div class="cpanel-hd" id="staffHd" onclick="togglePanel('staff')" style="background:linear-gradient(90deg,rgba(0,255,231,.06),transparent)">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:14px">👷</span>
+        <span class="cpanel-title" style="color:var(--cyan)">STAFF OPERATIONS</span>
+        <span style="font-size:9px;color:var(--dim)">Maintenance & Customer Service</span>
+      </div>
+      <span class="cpanel-toggle" id="staffToggle">▼ EXPAND</span>
+    </div>
+    <div class="cpanel-body" id="staffBody">
+      <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:10px; margin-bottom:15px;">
+        <!-- Agent Status Cards -->
+        <div style="background:var(--chrome); border:1px solid var(--border); border-radius:8px; padding:10px;">
+          <div style="font-size:10px; color:var(--cyan); font-family:'Bungee'; margin-bottom:5px;">🛡️ SENTINEL</div>
+          <div id="sentinelStatus" style="font-size:9px; color:var(--dim);">Security scan active...</div>
+        </div>
+        <div style="background:var(--chrome); border:1px solid var(--border); border-radius:8px; padding:10px;">
+          <div style="font-size:10px; color:var(--gold); font-family:'Bungee'; margin-bottom:5px;">🏛️ ARCHITECT</div>
+          <div id="architectStatus" style="font-size:9px; color:var(--dim);">RPC Health: 42ms</div>
+        </div>
+        <div style="background:var(--chrome); border:1px solid var(--border); border-radius:8px; padding:10px;">
+          <div style="font-size:10px; color:var(--green); font-family:'Bungee'; margin-bottom:5px;">🧹 JANITOR</div>
+          <div id="janitorStatus" style="font-size:9px; color:var(--dim);">Cache optimized</div>
+        </div>
+        <div style="background:var(--chrome); border:1px solid var(--border); border-radius:8px; padding:10px;">
+          <div style="font-size:10px; color:var(--purple); font-family:'Bungee'; margin-bottom:5px;">👨‍💻 DEVELOPER</div>
+          <div id="developerStatus" style="font-size:9px; color:var(--dim);">Self-healing ready</div>
+        </div>
+      </div>
+
+      <!-- Staff Logs -->
+      <div style="font-size:9px; color:var(--dim); font-family:'Bungee'; margin-bottom:5px; letter-spacing:1px;">SESSION LOGS</div>
+      <div id="staffLogList" style="max-height:150px; overflow-y:auto; border:1px solid var(--border); border-radius:8px; background:rgba(0,0,0,0.2); padding:5px; display:flex; flex-direction:column; gap:3px;">
+        <div style="font-size:8px; color:var(--dim); text-align:center; padding:10px;">No operational logs yet.</div>
+      </div>
+
+      <!-- Customer Service Entry -->
+      <div style="margin-top:15px; padding-top:15px; border-top:1px solid var(--border);">
+        <div style="font-size:9px; color:var(--cyan); font-family:'Bungee'; margin-bottom:8px; letter-spacing:1px;">TALK TO STAFF (CONCIERGE)</div>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="staffInput" placeholder="I lost money on that last trade, why?" style="flex:1; background:var(--bg); border:1px solid var(--border); color:#fff; padding:8px; border-radius:6px; font-family:inherit; font-size:10px;">
+          <button onclick="sendStaffQuery()" style="background:var(--cyan); color:#000; border:none; border-radius:6px; padding:0 15px; font-family:'Bungee'; font-size:10px; cursor:pointer;">ASK</button>
+        </div>
+        <div id="staffResponse" style="margin-top:10px; padding:10px; background:rgba(0,255,231,0.05); border-radius:6px; font-size:10px; color:#ccc; display:none; border-left:2px solid var(--cyan);"></div>
       </div>
     </div>
   </div>
@@ -2306,6 +2356,7 @@ function togglePanel(name) {
   if(name==='quant'&&isOpen){ updateQuantReport(); setTimeout(drawEquityCurve,50); }
   if(name==='elo'&&isOpen){ if(typeof renderEloArena === 'function') renderEloArena(); }
   if(name==='task'&&isOpen){ if(typeof renderTaskCenter === 'function') renderTaskCenter(); }
+  if(name==='staff'&&isOpen){ if(typeof renderStaffPanel === 'function') renderStaffPanel(); }
 }
 function updateBreakers() {
   gasHardCeiling=parseInt(document.getElementById('gasHard')?.value)||50;
@@ -4957,12 +5008,14 @@ function toggleBackgroundMusic() {
 <script src="elo-tournament-engine.js" defer></script>
 <script src="task-center.js" defer></script>
 <script src="privy-client.js" defer></script>
+<script src="staff-engine.js" defer></script>
+<script src="gemini-voice-engine.js" defer></script>
 <script>
-// Auto-start demo mode removed - users can now choose between Demo and Mainnet (Privy/MoonPay)
-// To re-enable auto-demo, uncomment the code below:
-// document.addEventListener('DOMContentLoaded', function() {
-//   loginDemo();
-// });
+document.addEventListener('DOMContentLoaded', function() {
+  if (typeof privyInit === 'function') {
+    privyInit();
+  }
+});
 </script>
 <!-- VOICE AGENT MODAL -->
 <div id="voiceAgentModal">
@@ -4983,9 +5036,12 @@ function toggleBackgroundMusic() {
       Welcome to the Trade Arena. I am your Floor Manager. How can I assist with your fleet today?
     </div>
   </div>
-  <div class="va-input-area">
-    <input type="text" class="va-input" id="vaInput" placeholder="Command the fleet...">
-    <button class="va-send" onclick="sendVoiceCommand()">SEND</button>
+  <div class="va-input-area" style="flex-direction:column; gap:5px;">
+    <button id="vaListenBtn" onclick="window.GEMINI_VOICE.toggleListening()" style="width:100%; padding:10px; background:var(--cyan); border:none; border-radius:6px; font-family:'Bungee'; font-size:10px; cursor:pointer;">🎤 PUSH TO TALK</button>
+    <div style="display:flex; gap:8px; width:100%">
+      <input type="text" class="va-input" id="vaInput" placeholder="Command the fleet...">
+      <button class="va-send" onclick="sendVoiceCommand()">SEND</button>
+    </div>
   </div>
 </div>
 
@@ -5031,13 +5087,14 @@ AVAILABLE ACTIONS:
 - GENERATE_REPORT: Creates a performance pitch report.
 - OPEN_ARENA: Displays the ELO ranking and tournament panel.
 - OPEN_TASKS: Displays the earning tasks center.
+- OPEN_STAFF: Opens the Staff Operations panel for maintenance and customer service.
 - CLAIM_FAUCET: Requests $50 starting capital if eligible.
 - EXECUTE_TRADE: Triggers a new trade on an available bot.
 
 Respond in JSON format:
 {
   "reply": "Your natural language response to the user",
-  "action": "SHOW_FLEET | EMERGENCY_STOP | GENERATE_REPORT | OPEN_ARENA | OPEN_TASKS | CLAIM_FAUCET | EXECUTE_TRADE | NONE",
+  "action": "SHOW_FLEET | EMERGENCY_STOP | GENERATE_REPORT | OPEN_ARENA | OPEN_TASKS | OPEN_STAFF | CLAIM_FAUCET | EXECUTE_TRADE | NONE",
   "reasoning": "Internal reasoning for your choice"
 }`;
 
@@ -5080,6 +5137,7 @@ Respond in JSON format:
     case 'GENERATE_REPORT': generatePitchReport(); break;
     case 'OPEN_ARENA': togglePanel('elo'); break;
     case 'OPEN_TASKS': togglePanel('task'); break;
+    case 'OPEN_STAFF': togglePanel('staff'); break;
     case 'CLAIM_FAUCET': if (typeof claimFaucet === 'function') claimFaucet(); break;
     case 'EXECUTE_TRADE':
       const b = bots.find(bot => !bot.spinning && !bot.cooling);

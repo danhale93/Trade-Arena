@@ -205,6 +205,32 @@ function generateRandomAddress() {
 }
 
 /**
+ * UI Helpers
+ */
+function hideConnectScreen() {
+    const cs = document.getElementById('connectScreen');
+    if (cs) cs.style.display = 'none';
+}
+
+function showConnectScreen() {
+    const cs = document.getElementById('connectScreen');
+    if (cs) cs.style.display = 'flex';
+}
+
+function showMainApp() {
+    const app = document.getElementById('mainApp');
+    if (app) {
+        app.style.display = 'flex';
+        app.style.flexDirection = 'column';
+    }
+}
+
+function hideMainApp() {
+    const app = document.getElementById('mainApp');
+    if (app) app.style.display = 'none';
+}
+
+/**
  * Called when Privy login succeeds
  */
 function onPrivyLoginSuccess() {
