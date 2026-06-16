@@ -1227,17 +1227,6 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     </div>
   </div>
 
-<!-- AGENT/MACHINE MATRIX - Pad Grid -->
-  <div class="matrix-section">
-    <div class="matrix-header">
-      <span>AGENT/MACHINE MATRIX</span>
-      <span class="matrix-count" id="matrixCount">0 ACTIVE</span>
-    </div>
-    <div class="pad-grid" id="padGrid">
-      <!-- Pads render dynamically when bots are added -->
-    </div>
-  </div>
-
   <!-- Bots -->
   <div class="bot-grid" id="botGrid"></div>
 
@@ -1770,6 +1759,10 @@ function updateQuantReport() {
   const trades=closedTrades.filter(t=>t.method!=='HOLD');
   const n=trades.length;
   document.getElementById('qTradeCount').textContent=n+' closed trades';
+
+  // Optimization: Skip expensive metrics/SVG updates if panel is hidden
+  const body = document.getElementById('quantBody');
+  if (body && !body.classList.contains('open')) return;
 
   // Sig ladder
   [20,50,100,200,300].forEach(thresh=>{
