@@ -113,3 +113,6 @@ window.renderTaskCenter = renderTaskCenter;
 
 // Init
 loadTaskState();
+
+// Export to window for bot auto-onboarding
+window.taskState = taskState;

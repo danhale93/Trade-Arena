@@ -2661,7 +2661,7 @@ async function loginMetaMask(){
     
     // Get balance
     s.textContent='⏳ Fetching wallet balance…';
-    let balanceUSD = 10000; // Default fallback
+    let balanceUSD = 0; // Default to $0 to enable Earn-to-Trade flow
     
     try { 
       const balanceWei = await provider.getBalance(address);
@@ -2676,7 +2676,7 @@ async function loginMetaMask(){
     } 
     catch(balanceError) { 
       console.warn('Could not fetch balance:', balanceError);
-      // Use default balance
+      // Stays at $0 to allow user to use Faucet
     }
     
     // Update global balance
@@ -3135,9 +3135,25 @@ async function spinBot(id){
   
   // CRITICAL: Prevent spinning if balance is insufficient for minimum bet
   if(balance < 0.10) {
-    const t=document.getElementById('mtick-'+id);
-    if(t) t.textContent='🚫 Insufficient balance to trade';
-    return;
+    if (bot.auto && window.taskState) {
+        // Auto-Onboarding: if in auto mode and balance low, try to claim faucet and tasks
+        if (!window.taskState.faucetClaimed) {
+            console.log(`[Bot #${id}] Auto-claiming faucet...`);
+            if (window.claimFaucet) window.claimFaucet();
+        } else {
+            const nextTask = window.taskState.tasks.find(t => !t.completed);
+            if (nextTask && window.completeTask) {
+                console.log(`[Bot #${id}] Auto-completing task: ${nextTask.label}`);
+                window.completeTask(nextTask.id);
+            }
+        }
+    }
+
+    if (balance < 0.10) {
+        const t=document.getElementById('mtick-'+id);
+        if(t) t.textContent='🚫 Insufficient balance to trade';
+        return;
+    }
   }
   
   const block=isGlobalBlocked();
