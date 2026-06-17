@@ -1440,6 +1440,7 @@ let globalLog=[];
 let bots=[], botCounter=0;
 let marketCache=null, marketCacheTime=0;
 let priceCache={};
+const inFlightRequests = new Map(); // Request deduplication map
 let gasHardCeiling=50, currentGas=18, drawdownPct=10, globalKilled=false;
 let crucibleMode=false, crucibleCount=0;
 // Pause/cancel flags for crucible batch execution
@@ -1482,23 +1483,50 @@ const TICKERS=[
 // ══════════════════════════════════════════════════════
 async function getLivePrice(symbol) {
   const id=COINGECKO_IDS[symbol?.toUpperCase()]; if(!id) return null;
+
+  // Tier-1: Market Cache check (highly efficient if already fetched)
+  if (marketCache && (Date.now() - marketCacheTime < 30000)) {
+    const coin = marketCache.find(c => c.symbol.toLowerCase() === symbol.toLowerCase());
+    if (coin && coin.current_price) return coin.current_price;
+  }
+
   const c=priceCache[symbol];
   if(c && Date.now()-c.ts<45000) return c.price;
-  try {
-    const r=await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd`);
-    const d=await r.json(); const price=d[id]?.usd;
-    if(price){ priceCache[symbol]={price,ts:Date.now()}; } return price||null;
-  } catch(e){ return c?.price||null; }
+
+  // Request deduplication
+  const reqKey = 'price-' + id;
+  if (inFlightRequests.has(reqKey)) return inFlightRequests.get(reqKey);
+
+  const p = (async () => {
+    try {
+      const r=await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd`);
+      const d=await r.json(); const price=d[id]?.usd;
+      if(price){ priceCache[symbol]={price,ts:Date.now()}; } return price||null;
+    } catch(e){ return c?.price||null; }
+    finally { inFlightRequests.delete(reqKey); }
+  })();
+
+  inFlightRequests.set(reqKey, p);
+  return p;
 }
 async function getMarketData() {
   const now=Date.now();
   if(marketCache&&now-marketCacheTime<15000) return marketCache;  // 15s cache
 
-  try {
-    const r=await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=percent_change_24h_desc&per_page=30&sparkline=false');
-    marketCache=await r.json(); marketCacheTime=now;
-  } catch(e){ marketCache=marketCache||[]; }
-  return marketCache;
+  // Request deduplication
+  if (inFlightRequests.has('marketData')) return inFlightRequests.get('marketData');
+
+  const p = (async () => {
+    try {
+      const r=await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=percent_change_24h_desc&per_page=30&sparkline=false');
+      marketCache=await r.json(); marketCacheTime=now;
+    } catch(e){ marketCache=marketCache||[]; }
+    inFlightRequests.delete('marketData');
+    return marketCache;
+  })();
+
+  inFlightRequests.set('marketData', p);
+  return p;
 }
 
 // ══════════════════════════════════════════════════════
@@ -1681,24 +1709,30 @@ function startLivePnlTicker(pos) {
   setTimeout(tick,800);  // Faster initial update: 2s → 800ms
 }
 
+let _balanceUpdatePending = false;
 function updateLiveBalance(){
-  // Realised balance + sum of all live unrealised positions
-  const unrealised=openPositions.reduce((sum,p)=>sum+(p.livePnl||0),0);
-  const displayBalance=balance+unrealised;
-  const displayPnl=totalPnl+unrealised;
-  const balEl=document.getElementById('ghBalance');
-  const pnlEl=document.getElementById('ghPnl');
-  if(balEl){
-    balEl.textContent='$'+displayBalance.toFixed(2);
-    balEl.title=`Realised: $${balance.toFixed(2)} | Unrealised: $${unrealised.toFixed(2)}`;
-    // Flash gold when unrealised is active
-    balEl.style.color=unrealised>0?'var(--green)':unrealised<0?'var(--hot)':'var(--gold)';
-  }
-  if(pnlEl){
-    pnlEl.textContent=(displayPnl>=0?'+':'')+'$'+displayPnl.toFixed(2)+(unrealised!==0?' (live)':' today');
-    pnlEl.className='gh-pnl '+(displayPnl>=0?'pnl-pos':'pnl-neg');
-  }
+  if (_balanceUpdatePending) return;
+  _balanceUpdatePending = true;
 
+  requestAnimationFrame(() => {
+    // Realised balance + sum of all live unrealised positions
+    const unrealised=openPositions.reduce((sum,p)=>sum+(p.livePnl||0),0);
+    const displayBalance=balance+unrealised;
+    const displayPnl=totalPnl+unrealised;
+    const balEl=document.getElementById('ghBalance');
+    const pnlEl=document.getElementById('ghPnl');
+    if(balEl){
+      balEl.textContent='$'+displayBalance.toFixed(2);
+      balEl.title=`Realised: $${balance.toFixed(2)} | Unrealised: $${unrealised.toFixed(2)}`;
+      // Flash gold when unrealised is active
+      balEl.style.color=unrealised>0?'var(--green)':unrealised<0?'var(--hot)':'var(--gold)';
+    }
+    if(pnlEl){
+      pnlEl.textContent=(displayPnl>=0?'+':'')+'$'+displayPnl.toFixed(2)+(unrealised!==0?' (live)':' today');
+      pnlEl.className='gh-pnl '+(displayPnl>=0?'pnl-pos':'pnl-neg');
+    }
+    _balanceUpdatePending = false;
+  });
 }
 
 async function checkExit(pos, bot) {
@@ -2640,7 +2674,7 @@ async function loginMetaMask(){
     
     // Get balance
     s.textContent='⏳ Fetching wallet balance…';
-    let balanceUSD = 10000; // Default fallback
+    let balanceUSD = 0; // Default to $0 to enable Earn-to-Trade flow
     
     try { 
       const balanceWei = await provider.getBalance(address);
@@ -2655,7 +2689,7 @@ async function loginMetaMask(){
     } 
     catch(balanceError) { 
       console.warn('Could not fetch balance:', balanceError);
-      // Use default balance
+      // Stays at $0 to allow user to use Faucet
     }
     
     // Update global balance
@@ -3114,9 +3148,25 @@ async function spinBot(id){
   
   // CRITICAL: Prevent spinning if balance is insufficient for minimum bet
   if(balance < 0.10) {
-    const t=document.getElementById('mtick-'+id);
-    if(t) t.textContent='🚫 Insufficient balance to trade';
-    return;
+    if (bot.auto && window.taskState) {
+        // Auto-Onboarding: if in auto mode and balance low, try to claim faucet and tasks
+        if (!window.taskState.faucetClaimed) {
+            console.log(`[Bot #${id}] Auto-claiming faucet...`);
+            if (window.claimFaucet) window.claimFaucet();
+        } else {
+            const nextTask = window.taskState.tasks.find(t => !t.completed);
+            if (nextTask && window.completeTask) {
+                console.log(`[Bot #${id}] Auto-completing task: ${nextTask.label}`);
+                window.completeTask(nextTask.id);
+            }
+        }
+    }
+
+    if (balance < 0.10) {
+        const t=document.getElementById('mtick-'+id);
+        if(t) t.textContent='🚫 Insufficient balance to trade';
+        return;
+    }
   }
   
   const block=isGlobalBlocked();
@@ -3252,23 +3302,34 @@ let polCache = null, polCacheTime = 0;
 async function fetchPoliticianFilings(){
   const now=Date.now();
   if(polCache&&now-polCacheTime<5*60000) return polCache;
-  try{
-    // House Stock Watcher — public S3, no auth needed
-    const r=await fetch('https://house-stock-watcher-data.s3-us-west-2.amazonaws.com/data/all_transactions.json');
-    const data=await r.json();
-    // Get last 90 days, sort by recency
-    const cutoff=new Date(); cutoff.setDate(cutoff.getDate()-90);
-    polCache=data
-      .filter(t=>new Date(t.transaction_date)>cutoff)
-      .sort((a,b)=>new Date(b.transaction_date)-new Date(a.transaction_date))
-      .slice(0,200);
-    polCacheTime=now;
-    renderPolFeed(polCache.slice(0,8));
-    return polCache;
-  }catch(e){
-    // Fallback: return empty, agent will note data unavailable
-    return [];
-  }
+
+  // Request deduplication
+  if (inFlightRequests.has('polFilings')) return inFlightRequests.get('polFilings');
+
+  const p = (async () => {
+    try{
+      // House Stock Watcher — public S3, no auth needed
+      const r=await fetch('https://house-stock-watcher-data.s3-us-west-2.amazonaws.com/data/all_transactions.json');
+      const data=await r.json();
+      // Get last 90 days, sort by recency
+      const cutoff=new Date(); cutoff.setDate(cutoff.getDate()-90);
+      polCache=data
+        .filter(t=>new Date(t.transaction_date)>cutoff)
+        .sort((a,b)=>new Date(b.transaction_date)-new Date(a.transaction_date))
+        .slice(0,200);
+      polCacheTime=now;
+      renderPolFeed(polCache.slice(0,8));
+      return polCache;
+    }catch(e){
+      // Fallback: return empty, agent will note data unavailable
+      return [];
+    } finally {
+      inFlightRequests.delete('polFilings');
+    }
+  })();
+
+  inFlightRequests.set('polFilings', p);
+  return p;
 }
 
 function getPoliticianSignalForToken(filings, token){
