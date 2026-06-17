@@ -66,6 +66,7 @@ let walletState = {
   signer: null,
   nonce: 0,
   transactions: [],
+  virtualCredits: 0, // Credits earned via tasks/faucet
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -156,22 +157,37 @@ async function getWalletBalance() {
     const balanceWei = await walletState.provider.getBalance(walletState.address);
     const balanceETH = parseFloat(ethers.utils.formatEther(balanceWei));
     
-    // Get ETH price from CoinGecko
-    const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd', {
-      timeout: 5000
-    });
-    const priceData = await priceResponse.json();
-    const ethPrice = priceData.ethereum?.usd || 3200;
+    // Bolt: Request deduplication for ETH price
+    let ethPrice = 3200;
+    const reqKey = 'price-ethereum';
+
+    if (window.inFlightRequests && window.inFlightRequests.has(reqKey)) {
+        const priceData = await window.inFlightRequests.get(reqKey);
+        ethPrice = priceData?.ethereum?.usd || ethPrice;
+    } else {
+        const p = (async () => {
+            try {
+                const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+                return await response.json();
+            } catch (e) { return null; }
+            finally { if (window.inFlightRequests) window.inFlightRequests.delete(reqKey); }
+        })();
+        if (window.inFlightRequests) window.inFlightRequests.set(reqKey, p);
+        const priceData = await p;
+        ethPrice = priceData?.ethereum?.usd || ethPrice;
+    }
     
     walletState.balanceETH = balanceETH;
-    walletState.balanceUSD = balanceETH * ethPrice;
+    // Total balance = On-chain ETH (USD) + Task credits
+    walletState.balanceUSD = (balanceETH * ethPrice) + (walletState.virtualCredits || 0);
     
-    console.log(`✅ Balance fetched: ${balanceETH} ETH = $${walletState.balanceUSD.toFixed(2)}`);
+    console.log(`✅ Balance fetched: ${balanceETH} ETH + $${(walletState.virtualCredits||0).toFixed(2)} credits = $${walletState.balanceUSD.toFixed(2)}`);
     
     return {
       eth: balanceETH,
       usd: walletState.balanceUSD,
       ethPrice: ethPrice,
+      virtualCredits: walletState.virtualCredits || 0
     };
   } catch (e) {
     console.error('❌ Balance fetch error:', e);
@@ -212,7 +228,9 @@ async function estimateSwapGasCost(method = 'ARBITRAGE') {
   const gasPrice = feeData.maxFee || feeData.gasPrice;
   const gasCostWei = gasPrice.mul(gasEstimate);
   const gasCostETH = parseFloat(ethers.utils.formatEther(gasCostWei));
-  const gasCostUSD = gasCostETH * (walletState.balanceUSD / walletState.balanceETH || 3200);
+  // Use a fixed price or last known price for USD conversion to avoid division by zero
+  const ethPrice = (walletState.balanceETH > 0) ? (walletState.balanceUSD - (walletState.virtualCredits || 0)) / walletState.balanceETH : 3200;
+  const gasCostUSD = gasCostETH * ethPrice;
   
   return {
     gasLimit: gasEstimate,
@@ -296,10 +314,12 @@ async function validateSufficientBalance(betUSD) {
   if (!gasCost) return false;
   
   // Need bet amount + gas cost + 10% buffer
-  const requiredETH = (betUSD / (balance.ethPrice || 3200)) + gasCost.costETH + 0.001; // Extra 0.001 ETH buffer
+  // We can use virtual credits to cover the bet amount, but gas MUST be in ETH
+  const betInETH = Math.max(0, (betUSD - (walletState.virtualCredits || 0)) / (balance.ethPrice || 3200));
+  const requiredETH = betInETH + gasCost.costETH + 0.001; // Extra 0.001 ETH buffer
   
   return {
-    hasEnoughBalance: balance.eth >= requiredETH,
+    hasEnoughBalance: balance.eth >= requiredETH || (balance.usd >= betUSD + gasCost.costUSD),
     balanceETH: balance.eth,
     balanceUSD: balance.usd,
     requiredETH: requiredETH,

@@ -45,6 +45,17 @@ function claimFaucet() {
 
     // Add to balance
     window.balance += TASK_CONFIG.initialFaucetAmount;
+
+    // Add to real wallet virtual credits if integrated
+    if (window.walletState) {
+        window.walletState.virtualCredits = (window.walletState.virtualCredits || 0) + TASK_CONFIG.initialFaucetAmount;
+    }
+
+    // Log to audit ledger
+    if (window.logAudit) {
+        window.logAudit(`💰 Faucet claimed: +$${TASK_CONFIG.initialFaucetAmount.toFixed(2)} (Earn-to-Trade)`, 'notice');
+    }
+
     window.updateGlobalBalance();
 
     taskState.faucetClaimed = true;
@@ -69,6 +80,17 @@ function completeTask(taskId) {
 
     // Add to balance
     window.balance += task.reward;
+
+    // Add to real wallet virtual credits if integrated
+    if (window.walletState) {
+        window.walletState.virtualCredits = (window.walletState.virtualCredits || 0) + task.reward;
+    }
+
+    // Log to audit ledger
+    if (window.logAudit) {
+        window.logAudit(`✅ Task complete: ${task.label} (+$${task.reward.toFixed(2)})`, 'info');
+    }
+
     window.updateGlobalBalance();
 
     saveTaskState();

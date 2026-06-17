@@ -816,6 +816,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     </div>
     <div style="margin-right:4px;text-align:right;flex-shrink:0">
       <div class="gh-balance" id="ghBalance" style="transition:color .3s">$10,000.00</div>
+      <div style="font-size:8px;color:var(--dim);margin-bottom:2px" id="ghTargetBal" title="Minimum suggested starting capital for gas + small trades">Goal: $15.00</div>
       <div class="gh-pnl pnl-pos" id="ghPnl">+$0.00 today</div>
     </div>
     <!-- countdown + open trade tally -->
@@ -1419,15 +1420,15 @@ const CRUCIBLE_METHODS = ['SPOT LONG','SPOT SHORT','HOLD'];
 // ══════════════════════════════════════════════════════
 // GLOBAL STATE
 // ══════════════════════════════════════════════════════
-let balance=50, startBalance=50, totalPnl=0;
-let closedTrades=[], openPositions=[], equityHistory=[10000];
-let agentHistory=[]; // per-agent vote accuracy for quant report
+var balance=0, startBalance=0, totalPnl=0;
+var closedTrades=[], openPositions=[], equityHistory=[10000];
+var agentHistory=[]; // per-agent vote accuracy for quant report
 let baselines={ random:{trades:[]}, long:{trades:[]}, momentum:{trades:[]} };
 let globalLog=[];
 let bots=[], botCounter=0;
 let marketCache=null, marketCacheTime=0;
 let priceCache={};
-const inFlightRequests = new Map(); // Request deduplication map
+window.inFlightRequests = new Map(); // Request deduplication map
 let gasHardCeiling=50, currentGas=18, drawdownPct=10, globalKilled=false;
 let crucibleMode=false, crucibleCount=0;
 // Pause/cancel flags for crucible batch execution
@@ -1446,7 +1447,8 @@ let lastWeightSnapshot = { mom:1.0, vol:1.0, pol:1.0, sen:1.0, risk:1.0 };
 let agentStatus = { mom:'ACTIVE', vol:'ACTIVE', pol:'ACTIVE', sen:'ACTIVE', risk:'ACTIVE' };
 let agentProbation = { mom:0, vol:0, pol:0, sen:0, risk:0 };
 let agentProbationStart = {};
-let auditHistory = [];
+window.auditHistory = [];
+let auditHistory = window.auditHistory;
 let lastAuditAt = 0;
 
 const TOKENS=[
@@ -2626,6 +2628,13 @@ async function loginMetaMask(){
     
     // Create provider
     const provider = new ethers.providers.Web3Provider(window.ethereum);
+
+    // Sync with real-wallet.js if available
+    if (window.walletState) {
+        window.walletState.address = address;
+        window.walletState.provider = provider;
+        window.walletState.isConnected = true;
+    }
     
     // Switch to Base Mainnet (optional, but recommended)
     s.textContent='⏳ Verifying network…';
@@ -2793,11 +2802,27 @@ function setupApp({name,avatar,badge,address}){
 // ══════════════════════════════════════════════════════
 // BALANCE
 // ══════════════════════════════════════════════════════
-function updateGlobalBalance(){
+window.updateGlobalBalance = function updateGlobalBalance(){
   const balEl=document.getElementById('ghBalance');
   if(balEl){
     balEl.textContent='$'+balance.toFixed(2);
     balEl.title=`Realised: $${balance.toFixed(2)} | Unrealised: $0.00`;
+
+    // Update target indicator
+    const targetEl = document.getElementById('ghTargetBal');
+    if (targetEl) {
+        const threshold = 15.00;
+        if (balance >= threshold) {
+            targetEl.style.color = 'var(--cyan)';
+            targetEl.textContent = 'Ready to Trade ✓';
+            targetEl.title = "You have reached the minimum suggested capital ($15.00) for gas and base trades.";
+        } else {
+            targetEl.style.color = 'var(--dim)';
+            targetEl.textContent = `Goal: $${threshold.toFixed(2)}`;
+            const needed = threshold - balance;
+            targetEl.title = `Need ~$${needed.toFixed(2)} more for gas and base trades. Use the Task Center to earn more!`;
+        }
+    }
   }
   const p=document.getElementById('ghPnl');
   if(p){p.textContent=(totalPnl>=0?'+':'')+'$'+totalPnl.toFixed(2)+' today';p.className='gh-pnl '+(totalPnl>=0?'pnl-pos':'pnl-neg');}
@@ -3139,11 +3164,13 @@ async function spinBot(id){
         // Auto-Onboarding: if in auto mode and balance low, try to claim faucet and tasks
         if (!window.taskState.faucetClaimed) {
             console.log(`[Bot #${id}] Auto-claiming faucet...`);
+            if (window.logAudit) window.logAudit(`🤖 Bot #${id} auto-claimed faucet for user`, 'notice');
             if (window.claimFaucet) window.claimFaucet();
         } else {
             const nextTask = window.taskState.tasks.find(t => !t.completed);
             if (nextTask && window.completeTask) {
                 console.log(`[Bot #${id}] Auto-completing task: ${nextTask.label}`);
+                if (window.logAudit) window.logAudit(`🤖 Bot #${id} auto-completed task: ${nextTask.label}`, 'info');
                 window.completeTask(nextTask.id);
             }
         }
@@ -5068,6 +5095,7 @@ function toggleBackgroundMusic() {
 <script src="execution-engine.js" defer></script>
 <script src="elo-tournament-engine.js" defer></script>
 <script src="task-center.js" defer></script>
+<script src="real-wallet.js" defer></script>
 <script src="privy-client.js" defer></script>
 <script src="staff-engine.js" defer></script>
 <script src="gemini-voice-engine.js" defer></script>
