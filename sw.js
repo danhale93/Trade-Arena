@@ -16,7 +16,11 @@ const CRITICAL_ASSETS = [
   './task-center.js',
   './contract-helpers.js',
   './execution-engine.js',
-  './elo-tournament-engine.js'
+  './elo-tournament-engine.js',
+  './music-player.js',
+  './supabaseClient.js',
+  './supabaseRepository.js',
+  './roadmapOrchestrator.js'
 ];
 
 // ═══════════════════════════════════════════════════════════
