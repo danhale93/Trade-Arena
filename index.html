@@ -1450,7 +1450,7 @@ let agentProbationStart = {};
 let auditHistory = [];
 let lastAuditAt = 0;
 
-const TOKENS=[
+const UI_TOKENS=[
   {e:'🐸',l:'PEPE'},{e:'🐕',l:'DOGE'},{e:'💎',l:'ETH'},{e:'🌕',l:'BTC'},
   {e:'🔥',l:'WIF'},{e:'💀',l:'BONK'},{e:'🦊',l:'FLOKI'},{e:'🚀',l:'ARB'},
   {e:'⚡',l:'SOL'},{e:'🌊',l:'MATIC'},
@@ -4597,7 +4597,7 @@ async function callAI(marketData, bet, botId, bot){
 // ══════════════════════════════════════════════════════
 async function animateReels(id,decision){
   const IH=36;
-  const ti=Math.max(0,TOKENS.findIndex(t=>t.l===decision.token)%10);
+  const ti=Math.max(0,UI_TOKENS.findIndex(t=>t.l===decision.token)%10);
   const mi={'SPOT LONG':0,'SPOT SHORT':1,'YIELD FARM':2,'PERP LONG':3,'PERP SHORT':4,'HOLD':5}[decision.method]??0;
   // Speed up animation: shorter delays between reels for snappier feel
   await Promise.all([

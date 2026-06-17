@@ -6,14 +6,17 @@
  * Updated: 2026-04-18
  */
 
-const CACHE_VERSION = 'trade-arena-v4';
+const CACHE_VERSION = 'trade-arena-v5';
 const CRITICAL_ASSETS = [
   './',
   './index.html',
   './manifest.json',
   './staff-engine.js',
   './gemini-voice-engine.js',
-  './task-center.js'
+  './task-center.js',
+  './contract-helpers.js',
+  './execution-engine.js',
+  './elo-tournament-engine.js'
 ];
 
 // ═══════════════════════════════════════════════════════════
