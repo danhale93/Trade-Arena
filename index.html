@@ -1191,9 +1191,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
       <!-- Customer Service Entry -->
       <div style="margin-top:15px; padding-top:15px; border-top:1px solid var(--border);">
-        <div style="font-size:9px; color:var(--cyan); font-family:'Bungee'; margin-bottom:8px; letter-spacing:1px;">TALK TO STAFF (CONCIERGE)</div>
+        <label for="staffInput" style="display:block; font-size:9px; color:var(--cyan); font-family:'Bungee'; margin-bottom:8px; letter-spacing:1px;">TALK TO STAFF (CONCIERGE)</label>
         <div style="display:flex; gap:8px;">
-          <input type="text" id="staffInput" placeholder="I lost money on that last trade, why?" style="flex:1; background:var(--bg); border:1px solid var(--border); color:#fff; padding:8px; border-radius:6px; font-family:inherit; font-size:10px;">
+          <input type="text" id="staffInput" aria-label="Ask staff a question" placeholder="I lost money on that last trade, why?" onkeydown="if(event.key==='Enter') sendStaffQuery()" style="flex:1; background:var(--bg); border:1px solid var(--border); color:#fff; padding:8px; border-radius:6px; font-family:inherit; font-size:10px;">
           <button onclick="sendStaffQuery()" style="background:var(--cyan); color:#000; border:none; border-radius:6px; padding:0 15px; font-family:'Bungee'; font-size:10px; cursor:pointer;">ASK</button>
         </div>
         <div id="staffResponse" style="margin-top:10px; padding:10px; background:rgba(0,255,231,0.05); border-radius:6px; font-size:10px; color:#ccc; display:none; border-left:2px solid var(--cyan);"></div>
@@ -5113,7 +5113,7 @@ document.addEventListener('DOMContentLoaded', function() {
   <div class="va-input-area" style="flex-direction:column; gap:5px;">
     <button id="vaListenBtn" onclick="window.GEMINI_VOICE.toggleListening()" style="width:100%; padding:10px; background:var(--cyan); border:none; border-radius:6px; font-family:'Bungee'; font-size:10px; cursor:pointer;">🎤 PUSH TO TALK</button>
     <div style="display:flex; gap:8px; width:100%">
-      <input type="text" class="va-input" id="vaInput" placeholder="Command the fleet...">
+      <input type="text" class="va-input" id="vaInput" aria-label="Command the fleet" placeholder="Command the fleet..." onkeydown="if(event.key==='Enter') sendVoiceCommand()">
       <button class="va-send" onclick="sendVoiceCommand()">SEND</button>
     </div>
   </div>

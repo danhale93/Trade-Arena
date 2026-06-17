@@ -5,3 +5,7 @@
 ## 2026-06-15 - [Transparent Financial Metrics]
 **Learning:** In trading apps, "Balance" is often an aggregated figure. Users benefit from seeing the breakdown between Realised (actual) and Unrealised (paper) gains without taking up extra screen real estate.
 **Action:** Use tooltips on primary financial figures to provide "at-a-glance" breakdowns, improving information transparency while maintaining a minimal UI footprint.
+
+## 2026-06-17 - [Intuitive Chat Interactivity]
+**Learning:** Users instinctively expect "Enter" key submission for chat-style inputs. Omitting this breaks the interaction flow and forces high-precision mouse movements for a simple action.
+**Action:** Always implement `onkeydown` listeners for text inputs that trigger a single primary action, ensuring `event.key === 'Enter'` maps to the submission logic.
