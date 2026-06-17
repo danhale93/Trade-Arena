@@ -327,6 +327,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 .machine.winning{animation:wf .15s ease 4;}
 .machine.losing{animation:lf .15s ease 4}
 .machine.auto-on{border-color:var(--cyan);box-shadow:0 0 28px rgba(0,255,231,.2)}
+.machine.earning{border-color:var(--green)!important;box-shadow:0 0 28px rgba(57,255,20,.3)!important;animation:earningPulse 2s infinite}
+@keyframes earningPulse{0%{box-shadow:0 0 20px rgba(57,255,20,0.2)}50%{box-shadow:0 0 35px rgba(57,255,20,0.5)}100%{box-shadow:0 0 20px rgba(57,255,20,0.2)}}
 .machine.gas-paused{border-color:var(--amber)!important;box-shadow:0 0 20px rgba(255,179,0,.3)!important}
 .machine.cooling{border-color:var(--hot)!important;box-shadow:0 0 20px rgba(255,45,120,.3)!important}
 .machine.has-open{border-color:var(--blue)!important;box-shadow:0 0 20px rgba(68,136,255,.25)!important}
@@ -1419,12 +1421,12 @@ const CRUCIBLE_METHODS = ['SPOT LONG','SPOT SHORT','HOLD'];
 // ══════════════════════════════════════════════════════
 // GLOBAL STATE
 // ══════════════════════════════════════════════════════
-let balance=50, startBalance=50, totalPnl=0;
-let closedTrades=[], openPositions=[], equityHistory=[10000];
-let agentHistory=[]; // per-agent vote accuracy for quant report
-let baselines={ random:{trades:[]}, long:{trades:[]}, momentum:{trades:[]} };
-let globalLog=[];
-let bots=[], botCounter=0;
+var balance=50, startBalance=50, totalPnl=0;
+var closedTrades=[], openPositions=[], equityHistory=[10000];
+var agentHistory=[]; // per-agent vote accuracy for quant report
+var baselines={ random:{trades:[]}, long:{trades:[]}, momentum:{trades:[]} };
+var globalLog=[];
+var bots=[], botCounter=0;
 let marketCache=null, marketCacheTime=0;
 let priceCache={};
 let gasHardCeiling=50, currentGas=18, drawdownPct=10, globalKilled=false;
@@ -2765,6 +2767,14 @@ function updateGlobalBalance(){
   if(balEl){
     balEl.textContent='$'+balance.toFixed(2);
     balEl.title=`Realised: $${balance.toFixed(2)} | Unrealised: $0.00`;
+
+    // Alert bots when funds are restored
+    if (balance >= 0.10) {
+      bots.forEach(b => {
+        const t = document.getElementById('mtick-' + b.id);
+        if (t && t.textContent.includes('🚫')) t.textContent = 'READY';
+      });
+    }
   }
   const p=document.getElementById('ghPnl');
   if(p){p.textContent=(totalPnl>=0?'+':'')+'$'+totalPnl.toFixed(2)+' today';p.className='gh-pnl '+(totalPnl>=0?'pnl-pos':'pnl-neg');}
@@ -3007,6 +3017,14 @@ function startTicker(bot){
     const el=document.getElementById('mtick-'+bot.id); 
     if(!el) return;
     
+    // Check for Earning Mode
+    const card = document.getElementById('bot-' + bot.id);
+    if (card && card.classList.contains('earning')) {
+        // Let the earning mode logic handle the text content
+        bot.tickerTimer=setTimeout(tick,1000);
+        return;
+    }
+
     // Show actual trade info instead of generic tickers
     if(bot.lastTrade) {
       const trade = bot.lastTrade;
@@ -3103,7 +3121,40 @@ async function spinBot(id){
   // CRITICAL: Prevent spinning if balance is insufficient for minimum bet
   if(balance < 0.10) {
     const t=document.getElementById('mtick-'+id);
-    if(t) t.textContent='🚫 Insufficient balance to trade';
+
+    // AUTO-BOT EARNING MODE
+    if (bot.auto && typeof performRepeatableTask === 'function') {
+      const card = document.getElementById('bot-' + id);
+      if (card) card.classList.add('earning');
+
+      if (t) t.textContent = '⛏️ LOW FUNDS - SEEKING CREDITS...';
+
+      // Try to claim initial faucet if not done
+      if (typeof taskState !== 'undefined' && !taskState.faucetClaimed) {
+        if (t) t.textContent = '🚰 CLAIMING FAUCET...';
+        claimFaucet();
+        setTimeout(() => card?.classList.remove('earning'), 2000);
+        return;
+      }
+
+      // Cycle through repeatable tasks
+      const tasks = ['mine', 'ad', 'faucet_v2'];
+      for (const taskId of tasks) {
+        const res = await performRepeatableTask(taskId);
+        if (res.success) {
+          const icon = taskId === 'mine' ? '⛏️' : taskId === 'ad' ? '📺' : '🚰';
+          const label = taskId === 'mine' ? 'MINED' : taskId === 'ad' ? 'WATCHED AD' : 'CLAIMED DAILY';
+          if (t) t.textContent = `${icon} ${label} +$${res.reward.toFixed(2)}`;
+          setTimeout(() => card?.classList.remove('earning'), 3000);
+          return;
+        }
+      }
+
+      if (t) t.textContent = '⏳ ALL EARNINGS ON COOLDOWN...';
+      setTimeout(() => card?.classList.remove('earning'), 1000);
+    } else {
+      if(t) t.textContent='🚫 Insufficient balance to trade';
+    }
     return;
   }
   
