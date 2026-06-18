@@ -12,3 +12,8 @@
 **Vulnerability:** A hardcoded Anthropic API key was found in multiple HTML files, including `index.html`, `index-new.html`, and redundant files in `kivy-app/`.
 **Learning:** Redundant file structures and "demo" versions of the application can often harbor legacy hardcoded secrets that were removed from the main entry point but forgotten elsewhere.
 **Prevention:** Use global grep scans for known secret patterns (like `sk-ant-`) across the entire repository regularly. Ensure that build artifacts or duplicated assets are either excluded from the repo or included in secret-scrubbing workflows.
+
+## 2026-06-18 - [HIGH] Unprotected Live Execution
+**Vulnerability:** The on-chain execution engine (`execution-engine.js`) lacked safety checks, allowing potentially unlimited real-money transactions if live mode were enabled.
+**Learning:** Even features intended for "live" use must have safety guardrails (circuit breakers, bet limits) implemented at the code level, not just the config level, to prevent catastrophic failure or accidental activation.
+**Prevention:** Implemented the "Sentinel Live Guard" which enforces an explicit `liveExecutionEnabled` flag and a `maxBetUSD` hard cap within the execution core.

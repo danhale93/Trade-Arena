@@ -21,7 +21,10 @@ const EXECUTION_CONFIG = {
     // Private RPC for MEV protection (Flashbots/Base equivalents)
     privateRpcUrl: 'https://rpc.base.org', // Placeholder for real MEV-aware RPC
     // Use Atomic Bundles for arbitrage
-    useAtomicBundles: true
+    useAtomicBundles: true,
+    // Sentinel Live Guard: Safety parameters for real execution
+    liveExecutionEnabled: false,
+    maxBetUSD: 10.00
 };
 
 /**
@@ -81,6 +84,17 @@ async function executeOnChainTrade(tradeRequest) {
     }
 
     const { botId, token, method, amountUSD } = tradeRequest;
+
+    // Sentinel Live Guard: Prevent accidental live trades or excessive risk
+    if (!EXECUTION_CONFIG.liveExecutionEnabled) {
+        console.warn('[Sentinel] Live execution is currently disabled in EXECUTION_CONFIG.');
+        throw new Error('Live execution disabled');
+    }
+    if (amountUSD > EXECUTION_CONFIG.maxBetUSD) {
+        console.warn(`[Sentinel] Trade amount $${amountUSD} exceeds safety limit of $${EXECUTION_CONFIG.maxBetUSD}.`);
+        throw new Error('Trade amount exceeds safety limit');
+    }
+
     console.log(`[Execution] EXECUTING REAL TRADE: Bot #${botId} - ${method} ${token} $${amountUSD}`);
 
     if (typeof window.privySignMessage !== 'function' || !window.isPrivyConnected()) {
