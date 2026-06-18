@@ -1653,15 +1653,17 @@ async function openPosition(bot, decision, entryPrice, bet, volumeUsd, priceChan
   
   updateOpenCount();
   setTimeout(()=>checkExit(pos,bot), EXIT_TIMES[decision.method]);
-  startLivePnlTicker(pos);
+  startLivePnlTicker(pos, bot);
   return pos;
 }
 
-function startLivePnlTicker(pos) {
+function startLivePnlTicker(pos, bot) {
+  // Optimization: Cache DOM elements once instead of every tick
+  const pnlEl = document.getElementById('opLivePnl-' + pos.botId);
+  const timerEl = document.getElementById('opTimer-' + pos.botId);
+
   const tick = async () => {
     if(pos.status!=='open') return;
-    const pnlEl=document.getElementById('opLivePnl-'+pos.botId);
-    const timerEl=document.getElementById('opTimer-'+pos.botId);
     const p=await getLivePrice(pos.token);
     if(p){
       const delta=pos.direction==='long'?(p-pos.entryPrice)/pos.entryPrice:(pos.entryPrice-p)/pos.entryPrice;
@@ -1677,7 +1679,7 @@ function startLivePnlTicker(pos) {
       pos.livePnl=net;
 
       // ── Stop loss / take profit early exit ──
-      const bot=bots.find(b=>b.id===pos.botId);
+      // Optimization: Use passed bot reference instead of bots.find(O(N))
       if(bot && pos.status==='open'){
         const pct=(net/pos.bet)*100;
         const sl=bot.stopLossPct||0;
@@ -1697,19 +1699,20 @@ function startLivePnlTicker(pos) {
     if(timerEl){
       const rem=Math.max(0,pos.exitTime-Date.now());
       const m=Math.floor(rem/60000),s=Math.floor((rem%60000)/1000);
-      const slBot=bots.find(b=>b.id===pos.botId);
-      const slLabel=slBot&&(slBot.stopLossPct||slBot.takeProfitPct)
-        ?` · SL${slBot.stopLossPct?` −${slBot.stopLossPct}%`:'—'} TP${slBot.takeProfitPct?` +${slBot.takeProfitPct}%`:'—'}`:'';
+      // Optimization: Use passed bot reference instead of bots.find(O(N))
+      const slLabel=bot&&(bot.stopLossPct||bot.takeProfitPct)
+        ?` · SL${bot.stopLossPct?` −${bot.stopLossPct}%`:'—'} TP${bot.takeProfitPct?` +${bot.takeProfitPct}%`:'—'}`:'';
       timerEl.textContent=`Exit in ${m}:${s.toString().padStart(2,'0')}${slLabel}`;
     }
-    // Update global balance header with unrealised P&L across all open positions
-    updateLiveBalance();
+    // Optimization: updateLiveBalance() moved to _tickHeader (500ms) to avoid DOM churn when multiple positions tick
     if(pos.status==='open') setTimeout(tick,2000);  // Increased frequency: 5s → 2s
   };
   setTimeout(tick,800);  // Faster initial update: 2s → 800ms
 }
 
 let _balanceUpdatePending = false;
+let _lastDisplayBal = -1, _lastDisplayPnl = -1, _lastUnrealised = -1;
+
 function updateLiveBalance(){
   if (_balanceUpdatePending) return;
   _balanceUpdatePending = true;
@@ -1719,6 +1722,13 @@ function updateLiveBalance(){
     const unrealised=openPositions.reduce((sum,p)=>sum+(p.livePnl||0),0);
     const displayBalance=balance+unrealised;
     const displayPnl=totalPnl+unrealised;
+
+    // Optimization: Skip DOM updates if values haven't changed
+    if (displayBalance === _lastDisplayBal && displayPnl === _lastDisplayPnl && unrealised === _lastUnrealised) {
+      _balanceUpdatePending = false;
+      return;
+    }
+
     const balEl=document.getElementById('ghBalance');
     const pnlEl=document.getElementById('ghPnl');
     if(balEl){
@@ -1731,6 +1741,10 @@ function updateLiveBalance(){
       pnlEl.textContent=(displayPnl>=0?'+':'')+'$'+displayPnl.toFixed(2)+(unrealised!==0?' (live)':' today');
       pnlEl.className='gh-pnl '+(displayPnl>=0?'pnl-pos':'pnl-neg');
     }
+
+    _lastDisplayBal = displayBalance;
+    _lastDisplayPnl = displayPnl;
+    _lastUnrealised = unrealised;
     _balanceUpdatePending = false;
   });
 }
@@ -2892,6 +2906,9 @@ function _startHeaderTicker(){
   _ghTickerInterval=setInterval(_tickHeader,500);
 }
 function _tickHeader(){
+  // Optimization: Refresh global balance (realised + unrealised) every 500ms when app is active
+  updateLiveBalance();
+
   // open trade count
   const count=openPositions.length;
   const qWrap=document.getElementById('ghQueueWrap');
