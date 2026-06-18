@@ -1438,7 +1438,7 @@ let agentHistory=[]; // per-agent vote accuracy for quant report
 let baselines={ random:{trades:[]}, long:{trades:[]}, momentum:{trades:[]} };
 let globalLog=[];
 let bots=[], botCounter=0;
-let marketCache=null, marketCacheTime=0;
+let marketCache=null, marketCacheTime=0, marketMap=new Map();
 let priceCache={};
 const inFlightRequests = new Map(); // Request deduplication map
 let gasHardCeiling=50, currentGas=18, drawdownPct=10, globalKilled=false;
@@ -1484,9 +1484,9 @@ const TICKERS=[
 async function getLivePrice(symbol) {
   const id=COINGECKO_IDS[symbol?.toUpperCase()]; if(!id) return null;
 
-  // Tier-1: Market Cache check (highly efficient if already fetched)
+  // Tier-1: Market Cache check (highly efficient O(1) Map lookup)
   if (marketCache && (Date.now() - marketCacheTime < 30000)) {
-    const coin = marketCache.find(c => c.symbol.toLowerCase() === symbol.toLowerCase());
+    const coin = marketMap.get(symbol.toLowerCase());
     if (coin && coin.current_price) return coin.current_price;
   }
 
@@ -1519,7 +1519,10 @@ async function getMarketData() {
   const p = (async () => {
     try {
       const r=await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=percent_change_24h_desc&per_page=30&sparkline=false');
-      marketCache=await r.json(); marketCacheTime=now;
+      marketCache=await r.json();
+      // Update O(1) lookup map
+      marketMap = new Map(marketCache.map(c => [c.symbol.toLowerCase(), c]));
+      marketCacheTime=now;
     } catch(e){ marketCache=marketCache||[]; }
     inFlightRequests.delete('marketData');
     return marketCache;
@@ -1669,11 +1672,16 @@ function startLivePnlTicker(pos, bot) {
       const delta=pos.direction==='long'?(p-pos.entryPrice)/pos.entryPrice:(pos.entryPrice-p)/pos.entryPrice;
       const net=pos.bet*delta-pos.costs.total;
       if(pnlEl){ 
-        pnlEl.textContent=(net>=0?'+':'')+'$'+net.toFixed(2); 
-        pnlEl.className='op-live-pnl '+(net>=0?'pos':'neg');
-        // Add pulse effect for instant visual feedback
-        pnlEl.style.animation='none';
-        setTimeout(()=>{pnlEl.style.animation='pulse 0.4s ease';}, 10);
+        const pnlStr = (net>=0?'+':'')+'$'+net.toFixed(2);
+        // Optimization: Dirty-check P&L value to avoid redundant DOM writes and animation restarts
+        if (pnlStr !== pos._lastPnlStr) {
+          pnlEl.textContent=pnlStr;
+          pnlEl.className='op-live-pnl '+(net>=0?'pos':'neg');
+          // Add pulse effect for instant visual feedback
+          pnlEl.style.animation='none';
+          setTimeout(()=>{pnlEl.style.animation='pulse 0.4s ease';}, 10);
+          pos._lastPnlStr = pnlStr;
+        }
       }
       // Store live unrealised P&L on the position for global display
       pos.livePnl=net;
