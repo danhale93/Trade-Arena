@@ -12,3 +12,8 @@
 **Vulnerability:** A hardcoded Anthropic API key was found in multiple HTML files, including `index.html`, `index-new.html`, and redundant files in `kivy-app/`.
 **Learning:** Redundant file structures and "demo" versions of the application can often harbor legacy hardcoded secrets that were removed from the main entry point but forgotten elsewhere.
 **Prevention:** Use global grep scans for known secret patterns (like `sk-ant-`) across the entire repository regularly. Ensure that build artifacts or duplicated assets are either excluded from the repo or included in secret-scrubbing workflows.
+
+## 2026-06-18 - [HIGH] XSS Vulnerability in Crucible Results Modal
+**Vulnerability:** The `showCrucibleResults` function in `index.html` rendered the `results.mode` property directly into an `innerHTML` sink without sanitization.
+**Learning:** Even metadata fields that are expected to be internal strings can be dangerous if there is any path for user-controlled data to reach them. Template literals in `innerHTML` are a common source of XSS.
+**Prevention:** Always use the `escapeHTML` helper when rendering any string into an `innerHTML` template, or prefer safer alternatives like `textContent` for individual elements.

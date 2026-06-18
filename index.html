@@ -2224,7 +2224,7 @@ function showCrucibleResults(results) {
    modalContent.innerHTML = `
       <h2 style="color: var(--cyan); text-align: center; margin-bottom: 20px;">CRUCIBLE BATCH RESULTS</h2>
       <div style="margin-bottom: 15px;">
-         <strong>Mode:</strong> ${results.mode}<br>
+         <strong>Mode:</strong> ${escapeHTML(results.mode)}<br>
          <strong>Trades Executed:</strong> ${results.tradesRun}<br>
          <strong>Starting Balance:</strong> $${results.startBalance.toFixed(2)}<br>
          <strong>Ending Balance:</strong> $${results.endBalance.toFixed(2)}<br>
