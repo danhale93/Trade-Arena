@@ -386,19 +386,28 @@ function renderStaffPanel() {
 async function sendStaffQuery() {
     const input = document.getElementById('staffInput');
     const responseBox = document.getElementById('staffResponse');
+    const btn = input?.nextElementSibling;
     if (!input || !input.value.trim() || !window.STAFF) return;
 
     const query = input.value.trim();
-    input.value = '';
 
-    responseBox.style.display = 'block';
-    responseBox.textContent = 'Thinking...';
+    try {
+        input.disabled = true;
+        if (btn) btn.disabled = true;
+        input.value = '';
 
-    const reply = await window.STAFF.handleSupportQuery(query);
-    responseBox.textContent = reply;
+        responseBox.style.display = 'block';
+        responseBox.textContent = 'Thinking...';
 
-    // SFX
-    if (typeof window.SFX !== 'undefined') window.SFX.tick();
+        const reply = await window.STAFF.handleSupportQuery(query);
+        responseBox.textContent = reply;
+
+        // SFX
+        if (typeof window.SFX !== 'undefined') window.SFX.tick();
+    } finally {
+        input.disabled = false;
+        if (btn) btn.disabled = false;
+    }
 }
 
 // Attach to window

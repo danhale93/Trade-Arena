@@ -932,7 +932,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
   <!-- ★ AGENT AUDIT PANEL ★ -->
   <div class="audit-panel" id="auditPanel">
-    <div class="audit-hd" id="auditHd" onclick="toggleAudit()">
+    <div class="audit-hd" id="auditHd" onclick="toggleAudit()" role="button" tabindex="0">
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:14px">🔍</span>
         <span class="audit-title">AGENT AUDIT</span>
@@ -964,7 +964,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
   <!-- ★ SELF-LEARNING PANEL ★ -->
   <div class="learn-panel" id="learnPanel">
-    <div class="learn-hd" id="learnHd" onclick="toggleLearn()">
+    <div class="learn-hd" id="learnHd" onclick="toggleLearn()" role="button" tabindex="0">
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:14px">🧬</span>
         <span class="learn-title">SELF-LEARNING MODEL</span>
@@ -1012,7 +1012,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
   <!-- ★ QUANT REPORT PANEL ★ -->
   <div class="cpanel" id="quantPanel">
-    <div class="cpanel-hd" id="quantHd" onclick="togglePanel('quant')" style="background:linear-gradient(90deg,rgba(68,136,255,.06),transparent)">
+    <div class="cpanel-hd" id="quantHd" onclick="togglePanel('quant')" style="background:linear-gradient(90deg,rgba(68,136,255,.06),transparent)" role="button" tabindex="0">
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:14px">🧪</span>
         <span class="cpanel-title" style="color:var(--blue)">QUANT REPORT</span>
@@ -1154,7 +1154,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
   <!-- ★ STAFF OPERATIONS PANEL ★ -->
   <div class="cpanel" id="staffPanel">
-    <div class="cpanel-hd" id="staffHd" onclick="togglePanel('staff')" style="background:linear-gradient(90deg,rgba(0,255,231,.06),transparent)">
+    <div class="cpanel-hd" id="staffHd" onclick="togglePanel('staff')" style="background:linear-gradient(90deg,rgba(0,255,231,.06),transparent)" role="button" tabindex="0">
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:14px">👷</span>
         <span class="cpanel-title" style="color:var(--cyan)">STAFF OPERATIONS</span>
@@ -1203,7 +1203,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
   <!-- ★ ELO ARENA ★ -->
   <div class="cpanel" id="eloPanel">
-    <div class="cpanel-hd" id="eloHd" onclick="togglePanel('elo')" style="background:linear-gradient(90deg,rgba(0,255,231,.06),transparent)">
+    <div class="cpanel-hd" id="eloHd" onclick="togglePanel('elo')" style="background:linear-gradient(90deg,rgba(0,255,231,.06),transparent)" role="button" tabindex="0">
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:14px">🏆</span>
         <span class="cpanel-title" style="color:var(--cyan)">ELO ARENA</span>
@@ -1221,7 +1221,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
   <!-- ★ TASK CENTER ★ -->
   <div class="cpanel" id="taskPanel">
-    <div class="cpanel-hd" id="taskHd" onclick="togglePanel('task')" style="background:linear-gradient(90deg,rgba(57,255,20,.06),transparent)">
+    <div class="cpanel-hd" id="taskHd" onclick="togglePanel('task')" style="background:linear-gradient(90deg,rgba(57,255,20,.06),transparent)" role="button" tabindex="0">
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:14px">💰</span>
         <span class="cpanel-title" style="color:var(--green)">TASK CENTER</span>
@@ -1239,7 +1239,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
   <!-- ★ CIRCUIT BREAKERS ★ -->
   <div class="cpanel" id="breakerPanel">
-    <div class="cpanel-hd" id="breakerHd" onclick="togglePanel('breaker')" style="background:linear-gradient(90deg,rgba(255,179,0,.06),transparent)">
+    <div class="cpanel-hd" id="breakerHd" onclick="togglePanel('breaker')" style="background:linear-gradient(90deg,rgba(255,179,0,.06),transparent)" role="button" tabindex="0">
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:14px">🛡️</span>
         <span class="cpanel-title" style="color:var(--amber)">CIRCUIT BREAKERS</span>
@@ -2417,10 +2417,11 @@ function downloadFile(content, filename, type) {
 // ══════════════════════════════════════════════════════
 function togglePanel(name) {
   const bodyId=name+'Body', hdId=name+'Hd', toggleId=name+'Toggle';
-  const body=document.getElementById(bodyId), toggle=document.getElementById(toggleId);
+  const body=document.getElementById(bodyId), toggle=document.getElementById(toggleId), hd=document.getElementById(hdId);
   if(!body||!toggle) return;
   const isOpen=body.classList.toggle('open');
-  document.getElementById(hdId)?.classList.toggle('open',isOpen);
+  hd?.classList.toggle('open',isOpen);
+  hd?.setAttribute('aria-expanded', isOpen);
   toggle.textContent=isOpen?'▴ HIDE':'▼ '+(name==='quant'?'EXPAND':'CONFIGURE');
   if(name==='quant'&&isOpen){ updateQuantReport(); setTimeout(drawEquityCurve,50); }
   if(name==='elo'&&isOpen){ if(typeof renderEloArena === 'function') renderEloArena(); }
@@ -4278,6 +4279,7 @@ function toggleLearn() {
   if (!body) return;
   const isOpen = body.classList.toggle('open');
   hd.classList.toggle('open', isOpen);
+  hd.setAttribute('aria-expanded', isOpen);
   toggle.textContent = isOpen ? '▴ HIDE' : '▼ EXPAND';
   if (isOpen) renderLearnPanel();
 }
@@ -4594,6 +4596,7 @@ function toggleAudit() {
   if (!body) return;
   const isOpen = body.classList.toggle('open');
   hd.classList.toggle('open', isOpen);
+  hd.setAttribute('aria-expanded', isOpen);
   toggle.textContent = isOpen ? '▴ HIDE' : '▼ EXPAND';
   if (isOpen) renderAuditPanel();
 }
@@ -5070,11 +5073,11 @@ function _injectAVControls() {
   const audioOn = typeof ACOUSTIC !== 'undefined' && ACOUSTIC.getConfig().audio.enabled;
 
   wrap.innerHTML = `
-    <button id="sfxBtn" style="${btnStyle}" class="${sfxOn?'av-on':''}" title="Sound Effects"
+    <button id="sfxBtn" style="${btnStyle}" class="${sfxOn?'av-on':''}" title="Sound Effects" aria-label="Toggle Sound Effects"
       onclick="if(typeof ACOUSTIC!=='undefined'){ ACOUSTIC.toggleSFX(); this.classList.toggle('av-on', ACOUSTIC.getConfig().sfx.enabled); }">🔊</button>
-    <button id="voiceBtn" style="${btnStyle}" class="${voiceOn?'av-on':''}" title="Voice Announcements"
+    <button id="voiceBtn" style="${btnStyle}" class="${voiceOn?'av-on':''}" title="Voice Announcements" aria-label="Toggle Voice Announcements"
       onclick="if(typeof ACOUSTIC!=='undefined'){ ACOUSTIC.toggleVOICE(); this.classList.toggle('av-on', ACOUSTIC.getConfig().voice.enabled); }">🎙️</button>
-    <button id="audioBtn" style="${btnStyle}" class="${audioOn?'av-on':''}" title="Acoustic Core Sequencer"
+    <button id="audioBtn" style="${btnStyle}" class="${audioOn?'av-on':''}" title="Acoustic Core Sequencer" aria-label="Toggle Acoustic Core Sequencer"
       onclick="if(typeof ACOUSTIC!=='undefined'){ ACOUSTIC.toggleAudio(); this.classList.toggle('av-on', ACOUSTIC.getConfig().audio.enabled); }">🎹</button>`;
 
   const gen = document.getElementById('genBadge');
@@ -5093,6 +5096,18 @@ function toggleBackgroundMusic() {
   }
 }
 
+// Global keyboard listener for collapsible panels
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' || e.key === ' ') {
+    const target = e.target;
+    if (target.classList.contains('cpanel-hd') ||
+        target.classList.contains('audit-hd') ||
+        target.classList.contains('learn-hd')) {
+      e.preventDefault();
+      target.click();
+    }
+  }
+});
 
 </script>
 <script src="app-rebuild.js" defer></script>
@@ -5120,7 +5135,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <div id="voiceAgentModal">
   <div class="va-header">
     <span class="va-title">🎙️ AI FLOOR MANAGER</span>
-    <button class="m-close" onclick="toggleVoiceAgent()">✕</button>
+    <button class="m-close" onclick="toggleVoiceAgent()" aria-label="Close Voice Agent">✕</button>
   </div>
   <div class="va-body">
     <div class="va-status" id="vaStatus">Connected & Ready</div>
@@ -5157,23 +5172,29 @@ async function sendVoiceCommand() {
   const input = document.getElementById('vaInput');
   const chat = document.getElementById('vaChat');
   const status = document.getElementById('vaStatus');
+  const btn = input?.nextElementSibling;
   if (!input || !input.value.trim()) return;
 
   const cmd = input.value.trim();
-  const userMsg = document.createElement('div');
-  const userLabel = document.createElement('span');
-  userLabel.style.color = 'var(--cyan)';
-  userLabel.textContent = 'You: ';
-  userMsg.appendChild(userLabel);
-  userMsg.appendChild(document.createTextNode(cmd));
-  chat.appendChild(userMsg);
-  input.value = '';
-  chat.scrollTop = chat.scrollHeight;
 
-  status.textContent = 'Agent Thinking...';
+  try {
+    input.disabled = true;
+    if (btn) btn.disabled = true;
 
-  // Real LLM AI Floor Manager
-  const apiKey = getApiKey();
+    const userMsg = document.createElement('div');
+    const userLabel = document.createElement('span');
+    userLabel.style.color = 'var(--cyan)';
+    userLabel.textContent = 'You: ';
+    userMsg.appendChild(userLabel);
+    userMsg.appendChild(document.createTextNode(cmd));
+    chat.appendChild(userMsg);
+    input.value = '';
+    chat.scrollTop = chat.scrollHeight;
+
+    status.textContent = 'Agent Thinking...';
+
+    // Real LLM AI Floor Manager
+    const apiKey = getApiKey();
   const systemPrompt = `You are the AI Floor Manager for Trade Arena. You have FULL AGENCY over the trading floor.
 Your goal is to assist the user in managing their fleet of ${bots.length} trading bots.
 
@@ -5248,18 +5269,22 @@ Respond in JSON format:
       break;
   }
 
-  const agentMsg = document.createElement('div');
-  const agentLabel = document.createElement('span');
-  agentLabel.style.color = 'var(--purple)';
-  agentLabel.textContent = 'Agent: ';
-  agentMsg.appendChild(agentLabel);
-  agentMsg.appendChild(document.createTextNode(aiResponse.reply));
-  chat.appendChild(agentMsg);
-  chat.scrollTop = chat.scrollHeight;
-  status.textContent = 'Connected & Ready';
+    const agentMsg = document.createElement('div');
+    const agentLabel = document.createElement('span');
+    agentLabel.style.color = 'var(--purple)';
+    agentLabel.textContent = 'Agent: ';
+    agentMsg.appendChild(agentLabel);
+    agentMsg.appendChild(document.createTextNode(aiResponse.reply));
+    chat.appendChild(agentMsg);
+    chat.scrollTop = chat.scrollHeight;
+    status.textContent = 'Connected & Ready';
 
-  if (typeof VOICE !== 'undefined' && VOICE.enabled) {
-    VOICE.speak(aiResponse.reply);
+    if (typeof VOICE !== 'undefined' && VOICE.enabled) {
+      VOICE.speak(aiResponse.reply);
+    }
+  } finally {
+    input.disabled = false;
+    if (btn) btn.disabled = false;
   }
 }
 </script>
