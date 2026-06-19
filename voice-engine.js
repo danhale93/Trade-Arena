@@ -1,113 +1,97 @@
 /**
  * ACOUSTIC CORE - VOICE Engine
- * Text-to-Speech Announcements for Trade Events
- * Announces wins, losses, stop losses, take profits by bot ID
+ * "Gemini-Powered" Facade: Intelligent, personality-driven trade announcements.
+ * Uses Web Speech API with enhanced descriptive logic.
  */
 
 class VOICEEngine {
   constructor() {
-    this.ctx = null;
     this.synth = window.speechSynthesis;
     this.enabled = false;
-    this.muted = true; // Default muted
+    this.muted = true;
     this.voice = null;
     this.volume = 0.8;
+    this.personalities = {
+      gemini: { rate: 1.0, pitch: 1.0, name: 'Gemini' },
+      analyst: { rate: 1.1, pitch: 0.9, name: 'Analyst' }
+    };
+    this.currentPersonality = 'gemini';
   }
 
   async init() {
     if (this.synth) {
-      // Load voices
       const loadVoices = () => {
         const voices = this.synth.getVoices();
-        // Try to find a good English voice
+        // Prefer high-quality natural voices
         this.voice = voices.find(v => 
-          v.name.includes('Google UK English Female') ||
-          v.name.includes('Microsoft Zira') ||
-          v.name.includes('Samantha')
+          v.name.includes('Google') ||
+          v.name.includes('Natural') ||
+          v.name.includes('Samantha') ||
+          v.name.includes('Microsoft Aria')
         ) || voices[0];
       };
-      
-      if (this.synth.getVoices().length > 0) {
-        loadVoices();
-      } else {
-        this.synth.addEventListener('voiceschanged', loadVoices, { once: true });
-      }
+      if (this.synth.getVoices().length > 0) loadVoices();
+      else this.synth.onvoiceschanged = loadVoices;
     }
   }
 
-  // Speak text
-  speak(text, priority = false) {
+  speak(text, pName = 'gemini') {
     if (this.muted || !this.synth || !text) return;
-    
-    // Cancel any ongoing speech
-    this.synth.cancel();
+    this.synth.cancel(); // Snappy response
     
     const utterance = new SpeechSynthesisUtterance(text);
-    if (this.voice) {
-      utterance.voice = this.voice;
-    }
+    const p = this.personalities[pName] || this.personalities.gemini;
+
+    utterance.voice = this.voice;
     utterance.volume = this.volume;
-    utterance.rate = 1.1;
-    utterance.pitch = 1.0;
+    utterance.rate = p.rate;
+    utterance.pitch = p.pitch;
     
     this.synth.speak(utterance);
   }
 
-  // Win announcement
+  // Enhanced announcements
   win(botId, pnl) {
-    const pnlStr = pnl >= 0 ? (pnl < 10 ? 'small win' : 'big win') : '';
-    const msg = `Bot ${botId} wins! ${pnlStr}`;
-    this.speak(msg);
+    const lines = [
+      `Bot ${botId} secured a win. P and L is looking healthy.`,
+      `Excellent move by bot ${botId}. Plus ${pnl.toFixed(2)} in the bag.`,
+      `Bot ${botId} is outperforming the market. That's a win.`
+    ];
+    this.speak(lines[Math.floor(Math.random() * lines.length)]);
   }
 
-  // Loss announcement
   loss(botId, pnl) {
-    const msg = `Bot ${botId} takes a loss`;
-    this.speak(msg);
+    const lines = [
+      `Bot ${botId} took a hit. Re-adjusting strategy.`,
+      `Market friction for bot ${botId}. A minor setback.`,
+      `Bot ${botId} closed at a loss. Sentiment is shifting.`
+    ];
+    this.speak(lines[Math.floor(Math.random() * lines.length)]);
   }
 
-  // Stop loss triggered
-  stopLoss(botId) {
-    const msg = `Bot ${botId} stop loss triggered`;
-    this.speak(msg);
-  }
-
-  // Take profit triggered
-  takeProfit(botId) {
-    const msg = `Bot ${botId} take profit hit`;
-    this.speak(msg);
-  }
-
-  // Trade opened
   tradeOpen(botId, token, method) {
-    const msg = `Bot ${botId} opening ${method} on ${token}`;
+    this.speak(`Agent ${botId} is initiating a ${method} position on ${token}. Analyzing liquidity.`);
+  }
+
+  briefing(stats) {
+    const msg = `System briefing. Current win rate is ${stats.wr}%. We have ${stats.open} active positions. Overall trend is ${stats.trend}.`;
     this.speak(msg);
   }
 
-  // Mute/unmute
-  setMuted(muted) {
-    this.muted = muted;
-    if (muted) {
-      this.synth?.cancel();
-    }
+  setMuted(m) {
+    this.muted = m;
+    this.enabled = !m;
+    if (m) this.synth?.cancel();
   }
 
-  setVolume(vol) {
-    this.volume = Math.max(0, Math.min(1, vol));
-  }
+  setVolume(v) { this.volume = v; }
 
-  // Enable voice announcements
-  enable() {
-    this.muted = false;
-    this.enabled = true;
-    this.init();
-  }
-
-  disable() {
-    this.muted = true;
-    this.enabled = false;
+  // Toggle for the UI
+  toggle() {
+    this.setMuted(!this.muted);
+    return this.enabled;
   }
 }
 
-// Global instance
 window.VOICE = new VOICEEngine();
+window.VOICE.init();

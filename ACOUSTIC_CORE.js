@@ -1,296 +1,157 @@
 /**
  * ACOUSTIC CORE - Main Integration
  * Bridges all audio/visual engines to trade events
- * Provides UI controls for SFX, FX, VOICE
+ * Provides UI controls for SFX, FX, VOICE, and the Sequencer
  */
 
 (function() {
   'use strict';
 
-  // ══════════════════════════════════════════════════════
-  // CONFIGURATION
-  // ══════════════════════════════════════════════════════
   const CONFIG = {
-    // SFX settings
-    sfx: {
-      enabled: true,
-      volume: 0.5,
-      winPitch: 880,
-      lossPitch: 440,
-      openPitch: 660
-    },
-    // FX settings  
-    fx: {
-      enabled: true,
-      flashWin: 'rgba(57,255,20,0.12)',
-      flashLoss: 'rgba(255,45,120,0.1)',
-      confettiCount: 20,
-      shakeDuration: 400
-    },
-    // VOICE settings
-    voice: {
-      enabled: false, // Default off
-      muted: true,
-      volume: 0.8
-    },
-    // Audio engine settings
-    audio: {
-      enabled: false,
-      bpm: 120,
-      autoPlay: false
-    }
+    sfx: { enabled: true, volume: 0.5 },
+    fx: { enabled: true },
+    voice: { enabled: false, volume: 0.8 },
+    audio: { enabled: false, volume: 0.4 }
   };
 
-  // ══════════════════════════════════════════════════════
-  // ENGINE REFERENCES
-  // ══════════════════════════════════════════════════════
-  let sfx = null;
-  let fx = null;
-  let voice = null;
-  let audioEngine = null;
+  let sfx = window.SFX;
+  let fx = window.FX;
+  let voice = window.VOICE;
+  let audioEngine = window.audioEngine;
 
-  // ══════════════════════════════════════════════════════
-  // INITIALIZATION
-  // ══════════════════════════════════════════════════════
   async function init() {
-    console.log('[ACOUSTIC] Initializing...');
-    
-    // Load engines if they exist
-    if (window.SFX) {
-      sfx = window.SFX;
-      sfx.setVolume(CONFIG.sfx.volume);
-      sfx.setMuted(!CONFIG.sfx.enabled);
-    }
-    
-    if (window.FX) {
-      fx = window.FX;
-      fx.enable();
-    }
-    
-    if (window.VOICE) {
-      voice = window.VOICE;
-      voice.setVolume(CONFIG.voice.volume);
-      voice.setMuted(CONFIG.voice.muted);
-    }
-    
-    if (window.audioEngine) {
-      audioEngine = window.audioEngine;
-    }
-    
-    // Create ACOUSTIC control panel in header
+    if (window.audioEngine) audioEngine.init();
     createControlPanel();
-    
-    console.log('[ACOUSTIC] Initialized');
+    syncUI();
   }
 
-  // ══════════════════════════════════════════════════════
-  // CONTROL PANEL
-  // ══════════════════════════════════════════════════════
   function createControlPanel() {
-    // Check if already exists
     if (document.getElementById('acoustic-ctrl')) return;
     
     const panel = document.createElement('div');
     panel.id = 'acoustic-ctrl';
     panel.className = 'gh-controls';
-    panel.style.cssText = 'margin-left:8px;display:flex;gap:4px;';
+    panel.style.cssText = 'margin-left:8px;display:flex;gap:6px;align-items:center;background:rgba(0,0,0,0.2);padding:2px 8px;border-radius:20px;border:1px solid var(--border);';
     
     panel.innerHTML = `
-      <button class="gh-bot-btn" id="acoustic-sfx-btn" onclick="ACOUSTIC.toggleSFX()" title="Toggle sound effects">
-        🔊
-      </button>
-      <button class="gh-bot-btn" id="acoustic-fx-btn" onclick="ACOUSTIC.toggleFX()" title="Toggle visual effects">
-        ✨
-      </button>
-      <button class="gh-bot-btn" id="acoustic-voice-btn" onclick="ACOUSTIC.toggleVOICE()" title="Toggle voice announcements">
-        🗣️
-      </button>
-      <button class="gh-bot-btn" id="acoustic-audio-btn" onclick="toggleAudio()" title="Toggle synth pad sequencer">
-        🎹
-      </button>
+      <div style="display:flex;gap:4px;border-right:1px solid var(--border);padding-right:6px;margin-right:2px">
+        <button class="gh-bot-btn" id="acoustic-sfx-btn" onclick="ACOUSTIC.toggleSFX()" title="SFX">🔊</button>
+        <button class="gh-bot-btn" id="acoustic-fx-btn" onclick="ACOUSTIC.toggleFX()" title="FX">✨</button>
+        <button class="gh-bot-btn" id="acoustic-voice-btn" onclick="ACOUSTIC.toggleVOICE()" title="Voice">🗣️</button>
+        <button class="gh-bot-btn" id="acoustic-audio-btn" onclick="ACOUSTIC.toggleAudio()" title="Sequencer">🎹</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2px;width:60px">
+        <input type="range" min="0" max="100" value="40" class="ac-vol-slider" oninput="ACOUSTIC.setMasterVolume(this.value/100)" title="Master Volume">
+        <div style="font-size:6px;color:var(--dim);text-align:center;letter-spacing:1px">ACOUSTIC CORE</div>
+      </div>
     `;
     
-    // Insert after the last gh-controls button
     const ghControls = document.querySelector('.gh-controls');
-    if (ghControls) {
-      ghControls.appendChild(panel);
-    }
+    if (ghControls) ghControls.appendChild(panel);
+
+    const style = document.createElement('style');
+    style.textContent = `
+      .ac-vol-slider { -webkit-appearance:none; width:100%; height:2px; background:var(--border); outline:none; border-radius:2px; }
+      .ac-vol-slider::-webkit-slider-thumb { -webkit-appearance:none; width:6px; height:6px; background:var(--cyan); border-radius:50%; cursor:pointer; }
+    `;
+    document.head.appendChild(style);
   }
 
-  // ══════════════════════════════════════════════════════
-  // TOGGLE FUNCTIONS
-  // ══════════════════════════════════════════════
+  function syncUI() {
+    const sfxBtn = document.getElementById('acoustic-sfx-btn');
+    if (sfxBtn) sfxBtn.style.color = CONFIG.sfx.enabled ? 'var(--cyan)' : 'var(--dim)';
+    
+    const fxBtn = document.getElementById('acoustic-fx-btn');
+    if (fxBtn) fxBtn.style.color = CONFIG.fx.enabled ? 'var(--cyan)' : 'var(--dim)';
+    
+    const vBtn = document.getElementById('acoustic-voice-btn');
+    if (vBtn) vBtn.style.color = CONFIG.voice.enabled ? 'var(--cyan)' : 'var(--dim)';
+
+    const aBtn = document.getElementById('acoustic-audio-btn');
+    if (aBtn) aBtn.style.color = CONFIG.audio.enabled ? 'var(--cyan)' : 'var(--dim)';
+  }
+
   function toggleSFX() {
-    if (!sfx) return;
-    
     CONFIG.sfx.enabled = !CONFIG.sfx.enabled;
-    sfx.setMuted(!CONFIG.sfx.enabled);
-    
-    const btn = document.getElementById('acoustic-sfx-btn');
-    if (btn) {
-      btn.textContent = CONFIG.sfx.enabled ? '🔊' : '🔇';
-      btn.style.color = CONFIG.sfx.enabled ? 'var(--cyan)' : 'var(--dim)';
-    }
+    if (window.SFX) window.SFX.setMuted(!CONFIG.sfx.enabled);
+    syncUI();
   }
 
   function toggleFX() {
-    if (!fx) return;
-    
     CONFIG.fx.enabled = !CONFIG.fx.enabled;
-    CONFIG.fx.enabled ? fx.enable() : fx.disable();
-    
-    const btn = document.getElementById('acoustic-fx-btn');
-    if (btn) {
-      btn.style.color = CONFIG.fx.enabled ? 'var(--cyan)' : 'var(--dim)';
-    }
+    if (window.FX) CONFIG.fx.enabled ? window.FX.enable() : window.FX.disable();
+    syncUI();
   }
 
   function toggleVOICE() {
-    if (!voice) return;
-    
-    CONFIG.voice.muted = !CONFIG.voice.muted;
-    CONFIG.voice.enabled = !CONFIG.voice.muted;
-    voice.setMuted(CONFIG.voice.muted);
-    
-    const btn = document.getElementById('acoustic-voice-btn');
-    if (btn) {
-      btn.style.color = CONFIG.voice.enabled ? 'var(--cyan)' : 'var(--dim)';
-      btn.textContent = CONFIG.voice.enabled ? '🗣️' : '🤐';
-    }
+    CONFIG.voice.enabled = !CONFIG.voice.enabled;
+    if (window.VOICE) window.VOICE.setMuted(!CONFIG.voice.enabled);
+    syncUI();
   }
 
   function toggleAudio() {
-    if (!audioEngine) return;
-    
     CONFIG.audio.enabled = !CONFIG.audio.enabled;
-    
-    if (CONFIG.audio.enabled) {
-      audioEngine.init();
-      audioEngine.start();
-    } else {
-      audioEngine.stop();
+    if (audioEngine) {
+      if (CONFIG.audio.enabled) {
+        audioEngine.init();
+        audioEngine.start();
+      } else {
+        audioEngine.stop();
+      }
     }
-    
-    const btn = document.getElementById('acoustic-audio-btn');
-    if (btn) {
-      btn.style.color = CONFIG.audio.enabled ? 'var(--cyan)' : 'var(--dim)';
-    }
+    syncUI();
   }
 
-  // ══════════════════════════════════════════════════════
-  // TRADE EVENT HANDLERS
-  // ══════════════════════════════════════════════════════
-  
-  // Called when a trade opens
+  function setMasterVolume(v) {
+    CONFIG.audio.volume = v;
+    if (audioEngine) audioEngine.setVolume(v);
+    if (window.SFX) window.SFX.setVolume(v);
+    if (window.VOICE) window.VOICE.setVolume(v);
+  }
+
+  // Hook into trade events
+  function updateTelemetry() {
+    if (!audioEngine) return;
+    const openCount = (window.openPositions || []).length;
+    // Mock winRatio from global P&L if available
+    const winRatio = 0.5;
+    audioEngine.updateTelemetry({ openPositions: openCount, winRatio });
+  }
+
   function onTradeOpen(botId, token, method) {
-    if (sfx && CONFIG.sfx.enabled) {
-      sfx.tradeOpen();
-    }
-    
-    // Update synth pad if enabled
-    if (audioEngine && CONFIG.audio.enabled) {
-      const row = (botId - 1) % 8;
-      audioEngine.triggerPad(row, 0.7, {
-        botId,
-        token,
-        method,
-        status: 'open'
-      });
+    if (CONFIG.sfx.enabled && window.SFX) window.SFX.tradeOpen();
+    if (CONFIG.audio.enabled && audioEngine) {
+      audioEngine.triggerPad((botId-1)%8, 0.6, true);
+      updateTelemetry();
     }
   }
 
-  // Called when a trade wins
-  function onWin(botId, pnl, isBigWin = false) {
-    // SFX
-    if (sfx && CONFIG.sfx.enabled) {
-      isBigWin ? sfx.bigWin() : sfx.win();
-    }
-    
-    // FX - flash screen
-    if (fx && CONFIG.fx.enabled) {
-      fx.flash(CONFIG.fx.flashWin, isBigWin ? 500 : 300);
-      
-      // Get position for confetti
-      const card = document.getElementById('bot-' + botId);
-      if (card) {
-        const rect = card.getBoundingClientRect();
-        fx.confetti(rect.left + rect.width/2, rect.top + rect.height*0.3, isBigWin ? 28 : 16);
-      }
-    }
-    
-    // Synth pad
-    if (audioEngine && CONFIG.audio.enabled) {
-      const row = (botId - 1) % 8;
-      audioEngine.triggerPad(row, 1, { botId, pnl, isWin: true });
-    }
-    
-    // VOICE
-    if (voice && CONFIG.voice.enabled) {
-      voice.win(botId, pnl);
+  function onWin(botId, pnl) {
+    if (CONFIG.sfx.enabled && window.SFX) window.SFX.win();
+    if (CONFIG.fx.enabled && window.FX) window.FX.flash('rgba(0,255,157,0.1)', 400);
+    if (CONFIG.voice.enabled && window.VOICE) window.VOICE.win(botId, pnl);
+    if (CONFIG.audio.enabled && audioEngine) {
+       audioEngine.triggerPad(7, 1.0, true); // Heaven pad
+       updateTelemetry();
     }
   }
 
-  // Called when a trade loses
-  function onLoss(botId, pnl, isStopLoss = false) {
-    // SFX
-    if (sfx && CONFIG.sfx.enabled) {
-      isStopLoss ? sfx.stopLoss() : sfx.loss();
-    }
-    
-    // FX - flash screen
-    if (fx && CONFIG.fx.enabled) {
-      fx.flash(CONFIG.fx.flashLoss, 400);
-      
-      const card = document.getElementById('bot-' + botId);
-      if (card) {
-        fx.shake(card, CONFIG.fx.shakeDuration);
-      }
-    }
-    
-    // Synth pad
-    if (audioEngine && CONFIG.audio.enabled) {
-      const row = (botId - 1) % 8;
-      audioEngine.triggerPad(row, 0.6, { botId, pnl, isWin: false });
-    }
-    
-    // VOICE
-    if (voice && CONFIG.voice.enabled) {
-      isStopLoss ? voice.stopLoss(botId) : voice.loss(botId, pnl);
+  function onLoss(botId, pnl) {
+    if (CONFIG.sfx.enabled && window.SFX) window.SFX.loss();
+    if (CONFIG.fx.enabled && window.FX) window.FX.flash('rgba(255,45,120,0.1)', 400);
+    if (CONFIG.voice.enabled && window.VOICE) window.VOICE.loss(botId, pnl);
+    if (CONFIG.audio.enabled && audioEngine) {
+       audioEngine.triggerPad(2, 0.8, true); // Sharp hat
+       updateTelemetry();
     }
   }
 
-  // Called when take profit triggers
-  function onTakeProfit(botId) {
-    if (voice && CONFIG.voice.enabled) {
-      voice.takeProfit(botId);
-    }
-    
-    if (sfx && CONFIG.sfx.enabled) {
-      sfx.takeProfit();
-    }
-  }
-
-  // ══════════════════════════════════════════════════════
-  // EXPORTS
-  // ══════════════════════════════════════════════════════
   window.ACOUSTIC = {
-    init,
-    toggleSFX,
-    toggleFX,
-    toggleVOICE,
-    toggleAudio,
-    onTradeOpen,
-    onWin,
-    onLoss,
-    onTakeProfit,
-    getConfig: () => CONFIG
+    init, toggleSFX, toggleFX, toggleVOICE, toggleAudio, setMasterVolume,
+    onTradeOpen, onWin, onLoss
   };
-  
-  // Auto-init when DOM ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
 
 })();

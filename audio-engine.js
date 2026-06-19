@@ -1,103 +1,97 @@
 /**
  * ACOUSTIC CORE - Web Audio Drum Sequencer & Synth Pad Engine
- * Trade-sensitive signal blocks that pulse on trade events
+ * "Telemetric" Version: Rhythm evolves based on trade activity.
  */
 
 class AudioEngine {
   constructor() {
     this.ctx = null;
     this.masterGain = null;
-    this.pads = []; // 8 synth pads for 8-column grid
+    this.pads = [];
     this.sequencer = null;
     this.isPlaying = false;
-    this.bpm = 120;
+    this.bpm = 124; // Evolving BPM
     this.stepIndex = 0;
     this.steps = 16;
-    this.grid = []; // 8x16 pad grid
+    this.grid = [];
     this.initialized = false;
+    this.telemetry = {
+      tradesLastMinute: 0,
+      winRatio: 0.5,
+      openPositions: 0
+    };
   }
 
-async init() {
-    // Return promise if already initialized
-    if (this.initialized) {
-      return Promise.resolve();
-    }
-    
-    // Create audio context (requires user interaction in modern browsers)
+  async init() {
+    if (this.initialized) return;
     try {
       this.ctx = new (window.AudioContext || window.webkitAudioContext)();
     } catch (e) {
-      console.error('[AudioEngine] Failed to create AudioContext:', e);
-      return Promise.reject(e);
+      console.error('[AudioEngine] Context error:', e);
+      return;
     }
+
     this.masterGain = this.ctx.createGain();
-    this.masterGain.gain.value = 0.7;
+    this.masterGain.gain.value = 0.4; // Default master volume
     this.masterGain.connect(this.ctx.destination);
     
-    // Create reverb
     this.convolver = this.ctx.createConvolver();
     this.convolver.buffer = this.createReverbImpulse();
     this.convolver.connect(this.masterGain);
     
-    // Dry/wet mix
     this.dryGain = this.ctx.createGain();
-    this.dryGain.gain.value = 0.6;
+    this.dryGain.gain.value = 0.5;
     this.dryGain.connect(this.masterGain);
     
     this.wetGain = this.ctx.createGain();
-    this.wetGain.gain.value = 0.4;
+    this.wetGain.gain.value = 0.3;
     this.wetGain.connect(this.convolver);
     
-    // Initialize 8 synth pads with unique sounds
     const padSounds = [
-      { name: 'KICK', freq: 60, type: 'sine', decay: 0.3 },
-      { name: 'SNARE', freq: 200, type: 'triangle', decay: 0.2 },
-      { name: 'HI-HAT', freq: 8000, type: 'square', decay: 0.05 },
-      { name: 'CLAP', freq: 400, type: 'sawtooth', decay: 0.15 },
-      { name: 'TOM', freq: 120, type: 'sine', decay: 0.4 },
-      { name: 'SYNTH', freq: 330, type: 'sawtooth', decay: 0.5 },
-      { name: 'BASS', freq: 80, type: 'square', decay: 0.25 },
-      { name: 'PAD', freq: 220, type: 'sine', decay: 0.8 }
+      { name: 'KICK', freq: 55, type: 'sine', decay: 0.25 },
+      { name: 'SNARE', freq: 180, type: 'triangle', decay: 0.15 },
+      { name: 'HI-HAT', freq: 9000, type: 'square', decay: 0.04 },
+      { name: 'CLAP', freq: 380, type: 'sawtooth', decay: 0.12 },
+      { name: 'TOM', freq: 110, type: 'sine', decay: 0.35 },
+      { name: 'SYNTH', freq: 329.63, type: 'sawtooth', decay: 0.4 }, // E4
+      { name: 'BASS', freq: 82.41, type: 'square', decay: 0.3 }, // E2
+      { name: 'PAD', freq: 164.81, type: 'sine', decay: 1.2 } // E3
     ];
     
     for (let i = 0; i < 8; i++) {
       this.pads.push({
         ...padSounds[i],
         gain: this.ctx.createGain(),
-        filter: this.ctx.createBiquadFilter(),
         index: i
       });
       this.pads[i].gain.connect(this.dryGain);
       this.pads[i].gain.connect(this.wetGain);
     }
     
-    // Initialize grid: 8 rows × 16 steps
     for (let row = 0; row < 8; row++) {
       this.grid[row] = [];
       for (let step = 0; step < 16; step++) {
-        this.grid[row][step] = { active: false, intensity: 0, trade: null };
+        this.grid[row][step] = { active: false, intensity: 0 };
       }
     }
     
     this.initialized = true;
-    return Promise.resolve();
   }
 
   createReverbImpulse() {
-    const length = this.ctx.sampleRate * 2;
+    const length = this.ctx.sampleRate * 2.5;
     const impulse = this.ctx.createBuffer(2, length, this.ctx.sampleRate);
     for (let channel = 0; channel < 2; channel++) {
       const channelData = impulse.getChannelData(channel);
       for (let i = 0; i < length; i++) {
-        channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 2.5);
+        channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 2);
       }
     }
     return impulse;
   }
 
-  // Trigger a pad sound based on trade result
-  triggerPad(padIndex, intensity = 1, trade = null) {
-    if (!this.initialized || !this.ctx) return;
+  triggerPad(padIndex, intensity = 1, force = false) {
+    if (!this.initialized || !this.ctx || this.ctx.state === 'suspended') return;
     
     const now = this.ctx.currentTime;
     const pad = this.pads[padIndex];
@@ -105,164 +99,84 @@ async init() {
     
     const osc = this.ctx.createOscillator();
     osc.type = pad.type;
-    osc.frequency.setValueAtTime(pad.freq * (0.9 + Math.random() * 0.2), now);
+    osc.frequency.setValueAtTime(pad.freq, now);
     
+    // Telemetric frequency shift based on market regime (mocked via winRatio)
+    const shift = (this.telemetry.winRatio - 0.5) * 40;
+    osc.frequency.exponentialRampToValueAtTime(pad.freq + shift, now + pad.decay);
+
     const gain = this.ctx.createGain();
-    const vel = intensity * 0.3;
+    const vel = intensity * 0.25;
     gain.gain.setValueAtTime(vel, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + pad.decay);
     
     osc.connect(gain);
     gain.connect(pad.gain);
-    
     osc.start(now);
     osc.stop(now + pad.decay + 0.1);
-    
-    // If trade info, light up the grid cell
-    if (trade && this.grid[padIndex]) {
-      const step = this.stepIndex;
-      this.grid[padIndex][step] = { 
-        active: true, 
-        intensity: intensity, 
-        trade: trade,
-        timestamp: Date.now()
-      };
+
+    if (force && this.grid[padIndex]) {
+      this.grid[padIndex][this.stepIndex] = { active: true, intensity: intensity };
     }
   }
 
-  // Trigger all pads for a trade event
-  triggerTrade(trade) {
-    if (!trade) return;
-    
-    // Map trade outcome to pad triggers
-    if (trade.isWin) {
-      // Wins trigger ascending pattern
-      this.triggerPad(0, 1, trade); // KICK
-      setTimeout(() => this.triggerPad(7, 0.8, trade), 80);  // PAD
-      setTimeout(() => this.triggerPad(4, 0.6, trade), 160); // TOM
-    } else {
-      // Losses trigger descending pattern
-      this.triggerPad(2, 1, trade); // HI-HAT
-      setTimeout(() => this.triggerPad(3, 0.8, trade), 80);  // CLAP
-      setTimeout(() => this.triggerPad(7, 0.4, trade), 160); // low PAD
-    }
-    
-    // Open position triggers synth pad
-    if (trade.status === 'open') {
-      this.triggerPad(5, 0.7, trade); // SYNTH
-    }
+  updateTelemetry(stats) {
+    this.telemetry = { ...this.telemetry, ...stats };
+    // Evolve BPM: base 120 + 2bpm per open position
+    const targetBpm = 120 + (this.telemetry.openPositions * 4);
+    this.setBpm(targetBpm);
   }
 
-  // Sequencer playback
   start() {
     if (!this.initialized || this.isPlaying) return;
-    
     this.isPlaying = true;
-    const intervalMs = (60000 / this.bpm) / 4;
-    
-    this.sequencer = setInterval(() => {
-      this.playStep();
-    }, intervalMs);
+    this.runSequencer();
   }
 
   stop() {
     this.isPlaying = false;
-    if (this.sequencer) {
-      clearInterval(this.sequencer);
-      this.sequencer = null;
-    }
+    clearTimeout(this.sequencer);
+  }
+
+  runSequencer() {
+    if (!this.isPlaying) return;
+    this.playStep();
+    const stepTime = (60 / this.bpm) / 4 * 1000;
+    this.sequencer = setTimeout(() => this.runSequencer(), stepTime);
   }
 
   playStep() {
-    // For each row, check if this step has activity
+    // Basic metronome pulse on 1 and 9
+    if (this.stepIndex === 0 || this.stepIndex === 8) {
+       this.triggerPad(0, 0.4); // Kick
+    }
+    if (this.stepIndex === 4 || this.stepIndex === 12) {
+       this.triggerPad(1, 0.3); // Snare
+    }
+
+    // Play active grid cells
     for (let row = 0; row < 8; row++) {
       const cell = this.grid[row][this.stepIndex];
-      if (cell.active && cell.intensity > 0) {
-        // Fade the intensity each cycle
-        cell.intensity *= 0.92;
-        if (cell.intensity < 0.05) {
-          cell.active = false;
-        } else {
-          this.triggerPad(row, cell.intensity, cell.trade);
-        }
+      if (cell.active) {
+        this.triggerPad(row, cell.intensity);
+        cell.intensity *= 0.85; // Natural decay
+        if (cell.intensity < 0.1) cell.active = false;
       }
     }
     
     this.stepIndex = (this.stepIndex + 1) % this.steps;
-  }
-
-  // Convert machine/bot to pad trigger
-  triggerFromMachine(bot, result) {
-    if (!bot || !result) return;
     
-    // Map bot ID to pad (0-7)
-    const padIndex = (bot.id - 1) % 8;
-    const intensity = result.isWin ? 1 : result.isWin === false ? 0.6 : 0.3;
-    
-    this.triggerPad(padIndex, intensity, {
-      botId: bot.id,
-      method: result.method,
-      pnl: result.netPnl,
-      isWin: result.isWin
-    });
+    // UI Feedback hook
+    if (window.updateAudioUI) window.updateAudioUI(this.stepIndex, this.grid);
   }
 
-  // Get the grid state for UI rendering
-  getGridState() {
-    return this.grid.map((row, rowIdx) => 
-      row.map((cell, stepIdx) => ({
-        row: rowIdx,
-        step: stepIdx,
-        active: cell.active,
-        intensity: cell.intensity,
-        trade: cell.trade ? {
-          botId: cell.trade.botId,
-          method: cell.trade.method,
-          pnl: cell.trade.pnl,
-          isWin: cell.trade.isWin
-        } : null
-      }))
-    );
-  }
-
-  // Set BPM
   setBpm(bpm) {
-    this.bpm = Math.max(60, Math.min(200, bpm));
-    if (this.isPlaying) {
-      this.stop();
-      this.start();
-    }
+    this.bpm = Math.max(80, Math.min(180, bpm));
   }
 
-  // Mute/unmute
-  setMuted(muted) {
-    if (this.masterGain) {
-      this.masterGain.gain.value = muted ? 0 : 0.7;
-    }
-  }
-
-  dispose() {
-    this.stop();
-    if (this.ctx) {
-      this.ctx.close();
-      this.ctx = null;
-    }
-    this.initialized = false;
+  setVolume(vol) {
+    if (this.masterGain) this.masterGain.gain.value = vol * 0.6;
   }
 }
 
-// Global instance - create the AudioEngine instance
-window.AudioEngine = AudioEngine;
 window.audioEngine = new AudioEngine();
-
-// Auto-init on first user interaction (needed for modern browsers)
-document.addEventListener('click', function initAudioOnClick() {
-  if (window.audioEngine && !window.audioEngine.initialized) {
-    window.audioEngine.init().then(() => {
-      console.log('[AudioEngine] Ready');
-    }).catch(e => {
-      console.warn('[AudioEngine] Init failed:', e);
-    });
-  }
-  document.removeEventListener('click', initAudioOnClick);
-}, { once: true });

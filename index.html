@@ -110,7 +110,16 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 #mainApp{display:none;flex-direction:column;width:100%;max-width:1160px;margin:0 auto;padding:10px 12px 60px}
 
 /* GLOBAL HEADER */
-.global-header{display:flex;align-items:center;gap:8px;padding:7px 10px;background:linear-gradient(90deg,var(--panel),rgba(22,15,30,.95));border:1px solid var(--border);border-radius:10px;margin-bottom:8px;flex-wrap:wrap;box-shadow:0 2px 20px rgba(0,0,0,.4)}
+.global-header{display:flex;align-items:center;gap:8px;padding:7px 10px;background:linear-gradient(90deg,var(--panel),rgba(22,15,30,.95));border:1px solid var(--border);border-radius:10px;margin-bottom:8px;flex-wrap:nowrap;box-shadow:0 2px 20px rgba(0,0,0,.4);overflow:hidden}
+
+/* ══ TABS SYSTEM ══ */
+.tab-nav{display:flex;gap:4px;margin-bottom:12px;background:var(--chrome);padding:4px;border-radius:8px;border:1px solid var(--border)}
+.tab-btn{flex:1;padding:8px;font-family:'Bungee',display;font-size:9px;letter-spacing:1px;background:none;border:none;border-radius:6px;color:var(--dim);cursor:pointer;transition:all .15s}
+.tab-btn:hover{background:rgba(255,255,255,.05);color:#fff}
+.tab-btn.active{background:var(--panel);color:var(--cyan);box-shadow:0 0 10px rgba(0,255,231,.15);border:1px solid rgba(0,255,231,.2)}
+.tab-content{display:none}
+.tab-content.active{display:block;animation:tabFade .3s ease-out}
+@keyframes tabFade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 .gh-avatar{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--gold2);display:flex;align-items:center;justify-content:center;font-size:12px;background:var(--chrome);flex-shrink:0}
 .gh-name{font-size:10px;color:var(--cyan);flex:1;min-width:80px}
 .gh-balance{font-size:13px;font-weight:bold;color:var(--gold);font-family:'Oswald',sans-serif}
@@ -274,7 +283,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 .export-json{background:linear-gradient(90deg,#002266,#001144);color:var(--blue);box-shadow:0 0 10px rgba(68,136,255,.2)}
 .export-json:hover{box-shadow:0 0 18px rgba(68,136,255,.4)}
 
-/* ══ CIRCUIT BREAKERS ══ */
+/* ══ SETTINGS ══ */
 .breaker-status{font-size:9px;padding:2px 8px;border-radius:10px}
 .bs-ok{background:rgba(57,255,20,.12);border:1px solid rgba(57,255,20,.3);color:var(--green)}
 .bs-warn{background:rgba(255,179,0,.15);border:1px solid rgba(255,179,0,.4);color:var(--amber);animation:amb .8s ease infinite alternate}
@@ -298,7 +307,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 /* Pot of Gold visual */
 .vault-pot{display:flex;align-items:flex-end;justify-content:center;gap:4px;margin-bottom:8px;min-height:36px}
 .vault-coin{width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#ffd700,#b8860b);box-shadow:inset -2px -2px 4px rgba(0,0,0,.3),0 0 6px rgba(255,215,0,.4);position:relative}
-.vault-coin::after{content:'$';font-size:9px;font-weight:700;color:#704200;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
+.vault-coin::after{content:'A$';font-size:9px;font-weight:700;color:#704200;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
 /* Rainbow */
 .vault-rainbow{position:absolute;top:-50px;left:-10%;width:120%;height:60px;opacity:.12;pointer-events:none;background:linear-gradient(90deg,red,orange,yellow,green,blue,indigo,violet);border-radius:50%;filter:blur(15px)}
 .vault-hero{background:linear-gradient(180deg,#1a0d00,#050508);border:2px solid var(--gold);border-radius:16px;padding:16px;margin-bottom:12px;position:relative;overflow:hidden}
@@ -638,7 +647,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
   <div class="marquee-wrap">
     <div class="marquee-inner">
       <span>⚡ 5-AGENT ENSEMBLE</span><span>🏛️ POLITICIAN FILINGS</span><span>🧬 SELF-LEARNING MODEL</span><span>📊 REAL EXIT PRICES</span>
-      <span>🔍 AUTO AUDIT</span><span>🎯 CRUCIBLE MODE</span><span>🛡️ CIRCUIT BREAKERS</span><span>🔥 LIVE P&L</span>
+      <span>🔍 AUTO AUDIT</span><span>🎯 CRUCIBLE MODE</span><span>🛡️ SETTINGS</span><span>🔥 LIVE P&L</span>
       <span>⚡ 5-AGENT ENSEMBLE</span><span>🏛️ POLITICIAN FILINGS</span><span>🧬 SELF-LEARNING MODEL</span><span>📊 REAL EXIT PRICES</span>
     </div>
   </div>
@@ -700,10 +709,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     <!-- Deposit Buttons -->
     <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
       <button class="onramp-btn" onclick="openDepositFlow(50)" style="flex:1;min-width:120px;">
-        Deposit $50
+        Deposit A$50
       </button>
       <button class="onramp-btn" onclick="openDepositFlow(100)" style="flex:1;min-width:120px;">
-        Deposit $100
+        Deposit A$100
       </button>
     </div>
     
@@ -750,65 +759,58 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     <div class="gh-avatar" id="ghAvatar">👤</div>
     <div style="flex:1;overflow:hidden;min-width:60px">
       <div class="gh-name" id="ghName">—</div>
-<span style="font-size:9px;padding:1px 6px;border-radius:10px;background:var(--chrome);border:1px solid var(--border);color:var(--dim)" id="ghBadge">DEMO</span>
-      <span style="font-size:8px;padding:1px 5px;border-radius:8px;background:rgba(0,255,231,.08);border:1px solid rgba(0,255,231,.2);color:var(--cyan);display:none" id="ghNetwork">BASE</span>
+      <span style="font-size:9px;padding:1px 6px;border-radius:10px;background:var(--chrome);border:1px solid var(--border);color:var(--dim)" id="ghBadge">DEMO</span>
     </div>
     <div style="margin-right:4px;text-align:right;flex-shrink:0">
-      <div class="gh-balance" id="ghBalance" style="transition:color .3s">$10,000.00</div>
+      <div class="gh-balance" id="ghBalance" style="transition:color .3s">A$10,000.00</div>
       <div class="gh-pnl pnl-pos" id="ghPnl">+$0.00 today</div>
     </div>
-    <!-- countdown + open trade tally -->
-    <div class="gh-ticker" id="ghTicker" style="display:none">
-      <span class="gh-ticker-cd" id="ghCountdown">--:--</span>
-      <span class="gh-ticker-lbl">next exit</span>
+    <div class="gh-controls">
+      <button class="gh-bot-btn" id="ghAddBtn" onclick="toggleGameMenu()" title="Add bot" aria-label="Add new bot">+</button>
+      <button class="gh-bot-btn" id="themeToggleBtn" onclick="cycleTheme()" title="Switch theme" aria-label="Switch theme">🎨</button>
     </div>
-    <div class="gh-queue" id="ghQueueWrap" style="display:none">
-      <span class="gh-queue-num" id="ghQueueNum">0</span>
-      <span class="gh-queue-lbl">open</span>
-    </div>
-     <!-- bot controls -->
-     <div class="gh-controls">
-       <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots">⚙ BUS</button>
-       <button class="gh-auto-btn" id="ghAutoBtn" onclick="globalAutoToggle()" title="Toggle auto-trading on all bots">AUTO</button>
-       <button class="gh-bot-btn" id="ghRemoveBtn" onclick="removeLastBot()" title="Remove last bot" aria-label="Remove last bot" disabled>−</button>
-       <button class="gh-bot-btn" id="ghAddBtn" onclick="toggleGameMenu()" title="Add bot" aria-label="Add new bot">+</button>
-       <button class="gh-bot-btn" id="themeToggleBtn" onclick="cycleTheme()" title="Switch theme" aria-label="Switch theme">🎨</button>
-       <button class="gh-bot-btn" id="musicToggleBtn" onclick="toggleBackgroundMusic()" title="Toggle background music" aria-label="Toggle background music">🎵</button>
-     </div>
     <span class="gen-badge" id="genBadge">GEN 0</span>
-    <span id="apiBreakerBadge" style="display:none"></span>
   </div>
 
-  <!-- ══ GAME SELECTION MENU ══ -->
-  <div class="bus-panel" id="gameMenu" style="display:none; border-top: 1px solid var(--border);">
-    <div class="bus-section-title">🎰 SELECT GAME TO DEPLOY</div>
-    <div class="bus-presets" style="justify-content:center; padding:10px 0;">
-      <button class="bus-preset" onclick="addBot('CRYPTO'); toggleGameMenu();" style="padding:10px 15px; font-size:10px;" aria-label="Deploy Crypto Whale agent">💎 Crypto Whale</button>
-      <button class="bus-preset" onclick="addBot('ZOO'); toggleGameMenu();" style="padding:10px 15px; font-size:10px;" aria-label="Deploy Safari Wins agent">🦁 Safari Wins</button>
-      <button class="bus-preset" onclick="addBot('VEGAS'); toggleGameMenu();" style="padding:10px 15px; font-size:10px;" aria-label="Deploy Vegas Night agent">🍒 Vegas Night</button>
-      <button class="bus-preset" onclick="addBot('OCEAN'); toggleGameMenu();" style="padding:10px 15px; font-size:10px;" aria-label="Deploy Deep Sea Gold agent">🦈 Deep Sea Gold</button>
-    </div>
+  <div class="tab-nav">
+    <button class="tab-btn active" onclick="switchTab('arena')">🏟️ ARENA</button>
+    <button class="tab-btn" onclick="switchTab('audit')">🔍 AUDIT</button>
+    <button class="tab-btn" onclick="switchTab('learning')">🧬 MODEL</button>
+    <button class="tab-btn" onclick="switchTab('quant')">📊 QUANT</button>
+    <button class="tab-btn" onclick="switchTab('bus')">⚙ BUS</button>
   </div>
 
-  <!-- ══ BUS SETTINGS PANEL ══ -->
-  <div class="bus-panel" id="busPanel">
+  <!-- ══ ARENA TAB ══ -->
+  <div id="tab-arena" class="tab-content active">
+    <!-- ══ GAME SELECTION MENU ══ -->
+    <div class="bus-panel" id="gameMenu" style="display:none; border-top: 1px solid var(--border);">
+      <div class="bus-section-title">🎰 SELECT GAME TO DEPLOY</div>
+      <div class="bus-presets" style="justify-content:center; padding:10px 0;">
+        <button class="bus-preset" onclick="addBot('CRYPTO'); toggleGameMenu();" style="padding:10px 15px; font-size:10px;" aria-label="Deploy Crypto Whale agent">💎 Crypto Whale</button>
+        <button class="bus-preset" onclick="addBot('ZOO'); toggleGameMenu();" style="padding:10px 15px; font-size:10px;" aria-label="Deploy Safari Wins agent">🦁 Safari Wins</button>
+        <button class="bus-preset" onclick="addBot('VEGAS'); toggleGameMenu();" style="padding:10px 15px; font-size:10px;" aria-label="Deploy Vegas Night agent">🍒 Vegas Night</button>
+        <button class="bus-preset" onclick="addBot('OCEAN'); toggleGameMenu();" style="padding:10px 15px; font-size:10px;" aria-label="Deploy Deep Sea Gold agent">🦈 Deep Sea Gold</button>
+      </div>
+    <div class="bot-grid" id="botGrid"></div>
+  </div>
+
+  <div id="tab-bus" class="tab-content">
     <div class="bus-grid">
-
       <!-- Trade Amount -->
       <div class="bus-section">
         <div class="bus-section-title"><span>💰</span> TRADE AMOUNT — ALL BOTS</div>
         <div class="bus-presets" id="busAmtPresets">
-          <button class="bus-preset" onclick="busSetAmount(0.10)">$0.10</button>
-          <button class="bus-preset" onclick="busSetAmount(0.25)">$0.25</button>
-          <button class="bus-preset" onclick="busSetAmount(0.50)">$0.50</button>
-          <button class="bus-preset" onclick="busSetAmount(1)">$1</button>
-          <button class="bus-preset" onclick="busSetAmount(2)">$2</button>
-          <button class="bus-preset" onclick="busSetAmount(5)">$5</button>
-          <button class="bus-preset" onclick="busSetAmount(20)">$20</button>
-          <button class="bus-preset" onclick="busSetAmount(100)">$100</button>
+          <button class="bus-preset" onclick="busSetAmount(0.10)">A$0.10</button>
+          <button class="bus-preset" onclick="busSetAmount(0.25)">A$0.25</button>
+          <button class="bus-preset" onclick="busSetAmount(0.50)">A$0.50</button>
+          <button class="bus-preset" onclick="busSetAmount(1)">A$1</button>
+          <button class="bus-preset" onclick="busSetAmount(2)">A$2</button>
+          <button class="bus-preset" onclick="busSetAmount(5)">A$5</button>
+          <button class="bus-preset" onclick="busSetAmount(20)">A$20</button>
+          <button class="bus-preset" onclick="busSetAmount(100)">A$100</button>
         </div>
         <div class="bus-custom-row">
-          <input type="number" id="busCustomAmt" placeholder="Custom $" min="0.01" step="0.01">
+          <input type="number" id="busCustomAmt" placeholder="Custom A$" min="0.01" step="0.01">
           <button onclick="busSetCustomAmount()">SET ALL</button>
         </div>
       </div>
@@ -876,49 +878,50 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     <div class="bus-status" id="busStatus"></div>
   </div>
 
-  <!-- ★ AGENT AUDIT PANEL ★ -->
-  <div class="audit-panel" id="auditPanel">
-    <div class="audit-hd" id="auditHd" onclick="toggleAudit()">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:14px">🔍</span>
-        <span class="audit-title">AGENT AUDIT</span>
-        <span class="audit-summary" id="auditSummary">ALL CLEAR</span>
-      </div>
-      <span style="font-size:10px;color:var(--dim)" id="auditToggle">▼ EXPAND</span>
-    </div>
-    <div class="audit-body" id="auditBody">
-      <!-- Per-agent review rows, built dynamically -->
-      <div id="auditAgentRows"></div>
-
-      <!-- Audit settings -->
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
-        <div style="font-size:8px;color:var(--dim)">
-          Audit every <input type="number" id="auditInterval" value="10" min="5" max="50" style="width:36px;background:var(--bg);border:1px solid var(--border);color:var(--gold);padding:2px 4px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:9px;text-align:center"> trades ·
-          On notice if WR &lt; <input type="number" id="noticeThreshold" value="40" min="20" max="60" style="width:36px;background:var(--bg);border:1px solid var(--border);color:var(--amber);padding:2px 4px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:9px;text-align:center">% ·
-          Suspend after <input type="number" id="suspendWindow" value="10" min="5" max="30" style="width:36px;background:var(--bg);border:1px solid var(--border);color:var(--hot);padding:2px 4px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:9px;text-align:center"> probation trades
+  <!-- ★ AGENT AUDIT TAB ★ -->
+  <div id="tab-audit" class="tab-content">
+    <div class="audit-panel" id="auditPanel" style="display:block; border:none; background:none;">
+      <div class="audit-hd" id="auditHd">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:14px">🔍</span>
+          <span class="audit-title">AGENT AUDIT</span>
+          <span class="audit-summary" id="auditSummary">ALL CLEAR</span>
         </div>
-        <button onclick="runManualAudit()" style="padding:4px 10px;font-family:'Bungee',display;font-size:9px;background:none;border:1px solid var(--hot);color:var(--hot);border-radius:4px;cursor:pointer;letter-spacing:1px;margin-left:auto">RUN AUDIT NOW</button>
       </div>
+      <div class="audit-body open">
+        <!-- Per-agent review rows, built dynamically -->
+        <div id="auditAgentRows"></div>
 
-      <!-- Audit log -->
-      <div style="font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-top:10px;margin-bottom:4px">Audit History</div>
-      <div class="audit-log-wrap" id="auditLog">
-        <div class="al-entry audit"><span class="al-ts">—</span><span class="al-icon">🔍</span><span class="al-msg">No audits run yet. First audit fires after 10 closed trades.</span></div>
+        <!-- Audit settings -->
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+          <div style="font-size:8px;color:var(--dim)">
+            Audit every <input type="number" id="auditInterval" value="10" min="5" max="50" style="width:36px;background:var(--bg);border:1px solid var(--border);color:var(--gold);padding:2px 4px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:9px;text-align:center"> trades ·
+            On notice if WR &lt; <input type="number" id="noticeThreshold" value="40" min="20" max="60" style="width:36px;background:var(--bg);border:1px solid var(--border);color:var(--amber);padding:2px 4px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:9px;text-align:center">% ·
+            Suspend after <input type="number" id="suspendWindow" value="10" min="5" max="30" style="width:36px;background:var(--bg);border:1px solid var(--border);color:var(--hot);padding:2px 4px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:9px;text-align:center"> probation trades
+          </div>
+          <button onclick="runManualAudit()" style="padding:4px 10px;font-family:'Bungee',display;font-size:9px;background:none;border:1px solid var(--hot);color:var(--hot);border-radius:4px;cursor:pointer;letter-spacing:1px;margin-left:auto">RUN AUDIT NOW</button>
+        </div>
+
+        <!-- Audit log -->
+        <div style="font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-top:10px;margin-bottom:4px">Audit History</div>
+        <div class="audit-log-wrap" id="auditLog">
+          <div class="al-entry audit"><span class="al-ts">—</span><span class="al-icon">🔍</span><span class="al-msg">No audits run yet. First audit fires after 10 closed trades.</span></div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- ★ SELF-LEARNING PANEL ★ -->
-  <div class="learn-panel" id="learnPanel">
-    <div class="learn-hd" id="learnHd" onclick="toggleLearn()">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:14px">🧬</span>
-        <span class="learn-title">SELF-LEARNING MODEL</span>
-        <span class="learn-gen" id="learnGenLabel">GENERATION 0</span>
+  <!-- ★ SELF-LEARNING TAB ★ -->
+  <div id="tab-learning" class="tab-content">
+    <div class="learn-panel" id="learnPanel" style="display:block; border:none; background:none;">
+      <div class="learn-hd" id="learnHd">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:14px">🧬</span>
+          <span class="learn-title">SELF-LEARNING MODEL</span>
+          <span class="learn-gen" id="learnGenLabel">GENERATION 0</span>
+        </div>
       </div>
-      <span style="font-size:10px;color:var(--dim)" id="learnToggle">▼ EXPAND</span>
-    </div>
-    <div class="learn-body" id="learnBody">
+      <div class="learn-body open">
       <!-- Agent weight cards -->
       <div style="font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">
         Live Agent Weights — updated every 5 trades
@@ -956,17 +959,17 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     </div>
   </div>
 
-  <!-- ★ QUANT REPORT PANEL ★ -->
-  <div class="cpanel" id="quantPanel">
-    <div class="cpanel-hd" id="quantHd" onclick="togglePanel('quant')" style="background:linear-gradient(90deg,rgba(68,136,255,.06),transparent)">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:14px">🧪</span>
-        <span class="cpanel-title" style="color:var(--blue)">QUANT REPORT</span>
-        <span style="font-size:9px;color:var(--dim)" id="qTradeCount">0 closed trades</span>
+  <!-- ★ QUANT REPORT TAB ★ -->
+  <div id="tab-quant" class="tab-content">
+    <div class="cpanel" id="quantPanel" style="border:none; background:none;">
+      <div class="cpanel-hd" id="quantHd">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:14px">🧪</span>
+          <span class="cpanel-title" style="color:var(--blue)">QUANT REPORT</span>
+          <span style="font-size:9px;color:var(--dim)" id="qTradeCount">0 closed trades</span>
+        </div>
       </div>
-      <span class="cpanel-toggle" id="quantToggle">▼ EXPAND</span>
-    </div>
-    <div class="cpanel-body" id="quantBody">
+      <div class="cpanel-body open" id="quantBody">
       <!-- Crucible mode -->
       <div class="crucible-bar">
         <span class="crucible-label">🔬 CRUCIBLE</span>
@@ -1097,15 +1100,15 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     </div>
   </div>
 
-  <!-- ★ CIRCUIT BREAKERS ★ -->
+  <!-- ★ SETTINGS ★ -->
   <div class="cpanel" id="breakerPanel">
     <div class="cpanel-hd" id="breakerHd" onclick="togglePanel('breaker')" style="background:linear-gradient(90deg,rgba(255,179,0,.06),transparent)">
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:14px">🛡️</span>
-        <span class="cpanel-title" style="color:var(--amber)">CIRCUIT BREAKERS</span>
+        <span class="cpanel-title" style="color:var(--amber)">SETTINGS</span>
         <span class="breaker-status bs-ok" id="breakerStatus">ALL CLEAR</span>
       </div>
-      <span class="cpanel-toggle" id="breakerToggle">▼ CONFIGURE</span>
+      <span class="cpanel-toggle" id="breakerToggle">▼ OPEN</span>
     </div>
     <div class="cpanel-body" id="breakerBody">
       <div class="breaker-grid">
@@ -1144,24 +1147,12 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     </div>
   </div>
 
-<!-- AGENT/MACHINE MATRIX - Pad Grid -->
-  <div class="matrix-section">
-    <div class="matrix-header">
-      <span>AGENT/MACHINE MATRIX</span>
-      <span class="matrix-count" id="matrixCount">0 ACTIVE</span>
-    </div>
-    <div class="pad-grid" id="padGrid">
-      <!-- Pads render dynamically when bots are added -->
-    </div>
-  </div>
-
   <!-- Bots -->
-  <div class="bot-grid" id="botGrid"></div>
 
   <!-- Log -->
   <div class="global-log">
     <div class="log-title" id="logTitle">
-      <span>TRADE LEDGER — REAL PRICES</span>
+      <span>TRADE LEDGER</span>
       <span style="font-size:9px;color:var(--dim)" id="logCount">0 trades</span>
     </div>
     <div class="log-list" id="globalLog"><div class="empty-log">No trades yet.</div></div>
@@ -1195,7 +1186,7 @@ const API_CB = {
     if(this.failures >= this.THRESHOLD){
       this.openUntil = Date.now() + this.COOLDOWN_MS;
       this.failures = 0;
-      console.warn(`[TradeArena] API circuit breaker OPEN — switching to fallback for ${this.COOLDOWN_MS/1000}s`);
+      console.warn(`[TradeArena] API circuit breaker OPEN — switching to fallback for  ${this.COOLDOWN_MS/1000}s`);
       updateApiBreakerUI(true);
       // Auto-close after cooldown
       setTimeout(()=>{ updateApiBreakerUI(false); }, this.COOLDOWN_MS);
@@ -1239,7 +1230,7 @@ function generateFallbackAgentVote(agentType, contextStr) {
     momentum: {
       vote: isStrong ? baseVote : (Math.random()>0.38?'LONG':'SHORT'),
       conviction: isVeryStrong ? 0.88 : isStrong ? 0.72 : 0.58,
-      reasoning: `${Math.abs(change24h).toFixed(1)}% 24h — ${isStrong?'strong':'weak'} signal`,
+      reasoning: `${Math.abs(change24h).toFixed(1)}% 24h —  ${isStrong?'strong':'weak'} signal`,
       momentum_score: Math.max(-1, Math.min(1, change24h/8))
     },
     volatility: {
@@ -1258,7 +1249,7 @@ function generateFallbackAgentVote(agentType, contextStr) {
     risk: {
       vote: currentGas > gasHardCeiling ? 'VETO' : (Math.random()>0.08 ? baseVote : 'HOLD'),
       conviction: 0.75,
-      reasoning: currentGas > gasHardCeiling ? `Gas ${currentGas} gwei exceeds ceiling` : 'Risk parameters within limits',
+      reasoning: currentGas > gasHardCeiling ? `Gas  ${currentGas} gwei exceeds ceiling` : 'Risk parameters within limits',
       risk_score: 0.2
     }
   };
@@ -1373,7 +1364,7 @@ async function getLivePrice(symbol) {
   const c=priceCache[symbol];
   if(c && Date.now()-c.ts<45000) return c.price;
   try {
-    const r=await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd`);
+    const r=await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=aud`);
     const d=await r.json(); const price=d[id]?.usd;
     if(price){ priceCache[symbol]={price,ts:Date.now()}; } return price||null;
   } catch(e){ return c?.price||null; }
@@ -1383,7 +1374,7 @@ async function getMarketData() {
   if(marketCache&&now-marketCacheTime<15000) return marketCache;  // 15s cache
 
   try {
-    const r=await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=percent_change_24h_desc&per_page=30&sparkline=false');
+    const r=await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=aud&order=percent_change_24h_desc&per_page=30&sparkline=false');
     marketCache=await r.json(); marketCacheTime=now;
   } catch(e){ marketCache=marketCache||[]; }
   return marketCache;
@@ -1393,11 +1384,11 @@ async function getMarketData() {
 // HARDENED COST MODEL
 // ══════════════════════════════════════════════════════
 function computeCosts(method, bet, volumeUsd, multiplier=1.0) {
-const gasBase = 0.00025; // $0.00025 for $1 bet (optimized DEX)
+const gasBase = 0.00025; // A$0.00025 for A$1 bet (optimized DEX)
   const slippagePct = Math.max(0.0001, Math.min(0.1, Math.sqrt(bet/(volumeUsd||1e9)) * 2));
   const slippageCost = bet * slippagePct / 100;
   // Spread cost (fixed bps - realistic for DEXs/CEXs)
-  const spreadCost = 0.0003; // $0.0003 spread for $1 bet
+  const spreadCost = 0.0003; // A$0.0003 spread for A$1 bet
   // Funding rate proxy for perps (tiny for micro trades)
   const fundingCost = method.includes('PERP') ? bet * 0.00001 : 0;
   const totalRaw = gasBase + slippageCost + spreadCost + fundingCost;
@@ -1445,7 +1436,7 @@ async function openPosition(bot, decision, entryPrice, bet, volumeUsd, priceChan
   // CRITICAL: Check if sufficient balance exists before opening trade
   if(balance < bet) {
     const tick=document.getElementById('mtick-'+bot.id);
-    if(tick) tick.textContent=`❌ Insufficient balance ($${balance.toFixed(2)} < $${bet})`;
+    if(tick) tick.textContent=`❌ Insufficient balance  (A$${balance.toFixed(2)} < A$${bet})`;
     bot.spinning=false;
     const spinEl=document.getElementById('mspin-'+bot.id);
     if(spinEl){spinEl.disabled=false;spinEl.classList.remove('going');spinEl.textContent='🎰 SPIN';}
@@ -1473,6 +1464,9 @@ async function openPosition(bot, decision, entryPrice, bet, volumeUsd, priceChan
     openedAt: Date.now()
   };
   openPositions.push(pos);
+  if(window.ACOUSTIC) ACOUSTIC.updateTelemetry({ openPositions: openPositions.length });
+  addToLog(pos);
+
   
   // Track trade in bot's lastTrade for ticker display
   const methodEmoji = {
@@ -1527,7 +1521,7 @@ function startLivePnlTicker(pos) {
       const delta=pos.direction==='long'?(p-pos.entryPrice)/pos.entryPrice:(pos.entryPrice-p)/pos.entryPrice;
       const net=pos.bet*delta-pos.costs.total;
       if(pnlEl){ 
-        pnlEl.textContent=(net>=0?'+':'')+'$'+net.toFixed(2); 
+        pnlEl.textContent=(net>=0?'+':'')+'A$'+net.toFixed(2);
         pnlEl.className='op-live-pnl '+(net>=0?'pos':'neg');
         // Add pulse effect for instant visual feedback
         pnlEl.style.animation='none';
@@ -1560,7 +1554,7 @@ function startLivePnlTicker(pos) {
       const slBot=bots.find(b=>b.id===pos.botId);
       const slLabel=slBot&&(slBot.stopLossPct||slBot.takeProfitPct)
         ?` · SL${slBot.stopLossPct?` −${slBot.stopLossPct}%`:'—'} TP${slBot.takeProfitPct?` +${slBot.takeProfitPct}%`:'—'}`:'';
-      timerEl.textContent=`Exit in ${m}:${s.toString().padStart(2,'0')}${slLabel}`;
+      timerEl.textContent=`Exit in  ${m}:${s.toString().padStart(2,'0')}${slLabel}`;
     }
     // Update global balance header with unrealised P&L across all open positions
     updateLiveBalance();
@@ -1577,13 +1571,13 @@ function updateLiveBalance(){
   const balEl=document.getElementById('ghBalance');
   const pnlEl=document.getElementById('ghPnl');
   if(balEl){
-    balEl.textContent='$'+displayBalance.toFixed(2);
-    balEl.title=`Realised: $${balance.toFixed(2)} | Unrealised: $${unrealised.toFixed(2)}`;
+    balEl.textContent='A$'+displayBalance.toFixed(2);
+    balEl.title=`Realised: A$${balance.toFixed(2)} | Unrealised: A$${unrealised.toFixed(2)}`;
     // Flash gold when unrealised is active
     balEl.style.color=unrealised>0?'var(--green)':unrealised<0?'var(--hot)':'var(--gold)';
   }
   if(pnlEl){
-    pnlEl.textContent=(displayPnl>=0?'+':'')+'$'+displayPnl.toFixed(2)+(unrealised!==0?' (live)':' today');
+    pnlEl.textContent=(displayPnl>=0?'+':'')+'A$'+displayPnl.toFixed(2)+(unrealised!==0?' (live)':' today');
     pnlEl.className='gh-pnl '+(displayPnl>=0?'pnl-pos':'pnl-neg');
   }
 
@@ -1638,7 +1632,7 @@ async function checkExit(pos, bot) {
   if(card&&!openPositions.find(p=>p.botId===pos.botId)) card.classList.remove('has-open');
 
   updateGlobalBalance(); updateBotPnl(bot); updateQuantReport(); updateOpenCount();
-  showExitResult(pos,bot); addToLog(pos);
+  showExitResult(pos,bot); renderLog();
 
   // ── SFX + FX + VOICE on trade close ──
   try {
@@ -1651,21 +1645,21 @@ async function checkExit(pos, bot) {
 
     if (pos.isWin) {
       const big = pos.netPnl > 20;
-      if (typeof SFX !== 'undefined') big ? SFX.bigWin() : SFX.win();
+      // Handled by ACOUSTIC
       if (typeof FX !== 'undefined') {
-        FX.flash('rgba(57,255,20,0.12)', big ? 500 : 300);
-        FX.confetti(cx, cy, big ? 28 : 16);
-        FX.pnlFlyUp(pos.netPnl, cx - 30, cy);
+        // FX.flash('rgba(57,255,20,0.12)', big ? 500 : 300);
+        // FX.confetti(cx, cy, big ? 28 : 16);
+        // FX.pnlFlyUp(pos.netPnl, cx - 30, cy);
       }
-      if (typeof VOICE !== 'undefined') isTP ? VOICE.takeProfit(bot.id) : VOICE.win(bot.id, pos.netPnl);
+      // Handled by ACOUSTIC
     } else {
-      if (typeof SFX !== 'undefined') isSL ? SFX.stopLoss() : SFX.loss();
+      // Handled by ACOUSTIC
       if (typeof FX !== 'undefined') {
-        FX.flash('rgba(255,45,120,0.1)', 400);
-        FX.shake(card);
-        FX.pnlFlyUp(pos.netPnl, cx - 30, cy);
+        // FX.flash('rgba(255,45,120,0.1)', 400);
+        // FX.shake(card);
+        // FX.pnlFlyUp(pos.netPnl, cx - 30, cy);
       }
-      if (typeof VOICE !== 'undefined') isSL ? VOICE.stopLoss(bot.id) : VOICE.loss(bot.id, pos.netPnl);
+      // Handled by ACOUSTIC
     }
   } catch(e) {}
 
@@ -1679,10 +1673,10 @@ function showOpenOverlay(botId, pos) {
   if(!ov) return;
   setVal('opToken-'+botId,pos.token);
   setVal('opMethod-'+botId,pos.method);
-  setVal('opEntry-'+botId,'Entry: $'+pos.entryPrice.toFixed(pos.entryPrice<1?6:2));
+  setVal('opEntry-'+botId,'Entry: A$'+pos.entryPrice.toFixed(pos.entryPrice<1?6:2));
   const el=document.getElementById('opLivePnl-'+botId); if(el){el.textContent='…';el.className='op-live-pnl pend';}
   const exitM=Math.round(pos.exitDuration/60000);
-  setVal('opTimer-'+botId,`Exit in ${exitM}m 0s`);
+  setVal('opTimer-'+botId,`Exit in  ${exitM}m 0s`);
   setVal('opExit-'+botId,`−$${pos.costs.total.toFixed(2)} gas+slip+spread`);
   ov.classList.add('show');
 }
@@ -1707,10 +1701,10 @@ function showExitResult(pos, bot) {
     amtEl.textContent='-$'+netAbs.toFixed(2); amtEl.style.color='var(--hot)';
   }
   detEl.innerHTML=
-    `${pos.method} · ${pos.token} (${pos.direction}) <span class="regime-badge regime-${(pos.regime||'chop').toLowerCase()}">${pos.regime||'?'}</span><br>`+
-    `$${pos.entryPrice.toFixed(pos.entryPrice<1?5:2)} → $${pos.exitPrice.toFixed(pos.exitPrice<1?5:2)} (${pricePct}%)<br>`+
-    `<span style="color:#555">Gas $${pos.costs.gas.toFixed(2)} · Slip ${pos.costs.slippagePct.toFixed(2)}% · Spread $${pos.costs.spread.toFixed(2)}</span>`+
-    (pos.polSignal&&pos.polSignal.signal!=='NEUTRAL'?`<br><span style="color:#888;font-size:7px">🏛️ Pol: ${pos.polSignal.reasoning}</span>`:'');
+    `${pos.method} ·  ${pos.token} (${pos.direction}) <span class="regime-badge regime-${(pos.regime||'chop').toLowerCase()}">${pos.regime||'?'}</span><br>`+
+    `A$${pos.entryPrice.toFixed(pos.entryPrice<1?5:2)} → A$${pos.exitPrice.toFixed(pos.exitPrice<1?5:2)} (${pricePct}%)<br>`+
+    `<span style="color:#555">Gas A$${pos.costs.gas.toFixed(2)} · Slip  ${pos.costs.slippagePct.toFixed(2)}% · Spread A$${pos.costs.spread.toFixed(2)}</span>`+
+    (pos.polSignal&&pos.polSignal.signal!=='NEUTRAL'?`<br><span style="color:#888;font-size:7px">🏛️ Pol:  ${pos.polSignal.reasoning}</span>`:'');
 
   // Baseline comparison on result card
   const bl=pos.baselines;
@@ -1723,7 +1717,7 @@ function showExitResult(pos, bot) {
       pos.netPnl>bl.momentum?'🌊':'',
     ].filter(Boolean):[];
     blEl.textContent=better.length
-      ? `Beat ${better.join(' ')} baseline${better.length>1?'s':''}`
+      ? `Beat  ${better.join(' ')} baseline${better.length>1?'s':''}`
       : 'Underperformed all baselines this trade';
     blEl.style.color=better.length?'var(--green)':'var(--hot)';
   }
@@ -1762,7 +1756,7 @@ function updateQuantReport() {
   // Metric cards
   setMCard('mc-wr','mv-wr','ms-wr',(winRate*100).toFixed(1)+'%',wins.length+'W / '+losses.length+'L',winRate>=0.5?'good':'bad');
   setMCard('mc-pf','mv-pf',null,pf>=99?'∞':pf.toFixed(2),null,pf>=1?'good':'bad');
-  setMCard('mc-exp','mv-exp','ms-exp',(avgPnl>=0?'+':'')+'$'+avgPnl.toFixed(2),'per trade after costs',avgPnl>=0?'good':'bad');
+  setMCard('mc-exp','mv-exp','ms-exp',(avgPnl>=0?'+':'')+'A$'+avgPnl.toFixed(2),'per trade after costs',avgPnl>=0?'good':'bad');
   setMCard('mc-dd','mv-dd',null,'-$'+maxDD.toFixed(2),null,maxDD<startBalance*0.1?'good':'bad');
   setVal('mv-avgW',wins.length>0?'+$'+avgW.toFixed(2):'—');
   setVal('mv-avgL',losses.length>0?'-$'+avgL.toFixed(2):'—');
@@ -1800,7 +1794,7 @@ function drawEquityCurve() {
     const y=H-((v-min)/range)*(H-6)-3;
     return `${x.toFixed(1)},${y.toFixed(1)}`;
   }).join(' ');
-  line.setAttribute('points',pts); fill.setAttribute('points',pts+` ${W},${H} 0,${H}`);
+  line.setAttribute('points',pts); fill.setAttribute('points',pts+`  ${W},${H} 0,${H}`);
   const isUp=equityHistory[equityHistory.length-1]>=startBalance;
   line.setAttribute('stroke',isUp?'var(--green)':'var(--hot)');
   fill.setAttribute('fill',isUp?'rgba(57,255,20,.05)':'rgba(255,45,120,.05)');
@@ -1828,7 +1822,7 @@ function drawBaselines(trades, claudeAvg) {
   const allPnls={claude:claudePnl, ...Object.fromEntries(bKeys.map(k=>[k,bData[k].pnl]))};
   const best=Object.keys(allPnls).reduce((a,b)=>allPnls[a]>allPnls[b]?a:b);
 
-  const fmt=(v)=>(v>=0?'+':'')+'$'+v.toFixed(2);
+  const fmt=(v)=>(v>=0?'+':'')+'A$'+v.toFixed(2);
   setVal('bl-claude-pnl',fmt(claudePnl)); setVal('bl-claude-wr',claudeWr+'%'); setVal('bl-claude-avg',fmt(claudeAvg)); setVal('bl-claude-vs',fmt(claudePnl));
   bKeys.forEach(k=>{
     setVal('bl-'+k+'-pnl',fmt(bData[k].pnl)); setVal('bl-'+k+'-wr',bData[k].wr); setVal('bl-'+k+'-avg',fmt(bData[k].avg)); setVal('bl-'+k+'-vs',fmt(bData[k].pnl-0));
@@ -1853,8 +1847,8 @@ function drawStratBreakdown(trades) {
     const barW=(Math.abs(d.pnl)/maxAbs*100).toFixed(0);
     return `<div class="strat-row">
       <div class="strat-name">${name}</div>
-      <div class="strat-bar-wrap"><div class="strat-bar ${isPos?'pos':'neg'}" style="width:${barW}%"></div></div>
-      <div class="strat-stat" style="color:${isPos?'var(--green)':'var(--hot)'}">${isPos?'+':''}$${d.pnl.toFixed(2)} · ${wr}% WR</div>
+      <div class="strat-bar-wrap"><div class="strat-bar  ${isPos?'pos':'neg'}" style="width:${barW}%"></div></div>
+      <div class="strat-stat" style="color:${isPos?'var(--green)':'var(--hot)'}">${isPos?'+':''}$${d.pnl.toFixed(2)} ·  ${wr}% WR</div>
     </div>`;
   }).join('');
 }
@@ -1874,7 +1868,7 @@ function drawReturnDist(trades) {
     const col=center>=0?'var(--green)':'var(--hot)';
     return `<div class="dist-bar" style="height:${pct}%;background:${col}" title="${c} trades ~$${center.toFixed(1)}"></div>`;
   }).join('');
-  setVal('distMin','$'+min.toFixed(1)); setVal('distMax','$'+max.toFixed(1));
+  setVal('distMin','A$'+min.toFixed(1)); setVal('distMax','A$'+max.toFixed(1));
 }
 
 function drawCostSensitivity(trades) {
@@ -1886,7 +1880,7 @@ function drawCostSensitivity(trades) {
       return s+t.netPnl-extraCost;
     },0);
     const el=document.getElementById(ids[i]);
-    if(el){ el.textContent=(adjPnl>=0?'+':'')+'$'+adjPnl.toFixed(2); el.style.color=adjPnl>=0?cols[i]:cols[2]; }
+    if(el){ el.textContent=(adjPnl>=0?'+':'')+'A$'+adjPnl.toFixed(2); el.style.color=adjPnl>=0?cols[i]:cols[2]; }
   });
 }
 
@@ -1894,18 +1888,18 @@ function drawVerdict(n, wr, pf, avg) {
   const box=document.getElementById('verdictBox');
   if(!box) return;
   const MIN=20;
-  if(n<MIN){ box.className='verdict waiting'; box.textContent=`${n}/${MIN} trades. Keep running paper trades — need ${MIN} closed for any verdict.`; return; }
+  if(n<MIN){ box.className='verdict waiting'; box.textContent=`${n}/${MIN} trades. Keep running paper trades — need  ${MIN} closed for any verdict.`; return; }
   const hasEdge=pf>=1.5&&avg>0&&wr>=0.5;
   const isLosing=pf<0.8||avg<-0.5;
   if(hasEdge){
     box.className='verdict edge';
-    box.innerHTML=`<strong>✅ EDGE SIGNAL DETECTED</strong><br>Win rate ${(wr*100).toFixed(1)}% · PF ${pf.toFixed(2)} · Avg +$${avg.toFixed(2)}/trade. Check cost sensitivity — if you're profitable at 1.5× costs, this is worth investigating with micro live trades ($5–10). If not, you're riding optimistic cost assumptions.`;
+    box.innerHTML=`<strong>✅ EDGE SIGNAL DETECTED</strong><br>Win rate  ${(wr*100).toFixed(1)}% · PF  ${pf.toFixed(2)} · Avg +$${avg.toFixed(2)}/trade. Check cost sensitivity — if you're profitable at 1.5× costs, this is worth investigating with micro live trades ($5–10). If not, you're riding optimistic cost assumptions.`;
   } else if(isLosing){
     box.className='verdict losing';
-    box.innerHTML=`<strong>🔴 NO EDGE AFTER ${n} TRADES</strong><br>PF ${pf.toFixed(2)} · Avg $${avg.toFixed(2)}/trade. Strategy is losing after realistic costs. Do NOT go live. Use strategy attribution above to identify which methods are bleeding and cut them.`;
+    box.innerHTML=`<strong>🔴 NO EDGE AFTER  ${n} TRADES</strong><br>PF  ${pf.toFixed(2)} · Avg A$${avg.toFixed(2)}/trade. Strategy is losing after realistic costs. Do NOT go live. Use strategy attribution above to identify which methods are bleeding and cut them.`;
   } else {
     box.className='verdict marginal';
-    box.innerHTML=`<strong>⚠️ MARGINAL — ${n} TRADES</strong><br>PF ${pf.toFixed(2)} · Avg $${avg.toFixed(2)}/trade. Edge is weak. Gas and slippage are eating most gains. Run 100+ trades and check if Claude beats the momentum baseline — that's the key test.`;
+    box.innerHTML=`<strong>⚠️ MARGINAL —  ${n} TRADES</strong><br>PF  ${pf.toFixed(2)} · Avg A$${avg.toFixed(2)}/trade. Edge is weak. Gas and slippage are eating most gains. Run 100+ trades and check if Claude beats the momentum baseline — that's the key test.`;
   }
 }
 
@@ -1961,7 +1955,7 @@ async function runCrucibleBatch() {
         // Pick a random bot that can trade
         const availableBots = bots.filter(b => !b.spinning && !b.cooling && balance >= 0.10);
         if(availableBots.length === 0) {
-          console.log(`Crucible: Stopped at ${tradesRun} trades (no available bots)`);
+          console.log(`Crucible: Stopped at  ${tradesRun} trades (no available bots)`);
           break;
         }
         
@@ -2015,14 +2009,14 @@ async function runCrucibleV2Batch() {
      }
      
      // Show running status
-     alert(`Running Crucible V2:\nRegime: ${regime}\nCost Model: ${costModel}\nTrades: ${tradeCount}\n\nThis will simulate trading in the selected regime with realistic cost modeling.`);
+     alert(`Running Crucible V2:\nRegime:  ${regime}\nCost Model:  ${costModel}\nTrades:  ${tradeCount}\n\nThis will simulate trading in the selected regime with realistic cost modeling.`);
      
      // In a real implementation, this would call the external crucible-test.js functions
      // For now, we'll simulate the results
      const simulatedResults = simulateCrucibleV2Results(regime, costModel, tradeCount);
      
      // Display results
-     alert(`Crucible V2 Results:\n\nRegime: ${regime}\nCost Model: ${costModel}\nTrades: ${simulatedResults.trades}\nWin Rate: ${simulatedResults.winRate.toFixed(1)}%\nP&L: $${simulatedResults.pnl >= 0 ? '+' : ''}${simulatedResults.pnl.toFixed(2)}\nReturn: ${simulatedResults.returnPct >= 0 ? '+' : ''}${simulatedResults.returnPct.toFixed(2)}%\n\nBaseline Comparison:\n- Strategy: ${simulatedResults.strategy.pnl >= 0 ? '+' : ''}$${simulatedResults.strategy.pnl.toFixed(2)} (${simulatedResults.strategy.winRate.toFixed(1)}% WR)\n- Always Long: ${simulatedResults.baselines.alwaysLong.pnl >= 0 ? '+' : ''}$${simulatedResults.baselines.alwaysLong.pnl.toFixed(2)} (${simulatedResults.baselines.alwaysLong.winRate.toFixed(1)}% WR)\n- Momentum: ${simulatedResults.baselines.momentum.pnl >= 0 ? '+' : ''}$${simulatedResults.baselines.momentum.pnl.toFixed(2)} (${simulatedResults.baselines.momentum.winRate.toFixed(1)}% WR)\n- Random: ${simulatedResults.baselines.random.pnl >= 0 ? '+' : ''}$${simulatedResults.baselines.random.pnl.toFixed(2)} (${simulatedResults.baselines.random.winRate.toFixed(1)}% WR)\n\n${simulatedResults.strategy.pnl > simulatedResults.baselines.alwaysLong.pnl && regime !== 'BULL' ? '✅ STRATEGY BEATS ALWAYS LONG IN NON-BULL REGIME' : '⚠️ Strategy did not beat Always Long in non-bull regime'}`);
+     alert(`Crucible V2 Results:\n\nRegime:  ${regime}\nCost Model:  ${costModel}\nTrades:  ${simulatedResults.trades}\nWin Rate:  ${simulatedResults.winRate.toFixed(1)}%\nP&L: A$${simulatedResults.pnl >= 0 ? '+' : ''}${simulatedResults.pnl.toFixed(2)}\nReturn:  ${simulatedResults.returnPct >= 0 ? '+' : ''}${simulatedResults.returnPct.toFixed(2)}%\n\nBaseline Comparison:\n- Strategy:  ${simulatedResults.strategy.pnl >= 0 ? '+' : ''}$${simulatedResults.strategy.pnl.toFixed(2)} (${simulatedResults.strategy.winRate.toFixed(1)}% WR)\n- Always Long:  ${simulatedResults.baselines.alwaysLong.pnl >= 0 ? '+' : ''}$${simulatedResults.baselines.alwaysLong.pnl.toFixed(2)} (${simulatedResults.baselines.alwaysLong.winRate.toFixed(1)}% WR)\n- Momentum:  ${simulatedResults.baselines.momentum.pnl >= 0 ? '+' : ''}$${simulatedResults.baselines.momentum.pnl.toFixed(2)} (${simulatedResults.baselines.momentum.winRate.toFixed(1)}% WR)\n- Random:  ${simulatedResults.baselines.random.pnl >= 0 ? '+' : ''}$${simulatedResults.baselines.random.pnl.toFixed(2)} (${simulatedResults.baselines.random.winRate.toFixed(1)}% WR)\n\n${simulatedResults.strategy.pnl > simulatedResults.baselines.alwaysLong.pnl && regime !== 'BULL' ? '✅ STRATEGY BEATS ALWAYS LONG IN NON-BULL REGIME' : '⚠️ Strategy did not beat Always Long in non-bull regime'}`);
      
      // Update crucible counter for UI
      crucibleCount += tradeCount;
@@ -2079,12 +2073,12 @@ function showCrucibleResults(results) {
    modalContent.innerHTML = `
       <h2 style="color: var(--cyan); text-align: center; margin-bottom: 20px;">CRUCIBLE BATCH RESULTS</h2>
       <div style="margin-bottom: 15px;">
-         <strong>Mode:</strong> ${results.mode}<br>
-         <strong>Trades Executed:</strong> ${results.tradesRun}<br>
-         <strong>Starting Balance:</strong> $${results.startBalance.toFixed(2)}<br>
-         <strong>Ending Balance:</strong> $${results.endBalance.toFixed(2)}<br>
-         <strong>Profit/Loss:</strong> ${results.pnl >= 0 ? '+' : ''}$${results.pnl.toFixed(2)} (${results.pnlPct}%)<br>
-         <strong>Win Rate:</strong> ${results.winRate.toFixed(1)}%
+         <strong>Mode:</strong>  ${results.mode}<br>
+         <strong>Trades Executed:</strong>  ${results.tradesRun}<br>
+         <strong>Starting Balance:</strong> A$${results.startBalance.toFixed(2)}<br>
+         <strong>Ending Balance:</strong> A$${results.endBalance.toFixed(2)}<br>
+         <strong>Profit/Loss:</strong>  ${results.pnl >= 0 ? '+' : ''}$${results.pnl.toFixed(2)} (${results.pnlPct}%)<br>
+         <strong>Win Rate:</strong>  ${results.winRate.toFixed(1)}%
       </div>
       <div style="margin-top: 20px; text-align: center;">
          <button onclick="this.parentElement.parentElement.remove()" 
@@ -2127,7 +2121,7 @@ function simulateCrucibleV2Results(regime, costModel, tradeCount) {
   const avgWin = Math.abs(pnlPerTrade) * 1.5; // Assuming 1.5:1 reward:risk
   const avgLoss = Math.abs(pnlPerTrade);
   const totalPnl = (wins * avgWin) - (losses * avgLoss);
-  const returnPct = (totalPnl / 10000) * 100; // Assuming $10k starting balance
+  const returnPct = (totalPnl / 10000) * 100; // Assuming A$10k starting balance
   
   // Generate baseline comparisons
   const baselines = {
@@ -2158,6 +2152,19 @@ function simulateCrucibleV2Results(regime, costModel, tradeCount) {
 // ══════════════════════════════════════════════════════
 // EXPORT
 // ══════════════════════════════════════════════════════
+function switchTab(tabId) {
+  document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+  document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+  const target = document.getElementById("tab-" + tabId);
+  if (target) target.classList.add("active");
+  const btn = Array.from(document.querySelectorAll(".tab-btn")).find(b => b.getAttribute("onclick")?.includes(tabId));
+  if (btn) btn.classList.add("active");
+  if (tabId === "quant") {
+    updateQuantReport();
+    setTimeout(drawEquityCurve, 50);
+  }
+}
+
 function exportCSV() {
   if(!closedTrades.length){ alert('No closed trades to export yet.'); return; }
   const headers=['timestamp','botId','token','method','direction','regime','bet','entryPrice','exitPrice','holdMs','rawPnl','netPnl','gas','slippagePct','slippage','spread','totalCosts','isWin','reasoning','pol_signal','mom_vote','vol_vote','pol_vote','sen_vote','risk_vote','baseline_random','baseline_long','baseline_momentum'];
@@ -2197,7 +2204,7 @@ function downloadFile(content, filename, type) {
 }
 
 // ══════════════════════════════════════════════════════
-// CIRCUIT BREAKERS
+// SETTINGS
 // ══════════════════════════════════════════════════════
 function togglePanel(name) {
   const bodyId=name+'Body', hdId=name+'Hd', toggleId=name+'Toggle';
@@ -2205,7 +2212,7 @@ function togglePanel(name) {
   if(!body||!toggle) return;
   const isOpen=body.classList.toggle('open');
   document.getElementById(hdId)?.classList.toggle('open',isOpen);
-  toggle.textContent=isOpen?'▴ HIDE':'▼ '+(name==='quant'?'EXPAND':'CONFIGURE');
+  toggle.textContent=isOpen?'▴ HIDE':'▼ '+(name==='quant'?'EXPAND':'OPEN');
   if(name==='quant'&&isOpen){ updateQuantReport(); setTimeout(drawEquityCurve,50); }
 }
 function updateBreakers() {
@@ -2238,7 +2245,7 @@ function checkGlobalBreakers() {
 }
 function isGlobalBlocked() {
   if(globalKilled) return{blocked:true,reason:'EMERGENCY STOP'};
-  if(currentGas>gasHardCeiling) return{blocked:true,reason:`GAS: ${currentGas} GWEI`};
+  if(currentGas>gasHardCeiling) return{blocked:true,reason:`GAS:  ${currentGas} GWEI`};
   if(totalPnl<=-(startBalance*drawdownPct/100)) return{blocked:true,reason:'DAILY DRAWDOWN KILL'};
   return{blocked:false};
 }
@@ -2301,7 +2308,7 @@ function startCooldownUI(bot,durationMs,level){
   if(detailEl) detailEl.innerHTML=msgs[level]+'<br><span style="color:#555;font-size:7px">3 consecutive losses — circuit breaker triggered</span>';
   resultEl.classList.add('show');
   if(cardEl) cardEl.classList.add('cooling');
-  if(badge){badge.className='m-status-badge cool';badge.textContent=`⏸ COOLING — ${mins[level]}m`;}
+  if(badge){badge.className='m-status-badge cool';badge.textContent=`⏸ COOLING —  ${mins[level]}m`;}
   document.getElementById('countdown-'+bot.id)?.remove();
   document.getElementById('override-'+bot.id)?.remove();
   if(detailEl){
@@ -2329,7 +2336,7 @@ let overrideTimer=null;
 function startOverride(bot,btn){
   let held=0; btn.textContent='HOLD... 0%';
   overrideTimer=setInterval(()=>{
-    held+=100; btn.textContent=`HOLD... ${Math.floor(held/3000*100)}%`;
+    held+=100; btn.textContent=`HOLD...  ${Math.floor(held/3000*100)}%`;
     if(held>=3000){
       clearInterval(overrideTimer); bot.cooling=false; bot.consecutiveLosses=0;
       document.getElementById('mresult-'+bot.id)?.classList.remove('show');
@@ -2483,10 +2490,10 @@ async function loginMetaMask(){
       const balanceWei = await provider.getBalance(address);
       const balanceETH = parseFloat(ethers.utils.formatEther(balanceWei));
       
-      // Get ETH price in USD
-      const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+      // Get ETH price in AUD
+      const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=aud');
       const priceData = await priceResponse.json();
-      const ethPrice = priceData?.ethereum?.usd || 3200;
+      const ethPrice = priceData?.ethereum?.aud || 5000; // Updated fallback for AUD
       
       balanceUSD = balanceETH * ethPrice;
     } 
@@ -2586,7 +2593,7 @@ function setupApp({name,avatar,badge}){
       try{ addBot(); }catch(e){ console.error('addBot:',e); }
       _startHeaderTicker();
       _syncHeaderBotBtns();
-      _injectAVControls();
+
     });
   }catch(e){
     console.error('setupApp critical error:',e);
@@ -2600,16 +2607,16 @@ function setupApp({name,avatar,badge}){
 function updateGlobalBalance(){
   const balEl=document.getElementById('ghBalance');
   if(balEl){
-    balEl.textContent='$'+balance.toFixed(2);
-    balEl.title=`Realised: $${balance.toFixed(2)} | Unrealised: $0.00`;
+    balEl.textContent='A$'+balance.toFixed(2);
+    balEl.title=`Realised: A$${balance.toFixed(2)} | Unrealised: A$0.00`;
   }
   const p=document.getElementById('ghPnl');
-  if(p){p.textContent=(totalPnl>=0?'+':'')+'$'+totalPnl.toFixed(2)+' today';p.className='gh-pnl '+(totalPnl>=0?'pnl-pos':'pnl-neg');}
+  if(p){p.textContent=(totalPnl>=0?'+':'')+'A$'+totalPnl.toFixed(2)+' today';p.className='gh-pnl '+(totalPnl>=0?'pnl-pos':'pnl-neg');}
   checkGlobalBreakers();
 }
 function updateBotPnl(bot){
   const el=document.getElementById('mpnl-'+bot.id); if(!el) return;
-  el.textContent=(bot.pnl>=0?'+':'')+'$'+bot.pnl.toFixed(2);
+  el.textContent=(bot.pnl>=0?'+':'')+'A$'+bot.pnl.toFixed(2);
   el.className='m-pnl '+(bot.pnl>=0?'pos':'neg');
 }
 
@@ -2760,21 +2767,21 @@ function renderBot(bot){
     <div class="consensus-bar-wrap"><div class="consensus-bar-fill" id="cbar-${bot.id}" style="width:0%;background:var(--dim)"></div></div>
     <div class="m-controls">
       <div class="m-settings-bar">
-        <div class="m-bet-display" id="mbetdisp-${bot.id}">$1.00 <span>per trade</span></div>
+        <div class="m-bet-display" id="mbetdisp-${bot.id}">A$1.00 <span>per trade</span></div>
         <div style="display:flex;gap:4px;align-items:center">
           <button class="auto-btn" id="mauto-${bot.id}" onclick="toggleAuto(${bot.id})">AUTO</button>
           <button class="spin-btn" id="mspin-${bot.id}" onclick="spinBot(${bot.id})" style="padding:6px 12px;font-size:11px">🎰 SPIN</button>
-          <button class="m-gear-btn" id="mgear-${bot.id}" onclick="toggleBotSettings(${bot.id})" title="Bot settings" aria-label="Bot ${bot.id} settings">⚙</button>
+          <button class="m-gear-btn" id="mgear-${bot.id}" onclick="toggleBotSettings(${bot.id})" title="Bot settings" aria-label="Bot  ${bot.id} settings">⚙</button>
         </div>
       </div>
       <div class="m-dropdown" id="mdrop-${bot.id}">
         <div class="m-dd-section">
           <div class="m-dd-label">Trade Amount</div>
           <div class="m-dd-bets" id="mbets-${bot.id}">
-            ${[0.10,0.25,0.50,1.00,2.00,5.00,20.00,100.00].map(v=>`<button class="m-dd-bet${v===1.00?' on':''}" data-bet="${v}" onclick="setBet(${bot.id},${v})">$${v%1===0?v.toFixed(0):v.toFixed(2)}</button>`).join('')}
+             ${[0.10,0.25,0.50,1.00,2.00,5.00,20.00,100.00].map(v=>`<button class="m-dd-bet${v===1.00?' on':''}" data-bet="${v}" onclick="setBet(${bot.id},${v})">A$${v%1===0?v.toFixed(0):v.toFixed(2)}</button>`).join('')}
           </div>
           <div class="m-dd-custom">
-            <input type="number" id="mcustom-${bot.id}" placeholder="Custom $" min="0.01" step="0.01">
+            <input type="number" id="mcustom-${bot.id}" placeholder="Custom A$" min="0.01" step="0.01">
             <button onclick="setCustomBet(${bot.id})">SET</button>
           </div>
         </div>
@@ -2854,7 +2861,7 @@ function startTicker(bot){
       const trade = bot.lastTrade;
       const timeAgo = Math.floor((Date.now() - trade.time) / 1000);
       const timeStr = timeAgo < 60 ? `${timeAgo}s ago` : `${Math.floor(timeAgo/60)}m ago`;
-      el.textContent = `${trade.emoji} ${trade.token} ${trade.method} @ $${trade.price} - ${timeStr}`;
+      el.textContent = `${trade.emoji}  ${trade.token}  ${trade.method} @ A$${trade.price} -  ${timeStr}`;
     } else {
       // Default ticker while waiting for first trade
       const genericTickers = [
@@ -2952,7 +2959,7 @@ async function spinBot(id){
   const block=isGlobalBlocked();
   if(block.blocked){const t=document.getElementById('mtick-'+id);if(t)t.textContent='🚫 '+block.reason;return;}
   bot.spinning=true;
-  try{ if(typeof SFX!=='undefined') SFX.spin(); }catch(e){}
+  // Handled by ACOUSTIC
   const spinEl=document.getElementById('mspin-'+id), thinkEl=document.getElementById('mthink-'+id), stepEl=document.getElementById('mstep-'+id);
   if(spinEl){spinEl.disabled=true;spinEl.classList.add('going');spinEl.textContent='⏳';}
   if(thinkEl) thinkEl.classList.add('show');
@@ -2962,7 +2969,7 @@ async function spinBot(id){
   if(stepEl) stepEl.textContent='🧠 Running 5-agent ensemble…';
   const decision=await callAI(market,bot.bet,id,bot);
 
-  if(stepEl) stepEl.textContent=`💎 Getting real ${decision.token} price…`;
+  if(stepEl) stepEl.textContent=`💎 Getting real  ${decision.token} price…`;
   let entryPrice=await getLivePrice(decision.token);
   let volumeUsd=1e9, priceChangePct15m=0; // Higher realistic volume for meme coins
   if(market?.length){
@@ -2995,15 +3002,15 @@ async function spinBot(id){
   setVal('mpv2-'+id,exitM);
   ['mp0-','mp1-','mp2-'].forEach(pfx=>{document.getElementById(pfx+id)?.classList.add('lit');setTimeout(()=>document.getElementById(pfx+id)?.classList.remove('lit'),1200);});
   const tick=document.getElementById('mtick-'+id);
-  if(tick) tick.textContent=decision.method==='HOLD'?`🧠 HOLD — ${decision.reasoning}`:`⏱ ${decision.token} ${decision.method} @ $${entryPrice.toFixed(entryPrice<1?4:2)}`;
+  if(tick) tick.textContent=decision.method==='HOLD'?`🧠 HOLD —  ${decision.reasoning}`:`⏱  ${decision.token}  ${decision.method} @ A$${entryPrice.toFixed(entryPrice<1?4:2)}`;
 
   if(spinEl){spinEl.disabled=false;spinEl.classList.remove('going');spinEl.textContent='🎰 SPIN';}
   bot.spinning=false;
 
   // Always execute a trade - HOLD method has been removed
   try{
-    if(typeof SFX!=='undefined') SFX.tradeOpen();
-    if(typeof VOICE!=='undefined') VOICE.tradeOpen(bot.id, decision.token, decision.method);
+    // Handled by ACOUSTIC
+    // Handled by ACOUSTIC
   }catch(e){}
   await openPosition(bot,decision,entryPrice,bot.bet,volumeUsd,priceChangePct15m);
   updateQuantReport();
@@ -3034,7 +3041,7 @@ function updateDbStatus(){
   const sid=document.getElementById('dbSpaceId')?.value?.trim();
   const tok=document.getElementById('dbToken')?.value?.trim();
   const el=document.getElementById('dbStatus');
-  if(ws&&sid&&tok){ if(el){el.textContent='✅ CONFIGURED';el.style.color='var(--green)';} }
+  if(ws&&sid&&tok){ if(el){el.textContent='✅ OPENED';el.style.color='var(--green)';} }
   else{ if(el){el.textContent='NOT CONFIGURED';el.style.color='var(--dim)';} }
 }
 function getDbConfig(){
@@ -3117,7 +3124,7 @@ function renderPolFeed(filings){
   el.innerHTML=filings.map(f=>`
     <div style="padding:3px 0;border-bottom:1px solid var(--border);display:flex;gap:6px;align-items:baseline">
       <span style="color:${(f.type||'').toLowerCase().includes('purchase')?'var(--green)':'var(--hot)'}">
-        ${(f.type||'').toLowerCase().includes('purchase')?'▲':'▼'}
+         ${(f.type||'').toLowerCase().includes('purchase')?'▲':'▼'}
       </span>
       <span style="color:#aaa;flex:1">${(f.representative||'Unknown').split(' ').slice(0,2).join(' ')}</span>
       <span style="color:var(--gold);min-width:40px">${f.ticker||'?'}</span>
@@ -3130,8 +3137,8 @@ function renderPolFeed(filings){
 // ══════════════════════════════════════════════════════
 async function queryDatabricksGenie(token, marketSummary){
   const cfg=getDbConfig(); if(!isDbConfigured()) return null;
-  const query=`What patterns exist for ${token} in our historical trade data? 
-    Current market: ${marketSummary}. 
+  const query=`What patterns exist for  ${token} in our historical trade data?
+    Current market:  ${marketSummary}.
     Summarize in 2 sentences: signal direction and confidence.`;
   try{
     // Start conversation
@@ -3188,7 +3195,7 @@ CRITICAL: Only vote LONG/SHORT if momentum is STRONG (>2.5% move). Vote HOLD oth
 MARKET DATA:
 ${marketSummary}
 
-TARGET: ${token} | BET: $${bet}
+TARGET:  ${token} | BET: A$${bet}
 ${extraContext}
 
 Is there real momentum RIGHT NOW? 
@@ -3208,7 +3215,7 @@ If volume is low (THIN regime) or market is choppy noise → vote HOLD. Don't fi
 MARKET DATA:
 ${marketSummary}
 
-TARGET: ${token} | BET: $${bet}
+TARGET:  ${token} | BET: A$${bet}
 
 Is the volatility real (not noise)? Is volume high enough to execute?
 - Volume at least 10% of 24h? Yes → check direction
@@ -3227,7 +3234,7 @@ Weak sentiment signals lose money. Default to HOLD unless conviction is 0.7+.
 MARKET DATA:
 ${marketSummary}
 
-TARGET: ${token} | BET: $${bet}
+TARGET:  ${token} | BET: A$${bet}
 
 What is the DOMINANT crowd sentiment? Is it strong and real?
 - Clear directional bias in price/volume? Yes
@@ -3243,7 +3250,7 @@ Respond ONLY with JSON:
 VETO only if: gas > ceiling, or volume so thin the trade cannot execute, or spread > 3%.
 Do NOT veto for normal volatility, uncertain signals, or small position sizes. Approve aggressively.
 
-TOKEN: ${token} | BET: $${bet} | GAS: ${currentGas} gwei (ceiling: ${gasHardCeiling} gwei)
+TOKEN:  ${token} | BET: A$${bet} | GAS:  ${currentGas} gwei (ceiling:  ${gasHardCeiling} gwei)
 ${extraContext}
 
 Should this trade proceed? Default to approving unless there is a specific dangerous condition.
@@ -3304,7 +3311,7 @@ Respond ONLY with JSON:
   }catch(e){
     clearTimeout(timeoutId);
     API_CB.recordFailure();
-    console.warn(`[Agent ${agentType}] Timeout/fail → fallback`, e.message);
+    console.warn(`[Agent  ${agentType}] Timeout/fail → fallback`, e.message);
     return generateFallbackAgentVote(agentType, extraContext);
   }
 }
@@ -3319,7 +3326,7 @@ async function runEnsemble(marketData, bet, botId, politicianData, bot){
   if(marketData?.length){
     // Bot personality affects token selection diversity
     const top = marketData.slice(0,5);
-    summary=top.map(c=>`${c.symbol.toUpperCase()}: $${c.current_price} | 24h: ${(c.price_change_percentage_24h||0).toFixed(1)}% | Vol: $${(c.total_volume/1e6).toFixed(0)}M | MCap: $${(c.market_cap/1e9).toFixed(1)}B`).join('\n');
+    summary=top.map(c=>`${c.symbol.toUpperCase()}: A$${c.current_price} | 24h:  ${(c.price_change_percentage_24h||0).toFixed(1)}% | Vol: A$${(c.total_volume/1e6).toFixed(0)}M | MCap: A$${(c.market_cap/1e9).toFixed(1)}B`).join('\n');
     
     // Select token based on bot personality
     let selectedCoin;
@@ -3355,13 +3362,13 @@ async function runEnsemble(marketData, bet, botId, politicianData, bot){
 
   // Politician signal for target token
   const polSignal=getPoliticianSignalForToken(politicianData||[],targetToken);
-  const polContext=`POLITICIAN SIGNAL for ${targetToken} (via ${CRYPTO_TO_EQUITY[targetToken]||'COIN'}): ${polSignal.signal} (conviction ${(polSignal.conviction*100).toFixed(0)}%) — ${polSignal.reasoning}`;
+  const polContext=`POLITICIAN SIGNAL for  ${targetToken} (via  ${CRYPTO_TO_EQUITY[targetToken]||'COIN'}):  ${polSignal.signal} (conviction {(polSignal.conviction*100).toFixed(0)}%) —  ${polSignal.reasoning}`;
 
   // Databricks Genie context (if configured)
   let genieContext='';
   if(isDbConfigured()){
     const genieResult=await queryDatabricksGenie(targetToken, summary);
-    if(genieResult) genieContext=`DATABRICKS GENIE CONTEXT: ${genieResult}`;
+    if(genieResult) genieContext=`DATABRICKS GENIE CONTEXT:  ${genieResult}`;
   }
 
   // Determine regime first from market data for adaptive context
@@ -3381,9 +3388,9 @@ async function runEnsemble(marketData, bet, botId, politicianData, bot){
   // If market barely moved, need very high conviction to trade (not enough money to be made)
   // If market moved strong, can trade with moderate conviction aligned with direction
   const edgeContext = marketMoveAbs > 3 
-    ? `EDGE: Market moved ${marketMove24h.toFixed(1)}% (STRONG direction). Trading WITH trend has edge.`
+    ? `EDGE: Market moved  ${marketMove24h.toFixed(1)}% (STRONG direction). Trading WITH trend has edge.`
     : marketMoveAbs > 1.5
-    ? `EDGE: Market moved ${marketMove24h.toFixed(1)}%. Need >0.70 conviction to overcome costs.`
+    ? `EDGE: Market moved  ${marketMove24h.toFixed(1)}%. Need >0.70 conviction to overcome costs.`
     : `EDGE: Market barely moved (${marketMove24h.toFixed(1)}%). Need 0.85+ conviction AND trend alignment.`;
 
   // PROFITABILITY CHECK: Only proceed if move is large enough to overcome costs
@@ -3393,7 +3400,7 @@ async function runEnsemble(marketData, bet, botId, politicianData, bot){
   let extraCtx = '';
   if(targetCoin && Math.abs(targetCoin.price_change_percentage_24h || 0) < minMoveRequirement) {
     // Low volatility market - signal agents to be very cautious
-    extraCtx = `${edgeContext}\n⚠️ LOW VOLATILITY: ${targetToken} only moved ${(targetCoin.price_change_percentage_24h||0).toFixed(1)}% (need ${minMoveRequirement}%+ to cover costs). Trade only if conviction >0.85.`;
+    extraCtx = `${edgeContext}\n⚠️ LOW VOLATILITY:  ${targetToken} only moved  ${(targetCoin.price_change_percentage_24h||0).toFixed(1)}% (need  ${minMoveRequirement}%+ to cover costs). Trade only if conviction >0.85.`;
   } else {
     // Adaptive context from learning model
     const adaptiveCtx = buildAdaptiveContext(targetToken, earlyRegime);
@@ -3474,7 +3481,7 @@ async function runEnsemble(marketData, bet, botId, politicianData, bot){
   const consensusPct = maxVotes / 4;
   updateConsensusBar(botId, consensusPct,
     passThreshold
-      ? `${maxVotes}/4 (c:${(avgConviction*100).toFixed(0)}%) · w${weighted.diff.toFixed(1)} → ${direction} (${bot?.personality||'BALANCED'})`
+      ? `${maxVotes}/4 (c:${(avgConviction*100).toFixed(0)}%) · w${weighted.diff.toFixed(1)} →  ${direction} (${bot?.personality||'BALANCED'})`
       : `${maxVotes}/4 (c:${(avgConviction*100).toFixed(0)}%) — weak signal but trading anyway (${bot?.personality||'BALANCED'})`,
     passThreshold ? 'var(--green)' : 'var(--amber)'
   );
@@ -3504,7 +3511,7 @@ async function runEnsemble(marketData, bet, botId, politicianData, bot){
     // Trying to fade the trend but not confident enough - use SPOT method instead of shorting
     const conservativeMethod = direction === 'LONG' ? 'SPOT LONG' : 'SPOT SHORT';
     updateConsensusBar(botId, consensusPct, 
-      `Low conviction trend fade (${(avgConviction*100).toFixed(0)}%) → ${conservativeMethod}`,
+      `Low conviction trend fade (${(avgConviction*100).toFixed(0)}%) →  ${conservativeMethod}`,
       'var(--hot)'
     );
     return { token: targetToken, method: conservativeMethod, reasoning: `Trading against trend with caution`, strategy_detail: 'Conservative edge play.', ensemble: allResults, regime: volResult.regime || earlyRegime };
@@ -3516,20 +3523,20 @@ async function runEnsemble(marketData, bet, botId, politicianData, bot){
   // Consensus reached — final synthesis call
   const synthPrompt=`You are the SYNTHESIS agent. Agents have voted. Your job is to EXECUTE, not second-guess.
 
-BOT PERSONALITY: ${bot?.personality || 'BALANCED'} (influences risk tolerance)
+BOT PERSONALITY:  ${bot?.personality || 'BALANCED'} (influences risk tolerance)
 
-VOTE SUMMARY — ${direction} wins (${maxVotes}/4 raw, weighted score ${weighted.diff.toFixed(2)}):
-- Momentum (weight ${(agentWeights.mom||1).toFixed(2)}): ${momResult.vote} (${(momResult.conviction*100).toFixed(0)}%) — ${momResult.reasoning}
-- Volatility (weight ${(agentWeights.vol||1).toFixed(2)}): ${volResult.vote} / Regime: ${volResult.regime||earlyRegime} — ${volResult.reasoning}
-- Politician (weight ${(agentWeights.pol||1).toFixed(2)}): ${polResult.vote} (${(polResult.conviction*100).toFixed(0)}%) — ${polResult.reasoning}
-- Sentiment (weight ${(agentWeights.sen||1).toFixed(2)}): ${senResult.vote} / ${senResult.divergence} — ${senResult.reasoning}
-- Risk: APPROVED — ${riskResult.reasoning}
+VOTE SUMMARY —  ${direction} wins (${maxVotes}/4 raw, weighted score  ${weighted.diff.toFixed(2)}):
+- Momentum (weight  ${(agentWeights.mom||1).toFixed(2)}):  ${momResult.vote} (${(momResult.conviction*100).toFixed(0)}%) —  ${momResult.reasoning}
+- Volatility (weight  ${(agentWeights.vol||1).toFixed(2)}):  ${volResult.vote} / Regime:  ${volResult.regime||earlyRegime} —  ${volResult.reasoning}
+- Politician (weight  ${(agentWeights.pol||1).toFixed(2)}):  ${polResult.vote} (${(polResult.conviction*100).toFixed(0)}%) —  ${polResult.reasoning}
+- Sentiment (weight  ${(agentWeights.sen||1).toFixed(2)}):  ${senResult.vote} /  ${senResult.divergence} —  ${senResult.reasoning}
+- Risk: APPROVED —  ${riskResult.reasoning}
 
-LEARNING MODEL RECOMMENDATION: ${regimeBestStrat ? `In ${volResult.regime||earlyRegime} regime, ${regimeBestStrat} has highest historical win rate — prefer it` : 'No historical preference yet'}
+LEARNING MODEL RECOMMENDATION:  ${regimeBestStrat ? `In  ${volResult.regime||earlyRegime} regime,  ${regimeBestStrat} has highest historical win rate — prefer it` : 'No historical preference yet'}
 
-Available: ${allowedMethods}
+Available:  ${allowedMethods}
 
-CRITICAL: You MUST return a real trading method. NEVER return HOLD or any other method. If unsure, default to ${direction==='LONG'?'SPOT LONG':'SPOT SHORT'}.
+CRITICAL: You MUST return a real trading method. NEVER return HOLD or any other method. If unsure, default to  ${direction==='LONG'?'SPOT LONG':'SPOT SHORT'}.
 
 Respond ONLY with JSON:
 {"token":"${targetToken}","method":"SPOT LONG|SPOT SHORT|YIELD FARM|PERP LONG|PERP SHORT","reasoning":"max 65 chars","strategy_detail":"max 85 chars"}`;
@@ -3575,7 +3582,7 @@ Respond ONLY with JSON:
     return{
       token:parsed.token||targetToken,
       method:method,
-      reasoning:parsed.reasoning||`${maxVotes}/4 agents agree ${direction}`,
+      reasoning:parsed.reasoning||`${maxVotes}/4 agents agree  ${direction}`,
       strategy_detail:parsed.strategy_detail||'Ensemble consensus trade.',
       ensemble:allResults,
       regime:volResult.regime||'UNKNOWN',
@@ -3643,7 +3650,7 @@ function updateAgentPerfUI(){
       <div class="ep-agent-icon">${ICONS[a.key]||'🤖'}</div>
       <div class="ep-agent-name" style="text-transform:capitalize">${a.key}</div>
       <div class="ep-agent-bar-wrap"><div class="ep-agent-bar" style="width:${(wr*100).toFixed(0)}%;background:${col}"></div></div>
-      <div class="ep-agent-stat" style="color:${col}">${(wr*100).toFixed(0)}% WR · ${a.total}t</div>
+      <div class="ep-agent-stat" style="color:${col}">${(wr*100).toFixed(0)}% WR ·  ${a.total}t</div>
     </div>`;
   }).join('');
 }
@@ -3694,7 +3701,7 @@ function loadLearningState() {
     if (s.agentProbationStart)   agentProbationStart   = s.agentProbationStart;
     if (s.auditHistory)          auditHistory          = s.auditHistory;
     if (s.lastAuditAt)           lastAuditAt           = s.lastAuditAt;
-    logLearn(`Restored Gen ${learningGeneration} from storage`, 'info');
+    logLearn(`Restored Gen  ${learningGeneration} from storage`, 'info');
     updateAuditSummaryBadge();
     renderLearnPanel();
   } catch(e) {}
@@ -3762,11 +3769,11 @@ function updateAgentWeights(totalTrades) {
   }).filter(c => Math.abs(c.delta) > 0.001);
 
   if (changes.length) {
-    const summary = changes.map(c => `${c.key.toUpperCase()} ${c.delta > 0 ? '↑' : '↓'}${Math.abs(c.delta).toFixed(2)}`).join(' · ');
+    const summary = changes.map(c => `${c.key.toUpperCase()}  ${c.delta > 0 ? '↑' : '↓'}${Math.abs(c.delta).toFixed(2)}`).join(' · ');
     const allWon = changes.every(c => c.delta > 0);
-    logLearn(`Gen ${learningGeneration}: ${summary}`, allWon ? 'good' : 'warn');
+    logLearn(`Gen  ${learningGeneration}:  ${summary}`, allWon ? 'good' : 'warn');
   } else {
-    logLearn(`Gen ${learningGeneration}: weights stable — no significant drift`, 'info');
+    logLearn(`Gen  ${learningGeneration}: weights stable — no significant drift`, 'info');
   }
 
   lastWeightSnapshot = { ...agentWeights };
@@ -3793,17 +3800,17 @@ function adaptConsensusThreshold(totalTrades) {
 
   if (recentWr < 0.40 && current < 3) {
     newThreshold = Math.min(current + 1, 4);
-    reason = `Win rate ${(recentWr*100).toFixed(0)}% — tightening to ${newThreshold}/4`;
+    reason = `Win rate  ${(recentWr*100).toFixed(0)}% — tightening to  ${newThreshold}/4`;
   } else if (recentWr > 0.65 && current > 1) {
     newThreshold = Math.max(current - 1, 1);
-    reason = `Win rate ${(recentWr*100).toFixed(0)}% — loosening to ${newThreshold}/4`;
+    reason = `Win rate  ${(recentWr*100).toFixed(0)}% — loosening to  ${newThreshold}/4`;
   }
 
   if (newThreshold !== current) {
     window.LIVE_CONSENSUS = newThreshold;
     const slider = document.getElementById('consensusSlider');
     if (slider) { slider.value = newThreshold; updateConsensusDisplay(); }
-    logLearn(`AUTO: Consensus adapted → ${newThreshold}/4. ${reason}`, recentWr > 0.5 ? 'good' : 'warn');
+    logLearn(`AUTO: Consensus adapted →  ${newThreshold}/4.  ${reason}`, recentWr > 0.5 ? 'good' : 'warn');
   }
 }
 
@@ -3828,10 +3835,10 @@ function buildAdaptiveContext(token, regime) {
   const ranked = Object.entries(agentWeights)
     .sort((a, b) => b[1] - a[1]);
   if (ranked[0][1] > 1.2) {
-    lines.push(`LEARNING: ${ranked[0][0].toUpperCase()} agent is highest weight (${ranked[0][1].toFixed(2)}) — trust it more`);
+    lines.push(`LEARNING:  ${ranked[0][0].toUpperCase()} agent is highest weight (${ranked[0][1].toFixed(2)}) — trust it more`);
   }
   if (ranked[ranked.length-1][1] < 0.5) {
-    lines.push(`LEARNING: ${ranked[ranked.length-1][0].toUpperCase()} agent is low weight (${ranked[ranked.length-1][1].toFixed(2)}) — discount it`);
+    lines.push(`LEARNING:  ${ranked[ranked.length-1][0].toUpperCase()} agent is low weight (${ranked[ranked.length-1][1].toFixed(2)}) — discount it`);
   }
 
   // Strategy performance in current regime
@@ -3840,11 +3847,11 @@ function buildAdaptiveContext(token, regime) {
     const r = regimes[regime];
     if (r && r.t >= 3) {
       const wr = (r.w / r.t * 100).toFixed(0);
-      regimeLearning.push(`${strat}: ${wr}% WR in ${regime} (${r.t} trades)`);
+      regimeLearning.push(`${strat}:  ${wr}% WR in  ${regime} (${r.t} trades)`);
     }
   });
   if (regimeLearning.length) {
-    lines.push(`STRATEGY HISTORY in ${regime}: ` + regimeLearning.join(' | '));
+    lines.push(`STRATEGY HISTORY in  ${regime}: ` + regimeLearning.join(' | '));
   }
 
   return lines.join('\n');
@@ -3861,7 +3868,7 @@ function logLearn(msg, type = 'info') {
 function renderLearnLog() {
   const el = document.getElementById('learnLog'); if (!el) return;
   el.innerHTML = learningLog.slice(0, 30).map(e =>
-    `<div class="ll-entry ${e.type}">[${e.ts}] ${e.msg}</div>`
+    `<div class="ll-entry  ${e.type}">[${e.ts}]  ${e.msg}</div>`
   ).join('');
 }
 
@@ -3878,7 +3885,7 @@ function renderLearnPanel() {
     const wr = stats.t > 0 ? (stats.w / stats.t * 100).toFixed(0) + '% WR' : '—';
 
     setVal('ww-' + key, w.toFixed(2));
-    setVal('wwr-' + key, wr + (stats.t ? ` · ${stats.t}t` : ''));
+    setVal('wwr-' + key, wr + (stats.t ? ` ·  ${stats.t}t` : ''));
     const deltaEl = document.getElementById('wd-' + key);
     if (deltaEl) {
       if (Math.abs(delta) > 0.005) {
@@ -3928,7 +3935,7 @@ function renderRegimeTable() {
   el.innerHTML = '<tr><th>Strategy</th><th>TREND</th><th>CHOP</th><th>THIN</th><th>Best</th></tr>' +
     rows.map(r => `<tr>
       <td>${r.s}</td>
-      ${r.cells.map((c,i) => `<td class="${c.wr >= 0.6 ? 'best' : c.wr >= 0 && c.wr < 0.4 ? 'worst' : ''}">${c.display}</td>`).join('')}
+       ${r.cells.map((c,i) => `<td class="${c.wr >= 0.6 ? 'best' : c.wr >= 0 && c.wr < 0.4 ? 'worst' : ''}">${c.display}</td>`).join('')}
       <td style="color:var(--purple)">${r.bestRegime}</td>
     </tr>`).join('');
 }
@@ -4026,7 +4033,7 @@ function runAudit(totalTrades, manual) {
   const window = 15; // look at last 15 trades per agent
   const threshold = getNoticeThreshold();
   const prefix = manual ? '🔍 MANUAL AUDIT' : '🔍 AUTO AUDIT';
-  logAudit(`${prefix} — ${totalTrades} closed trades reviewed`, 'audit');
+  logAudit(`${prefix} —  ${totalTrades} closed trades reviewed`, 'audit');
 
   let notices = 0, suspensions = 0, clears = 0;
 
@@ -4047,12 +4054,12 @@ function runAudit(totalTrades, manual) {
         // Cap weight
         agentWeights[key] = Math.min(agentWeights[key], 0.4);
         notices++;
-        logAudit(`⚠️ ${AGENT_META[key].name} ON NOTICE — ${wrPct}% WR (below ${(threshold*100).toFixed(0)}% threshold). ${getSuspendWindow()}-trade probation started.`, 'notice');
+        logAudit(`⚠️  ${AGENT_META[key].name} ON NOTICE —  ${wrPct}% WR (below  ${(threshold*100).toFixed(0)}% threshold).  ${getSuspendWindow()}-trade probation started.`, 'notice');
       } else if (currentStatus === 'REINSTATED' && recentWr >= threshold + 0.1) {
         // Fully clear reinstated agent
         agentStatus[key] = 'ACTIVE';
         clears++;
-        logAudit(`✅ ${AGENT_META[key].name} CLEARED — ${wrPct}% WR sustained. Fully ACTIVE.`, 'clear');
+        logAudit(`✅  ${AGENT_META[key].name} CLEARED —  ${wrPct}% WR sustained. Fully ACTIVE.`, 'clear');
       }
     } else if (currentStatus === 'ON_NOTICE') {
       const probationTradesUsed = totalTrades - (agentProbationStart[key] || totalTrades);
@@ -4063,16 +4070,16 @@ function runAudit(totalTrades, manual) {
           // Improved — clear notice
           agentStatus[key] = 'ACTIVE';
           clears++;
-          logAudit(`✅ ${AGENT_META[key].name} CLEARED probation — improved to ${wrPct}% WR. Back to ACTIVE.`, 'clear');
+          logAudit(`✅  ${AGENT_META[key].name} CLEARED probation — improved to  ${wrPct}% WR. Back to ACTIVE.`, 'clear');
         } else {
           // Still failing — suspend
           agentStatus[key] = 'SUSPENDED';
           agentWeights[key] = 0.05;
           suspensions++;
-          logAudit(`🔴 ${AGENT_META[key].name} SUSPENDED — ${wrPct}% WR after full probation. Weight → 0.05. Vote nearly muted.`, 'suspend');
+          logAudit(`🔴  ${AGENT_META[key].name} SUSPENDED —  ${wrPct}% WR after full probation. Weight → 0.05. Vote nearly muted.`, 'suspend');
         }
       } else {
-        logAudit(`⏳ ${AGENT_META[key].name} on probation — ${wrPct}% WR, ${getSuspendWindow() - probationTradesUsed} trades remaining`, 'notice');
+        logAudit(`⏳  ${AGENT_META[key].name} on probation —  ${wrPct}% WR,  ${getSuspendWindow() - probationTradesUsed} trades remaining`, 'notice');
       }
     }
   });
@@ -4097,7 +4104,7 @@ function checkReinstatement(totalTrades) {
     if (recentWr >= threshold + 0.15) {
       agentStatus[key] = 'REINSTATED';
       agentWeights[key] = 0.7; // partial restoration
-      logAudit(`🔵 ${AGENT_META[key].name} REINSTATED — ${(recentWr*100).toFixed(0)}% WR recovery. Weight restored to 0.7. Monitoring continues.`, 'reinstate');
+      logAudit(`🔵  ${AGENT_META[key].name} REINSTATED —  ${(recentWr*100).toFixed(0)}% WR recovery. Weight restored to 0.7. Monitoring continues.`, 'reinstate');
       updateAuditSummaryBadge();
       renderAuditPanel();
       renderLearnPanel();
@@ -4126,13 +4133,13 @@ function getRecentAgentWr(key, window) {
 function getAgentPip(key) {
   const status = agentStatus[key];
   if (status === 'ON_NOTICE') {
-    return `\n⚠️ PERFORMANCE NOTICE: Your accuracy is below threshold. PERFORMANCE IMPROVEMENT PLAN: ${AGENT_META[key]?.pip||'Be more selective and precise.'} Your probation ends in ${agentProbation[key]} trades.`;
+    return `\n⚠️ PERFORMANCE NOTICE: Your accuracy is below threshold. PERFORMANCE IMPROVEMENT PLAN:  ${AGENT_META[key]?.pip||'Be more selective and precise.'} Your probation ends in  ${agentProbation[key]} trades.`;
   }
   if (status === 'SUSPENDED') {
     return `\n🔴 SUSPENDED: You are on suspension due to poor performance. Your vote carries minimal weight. Make only extremely high-confidence calls or vote HOLD.`;
   }
   if (status === 'REINSTATED') {
-    return `\n🔵 REINSTATED: You are under continued monitoring. Maintain accuracy above ${(getNoticeThreshold()*100+5).toFixed(0)}% to be fully cleared.`;
+    return `\n🔵 REINSTATED: You are under continued monitoring. Maintain accuracy above  ${(getNoticeThreshold()*100+5).toFixed(0)}% to be fully cleared.`;
   }
   return '';
 }
@@ -4141,20 +4148,20 @@ function getAgentPip(key) {
 function manualReinstate(key) {
   agentStatus[key] = 'REINSTATED';
   agentWeights[key] = 0.7;
-  logAudit(`👤 MANUAL: ${AGENT_META[key].name} manually reinstated. Weight → 0.7.`, 'reinstate');
+  logAudit(`👤 MANUAL:  ${AGENT_META[key].name} manually reinstated. Weight → 0.7.`, 'reinstate');
   updateAuditSummaryBadge(); renderAuditPanel(); renderLearnPanel(); saveLearningState();
 }
 function manualSuspend(key) {
-  if (!confirm(`Suspend ${AGENT_META[key].name} agent? Its vote will be nearly muted.`)) return;
+  if (!confirm(`Suspend  ${AGENT_META[key].name} agent? Its vote will be nearly muted.`)) return;
   agentStatus[key] = 'SUSPENDED';
   agentWeights[key] = 0.05;
-  logAudit(`👤 MANUAL: ${AGENT_META[key].name} manually suspended. Weight → 0.05.`, 'suspend');
+  logAudit(`👤 MANUAL:  ${AGENT_META[key].name} manually suspended. Weight → 0.05.`, 'suspend');
   updateAuditSummaryBadge(); renderAuditPanel(); renderLearnPanel(); saveLearningState();
 }
 function manualClear(key) {
   agentStatus[key] = 'ACTIVE';
   if (agentWeights[key] < 0.8) agentWeights[key] = 0.8;
-  logAudit(`👤 MANUAL: ${AGENT_META[key].name} manually cleared to ACTIVE. Weight → ${agentWeights[key].toFixed(2)}.`, 'clear');
+  logAudit(`👤 MANUAL:  ${AGENT_META[key].name} manually cleared to ACTIVE. Weight →  ${agentWeights[key].toFixed(2)}.`, 'clear');
   updateAuditSummaryBadge(); renderAuditPanel(); renderLearnPanel(); saveLearningState();
 }
 
@@ -4201,22 +4208,22 @@ function renderAuditPanel() {
       : `<button class="aa-action-btn aa-btn-suspend" onclick="manualSuspend('${key}')">SUSPEND</button>`;
 
     const probBar = status === 'ON_NOTICE' ? `
-      <div style="margin-top:3px;font-size:7px;color:var(--amber)">Probation: ${probUsed}/${probTotal} trades</div>
+      <div style="margin-top:3px;font-size:7px;color:var(--amber)">Probation:  ${probUsed}/${probTotal} trades</div>
       <div class="probation-bar"><div class="probation-fill" style="width:${probPct}%;background:${probPct>70?'var(--hot)':'var(--amber)'}"></div></div>` : '';
 
     const rowClass = status === 'ON_NOTICE' ? 'on-notice' : status === 'SUSPENDED' ? 'suspended' : status === 'REINSTATED' ? 'reinstated' : '';
 
-    return `<div class="audit-agent-row ${rowClass}">
+    return `<div class="audit-agent-row  ${rowClass}">
       <div class="aa-icon">${AGENT_META[key].icon}</div>
       <div class="aa-name">${AGENT_META[key].name}</div>
       <div class="aa-stats">
-        Overall: ${stats.t > 0 ? (wr*100).toFixed(0)+'% WR ('+stats.t+' votes)' : '—'} ·
-        Recent 15: ${stats.t >= 5 ? (recentWr*100).toFixed(0)+'%' : 'insufficient data'} ·
-        Weight: ${w.toFixed(2)}
-        ${probBar}
+        Overall:  ${stats.t > 0 ? (wr*100).toFixed(0)+'% WR ('+stats.t+' votes)' : '—'} ·
+        Recent 15:  ${stats.t >= 5 ? (recentWr*100).toFixed(0)+'%' : 'insufficient data'} ·
+        Weight:  ${w.toFixed(2)}
+         ${probBar}
       </div>
-      ${statusBadge}
-      ${actions}
+       ${statusBadge}
+       ${actions}
     </div>`;
   }).join('');
 
@@ -4227,8 +4234,8 @@ function renderAuditPanel() {
     if (bar) {
       const suspended = AGENT_KEYS.filter(k => agentStatus[k] === 'SUSPENDED').map(k => AGENT_META[k].name);
       const noticed   = AGENT_KEYS.filter(k => agentStatus[k] === 'ON_NOTICE').map(k => AGENT_META[k].name);
-      if (suspended.length) { bar.textContent = `🔴 SUSPENDED: ${suspended.join(', ')}`; bar.classList.add('show'); bar.style.background = 'rgba(255,45,120,.88)'; bar.style.color = '#fff'; }
-      else if (noticed.length) { bar.textContent = `⚠️ ON NOTICE: ${noticed.join(', ')}`; bar.classList.add('show'); bar.style.background = 'rgba(255,179,0,.88)'; bar.style.color = '#1a0800'; }
+      if (suspended.length) { bar.textContent = `🔴 SUSPENDED:  ${suspended.join(', ')}`; bar.classList.add('show'); bar.style.background = 'rgba(255,45,120,.88)'; bar.style.color = '#fff'; }
+      else if (noticed.length) { bar.textContent = `⚠️ ON NOTICE:  ${noticed.join(', ')}`; bar.classList.add('show'); bar.style.background = 'rgba(255,179,0,.88)'; bar.style.color = '#1a0800'; }
       else { bar.classList.remove('show'); }
     }
   });
@@ -4246,7 +4253,7 @@ function logAudit(msg, type = 'audit') {
 function renderAuditLog() {
   const el = document.getElementById('auditLog'); if (!el) return;
   el.innerHTML = auditHistory.slice(0, 40).map(e =>
-    `<div class="al-entry ${e.type}"><span class="al-ts">${e.ts}</span><span class="al-msg">${e.msg}</span></div>`
+    `<div class="al-entry  ${e.type}"><span class="al-ts">${e.ts}</span><span class="al-msg">${e.msg}</span></div>`
   ).join('') || '<div class="al-entry audit"><span class="al-ts">—</span><span class="al-msg">No audits yet.</span></div>';
 }
 
@@ -4362,6 +4369,7 @@ function addToLog(pos){
       togglePanel('quant');
     }
   }
+  if(globalLog.find(l=>l.id===pos.id)) return;
   globalLog.unshift({...pos,time:new Date().toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'})});
   if(globalLog.length>60) globalLog.pop();
   renderLog();
@@ -4373,18 +4381,18 @@ function renderLog(){
     const wins=closed.filter(t=>t.isWin).length;
     const wr=(wins/closed.length*100).toFixed(0);
     const titleEl=document.getElementById('logTitle');
-    if(titleEl) titleEl.innerHTML=`<span>TRADE LEDGER</span><span style="font-size:8px;color:${parseFloat(wr)>=50?'var(--green)':'var(--hot)'}">WIN RATE ${wr}% · ${closed.length} TRADES</span>`;
+    if(titleEl) titleEl.innerHTML=`<span>TRADE LEDGER</span><span style="font-size:8px;color:${parseFloat(wr)>=50?'var(--green)':'var(--hot)'}">WIN RATE  ${wr}% ·  ${closed.length} TRADES</span>`;
   }
   const el=document.getElementById('globalLog'); if(!el) return;
   setVal('logCount',globalLog.length+' trades');
   if(!globalLog.length){el.innerHTML='<div class="empty-log">No trades yet.</div>';return;}
   el.innerHTML=globalLog.map(t=>{
     const isOpen=t.status==='open', isHold=t.isHold||t.method==='HOLD';
-    const pnlStr=isOpen?'OPEN':isHold?'HOLD':(t.isWin?'+':'')+'\$'+t.netPnl.toFixed(2);
+    const pnlStr=isOpen?'OPEN':isHold?'HOLD':(t.isWin?'+':'')+'A$'+t.netPnl.toFixed(2);
     const pnlCls=isOpen?'open':isHold?'h':t.isWin?'p':'n';
-    const ep=t.entryPrice?'\$'+t.entryPrice.toFixed(t.entryPrice<1?5:2):'—';
-    const xp=t.exitPrice?'\$'+t.exitPrice.toFixed(t.exitPrice<1?5:2):(isOpen?'⏳':'—');
-    const cost=t.costs?.total?'-\$'+t.costs.total.toFixed(2):'';
+    const ep=t.entryPrice?'A$'+t.entryPrice.toFixed(t.entryPrice<1?5:2):'—';
+    const xp=t.exitPrice?'A$'+t.exitPrice.toFixed(t.exitPrice<1?5:2):(isOpen?'⏳':'—');
+    const cost=t.costs?.total?'-A$'+t.costs.total.toFixed(2):'';
     return`<div class="log-row">
       <div class="log-bot">#${t.botId}</div>
       <div class="log-coin" style="color:${isOpen?'var(--blue)':isHold?'var(--amber)':t.isWin?'var(--green)':'var(--hot)'}">${t.token}</div>
@@ -4457,7 +4465,7 @@ const THEMES = ['','theme-matrix','theme-ocean','theme-sunset'];
 function cycleTheme() {
   currentThemeIdx = (currentThemeIdx + 1) % THEMES.length;
   document.body.className = THEMES[currentThemeIdx];
-  _busStatus(`Theme set to: ${THEMES[currentThemeIdx] || 'Default'}`);
+  _busStatus(`Theme set to:  ${THEMES[currentThemeIdx] || 'Default'}`);
 }
 
 function _busStatus(msg, ok=true) {
@@ -4478,8 +4486,8 @@ function _busHighlight(containerId, matchFn) {
 function busSetAmount(amt) {
   if (!bots.length) { _busStatus('No bots active', false); return; }
   bots.forEach(b => setBet(b.id, amt));
-  _busHighlight('busAmtPresets', b => parseFloat(b.textContent.replace('$','')) === amt);
-  _busStatus(`All ${bots.length} bots → $${amt} per trade`);
+  _busHighlight('busAmtPresets', b => parseFloat(b.textContent.replace('A$','')) === amt);
+  _busStatus(`All  ${bots.length} bots → A$${amt} per trade`);
 }
 function busSetCustomAmount() {
   const inp = document.getElementById('busCustomAmt');
@@ -4488,7 +4496,7 @@ function busSetCustomAmount() {
   if (inp) { inp.style.borderColor=''; inp.value=''; }
   bots.forEach(b => setBet(b.id, val));
   document.querySelectorAll('#busAmtPresets .bus-preset').forEach(b => b.classList.remove('active'));
-  _busStatus(`All ${bots.length} bots → $${val.toFixed(2)} per trade`);
+  _busStatus(`All  ${bots.length} bots → A$${val.toFixed(2)} per trade`);
 }
 
 // ── Personality ──
@@ -4516,7 +4524,7 @@ function busSetPersonality(val) {
     if (sel) sel.value = p;
   });
   _busHighlight('busPersonalityPresets', b => b.textContent.includes(val === 'RANDOM' ? 'Random' : val === 'OPTIMIZED' ? 'Optimized' : val.charAt(0).toUpperCase() + val.slice(1).toLowerCase()));
-  _busStatus(val === 'RANDOM' ? `Random spread applied to ${bots.length} bots` : val === 'OPTIMIZED' ? `Optimized spread applied to ${bots.length} bots` : `All ${bots.length} bots → ${val}`);
+  _busStatus(val === 'RANDOM' ? `Random spread applied to  ${bots.length} bots` : val === 'OPTIMIZED' ? `Optimized spread applied to  ${bots.length} bots` : `All  ${bots.length} bots →  ${val}`);
 }
 
 // ── Delay ──
@@ -4529,7 +4537,7 @@ function busSetDelay(ms) {
   });
   const label = ms < 3000 ? 'Fast 2s' : ms < 10000 ? 'Normal 5s' : ms < 30000 ? 'Slow 15s' : 'Patient 1m';
   _busHighlight('busDelayPresets', b => b.textContent.trim() === label);
-  _busStatus(`All ${bots.length} bots → ${label} delay`);
+  _busStatus(`All  ${bots.length} bots →  ${label} delay`);
 }
 
 // ── Stop Loss ──
@@ -4541,7 +4549,7 @@ function busSetSL(pct) {
     if (sel) sel.value = String(pct);
   });
   _busHighlight('busSLPresets', b => b.textContent.trim() === (pct === 0 ? 'None' : `−${pct}%`));
-  _busStatus(pct === 0 ? 'Stop loss disabled on all bots' : `All ${bots.length} bots → SL −${pct}%`);
+  _busStatus(pct === 0 ? 'Stop loss disabled on all bots' : `All  ${bots.length} bots → SL −${pct}%`);
 }
 
 // ── Take Profit ──
@@ -4553,7 +4561,7 @@ function busSetTP(pct) {
     if (sel) sel.value = String(pct);
   });
   _busHighlight('busTPPresets', b => b.textContent.trim() === (pct === 0 ? 'None' : `+${pct}%`));
-  _busStatus(pct === 0 ? 'Take profit disabled on all bots' : `All ${bots.length} bots → TP +${pct}%`);
+  _busStatus(pct === 0 ? 'Take profit disabled on all bots' : `All  ${bots.length} bots → TP +${pct}%`);
 }
 
 // ── Quick presets ──
@@ -4573,7 +4581,7 @@ function busApplyPreset(name) {
   busSetSL(p.sl);
   busSetTP(p.tp);
   const labels = { conservative:'🛡️ Safe Mode', balanced:'⚖️ Balanced', aggressive:'🔥 Degen Mode', optimized:'⚡ Optimized', reset:'↺ Reset' };
-  _busStatus(`${labels[name]} applied to ${bots.length} bots`);
+  _busStatus(`${labels[name]} applied to  ${bots.length} bots`);
 }
 
 // ══════════════════════════════════════════════════════
@@ -4633,9 +4641,9 @@ const FX = (() => {
     el.style.cssText = `position:fixed;left:${x}px;top:${y}px;z-index:9990;pointer-events:none;
       font-family:'Oswald',sans-serif;font-size:${Math.min(11+Math.abs(amount)*0.8,22)}px;
       font-weight:700;color:${pos?'var(--green)':'var(--hot)'};
-      text-shadow:0 0 8px ${pos?'rgba(57,255,20,.6)':'rgba(255,45,120,.6)'};
+      text-shadow:0 0 8px  ${pos?'rgba(57,255,20,.6)':'rgba(255,45,120,.6)'};
       animation:_pnlfly 1.4s ease forwards;white-space:nowrap`;
-    el.textContent = (pos?'+':'') + '$' + Math.abs(amount).toFixed(2);
+    el.textContent = (pos?'+':'') + 'A$' + Math.abs(amount).toFixed(2);
     document.body.appendChild(el);
     setTimeout(() => el.remove(), 1500);
   }
@@ -4643,7 +4651,7 @@ const FX = (() => {
   function flash(color, duration=300) {
     const el = document.createElement('div');
     el.style.cssText = `position:fixed;inset:0;z-index:9989;pointer-events:none;
-      background:${color};opacity:0;animation:_flash ${duration}ms ease forwards`;
+      background:${color};opacity:0;animation:_flash  ${duration}ms ease forwards`;
     document.body.appendChild(el);
     setTimeout(() => el.remove(), duration + 50);
   }
@@ -4708,17 +4716,17 @@ const VOICE = (() => {
 
   function fmt(n) {
     const a = Math.abs(n);
-    return '$' + (a >= 100 ? a.toFixed(0) : a >= 10 ? a.toFixed(1) : a.toFixed(2));
+    return 'A$' + (a >= 100 ? a.toFixed(0) : a >= 10 ? a.toFixed(1) : a.toFixed(2));
   }
 
   return {
     get enabled() { return enabled; },
     toggle() { enabled = !enabled; localStorage.setItem('ta_voice', enabled?'true':'false'); return enabled; },
-    tradeOpen(bot, token, method) { say(`Bot ${bot}, ${method.toLowerCase()} on ${token}`, 1.1); },
-    win(bot, amount)   { say(amount > 20 ? `Big win! ${fmt(amount)} profit, bot ${bot}` : `Bot ${bot} wins ${fmt(amount)}`, 1.05); },
-    loss(bot, amount)  { say(`Bot ${bot} lost ${fmt(amount)}`, 0.95, 0.85); },
-    stopLoss(bot)      { say(`Stop loss, bot ${bot}`, 1.0, 0.8); },
-    takeProfit(bot)    { say(`Take profit hit, bot ${bot}`, 1.1, 1.1); },
+    tradeOpen(bot, token, method) { say(`Bot  ${bot},  ${method.toLowerCase()} on ${token}`, 1.1); },
+    win(bot, amount)   { say(amount > 20 ? `Big win!  ${fmt(amount)} profit, bot  ${bot}` : `Bot  ${bot} wins  ${fmt(amount)}`, 1.05); },
+    loss(bot, amount)  { say(`Bot  ${bot} lost  ${fmt(amount)}`, 0.95, 0.85); },
+    stopLoss(bot)      { say(`Stop loss, bot  ${bot}`, 1.0, 0.8); },
+    takeProfit(bot)    { say(`Take profit hit, bot  ${bot}`, 1.1, 1.1); },
   };
 })();
 
@@ -4734,33 +4742,6 @@ const VOICE = (() => {
   document.head.appendChild(s);
 })();
 
-// Sound/Voice toggle buttons in header
-function _injectAVControls() {
-  if (document.getElementById('avControls')) return;
-  const hdr = document.querySelector('.global-header');
-  if (!hdr) return;
-  const wrap = document.createElement('div');
-  wrap.id = 'avControls';
-  wrap.style.cssText = 'display:flex;gap:4px;flex-shrink:0';
-  const btnStyle = 'width:26px;height:26px;border:1px solid var(--border);border-radius:4px;background:var(--chrome);color:var(--dim);font-size:13px;cursor:pointer;transition:all .15s';
-  wrap.innerHTML = `
-    <button id="sfxBtn" style="${btnStyle}" class="${SFX.enabled?'av-on':''}" title="${SFX.enabled?'Sound ON':'Sound OFF'}" aria-label="Toggle sound effects"
-      onclick="const on=SFX.toggle();this.classList.toggle('av-on',on);this.title=on?'Sound ON':'Sound OFF'">🔊</button>
-    <button id="voiceBtn" style="${btnStyle}" class="${VOICE.enabled?'av-on':''}" title="${VOICE.enabled?'Voice ON':'Voice OFF'}" aria-label="Toggle voice feedback"
-      onclick="const on=VOICE.toggle();this.classList.toggle('av-on',on);this.title=on?'Voice ON':'Voice OFF'">🎙️</button>`;
-  const gen = document.getElementById('genBadge');
-  if (gen) hdr.insertBefore(wrap, gen); else hdr.appendChild(wrap);
-  const st = document.createElement('style');
-  st.textContent = '#avControls .av-on{border-color:var(--cyan)!important;color:var(--cyan)!important;background:rgba(0,255,231,.08)!important}';
-  document.head.appendChild(st);
-}
-
-
-</script>
-<script src="app-rebuild.js" defer></script>
-<!-- ACOUSTIC Audio-Visual Engines -->
-<script src="sfx-engine.js" defer></script>
-<script src="fx-engine.js" defer></script>
 <script src="voice-engine.js" defer></script>
 <script src="audio-engine.js" defer></script>
 <script src="ACOUSTIC_CORE.js" defer></script>
