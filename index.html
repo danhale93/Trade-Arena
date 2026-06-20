@@ -1441,6 +1441,8 @@ let bots=[], botCounter=0;
 let marketCache=null, marketCacheTime=0, marketMap=new Map();
 let priceCache={};
 const inFlightRequests = new Map(); // Request deduplication map
+const priceRequestQueue = new Map(); // Batching queue for niche tokens: id -> [resolvers]
+let priceBatchTimeout = null;
 let gasHardCeiling=50, currentGas=18, drawdownPct=10, globalKilled=false;
 let crucibleMode=false, crucibleCount=0;
 // Pause/cancel flags for crucible batch execution
@@ -1493,21 +1495,46 @@ async function getLivePrice(symbol) {
   const c=priceCache[symbol];
   if(c && Date.now()-c.ts<45000) return c.price;
 
-  // Request deduplication
-  const reqKey = 'price-' + id;
-  if (inFlightRequests.has(reqKey)) return inFlightRequests.get(reqKey);
+  // Optimization: Request Batching for niche tokens to prevent waterfall fetches and 429s
+  return new Promise(resolve => {
+    if (!priceRequestQueue.has(id)) priceRequestQueue.set(id, []);
+    priceRequestQueue.get(id).push({ resolve, symbol });
 
-  const p = (async () => {
-    try {
-      const r=await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd`);
-      const d=await r.json(); const price=d[id]?.usd;
-      if(price){ priceCache[symbol]={price,ts:Date.now()}; } return price||null;
-    } catch(e){ return c?.price||null; }
-    finally { inFlightRequests.delete(reqKey); }
-  })();
+    if (!priceBatchTimeout) {
+      priceBatchTimeout = setTimeout(processPriceBatch, 50); // 50ms aggregation window
+    }
+  });
+}
 
-  inFlightRequests.set(reqKey, p);
-  return p;
+async function processPriceBatch() {
+  const queue = new Map(priceRequestQueue);
+  priceRequestQueue.clear();
+  priceBatchTimeout = null;
+
+  const ids = Array.from(queue.keys());
+  if (ids.length === 0) return;
+
+  try {
+    // Request deduplication: join all IDs into a single CSV string for Coingecko
+    const r = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids.join(',')}&vs_currencies=usd`);
+    const d = await r.json();
+
+    ids.forEach(id => {
+      const price = d[id]?.usd || null;
+      const resolvers = queue.get(id);
+      resolvers.forEach(({ resolve, symbol }) => {
+        if (price) priceCache[symbol] = { price, ts: Date.now() };
+        resolve(price);
+      });
+    });
+  } catch (e) {
+    // Fallback to cache on error
+    queue.forEach((resolvers, id) => {
+      resolvers.forEach(({ resolve, symbol }) => {
+        resolve(priceCache[symbol]?.price || null);
+      });
+    });
+  }
 }
 async function getMarketData() {
   const now=Date.now();
@@ -1883,13 +1910,13 @@ function showExitResult(pos, bot) {
 // QUANT REPORT ENGINE
 // ══════════════════════════════════════════════════════
 function updateQuantReport() {
+  // Optimization: Skip expensive O(N) filtering and DOM updates if panel is hidden
+  const body = document.getElementById('quantBody');
+  if (body && !body.classList.contains('open')) return;
+
   const trades=closedTrades.filter(t=>t.method!=='HOLD');
   const n=trades.length;
   document.getElementById('qTradeCount').textContent=n+' closed trades';
-
-  // Optimization: Skip expensive metrics/SVG updates if panel is hidden
-  const body = document.getElementById('quantBody');
-  if (body && !body.classList.contains('open')) return;
 
   // Sig ladder
   [20,50,100,200,300].forEach(thresh=>{
