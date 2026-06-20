@@ -749,8 +749,11 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
   </div>
   <p id="cStatus" style="min-height:16px;font-size:11px;color:var(--cyan);text-align:center;transition:all .3s"></p>
   <div class="setup-note">
-    <strong>Optional: Anthropic API Key</strong> — enables full Claude AI agents. Get one free at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>
-    <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-..." style="width:100%;margin-top:5px;padding:5px 8px;background:var(--bg);border:1px solid var(--border);color:var(--cyan);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px;" oninput="if(this.value.trim().startsWith('sk-'))window._userApiKey=this.value.trim()">
+    <label for="apiKeyInput"><strong>Optional: Anthropic API Key</strong></label> — enables full Claude AI agents. Get one free at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>
+    <div style="display:flex;gap:4px;margin-top:5px">
+      <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-..." style="flex:1;padding:5px 8px;background:var(--bg);border:1px solid var(--border);color:var(--cyan);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px;" oninput="if(this.value.trim().startsWith('sk-'))window._userApiKey=this.value.trim()">
+      <button onclick="toggleVisibility('apiKeyInput', this)" style="padding:4px 8px;background:var(--chrome);border:1px solid var(--border);color:var(--dim);border-radius:4px;font-family:'Bungee',display;font-size:8px;cursor:pointer">SHOW</button>
+    </div>
     <span style="color:var(--dim);font-size:8px">Without a key the app uses rule-based signals and still trades. Demo Mode requires no wallet or key.</span>
   </div>
   
@@ -1049,7 +1052,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
            </select>
          </div>
          
-         <label style="color:var(--dim);font-size:10px">Trades:</label>
+         <label for="crucibleTradeCount" style="color:var(--dim);font-size:10px">Trades:</label>
          <input type="number" id="crucibleTradeCount" value="50" min="1" max="1000" style="width:60px;padding:4px 6px;background:var(--chrome);color:#fff;border:1px solid var(--border);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px">
          
           <button class="crucible-run-btn" onclick="runCrucibleV2Batch()" style="padding:6px 14px;background:linear-gradient(90deg,var(--purple),var(--cyan));border:none;border-radius:4px;color:#fff;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all 0.2s">▶ RUN CRUCIBLE V2</button>
@@ -1249,15 +1252,15 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     </div>
     <div class="cpanel-body" id="breakerBody">
       <div class="breaker-grid">
-        <div class="b-control"><label>⛽ Gas Hard Ceiling (gwei)</label><input type="number" id="gasHard" value="50" min="1" max="500" onchange="updateBreakers()"><div class="b-val" id="gasHardVal">Hard stop at 50 gwei</div></div>
-        <div class="b-control"><label>📊 Daily Drawdown Kill (%)</label><input type="number" id="drawdownPct" value="10" min="1" max="50" onchange="updateBreakers()"><div class="b-val" id="drawdownVal">Stop if -$1,000.00 today</div></div>
+        <div class="b-control"><label for="gasHard">⛽ Gas Hard Ceiling (gwei)</label><input type="number" id="gasHard" value="50" min="1" max="500" onchange="updateBreakers()"><div class="b-val" id="gasHardVal">Hard stop at 50 gwei</div></div>
+        <div class="b-control"><label for="drawdownPct">📊 Daily Drawdown Kill (%)</label><input type="number" id="drawdownPct" value="10" min="1" max="50" onchange="updateBreakers()"><div class="b-val" id="drawdownVal">Stop if -$1,000.00 today</div></div>
         <div class="b-control" style="grid-column:1/-1">
-          <label>🎯 Aggression Level — how hard the agents chase trades</label>
+          <label for="aggrSlider">🎯 Aggression Level — how hard the agents chase trades</label>
           <input type="range" id="aggrSlider" min="1" max="10" value="8" oninput="updateAggrDisplay()">
           <div class="b-val" id="aggrVal" style="color:var(--hot)">Level 8 / 10 — AGGRESSIVE</div>
         </div>
         <div class="b-control" style="grid-column:1/-1">
-          <label>⚡ Consensus Threshold — agents needed to trigger a trade</label>
+          <label for="consensusSlider">⚡ Consensus Threshold — agents needed to trigger a trade</label>
           <input type="range" id="consensusSlider" min="1" max="4" value="2" oninput="updateConsensusDisplay()">
           <div class="b-val" id="consensusVal" style="color:var(--amber)">2 / 4 agents must agree</div>
         </div>
@@ -1309,6 +1312,17 @@ function escapeHTML(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+/**
+ * Toggle visibility of a password/API key input field
+ */
+function toggleVisibility(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const isPassword = input.type === 'password';
+  input.type = isPassword ? 'text' : 'password';
+  btn.textContent = isPassword ? 'HIDE' : 'SHOW';
 }
 
 // ══════════════════════════════════════════════════════

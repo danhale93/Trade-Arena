@@ -869,7 +869,7 @@ describe("escapeHTML - XSS Prevention (index.html:1304)", () => {
 async function run() {
   let lastSuite = null;
 
-
+  for (const test of tests) {
     if (test.suite !== lastSuite) {
       lastSuite = test.suite;
       console.log(`\n📋 ${lastSuite}`);
