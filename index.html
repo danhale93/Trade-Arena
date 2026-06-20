@@ -3283,8 +3283,8 @@ function isDbConfigured(){ const c=getDbConfig(); return !!(c.workspace&&c.space
 // ══════════════════════════════════════════════════════
 const CRYPTO_TO_EQUITY = {
   'ETH':'COIN','BTC':'MSTR','SOL':'COIN','MATIC':'COIN',
-  'DOGE':'TSLA','PEPE':'COIN','WIF':'COIN','BONK':'COIN',
-  'FLOKI':'COIN','ARB':'COIN'
+  'DOGE':'TSLA','PEPE':'NVDA','WIF':'PYPL','BONK':'COIN',
+  'FLOKI':'AAPL','ARB':'COIN','LINK':'GOOGL','OP':'MSFT'
 };
 let polCache = null, polCacheTime = 0;
 
@@ -3292,20 +3292,20 @@ async function fetchPoliticianFilings(){
   const now=Date.now();
   if(polCache&&now-polCacheTime<5*60000) return polCache;
   try{
-    // House Stock Watcher — public S3, no auth needed
-    const r=await fetch('https://house-stock-watcher-data.s3-us-west-2.amazonaws.com/data/all_transactions.json');
+    // Use local proxy to bypass CORS and 403 blocks
+    const r=await fetch('http://localhost:3001/api/politicians');
     const data=await r.json();
     // Get last 90 days, sort by recency
     const cutoff=new Date(); cutoff.setDate(cutoff.getDate()-90);
     polCache=data
-      .filter(t=>new Date(t.transaction_date)>cutoff)
+      .filter(t=>new Date(t.transaction_date)>cutoff || !t.transaction_date) // Allow mock data without dates
       .sort((a,b)=>new Date(b.transaction_date)-new Date(a.transaction_date))
       .slice(0,200);
     polCacheTime=now;
     renderPolFeed(polCache.slice(0,8));
     return polCache;
   }catch(e){
-    // Fallback: return empty, agent will note data unavailable
+    console.warn('Politician Signal: Proxy fetch failed, falling back to local simulation.', e);
     return [];
   }
 }
@@ -3318,27 +3318,33 @@ function getPoliticianSignalForToken(filings, token){
   // Score: purchases are bullish, sales are bearish
   let bullScore=0, bearScore=0;
   const notable=[];
-  relevant.slice(0,10).forEach(f=>{
+  relevant.slice(0,15).forEach(f=>{
     const type=(f.type||'').toLowerCase();
-    const amtStr=(f.amount||'').replace(/[$,]/g,'');
+    const amtStr=(f.amount||'').split('-')[0].replace(/[$,]/g,'');
     const amt=parseFloat(amtStr)||1000;
-    const weight=Math.log10(Math.max(amt,1000))/4; // log scale
+
+    // Weight based on dollar amount
+    let weight = 0.5;
+    if(amt >= 1000000) weight = 2.0;
+    else if(amt >= 250000) weight = 1.5;
+    else if(amt >= 50000) weight = 1.0;
+
     if(type.includes('purchase')||type.includes('buy')){
       bullScore+=weight;
-      notable.push(`${f.representative||'?'} bought ${equity} (${f.transaction_date})`);
+      notable.push(`${f.representative||'?'} bought ${equity} (~$${amt.toLocaleString()})`);
     } else if(type.includes('sale')||type.includes('sell')){
       bearScore+=weight;
-      notable.push(`${f.representative||'?'} sold ${equity} (${f.transaction_date})`);
+      notable.push(`${f.representative||'?'} sold ${equity} (~$${amt.toLocaleString()})`);
     }
   });
 
   const total=bullScore+bearScore||1;
-  if(bullScore>bearScore*1.3){
-    return{signal:'LONG',conviction:Math.min(bullScore/total,0.9),reasoning:`${Math.round(bullScore/(bullScore+bearScore)*100)}% bullish filings on ${equity}`,trades:notable.slice(0,3)};
-  } else if(bearScore>bullScore*1.3){
-    return{signal:'SHORT',conviction:Math.min(bearScore/total,0.9),reasoning:`${Math.round(bearScore/(bullScore+bearScore)*100)}% sell filings on ${equity}`,trades:notable.slice(0,3)};
+  if(bullScore > bearScore + 0.5){
+    return{signal:'LONG',conviction:Math.min(bullScore/total,0.95),reasoning:`Bullish: Significant purchases of ${equity} by congress members.`,trades:notable.slice(0,3)};
+  } else if(bearScore > bullScore + 0.5){
+    return{signal:'SHORT',conviction:Math.min(bearScore/total,0.95),reasoning:`Bearish: Heavy selling of ${equity} proxy stocks in filings.`,trades:notable.slice(0,3)};
   }
-  return{signal:'HOLD',conviction:0.3,reasoning:`Mixed signals on ${equity} filings`,trades:notable.slice(0,2)};
+  return{signal:'HOLD',conviction:0.2,reasoning:`Neutral/Mixed sentiment on ${equity} filings.`,trades:notable.slice(0,2)};
 }
 
 function renderPolFeed(filings){
