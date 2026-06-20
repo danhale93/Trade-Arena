@@ -341,6 +341,10 @@ class StaffEngine {
  * UI: Render Staff Operations Panel
  */
 function renderStaffPanel() {
+    // Optimization: Skip expensive DOM updates and mapping if panel is hidden
+    const body = document.getElementById('staffBody');
+    if (body && !body.classList.contains('open')) return;
+
     const list = document.getElementById('staffLogList');
     if (!list || !window.STAFF) return;
 
