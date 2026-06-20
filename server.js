@@ -8,6 +8,7 @@ const express = require('express');
 const cors = require('cors');
 const ethers = require('ethers');
 const axios = require('axios');
+const crypto = require('crypto');
 const WebSocket = require('websocket').w3cwebsocket;
 
 const app = express();
@@ -84,9 +85,15 @@ app.get('/api/deployments', (req, res) => {
 app.post('/api/webhooks/moonpay/deposit', (req, res) => {
     try {
         const signature = req.headers['x-moonpay-signature'];
-        const expectedSecret = process.env.MOONPAY_WEBHOOK_SECRET || '';
+        const secret = process.env.MOONPAY_WEBHOOK_SECRET;
 
-        if (expectedSecret && signature !== expectedSecret) {
+        // Sentinel: Fail closed if secret is missing or signature is invalid
+        if (!secret) {
+            console.error('[MoonPay Webhook] MOONPAY_WEBHOOK_SECRET is missing');
+            return res.status(500).json({ success: false, error: 'Webhook configuration error' });
+        }
+
+        if (!signature || !verifyMoonPaySignature(req.body, signature, secret)) {
             return res.status(401).json({ success: false, error: 'Invalid webhook signature' });
         }
 
@@ -397,6 +404,24 @@ async function fetchDexPrice(token, dex) {
     } catch (e) {
         console.error(`Error fetching ${dex} price for ${token}:`, e);
         return null;
+    }
+}
+
+/**
+ * Verify MoonPay webhook signature using HMAC-SHA256
+ */
+function verifyMoonPaySignature(body, signature, secret) {
+    try {
+        const hmac = crypto.createHmac('sha256', secret);
+        const digest = hmac.update(JSON.stringify(body)).digest('hex');
+
+        const digestBuffer = Buffer.from(digest);
+        const signatureBuffer = Buffer.from(signature);
+
+        if (digestBuffer.length !== signatureBuffer.length) return false;
+        return crypto.timingSafeEqual(digestBuffer, signatureBuffer);
+    } catch (e) {
+        return false;
     }
 }
 

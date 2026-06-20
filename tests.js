@@ -5,6 +5,7 @@
  * Run with: npm test
  */
 
+const crypto = require("crypto");
 const { TradingEngine } = require("./trading-engine.js");
 const {
   SecurityHelper,
@@ -711,6 +712,48 @@ describe("Cross-Market Arbitrage Dry Run Scanners", () => {
     expect(adjustment.reasons).toContain("strategy_cooldown");
     expect(adjustment.riskMultiplier).toBeLessThan(1);
     expect(adjustment.minEdgeBump).toBeGreaterThan(0);
+  });
+});
+
+describe("MoonPay Webhook - Security Verification", () => {
+  const verifyMoonPaySignature = (body, signature, secret) => {
+    try {
+      const hmac = crypto.createHmac('sha256', secret);
+      const digest = hmac.update(JSON.stringify(body)).digest('hex');
+      const digestBuffer = Buffer.from(digest);
+      const signatureBuffer = Buffer.from(signature);
+      if (digestBuffer.length !== signatureBuffer.length) return false;
+      return crypto.timingSafeEqual(digestBuffer, signatureBuffer);
+    } catch (e) {
+      return false;
+    }
+  };
+
+  const secret = "test-secret-123";
+  const payload = { id: "trans_123", status: "completed", amount: 50 };
+  const validSignature = crypto.createHmac('sha256', secret).update(JSON.stringify(payload)).digest('hex');
+
+  it("validates a correct HMAC-SHA256 signature", () => {
+    const isValid = verifyMoonPaySignature(payload, validSignature, secret);
+    expect(isValid).toBe(true);
+  });
+
+  it("rejects an incorrect signature", () => {
+    const isInvalid = verifyMoonPaySignature(payload, "wrong-signature", secret);
+    expect(isInvalid).toBe(false);
+  });
+
+  it("rejects a correct signature with the wrong secret", () => {
+    const isInvalid = verifyMoonPaySignature(payload, validSignature, "wrong-secret");
+    expect(isInvalid).toBe(false);
+  });
+
+  it("prevents timing attacks using timingSafeEqual (logical check)", () => {
+    // This is more of a logic check that we are using the right function
+    // timingSafeEqual throws if lengths differ, which we handle
+    const shortSignature = "abc";
+    const isInvalid = verifyMoonPaySignature(payload, shortSignature, secret);
+    expect(isInvalid).toBe(false);
   });
 });
 
