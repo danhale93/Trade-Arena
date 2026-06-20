@@ -88,6 +88,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 .onramp-btn:hover{box-shadow:0 0 16px rgba(0,212,255,.5)}
 .offramp-btn{background:linear-gradient(135deg,#00ff9d,#00cc7a);color:#000}
 .offramp-btn:hover{box-shadow:0 0 16px rgba(0,255,157,.5)}
+.payid-btn{width:100%;padding:12px;margin-top:8px;background:linear-gradient(135deg,#FFD700,#FFA500);border:none;border-radius:8px;cursor:pointer;font-family:'Bungee',display;font-size:11px;letter-spacing:1px;color:#000;box-shadow:0 0 12px rgba(255,215,0,.3);transition:all .15s}
+.payid-btn:hover{box-shadow:0 0 20px rgba(255,215,0,.6);transform:translateY(-1px)}
 .fiat-ramp-row{display:flex;gap:8px;margin-top:4px}
 .divider{display:flex;align-items:center;gap:8px;font-size:10px;color:var(--dim)}
 .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
@@ -737,6 +739,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         <button class="onramp-btn" onclick="window.openMoonpay && window.openMoonpay()">💳 DEPOSIT USDC</button>
         <button class="offramp-btn" onclick="openOskoRamp('offramp')">💵 WITHDRAW</button>
       </div>
+      <button class="payid-btn" onclick="loginPayID()">⚡ PAYID NO-KYC ONBOARDING</button>
     </div>
     <!-- Advanced Settings (hidden by default) -->
     <div id="advancedSettings" style="display:none;margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
@@ -2788,6 +2791,48 @@ async function loginCoinbase(){
       }
     }else{s.innerHTML='⚠️ Coinbase Wallet not found.<br><a href="https://www.coinbase.com/wallet" target="_blank" style="color:var(--hot)">Install Coinbase Wallet</a>';}
   }catch(e){s.innerHTML='❌ '+e.message;console.error('Coinbase error:',e);}
+}
+
+// PayID No-KYC Onboarding Logic
+async function loginPayID() {
+  const s = document.getElementById('cStatus'); if(!s) return;
+
+  // 1. Wallet Detection
+  if(!window.ethereum) {
+    s.innerHTML = '❌ <span style="color:var(--hot)">MetaMask required.</span><br><small style="color:var(--dim)">Install MetaMask to receive instant PayID deposits.</small>';
+    return;
+  }
+
+  try {
+    // 2. Connect to receive funds
+    s.textContent = '⏳ Initializing PayID secure bridge...';
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    if(!accounts || accounts.length === 0) return;
+    const address = accounts[0];
+
+    // 3. Switch to Base (Preferred for low fees)
+    try {
+      await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
+    } catch(e) { console.warn('Chain switch failed, continuing with current network'); }
+
+    // 4. Open Onboarding Flow (Targeting AUD/PayID)
+    // Most AU ramps allow <$250-300 via PayID with just email/phone (No Doc KYC)
+    const url = `https://buy.ramp.network/?ref=tradearena_bolt&swapAsset=BASE_ETH&fiatCurrency=AUD&fiatValue=100&walletAddress=${address}`;
+    s.innerHTML = '⚡ <strong style="color:var(--gold2)">PAYID LINKED!</strong><br><span style="font-size:10px">Redirecting to instant AU on-ramp (No Docs Required).</span>';
+
+    window.open(url, '_blank');
+
+    // Pre-initialize app so they see the Arena while the funds bridge
+    setupApp({
+      name: address.slice(0,6)+'...'+address.slice(-4),
+      address: address,
+      badge: '⚡ PAYID',
+      provider: 'payid'
+    });
+  } catch(e) {
+    s.textContent = '❌ ' + e.message;
+    console.error('PayID Login Error:', e);
+  }
 }
 
 // OSKO Fiat On/Off Ramp Functions
