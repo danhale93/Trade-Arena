@@ -837,8 +837,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
        <button class="gh-bus-btn" onclick="togglePanel('elo')" title="ELO Arena - Recursive Improvement">🏆 ARENA</button>
        <button class="gh-bus-btn" id="voiceAgentBtn" onclick="toggleVoiceAgent()" title="AI Floor Manager (Voice Chat)">🎙️ AGENT</button>
        <button class="gh-bus-btn" id="fleetViewBtn" onclick="toggleFleetView()" title="Toggle Fleet View (Compact Grid)">📊 FLEET</button>
-       <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots">⚙ BUS</button>
-       <button class="gh-auto-btn" id="ghAutoBtn" onclick="globalAutoToggle()" title="Toggle auto-trading on all bots">AUTO</button>
+       <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots" aria-expanded="false">⚙ BUS</button>
+       <button class="gh-auto-btn" id="ghAutoBtn" onclick="globalAutoToggle()" title="Toggle auto-trading on all bots" aria-pressed="false">AUTO</button>
        <button class="gh-bot-btn" id="ghRemoveBtn" onclick="removeLastBot()" title="Remove last bot" aria-label="Remove last bot" disabled>−</button>
        <button class="gh-bot-btn" id="ghAddBtn" onclick="addBot()" title="Add bot" aria-label="Add new bot">+</button>
        <button class="gh-bot-btn" id="musicToggleBtn" onclick="toggleBackgroundMusic()" title="Toggle background music" aria-label="Toggle background music">🎵</button>
@@ -2936,17 +2936,21 @@ function globalAutoToggle(){
     b.auto=_ghAutoOn;
     const btn=document.getElementById('mauto-'+b.id), card=document.getElementById('bot-'+b.id);
     if(_ghAutoOn){
-      if(btn){btn.textContent='⏸ STOP';btn.classList.add('on');}
+      if(btn){btn.textContent='⏸ STOP';btn.classList.add('on');btn.setAttribute('aria-pressed','true');}
       if(card) card.classList.add('auto-on');
       scheduleAuto(b);
     } else {
-      if(btn){btn.textContent='AUTO';btn.classList.remove('on');}
+      if(btn){btn.textContent='AUTO';btn.classList.remove('on');btn.setAttribute('aria-pressed','false');}
       if(card) card.classList.remove('auto-on');
       if(b.autoTimer) clearTimeout(b.autoTimer);
     }
   });
   const btn=document.getElementById('ghAutoBtn');
-  if(btn){ btn.textContent=_ghAutoOn?'⏸ STOP':'AUTO'; btn.classList.toggle('on',_ghAutoOn); }
+  if(btn){
+    btn.textContent=_ghAutoOn?'⏸ STOP':'AUTO';
+    btn.classList.toggle('on',_ghAutoOn);
+    btn.setAttribute('aria-pressed', _ghAutoOn);
+  }
 }
 
 // ── Header countdown + open-trade tally ──
@@ -3035,9 +3039,9 @@ function renderBot(bot){
       <div class="m-settings-bar">
         <div class="m-bet-display" id="mbetdisp-${bot.id}">$1.00 <span>per trade</span></div>
         <div style="display:flex;gap:4px;align-items:center">
-          <button class="auto-btn" id="mauto-${bot.id}" onclick="toggleAuto(${bot.id})">AUTO</button>
+          <button class="auto-btn" id="mauto-${bot.id}" onclick="toggleAuto(${bot.id})" aria-pressed="false">AUTO</button>
           <button class="spin-btn" id="mspin-${bot.id}" onclick="spinBot(${bot.id})" style="padding:6px 12px;font-size:11px">🎰 SPIN</button>
-          <button class="m-gear-btn" id="mgear-${bot.id}" onclick="toggleBotSettings(${bot.id})" title="Bot settings" aria-label="Bot ${bot.id} settings">⚙</button>
+          <button class="m-gear-btn" id="mgear-${bot.id}" onclick="toggleBotSettings(${bot.id})" title="Bot settings" aria-label="Bot ${bot.id} settings" aria-expanded="false">⚙</button>
         </div>
       </div>
       <div class="m-dropdown" id="mdrop-${bot.id}">
@@ -3166,7 +3170,10 @@ function toggleBotSettings(id){
   const gear=document.getElementById('mgear-'+id);
   if(!drop) return;
   const open=drop.classList.toggle('open');
-  if(gear) gear.classList.toggle('open',open);
+  if(gear){
+    gear.classList.toggle('open',open);
+    gear.setAttribute('aria-expanded', open);
+  }
 }
 function setBotPersonality(id,val){
   const bot=bots.find(b=>b.id===id); if(!bot) return;
@@ -3188,13 +3195,22 @@ function toggleAuto(id){
   const bot=bots.find(b=>b.id===id); if(!bot) return;
   bot.auto=!bot.auto;
   const btn=document.getElementById('mauto-'+id), card=document.getElementById('bot-'+id);
-  if(bot.auto){btn.textContent='⏸ STOP';btn.classList.add('on');card.classList.add('auto-on');scheduleAuto(bot);}
-  else{btn.textContent='AUTO';btn.classList.remove('on');card.classList.remove('auto-on');if(bot.autoTimer)clearTimeout(bot.autoTimer);}
+  if(bot.auto){
+    btn.textContent='⏸ STOP';btn.classList.add('on');btn.setAttribute('aria-pressed','true');
+    card.classList.add('auto-on');scheduleAuto(bot);
+  } else {
+    btn.textContent='AUTO';btn.classList.remove('on');btn.setAttribute('aria-pressed','false');
+    card.classList.remove('auto-on');if(bot.autoTimer)clearTimeout(bot.autoTimer);
+  }
   // keep global auto button in sync
   const allOn=bots.length>0&&bots.every(b=>b.auto);
   _ghAutoOn=allOn;
   const ghBtn=document.getElementById('ghAutoBtn');
-  if(ghBtn){ghBtn.textContent=allOn?'⏸ STOP':'AUTO';ghBtn.classList.toggle('on',allOn);}
+  if(ghBtn){
+    ghBtn.textContent=allOn?'⏸ STOP':'AUTO';
+    ghBtn.classList.toggle('on',allOn);
+    ghBtn.setAttribute('aria-pressed', allOn);
+  }
 }
 function scheduleAuto(bot){
   if(!bot.auto) return;
@@ -4817,7 +4833,10 @@ function toggleBusPanel() {
   const btn   = document.getElementById('ghBusBtn');
   if (!panel) return;
   const open = panel.classList.toggle('open');
-  if (btn) btn.classList.toggle('open', open);
+  if (btn) {
+    btn.classList.toggle('open', open);
+    btn.setAttribute('aria-expanded', open);
+  }
 }
 
 function _busStatus(msg, ok=true) {
