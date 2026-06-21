@@ -22,3 +22,8 @@
 **Vulnerability:** The `/api/maintenance/patch` endpoint in `proxy.js` was vulnerable to path traversal. It used `path.join(__dirname, filepath)` with unsanitized user input, allowing access to any file on the system.
 **Learning:** `path.join` does not prevent traversing above the base directory if the input contains `../`. `path.resolve` combined with a prefix check is necessary.
 **Prevention:** Resolve the target path and ensure it starts with the intended root directory. Use `path.resolve(__dirname) + path.sep` to prevent partial path bypasses (e.g., `/app` vs `/app-secrets`).
+
+## 2026-06-20 - [HIGH] Fail-Open and Incorrect Signature Verification in MoonPay Webhook
+**Vulnerability:** The MoonPay webhook in `server.js` was comparing the `x-moonpay-signature` header directly against the `MOONPAY_WEBHOOK_SECRET`. Furthermore, it "failed open" if the secret was missing from environment variables.
+**Learning:** Webhook signatures are typically HMAC hashes of the payload, not the secret itself. Direct comparison is both functionally incorrect and insecure. Security-sensitive logic must always fail closed if required credentials or secrets are missing.
+**Prevention:** Always implement proper HMAC-SHA256 verification for webhooks using a secure comparison function like `crypto.timingSafeEqual`. Ensure that the absence of a secret results in an error rather than bypassing the security check.
