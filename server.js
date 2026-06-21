@@ -18,6 +18,26 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
+// Sentinel: Security middleware to prevent information disclosure
+// Blocks access to sensitive server-side files and configuration
+app.use((req, res, next) => {
+    const sensitiveFiles = [
+        'server.js', 'proxy.js', 'package.json', 'package-lock.json',
+        'pnpm-lock.yaml', '.env', '.git'
+    ];
+    const path = req.path.toLowerCase();
+
+    // Block access to specific sensitive files or any hidden file (starting with dot)
+    const isSensitive = sensitiveFiles.some(file => path.endsWith('/' + file) || path === '/' + file);
+    const isHidden = path.split('/').some(part => part.startsWith('.'));
+
+    if (isSensitive || isHidden) {
+        console.warn(`[Security] Blocked unauthorized access attempt to: ${req.path}`);
+        return res.status(403).send('Forbidden: Unauthorized file access');
+    }
+    next();
+});
+
 // Serve static files from root directory
 app.use(express.static(__dirname));
 
