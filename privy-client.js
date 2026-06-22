@@ -254,7 +254,7 @@ function updateWalletUI() {
     const balanceEl = document.getElementById('walletBalance');
     if (balanceEl) {
         // Show USD balance instead of ETH
-        balanceEl.textContent = '$10,000.00';
+        if (window.getWalletBalanceUSD) { window.getWalletBalanceUSD().then(bal => { balanceEl.textContent = '$' + bal.toFixed(2); }); } else { balanceEl.textContent = '$0.00'; }
     }
     
     const userAddrEl = document.getElementById('userAddr');
