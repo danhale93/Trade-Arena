@@ -840,6 +840,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
        <button class="gh-bus-btn" id="voiceAgentBtn" onclick="toggleVoiceAgent()" title="AI Floor Manager (Voice Chat)">🎙️ AGENT</button>
        <button class="gh-bus-btn" id="fleetViewBtn" onclick="toggleFleetView()" title="Toggle Fleet View (Compact Grid)">📊 FLEET</button>
        <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots" aria-expanded="false">⚙ BUS</button>
+       <button class="gh-auto-btn" id="liveToggleBtn" onclick="toggleLiveMode()" title="Toggle Live/Demo Mode" style="border-color:var(--gold2);color:var(--gold2)">DEMO</button>
        <button class="gh-auto-btn" id="ghAutoBtn" onclick="globalAutoToggle()" title="Toggle auto-trading on all bots" aria-pressed="false">AUTO</button>
        <button class="gh-bot-btn" id="ghRemoveBtn" onclick="removeLastBot()" title="Remove last bot" aria-label="Remove last bot" disabled>−</button>
        <button class="gh-bot-btn" id="ghAddBtn" onclick="addBot()" title="Add bot" aria-label="Add new bot">+</button>
@@ -3366,7 +3367,7 @@ async function spinBot(id){
     if(typeof VOICE!=='undefined') VOICE.tradeOpen(bot.id, decision.token, decision.method);
 
     // ON-CHAIN EXECUTION TRIGGER
-    if (window.isPrivyConnected && window.isPrivyConnected() && !decision.method.includes('PAPER')) {
+    if (window.isLiveMode && window.isPrivyConnected && window.isPrivyConnected() && !decision.method.includes('PAPER')) {
         console.log('[Arena] Routing to On-Chain Execution Engine...');
         try {
             await window.executeOnChainTrade({

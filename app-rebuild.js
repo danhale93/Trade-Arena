@@ -762,3 +762,39 @@ window.TradeArenaApp = {
     };
   },
 };
+
+/**
+ * Live Mode Management
+ */
+window.isLiveMode = false;
+
+function toggleLiveMode() {
+    window.isLiveMode = !window.isLiveMode;
+    const btn = document.getElementById('liveToggleBtn');
+    if (btn) {
+        btn.textContent = window.isLiveMode ? 'LIVE' : 'DEMO';
+        btn.style.borderColor = window.isLiveMode ? 'var(--green)' : 'var(--gold2)';
+        btn.style.color = window.isLiveMode ? 'var(--green)' : 'var(--gold2)';
+        btn.style.boxShadow = window.isLiveMode ? '0 0 10px rgba(0,255,157,0.3)' : 'none';
+    }
+
+    const badge = document.getElementById('ghBadge');
+    if (badge) {
+        badge.textContent = window.isLiveMode ? 'LIVE' : 'DEMO';
+        badge.style.color = window.isLiveMode ? 'var(--green)' : 'var(--dim)';
+    }
+
+    console.log('[App] Mode changed to:', window.isLiveMode ? 'LIVE' : 'DEMO');
+}
+
+window.toggleLiveMode = toggleLiveMode;
+
+/**
+ * Handle Privy Ready
+ */
+window.onPrivyReady = (user, address) => {
+    console.log('[App] Privy ready, switching to LIVE mode preference');
+    if (!window.isLiveMode) {
+        window.toggleLiveMode();
+    }
+};

@@ -43,8 +43,8 @@ app.use(express.static(__dirname));
 
 // Configuration
 const RPC_URL = 'https://mainnet.base.org'; // Base network RPC
-const AAVE_FLASH_LOAN_ADDRESS = '0x794a61358D6845594F94dc1DB02A252b5b4814aD'; // Base Aave
-const UNISWAP_V3_ADDRESS = '0x68b3465833fb72B5A828cCEA02FFAD6bCFB8ACCA'; // Base Swap Router
+const AAVE_FLASH_LOAN_ADDRESS = process.env.AAVE_FLASH_LOAN_ADDRESS || '0x794a61358D6845594F94dc1DB02A252b5b4814aD'; // Base Aave
+const UNISWAP_V3_ADDRESS = process.env.UNISWAP_V3_ADDRESS || '0x68b3465833fb72B5A828cCEA02FFAD6bCFB8ACCA'; // Base Swap Router
 
 // Smart Contract ABIs (simplified)
 const FLASH_LOAN_ABI = [

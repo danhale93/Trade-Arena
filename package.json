@@ -7,7 +7,8 @@
     "proxy": "node proxy.js",
     "serve": "npx serve .",
     "dev": "concurrently \"npm run proxy\" \"npm run serve\"",
-    "test": "node tests.js"
+    "test": "node tests.js",
+    "start": "node start.js"
   },
   "dependencies": {
     "axios": "^1.13.6",

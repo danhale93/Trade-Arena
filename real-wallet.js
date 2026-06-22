@@ -602,3 +602,32 @@ if (typeof module !== 'undefined' && module.exports) {
     diagnoseMetaMask,
   };
 }
+
+/**
+ * Fetch real wallet balance in USD
+ * Added by Jules for on-chain execution engine support
+ */
+async function getWalletBalanceUSD() {
+    if (!walletState.address) return 0;
+
+    try {
+        const provider = new ethers.providers.JsonRpcProvider(REAL_WALLET_CONFIG.network.rpcUrl);
+        const ethBalance = await provider.getBalance(walletState.address);
+        // Fallback price if getLivePrice fails
+        let ethPrice = 2500;
+        if (typeof getLivePrice === 'function') {
+            const livePrice = await getLivePrice('ETH');
+            if (livePrice) ethPrice = livePrice;
+        }
+
+        walletState.balanceETH = parseFloat(ethers.utils.formatEther(ethBalance));
+        walletState.balanceUSD = walletState.balanceETH * ethPrice;
+
+        return walletState.balanceUSD;
+    } catch (e) {
+        console.error('[RealWallet] Balance fetch failed:', e);
+        return walletState.balanceUSD || 0;
+    }
+}
+
+window.getWalletBalanceUSD = getWalletBalanceUSD;
