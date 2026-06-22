@@ -9,3 +9,7 @@
 ## 2026-06-20 - [Aria State Management for Custom Toggles]
 **Learning:** For non-semantic toggle buttons (like "AUTO" modes) and disclosure widgets (like "Gear" menus) that don't use standard HTML elements like <details>, it's critical to synchronize 'aria-pressed' and 'aria-expanded' attributes respectively. This ensures screen readers correctly announce the state changes that are otherwise only visible through CSS classes or text updates.
 **Action:** Use setAttribute('aria-pressed', state) for toggles and setAttribute('aria-expanded', state) for disclosure triggers in their respective event handlers.
+
+## 2026-06-21 - [Dynamic Content Accessibility & Interaction Feedback]
+**Learning:** Asynchronous UI updates in status containers (like login messages or AI replies) are invisible to screen readers unless marked with `aria-live="polite"`. Additionally, utility actions like "Copy to Clipboard" require immediate, high-contrast visual feedback (e.g., text change + color shift) to confirm success without requiring a separate notification component.
+**Action:** Apply `aria-live="polite"` to all dynamic status areas and implement a 2-second "COPIED!" state for clipboard buttons.

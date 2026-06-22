@@ -157,7 +157,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
 /* ══ COLLAPSIBLE PANEL BASE ══ */
 .cpanel{background:var(--panel);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden}
-.cpanel-hd{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;cursor:pointer;user-select:none;border-bottom:1px solid transparent}
+.cpanel-hd{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;cursor:pointer;user-select:none;border-bottom:1px solid transparent;transition:background 0.2s}
+.cpanel-hd:hover, .audit-hd:hover, .learn-hd:hover { background: rgba(255,255,255,0.03); }
 .cpanel-hd.open{border-bottom-color:var(--border)}
 .cpanel-body{display:none;padding:12px}
 .cpanel-body.open{display:block}
@@ -747,12 +748,13 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       </button>
     </div>
   </div>
-  <p id="cStatus" style="min-height:16px;font-size:11px;color:var(--cyan);text-align:center;transition:all .3s"></p>
+  <p id="cStatus" aria-live="polite" style="min-height:16px;font-size:11px;color:var(--cyan);text-align:center;transition:all .3s"></p>
   <div class="setup-note">
     <label for="apiKeyInput"><strong>Optional: Anthropic API Key</strong></label> — enables full Claude AI agents. Get one free at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>
     <div style="display:flex;gap:4px;margin-top:5px">
       <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-..." style="flex:1;padding:5px 8px;background:var(--bg);border:1px solid var(--border);color:var(--cyan);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px;" oninput="if(this.value.trim().startsWith('sk-'))window._userApiKey=this.value.trim()">
       <button onclick="toggleVisibility('apiKeyInput', this)" style="padding:4px 8px;background:var(--chrome);border:1px solid var(--border);color:var(--dim);border-radius:4px;font-family:'Bungee',display;font-size:8px;cursor:pointer">SHOW</button>
+      <button onclick="copyToClipboard('apiKeyInput', this)" style="padding:4px 8px;background:var(--chrome);border:1px solid var(--border);color:var(--dim);border-radius:4px;font-family:'Bungee',display;font-size:8px;cursor:pointer">COPY</button>
     </div>
     <span style="color:var(--dim);font-size:8px">Without a key the app uses rule-based signals and still trades. Demo Mode requires no wallet or key.</span>
   </div>
@@ -1199,7 +1201,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
           <input type="text" id="staffInput" aria-label="Ask staff a question" placeholder="I lost money on that last trade, why?" onkeydown="if(event.key==='Enter') sendStaffQuery()" style="flex:1; background:var(--bg); border:1px solid var(--border); color:#fff; padding:8px; border-radius:6px; font-family:inherit; font-size:10px;">
           <button onclick="sendStaffQuery()" style="background:var(--cyan); color:#000; border:none; border-radius:6px; padding:0 15px; font-family:'Bungee'; font-size:10px; cursor:pointer;">ASK</button>
         </div>
-        <div id="staffResponse" style="margin-top:10px; padding:10px; background:rgba(0,255,231,0.05); border-radius:6px; font-size:10px; color:#ccc; display:none; border-left:2px solid var(--cyan);"></div>
+        <div id="staffResponse" aria-live="polite" style="margin-top:10px; padding:10px; background:rgba(0,255,231,0.05); border-radius:6px; font-size:10px; color:#ccc; display:none; border-left:2px solid var(--cyan);"></div>
       </div>
     </div>
   </div>
@@ -1323,6 +1325,25 @@ function toggleVisibility(inputId, btn) {
   const isPassword = input.type === 'password';
   input.type = isPassword ? 'text' : 'password';
   btn.textContent = isPassword ? 'HIDE' : 'SHOW';
+}
+
+/**
+ * Copy text from an input field to the clipboard
+ */
+function copyToClipboard(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (!input || !input.value) return;
+  navigator.clipboard.writeText(input.value).then(() => {
+    const originalText = btn.textContent;
+    btn.textContent = 'COPIED!';
+    btn.style.color = 'var(--green)';
+    setTimeout(() => {
+      btn.textContent = originalText;
+      btn.style.color = '';
+    }, 2000);
+  }).catch(err => {
+    console.error('Copy failed:', err);
+  });
 }
 
 // ══════════════════════════════════════════════════════
