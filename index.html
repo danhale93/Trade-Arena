@@ -47,7 +47,14 @@
   text-align:center!important;
   margin-top:12px!important;
   color:var(--dim)!important;
-  font-size:10px!important
+  font-size:10px!important;
+  background:none;
+  border:none;
+  width:100%;
+  cursor:pointer
+}
+.advanced-toggle:hover{
+  color:var(--cyan)!important
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{overflow-y:auto;height:100%}
@@ -731,9 +738,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       </button>
       <div class="divider">— or —</div>
       <button class="demo-btn" onclick="loginDemo()">🎮 ENTER DEMO MODE — NO SETUP NEEDED</button>
-      <div class="advanced-toggle" onclick="document.getElementById('advancedSettings').style.display = 'block'; this.style.display = 'none';">
-        ⚙´©Å Advanced Settings
-      </div>
+      <button class="advanced-toggle" onclick="document.getElementById('advancedSettings').style.display = 'block'; this.style.display = 'none';" aria-expanded="false" aria-controls="advancedSettings">
+        ⚙️ Advanced Settings
+      </button>
       <div class="fiat-ramp-row">
         <button class="onramp-btn" onclick="window.openMoonpay && window.openMoonpay()">💳 DEPOSIT USDC</button>
         <button class="offramp-btn" onclick="openOskoRamp('offramp')">💵 WITHDRAW</button>
@@ -834,10 +841,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     </div>
      <!-- bot controls -->
      <div class="gh-controls">
-         <button class="gh-bus-btn" onclick="togglePanel('staff')" title="Application Maintenance & Support">👷 STAFF</button>
-       <button class="gh-bus-btn" onclick="togglePanel('task')" title="Earn Trade Credits">💰 EARN</button>
-       <button class="gh-bus-btn" onclick="togglePanel('elo')" title="ELO Arena - Recursive Improvement">🏆 ARENA</button>
-       <button class="gh-bus-btn" id="voiceAgentBtn" onclick="toggleVoiceAgent()" title="AI Floor Manager (Voice Chat)">🎙️ AGENT</button>
+       <button class="gh-bus-btn" id="ghStaffBtn" onclick="togglePanel('staff')" title="Application Maintenance & Support" aria-expanded="false">👷 STAFF</button>
+       <button class="gh-bus-btn" id="ghTaskBtn" onclick="togglePanel('task')" title="Earn Trade Credits" aria-expanded="false">💰 EARN</button>
+       <button class="gh-bus-btn" id="ghEloBtn" onclick="togglePanel('elo')" title="ELO Arena - Recursive Improvement" aria-expanded="false">🏆 ARENA</button>
+       <button class="gh-bus-btn" id="voiceAgentBtn" onclick="toggleVoiceAgent()" title="AI Floor Manager (Voice Chat)" aria-expanded="false">🎙️ AGENT</button>
        <button class="gh-bus-btn" id="fleetViewBtn" onclick="toggleFleetView()" title="Toggle Fleet View (Compact Grid)">📊 FLEET</button>
        <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots" aria-expanded="false">⚙ BUS</button>
        <button class="gh-auto-btn" id="ghAutoBtn" onclick="globalAutoToggle()" title="Toggle auto-trading on all bots" aria-pressed="false">AUTO</button>
@@ -2515,6 +2522,15 @@ function togglePanel(name) {
   const isOpen=body.classList.toggle('open');
   hd?.classList.toggle('open',isOpen);
   hd?.setAttribute('aria-expanded', isOpen);
+
+  // Update header button affordance
+  const ghMap = { staff: 'ghStaffBtn', task: 'ghTaskBtn', elo: 'ghEloBtn' };
+  const ghBtn = document.getElementById(ghMap[name]);
+  if (ghBtn) {
+    ghBtn.classList.toggle('open', isOpen);
+    ghBtn.setAttribute('aria-expanded', isOpen);
+  }
+
   toggle.textContent=isOpen?'▴ HIDE':'▼ '+(name==='quant'?'EXPAND':'CONFIGURE');
   if(name==='quant'&&isOpen){ updateQuantReport(); setTimeout(drawEquityCurve,50); }
   if(name==='elo'&&isOpen){ if(typeof renderEloArena === 'function') renderEloArena(); }
@@ -3204,7 +3220,11 @@ function setBet(id,amt){
   if(isNaN(amt)||amt<0.01) return;
   bot.bet=amt;
   // highlight matching preset, clear others
-  document.querySelectorAll(`#mbets-${id} .m-dd-bet`).forEach(b=>b.classList.toggle('on',parseFloat(b.dataset.bet)===amt));
+  document.querySelectorAll(`#mbets-${id} .m-dd-bet`).forEach(b=>{
+    const isOn = parseFloat(b.dataset.bet)===amt;
+    b.classList.toggle('on',isOn);
+    b.setAttribute('aria-pressed', isOn);
+  });
   // update display
   const disp=document.getElementById('mbetdisp-'+id);
   if(disp) disp.innerHTML=`$${amt%1===0?amt.toFixed(0):amt.toFixed(2)} <span>per trade</span>`;
@@ -4901,7 +4921,9 @@ function _busStatus(msg, ok=true) {
 
 function _busHighlight(containerId, matchFn) {
   document.querySelectorAll(`#${containerId} .bus-preset`).forEach(b => {
-    b.classList.toggle('active', matchFn(b));
+    const isActive = matchFn(b);
+    b.classList.toggle('active', isActive);
+    b.setAttribute('aria-pressed', isActive);
   });
 }
 
@@ -5185,12 +5207,12 @@ function _injectAVControls() {
   const audioOn = typeof ACOUSTIC !== 'undefined' && ACOUSTIC.getConfig().audio.enabled;
 
   wrap.innerHTML = `
-    <button id="sfxBtn" style="${btnStyle}" class="${sfxOn?'av-on':''}" title="Sound Effects" aria-label="Toggle Sound Effects"
-      onclick="if(typeof ACOUSTIC!=='undefined'){ ACOUSTIC.toggleSFX(); this.classList.toggle('av-on', ACOUSTIC.getConfig().sfx.enabled); }">🔊</button>
-    <button id="voiceBtn" style="${btnStyle}" class="${voiceOn?'av-on':''}" title="Voice Announcements" aria-label="Toggle Voice Announcements"
-      onclick="if(typeof ACOUSTIC!=='undefined'){ ACOUSTIC.toggleVOICE(); this.classList.toggle('av-on', ACOUSTIC.getConfig().voice.enabled); }">🎙️</button>
-    <button id="audioBtn" style="${btnStyle}" class="${audioOn?'av-on':''}" title="Acoustic Core Sequencer" aria-label="Toggle Acoustic Core Sequencer"
-      onclick="if(typeof ACOUSTIC!=='undefined'){ ACOUSTIC.toggleAudio(); this.classList.toggle('av-on', ACOUSTIC.getConfig().audio.enabled); }">🎹</button>`;
+    <button id="sfxBtn" style="${btnStyle}" class="${sfxOn?'av-on':''}" title="Sound Effects" aria-label="Toggle Sound Effects" aria-pressed="${sfxOn}"
+      onclick="if(typeof ACOUSTIC!=='undefined'){ ACOUSTIC.toggleSFX(); const isOn=ACOUSTIC.getConfig().sfx.enabled; this.classList.toggle('av-on', isOn); this.setAttribute('aria-pressed', isOn); }">🔊</button>
+    <button id="voiceBtn" style="${btnStyle}" class="${voiceOn?'av-on':''}" title="Voice Announcements" aria-label="Toggle Voice Announcements" aria-pressed="${voiceOn}"
+      onclick="if(typeof ACOUSTIC!=='undefined'){ ACOUSTIC.toggleVOICE(); const isOn=ACOUSTIC.getConfig().voice.enabled; this.classList.toggle('av-on', isOn); this.setAttribute('aria-pressed', isOn); }">🎙️</button>
+    <button id="audioBtn" style="${btnStyle}" class="${audioOn?'av-on':''}" title="Acoustic Core Sequencer" aria-label="Toggle Acoustic Core Sequencer" aria-pressed="${audioOn}"
+      onclick="if(typeof ACOUSTIC!=='undefined'){ ACOUSTIC.toggleAudio(); const isOn=ACOUSTIC.getConfig().audio.enabled; this.classList.toggle('av-on', isOn); this.setAttribute('aria-pressed', isOn); }">🎹</button>`;
 
   const gen = document.getElementById('genBadge');
   if (gen) hdr.insertBefore(wrap, gen); else hdr.appendChild(wrap);

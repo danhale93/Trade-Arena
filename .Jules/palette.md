@@ -13,3 +13,7 @@
 ## 2026-06-21 - [Dynamic Content Accessibility & Interaction Feedback]
 **Learning:** Asynchronous UI updates in status containers (like login messages or AI replies) are invisible to screen readers unless marked with `aria-live="polite"`. Additionally, utility actions like "Copy to Clipboard" require immediate, high-contrast visual feedback (e.g., text change + color shift) to confirm success without requiring a separate notification component.
 **Action:** Apply `aria-live="polite"` to all dynamic status areas and implement a 2-second "COPIED!" state for clipboard buttons.
+
+## 2026-06-22 - [Panel Navigation Affordance]
+**Learning:** In a multi-panel dashboard where top-level navigation buttons toggle collapsible sections, visual state synchronization is critical. Without an "active" class on the header button, users lose the relationship between the trigger and the content. Standardizing these triggers as semantic `<button>` elements with `aria-expanded` ensures both visual and assistive clarity.
+**Action:** Always map dashboard toggle buttons to their panel state using a shared logic (like `togglePanel`) that manages both the content visibility and the trigger's visual 'open' state.
