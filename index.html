@@ -1119,7 +1119,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         <!-- Shadow baselines -->
         <div class="qr-section-title" style="margin-top:10px">Claude vs Shadow Baselines</div>
         <table class="baseline-table" id="baselineTable">
-          <tr><th>Strategy</th><th>Total P&L</th><th>Win Rate</th><th>Avg/trade</th><th>vs Cash</th></tr>
+          <tr><th>Strategy</th><th>Total P&L</th><th>Win Rate</th><th>Avg/trade</th><th>vs Claude</th></tr>
           <tr class="highlight-row"><td>🤖 Claude AI</td><td id="bl-claude-pnl">—</td><td id="bl-claude-wr">—</td><td id="bl-claude-avg">—</td><td id="bl-claude-vs">—</td></tr>
           <tr><td>🎲 Random</td><td id="bl-random-pnl">—</td><td id="bl-random-wr">—</td><td id="bl-random-avg">—</td><td id="bl-random-vs">—</td></tr>
           <tr><td>📈 Always Long</td><td id="bl-long-pnl">—</td><td id="bl-long-wr">—</td><td id="bl-long-avg">—</td><td id="bl-long-vs">—</td></tr>
@@ -1470,7 +1470,6 @@ const CRUCIBLE_METHODS = ['SPOT LONG','SPOT SHORT','HOLD'];
 let balance=50, startBalance=50, totalPnl=0;
 let closedTrades=[], openPositions=[], equityHistory=[10000];
 let agentHistory=[]; // per-agent vote accuracy for quant report
-let baselines={ random:{trades:[]}, long:{trades:[]}, momentum:{trades:[]} };
 let globalLog=[];
 let bots=[], botCounter=0;
 let marketCache=null, marketCacheTime=0, marketMap=new Map();
@@ -1835,7 +1834,6 @@ async function checkExit(pos, bot) {
 
   // Compute shadow baselines
   pos.baselines=computeBaselines(pos.entryPrice,exitPrice,pos.bet,pos.method,pos.volumeUsd,pos.priceChangePct15m);
-  Object.keys(pos.baselines).forEach(k=>{ if(k!=='cash') baselines[k].trades.push(pos.baselines[k]); });
 
   // Track agent performance for quant report
   if(pos.ensemble) trackAgentPerformance(pos.ensemble, pos.isWin);
@@ -1963,31 +1961,54 @@ function updateQuantReport() {
   });
 
   if(n===0) return;
-  const wins=trades.filter(t=>t.isWin);
-  const losses=trades.filter(t=>!t.isWin);
-  const winRate=wins.length/n;
-  const grossW=wins.reduce((s,t)=>s+t.netPnl,0);
-  const grossL=Math.abs(losses.reduce((s,t)=>s+t.netPnl,0));
+
+  // ⚡ Bolt Optimization: Consolidate O(N) passes into a single loop
+  let winCount=0, lossCount=0, grossW=0, grossL=0, totalNetPnl=0, totalCosts=0;
+  const byStrat={}, baselinePnls={random:0,long:0,momentum:0}, baselineWins={random:0,long:0,momentum:0};
+  const returns=[];
+
+  for (const t of trades) {
+    totalNetPnl += t.netPnl;
+    totalCosts += t.costs.total;
+    returns.push(t.netPnl);
+
+    if (t.isWin) { winCount++; grossW += t.netPnl; }
+    else { lossCount++; grossL += Math.abs(t.netPnl); }
+
+    if (!byStrat[t.method]) byStrat[t.method] = { wins:0, total:0, pnl:0 };
+    byStrat[t.method].total++;
+    byStrat[t.method].pnl += t.netPnl;
+    if (t.isWin) byStrat[t.method].wins++;
+
+    if (t.baselines) {
+      ['random','long','momentum'].forEach(k => {
+        baselinePnls[k] += (t.baselines[k] || 0);
+        if (t.baselines[k] > 0) baselineWins[k]++;
+      });
+    }
+  }
+
+  const winRate=winCount/n;
   const pf=grossL>0?(grossW/grossL):grossW>0?99:0;
-  const avgPnl=trades.reduce((s,t)=>s+t.netPnl,0)/n;
-  const avgW=wins.length>0?grossW/wins.length:0;
-  const avgL=losses.length>0?grossL/losses.length:0;
+  const avgPnl=totalNetPnl/n;
+  const avgW=winCount>0?grossW/winCount:0;
+  const avgL=lossCount>0?grossL/lossCount:0;
   const maxDD=computeMaxDrawdown();
 
   // Metric cards
-  setMCard('mc-wr','mv-wr','ms-wr',(winRate*100).toFixed(1)+'%',wins.length+'W / '+losses.length+'L',winRate>=0.5?'good':'bad');
+  setMCard('mc-wr','mv-wr','ms-wr',(winRate*100).toFixed(1)+'%',winCount+'W / '+lossCount+'L',winRate>=0.5?'good':'bad');
   setMCard('mc-pf','mv-pf',null,pf>=99?'∞':pf.toFixed(2),null,pf>=1?'good':'bad');
   setMCard('mc-exp','mv-exp','ms-exp',(avgPnl>=0?'+':'')+'$'+avgPnl.toFixed(2),'per trade after costs',avgPnl>=0?'good':'bad');
   setMCard('mc-dd','mv-dd',null,'-$'+maxDD.toFixed(2),null,maxDD<startBalance*0.1?'good':'bad');
-  setVal('mv-avgW',wins.length>0?'+$'+avgW.toFixed(2):'—');
-  setVal('mv-avgL',losses.length>0?'-$'+avgL.toFixed(2):'—');
+  setVal('mv-avgW',winCount>0?'+$'+avgW.toFixed(2):'—');
+  setVal('mv-avgL',lossCount>0?'-$'+avgL.toFixed(2):'—');
   setVal('mv-open',openPositions.length);
 
   drawEquityCurve();
-  drawBaselines(trades, avgPnl);
-  drawStratBreakdown(trades);
-  drawReturnDist(trades);
-  drawCostSensitivity(trades);
+  drawBaselines(n, totalNetPnl, winRate, baselinePnls, baselineWins, avgPnl);
+  drawStratBreakdown(byStrat);
+  drawReturnDist(returns);
+  drawCostSensitivity(totalNetPnl, totalCosts);
   drawVerdict(n, winRate, pf, avgPnl);
 }
 
@@ -2025,41 +2046,53 @@ function drawEquityCurve() {
   if(bl){ bl.setAttribute('y1',baseY.toFixed(1)); bl.setAttribute('y2',baseY.toFixed(1)); }
 }
 
-function drawBaselines(trades, claudeAvg) {
-  const n=trades.length;
-  const claudePnl=trades.reduce((s,t)=>s+t.netPnl,0);
-  const claudeWr=(trades.filter(t=>t.isWin).length/n*100).toFixed(1);
-
-  const bKeys=['random','long','momentum'];
-  const bData={};
-  bKeys.forEach(k=>{
-    const arr=baselines[k].trades.slice(0,n);
-    const pnl=arr.reduce((s,v)=>s+v,0);
-    const wins=arr.filter(v=>v>0).length;
-    bData[k]={ pnl, avg:arr.length?pnl/arr.length:0, wr:arr.length?(wins/arr.length*100).toFixed(1)+'%':'—' };
+function drawBaselines(n, claudePnl, winRate, baselinePnls, baselineWins, claudeAvg) {
+  const claudeWr = (winRate * 100).toFixed(1);
+  const bKeys = ['random', 'long', 'mom']; // Keys match the ID prefixes in HTML
+  const bData = {};
+  bKeys.forEach(k => {
+    const pnl = baselinePnls[k === 'mom' ? 'momentum' : k] || 0;
+    const wins = baselineWins[k === 'mom' ? 'momentum' : k] || 0;
+    bData[k] = { pnl, avg: n ? pnl / n : 0, wr: n ? (wins / n * 100).toFixed(1) + '%' : '—' };
   });
 
   // Highlight the winner
-  const allPnls={claude:claudePnl, ...Object.fromEntries(bKeys.map(k=>[k,bData[k].pnl]))};
-  const best=Object.keys(allPnls).reduce((a,b)=>allPnls[a]>allPnls[b]?a:b);
+  const allPnls = { claude: claudePnl, ...Object.fromEntries(bKeys.map(k => [k, bData[k].pnl])) };
+  const best = Object.keys(allPnls).reduce((a, b) => allPnls[a] > allPnls[b] ? a : b);
 
-  const fmt=(v)=>(v>=0?'+':'')+'$'+v.toFixed(2);
-  setVal('bl-claude-pnl',fmt(claudePnl)); setVal('bl-claude-wr',claudeWr+'%'); setVal('bl-claude-avg',fmt(claudeAvg)); setVal('bl-claude-vs',fmt(claudePnl));
-  bKeys.forEach(k=>{
-    setVal('bl-'+k+'-pnl',fmt(bData[k].pnl)); setVal('bl-'+k+'-wr',bData[k].wr); setVal('bl-'+k+'-avg',fmt(bData[k].avg)); setVal('bl-'+k+'-vs',fmt(bData[k].pnl-0));
+  const fmt = (v) => (v >= 0 ? '+' : '') + '$' + v.toFixed(2);
+
+  // Update Claude row
+  setVal('bl-claude-pnl', fmt(claudePnl));
+  setVal('bl-claude-wr', claudeWr + '%');
+  setVal('bl-claude-avg', fmt(claudeAvg));
+  setVal('bl-claude-vs', 'benchmark');
+
+  // Update Baseline rows
+  bKeys.forEach(k => {
+    setVal('bl-' + k + '-pnl', fmt(bData[k].pnl));
+    setVal('bl-' + k + '-wr', bData[k].wr);
+    setVal('bl-' + k + '-avg', fmt(bData[k].avg));
+    // Alpha metric: Baseline P&L vs Claude P&L
+    setVal('bl-' + k + '-vs', fmt(bData[k].pnl - claudePnl));
   });
-  document.querySelectorAll('.baseline-table tr').forEach(r=>r.classList.remove('best-row'));
-  const rowMap={claude:'highlight-row',random:'',long:'',momentum:''};
-  if(best==='claude') document.querySelector('.baseline-table .highlight-row')?.classList.add('best-row');
+
+  // Highlight best strategy
+  const table = document.getElementById('baselineTable');
+  if (table) {
+    table.querySelectorAll('tr').forEach(r => r.classList.remove('best-row'));
+    if (best === 'claude') {
+      table.querySelector('.highlight-row')?.classList.add('best-row');
+    } else {
+      // Find row for the winning baseline
+      const id = 'bl-' + best + '-pnl';
+      const cell = document.getElementById(id);
+      if (cell) cell.closest('tr')?.classList.add('best-row');
+    }
+  }
 }
 
-function drawStratBreakdown(trades) {
-  const byStrat={};
-  trades.forEach(t=>{
-    if(!byStrat[t.method]) byStrat[t.method]={wins:0,total:0,pnl:0};
-    byStrat[t.method].total++; byStrat[t.method].pnl+=t.netPnl;
-    if(t.isWin) byStrat[t.method].wins++;
-  });
+function drawStratBreakdown(byStrat) {
   const maxAbs=Math.max(...Object.values(byStrat).map(d=>Math.abs(d.pnl)),0.01);
   const el=document.getElementById('stratBreakdown');
   el.innerHTML=Object.entries(byStrat).sort((a,b)=>b[1].pnl-a[1].pnl).map(([name,d])=>{
@@ -2074,9 +2107,9 @@ function drawStratBreakdown(trades) {
   }).join('');
 }
 
-function drawReturnDist(trades) {
-  if(trades.length<5) return;
-  const returns=trades.map(t=>t.netPnl);
+function drawReturnDist(returns) {
+  const n=returns.length;
+  if(n<5) return;
   const min=Math.min(...returns), max=Math.max(...returns);
   const bins=10, size=(max-min)/bins||1;
   const counts=Array(bins).fill(0);
@@ -2092,14 +2125,12 @@ function drawReturnDist(trades) {
   setVal('distMin','$'+min.toFixed(1)); setVal('distMax','$'+max.toFixed(1));
 }
 
-function drawCostSensitivity(trades) {
+function drawCostSensitivity(totalNetPnl, totalCosts) {
   [1,1.5,2].forEach((mult,i)=>{
     const ids=['cs-1x','cs-15x','cs-2x'];
     const cols=['var(--green)','var(--amber)','var(--hot)'];
-    const adjPnl=trades.reduce((s,t)=>{
-      const extraCost=t.costs.total*(mult-1);
-      return s+t.netPnl-extraCost;
-    },0);
+    const extraCostMult = mult - 1;
+    const adjPnl = totalNetPnl - (totalCosts * extraCostMult);
     const el=document.getElementById(ids[i]);
     if(el){ el.textContent=(adjPnl>=0?'+':'')+'$'+adjPnl.toFixed(2); el.style.color=adjPnl>=0?cols[i]:cols[2]; }
   });
