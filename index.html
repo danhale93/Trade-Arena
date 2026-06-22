@@ -1469,6 +1469,7 @@ const CRUCIBLE_METHODS = ['SPOT LONG','SPOT SHORT','HOLD'];
 // ══════════════════════════════════════════════════════
 let balance=50, startBalance=50, totalPnl=0;
 let closedTrades=[], openPositions=[], equityHistory=[10000];
+let _lastClosedCount = -1;
 let agentHistory=[]; // per-agent vote accuracy for quant report
 let globalLog=[];
 let bots=[], botCounter=0;
@@ -1947,6 +1948,10 @@ function updateQuantReport() {
   const body = document.getElementById('quantBody');
   if (body && !body.classList.contains('open')) return;
 
+  // ⚡ Bolt Optimization: Early return if no new trades have been closed since last update
+  if (closedTrades.length === _lastClosedCount) return;
+  _lastClosedCount = closedTrades.length;
+
   const trades=closedTrades.filter(t=>t.method!=='HOLD');
   const n=trades.length;
   document.getElementById('qTradeCount').textContent=n+' closed trades';
@@ -2013,7 +2018,9 @@ function updateQuantReport() {
 }
 
 function setMCard(cardId, valId, subId, val, sub, cls) {
-  const c=document.getElementById(cardId); if(c) c.className='mcard '+cls;
+  const c=document.getElementById(cardId);
+  const nextClass = 'mcard ' + cls;
+  if(c && c.className !== nextClass) c.className = nextClass;
   if(valId) setVal(valId,val);
   if(subId&&sub) setVal(subId,sub);
 }
@@ -4842,7 +4849,7 @@ function renderLog(){
 // HELPERS
 // ══════════════════════════════════════════════════════
 function closeResult(id){ document.getElementById('mresult-'+id)?.classList.remove('show'); }
-function setVal(id,v){ const e=document.getElementById(id); if(e) e.textContent=v; }
+function setVal(id,v){ const e=document.getElementById(id); if(e && e.textContent !== String(v)) e.textContent=v; }
 function spawnParticles(win,botId){
   const syms=win?['💰','🪙','✨','💎','🔥']:['💀','📉','💸','😤','❌'];
   const card=document.getElementById('bot-'+botId),rect=card?.getBoundingClientRect();
