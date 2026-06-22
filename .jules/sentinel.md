@@ -27,3 +27,8 @@
 **Vulnerability:** The MoonPay webhook in `server.js` was comparing the `x-moonpay-signature` header directly against the `MOONPAY_WEBHOOK_SECRET`. Furthermore, it "failed open" if the secret was missing from environment variables.
 **Learning:** Webhook signatures are typically HMAC hashes of the payload, not the secret itself. Direct comparison is both functionally incorrect and insecure. Security-sensitive logic must always fail closed if required credentials or secrets are missing.
 **Prevention:** Always implement proper HMAC-SHA256 verification for webhooks using a secure comparison function like `crypto.timingSafeEqual`. Ensure that the absence of a secret results in an error rather than bypassing the security check.
+
+## 2026-06-22 - [HIGH] Misplaced Server-Side Webhook Logic and Secret Placeholders
+**Vulnerability:** Redundant server-side webhook handling and signature verification logic were found in the client-side `moonpay-client.js`. This included a placeholder for a sensitive secret key and an insecure verification bypass for development.
+**Learning:** Client-side bundles should never contain logic meant for server-side endpoints, especially if it involves HMAC verification or references to secret keys. Including Node.js-specific modules (like `crypto`) in client-side code is also a sign of architectural mismatch.
+**Prevention:** Consolidate all webhook processing and signature verification to the server-side. Ensure client-side configuration objects only contain public keys and never include placeholders for sensitive secrets, as these are easily exposed and can be accidentally filled with real credentials.
