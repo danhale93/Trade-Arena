@@ -45,8 +45,21 @@ app.post('/api/openai', async (req, res) => {
 
 app.post('/api/gemini', async (req, res) => {
   try {
-    const model = req.body.model || 'gemini-1.5-flash';
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY || ''}`, {
+    const allowedGeminiModels = new Set([
+      'gemini-1.5-flash',
+      'gemini-1.5-pro',
+      'gemini-2.0-flash',
+      'gemini-2.0-flash-lite'
+    ]);
+    const requestedModel = req.body.model;
+    const model = requestedModel || 'gemini-1.5-flash';
+
+    if (!allowedGeminiModels.has(model)) {
+      return res.status(400).json({ error: 'Invalid Gemini model' });
+    }
+
+    const safeModel = encodeURIComponent(model);
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${safeModel}:generateContent?key=${process.env.GEMINI_API_KEY || ''}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
