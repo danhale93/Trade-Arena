@@ -11,7 +11,7 @@
     "start": "node start.js"
   },
   "dependencies": {
-    "axios": "^1.13.6",
+    "axios": "^1.16.0",
     "ccxt": "^4.2.77",
     "dotenv": "^16.6.1",
     "ethers": "^6.17.0",
