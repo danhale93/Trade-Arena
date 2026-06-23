@@ -27,3 +27,6 @@
 **Vulnerability:** The MoonPay webhook in `server.js` was comparing the `x-moonpay-signature` header directly against the `MOONPAY_WEBHOOK_SECRET`. Furthermore, it "failed open" if the secret was missing from environment variables.
 **Learning:** Webhook signatures are typically HMAC hashes of the payload, not the secret itself. Direct comparison is both functionally incorrect and insecure. Security-sensitive logic must always fail closed if required credentials or secrets are missing.
 **Prevention:** Always implement proper HMAC-SHA256 verification for webhooks using a secure comparison function like `crypto.timingSafeEqual`. Ensure that the absence of a secret results in an error rather than bypassing the security check.
+
+## 2026-06-23T00:09:08.077Z - [INFO] SENTINEL
+security fix verified

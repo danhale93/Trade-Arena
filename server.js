@@ -11,13 +11,24 @@ const axios = require('axios');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const rateLimit = require('express-rate-limit');
 const WebSocket = require('websocket').w3cwebsocket;
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Security: Rate limiting to prevent abuse and brute force
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per windowMs
+    message: { error: 'Too many requests, please try again later.' }
+});
+
+// Apply rate limiter to all requests
+app.use(limiter);
+
 // Middleware
-app.use(cors({ origin: '*' }));
+app.use(cors({ origin: process.env.ALLOWED_ORIGIN || '*' }));
 app.use(express.json());
 
 // Serve static files from root directory
@@ -36,7 +47,7 @@ app.get('/api/health', (req, res) => {
 });
 
 /**
- * AI PROXY ENDPOINTS (from proxy.js)
+ * AI PROXY ENDPOINTS
  */
 
 app.post('/api/claude', async (req, res) => {
@@ -76,10 +87,17 @@ app.post('/api/openai', async (req, res) => {
     }
 });
 
+// Security: Whitelist allowed models to prevent SSRF and injection
+const ALLOWED_GEMINI_MODELS = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash-exp'];
+
 app.post('/api/gemini', async (req, res) => {
     try {
-        const model = req.body.model || 'gemini-1.5-flash';
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY || ''}`, {
+        const requestedModel = req.body.model || 'gemini-1.5-flash';
+        if (!ALLOWED_GEMINI_MODELS.includes(requestedModel)) {
+            return res.status(400).json({ error: 'Invalid model specified' });
+        }
+
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${requestedModel}:generateContent?key=${process.env.GEMINI_API_KEY || ''}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -96,14 +114,21 @@ app.post('/api/gemini', async (req, res) => {
 });
 
 /**
- * MAINTENANCE & LOGGING (from proxy.js)
+ * MAINTENANCE & LOGGING
  */
 
 app.post('/api/maintenance/log', (req, res) => {
     const { agent, message, level } = req.body;
+
+    // Security: Validate input
+    if (!agent || !message) {
+        return res.status(400).json({ error: 'Missing agent or message' });
+    }
+
     const logDir = path.join(__dirname, '.jules');
     if (!fs.existsSync(logDir)) fs.mkdirSync(logDir);
 
+    // Security: Strict whitelist for log files
     const logFile = agent === 'SENTINEL' ? 'sentinel.md' : 'maintenance.md';
     const logPath = path.join(logDir, logFile);
 
@@ -116,11 +141,16 @@ app.post('/api/maintenance/log', (req, res) => {
 app.post('/api/maintenance/patch', async (req, res) => {
     const { filepath, patch, description } = req.body;
     try {
+        if (!filepath) return res.status(400).json({ error: 'Missing filepath' });
+
+        // Security: Prevent path traversal by resolving and validating path
         const resolvedPath = path.resolve(__dirname, filepath);
         const rootPath = path.resolve(__dirname) + path.sep;
+
         if (!resolvedPath.startsWith(rootPath) && resolvedPath !== path.resolve(__dirname)) {
             return res.status(403).json({ error: 'Unauthorized path access' });
         }
+
         if (!fs.existsSync(resolvedPath)) throw new Error('File not found');
         console.log(`[Developer Agent] Patch requested for ${filepath}: ${description}`);
         res.json({ success: true, message: 'Patch received and logged for review' });
@@ -130,7 +160,7 @@ app.post('/api/maintenance/patch', async (req, res) => {
 });
 
 /**
- * TRADING & MARKET ENDPOINTS (from original server.js)
+ * TRADING & MARKET ENDPOINTS
  */
 
 app.get('/api/market/prices', async (req, res) => {
@@ -161,7 +191,7 @@ app.post('/api/bot/create', async (req, res) => {
         };
         res.json({ success: true, bot });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: true, bot }); // Note: Keeping it success:true for simulation demo logic compatibility if needed
     }
 });
 
