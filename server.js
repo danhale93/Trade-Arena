@@ -27,7 +27,7 @@ const limiter = rateLimit({
 // Apply rate limiter to all requests
 app.use(limiter);
 
-// Security: Use a more restrictive CORS policy to satisfy CodeQL
+// Security: Use a more restrictive CORS policy
 const allowedOrigin = process.env.ALLOWED_ORIGIN;
 app.use(cors({
     origin: allowedOrigin && allowedOrigin !== '*' ? allowedOrigin : false
@@ -35,8 +35,9 @@ app.use(cors({
 
 app.use(express.json());
 
-// Serve static files from root directory
-app.use(express.static(__dirname));
+// Security: Serve static files from 'public' directory ONLY
+const publicDir = path.join(__dirname, 'public');
+app.use(express.static(publicDir));
 
 /**
  * Health Check & Market Overview
@@ -91,7 +92,7 @@ app.post('/api/openai', async (req, res) => {
     }
 });
 
-// Security: Whitelist allowed models to prevent SSRF and injection
+// Security: Whitelist allowed models
 const ALLOWED_GEMINI_MODELS = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash-exp'];
 
 app.post('/api/gemini', async (req, res) => {
@@ -123,24 +124,26 @@ app.post('/api/gemini', async (req, res) => {
 
 app.post('/api/maintenance/log', (req, res) => {
     const { agent, message, level } = req.body;
-
-    // Security: Validate input
-    if (!agent || !message) {
-        return res.status(400).json({ error: 'Missing agent or message' });
-    }
+    if (!agent || !message) return res.status(400).json({ error: 'Missing agent or message' });
 
     const logDir = path.join(__dirname, '.jules');
     if (!fs.existsSync(logDir)) fs.mkdirSync(logDir);
 
-    // Security: Strict whitelist for log files
     const logFile = agent === 'SENTINEL' ? 'sentinel.md' : 'maintenance.md';
     const logPath = path.join(logDir, logFile);
 
     const entry = `\n## ${new Date().toISOString()} - [${level || 'INFO'}] ${agent}\n${message}\n`;
     fs.appendFileSync(logPath, entry);
-
     res.json({ success: true });
 });
+
+// Security: Strict path whitelist for patching
+const ALLOWED_PATCH_FILES = [
+    'public/index.html',
+    'public/staff-engine.js',
+    'public/ai-api.js',
+    'public/ai-arena.js'
+];
 
 app.post('/api/maintenance/patch', async (req, res) => {
     const { filepath, patch, description } = req.body;
@@ -149,16 +152,12 @@ app.post('/api/maintenance/patch', async (req, res) => {
             return res.status(400).json({ error: 'Invalid or missing filepath' });
         }
 
-        // Security: Prevent path traversal using path.relative to verify ownership
-        const safeDir = path.resolve(__dirname);
-        const targetPath = path.resolve(safeDir, filepath);
-        const relative = path.relative(safeDir, targetPath);
-
-        const isSafe = relative && !relative.startsWith('..') && !path.isAbsolute(relative);
-
-        if (!isSafe && targetPath !== safeDir) {
-            return res.status(403).json({ error: 'Unauthorized path access' });
+        // Security: Check against absolute whitelist to clear CodeQL taint
+        if (!ALLOWED_PATCH_FILES.includes(filepath)) {
+            return res.status(403).json({ error: 'Unauthorized file for patching' });
         }
+
+        const targetPath = path.join(__dirname, filepath);
 
         if (!fs.existsSync(targetPath)) {
              return res.status(404).json({ error: 'File not found' });
