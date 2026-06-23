@@ -89,6 +89,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 .cb-btn:hover{box-shadow:0 4px 20px rgba(0,82,255,.6)}
 .demo-btn{width:100%;padding:10px;background:transparent;border:1px dashed var(--border);border-radius:8px;cursor:pointer;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--dim);transition:all .15s}
 .demo-btn:hover{border-color:var(--cyan);color:var(--cyan);background:rgba(0,255,231,.04)}
+
+.payid-btn{width:100%;padding:12px;margin-top:10px;background:linear-gradient(135deg,#ff4500,#ff8c00);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:'Bungee',display;font-size:11px;letter-spacing:1px;box-shadow:0 4px 15px rgba(255,69,0,0.3);transition:all .2s;display:flex;align-items:center;justify-content:center;gap:10px}
+.payid-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(255,69,0,0.4);filter:brightness(1.1)}
+
 /* OSKO On/Off Ramp Buttons */
 .onramp-btn,.offramp-btn{width:48%;padding:10px;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;border:none;border-radius:6px;cursor:pointer;transition:all .15s}
 .onramp-btn{background:linear-gradient(135deg,#00d4ff,#0099ff);color:#fff}
@@ -728,7 +732,12 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         SIGN IN WITH APPLE
       </button>
       <div class="divider">— or —</div>
-      <button class="mm-btn" onclick="loginMetaMask()">
+
+      <button class="payid-btn" onclick="loginPayID()">
+        <span style="font-size:16px">⚡</span> PAYID NO-KYC ONBOARDING (AUD)
+      </button>
+      <div class="divider" style="margin:12px 0">— or —</div>
+<button class="mm-btn" onclick="loginMetaMask()">
         <svg width="20" height="20" viewBox="0 0 318 318"><path d="M274 35L174 109l19-44z" fill="#E17726"/><path d="M44 35l99 75-18-44z" fill="#E27625"/><path d="M234 218l-27 41 58 16 17-56z" fill="#E27625"/><path d="M36 219l17 56 57-16-26-41z" fill="#E27625"/><path d="M107 143l-17 25 60 3-2-64z" fill="#E27625"/><path d="M211 143l-42-37-2 64 60-3z" fill="#E27625"/></svg>
         METAMASK
       </button>
@@ -1298,7 +1307,70 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
   </div>
 
   <!-- Bots -->
-  <div class="bot-grid" id="botGrid"></div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:8px;background:var(--chrome);border-radius:6px;border:1px solid var(--border);">
+      <div style="font-family:'Bungee';font-size:10px;color:var(--dim)">TRADING MODE</div>
+      <div style="display:flex;gap:4px">
+        <button id="simModeBtn" class="mode-btn active" onclick="switchTradingMode('sim')">SIMULATED</button>
+        <button id="liveModeBtn" class="mode-btn" onclick="switchTradingMode('live')">LIVE (BASE)</button>
+      </div>
+    </div>
+    <div id="crucibleProgress" style="display:none;margin-top:10px;margin-bottom:10px;padding:10px;background:rgba(0,0,0,0.3);border-radius:6px;border:1px solid var(--border);">
+      <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+        <span style="font-family:'Bungee';font-size:10px;color:var(--cyan)">CRUCIBLE PROGRESS</span>
+        <span id="crucibleProgressText" style="font-family:'Share Tech Mono';font-size:10px;color:var(--dim)">0/20</span>
+      </div>
+      <div style="width:100%;height:4px;background:var(--bg);border-radius:2px;overflow:hidden;margin-bottom:8px;">
+        <div id="crucibleProgressBar" style="width:0%;height:100%;background:var(--cyan);transition:width 0.3s;"></div>
+      </div>
+      <div style="display:flex;gap:5px;">
+        <button onclick="toggleCruciblePause()" class="mode-btn" style="flex:1">PAUSE</button>
+        <button onclick="stopCrucible()" class="mode-btn" style="flex:1;border-color:#ff4444;color:#ff4444">STOP</button>
+      </div>
+    </div>
+    <style>
+      .mode-btn { padding:4px 8px; background:var(--bg); border:1px solid var(--border); color:var(--dim); font-family:'Bungee'; font-size:9px; cursor:pointer; border-radius:4px; transition: all 0.2s; }
+      .mode-btn.active { border-color:var(--cyan); color:var(--cyan); background:rgba(0,255,231,0.1); }
+      .mode-btn:hover { border-color: var(--cyan); color: #fff; }
+    </style>
+    <script>
+      function switchTradingMode(mode) {
+        const isLive = mode === 'live';
+        if (isLive && (!window.walletState || !window.walletState.isConnected)) {
+           showToast('Connect real wallet first!', 'error');
+           return;
+        }
+        document.getElementById('simModeBtn').classList.toggle('active', !isLive);
+        document.getElementById('liveModeBtn').classList.toggle('active', isLive);
+        if (typeof CrucibleRealTrading !== 'undefined') {
+          CrucibleRealTrading.config.liveMode = isLive;
+          showToast(`Mode switched to ${isLive ? 'LIVE' : 'SIMULATED'}`, 'info');
+        }
+      }
+      function updateCrucibleProgress(current, total, equity) {
+        const prog = document.getElementById('crucibleProgress');
+        const bar = document.getElementById('crucibleProgressBar');
+        const text = document.getElementById('crucibleProgressText');
+        if (prog) prog.style.display = 'block';
+        if (bar) bar.style.width = (current / total * 100) + '%';
+        if (text) text.textContent = `${current}/${total} | $${equity.toFixed(2)}`;
+      }
+      function toggleCruciblePause() {
+        if (typeof CrucibleRealTrading !== 'undefined') {
+          const paused = CrucibleRealTrading.togglePause();
+          event.target.textContent = paused ? 'RESUME' : 'PAUSE';
+          event.target.classList.toggle('active', paused);
+        }
+      }
+      function stopCrucible() {
+        if (typeof CrucibleRealTrading !== 'undefined') {
+          CrucibleRealTrading.stop();
+          document.getElementById('crucibleProgress').style.display = 'none';
+          showToast('Trading session stopped', 'info');
+        }
+      }
+    </script>
+<div class="bot-grid" id="botGrid"></div>
 
   <!-- Log -->
   <div class="global-log">
@@ -2878,6 +2950,44 @@ async function loginCoinbase(){
       }
     }else{s.innerHTML='⚠️ Coinbase Wallet not found.<br><a href="https://www.coinbase.com/wallet" target="_blank" style="color:var(--hot)">Install Coinbase Wallet</a>';}
   }catch(e){s.innerHTML='❌ '+e.message;console.error('Coinbase error:',e);}
+}
+
+
+async function loginPayID() {
+  const s = document.getElementById('cStatus');
+  if(!s) return;
+
+  if(!window.ethereum) {
+    s.innerHTML = '❌ MetaMask not found. Please install MetaMask to use PayID onboarding.';
+    return;
+  }
+
+  try {
+    s.innerHTML = '⚡ Initiating PayID Onboarding...<br><span style="font-size:9px;color:var(--dim)">Step 1: Connecting Wallet</span>';
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    const address = accounts[0];
+
+    s.innerHTML = '⚡ Initiating PayID Onboarding...<br><span style="font-size:9px;color:var(--dim)">Step 2: Switching to Base Network</span>';
+    // Switch to Base
+    await window.ethereum.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: '0x2105' }],
+    });
+
+    s.innerHTML = '⚡ Redirecting to Ramp (AUD)...<br><span style="font-size:9px;color:var(--dim)">Instant AUD -> crypto without KYC (under limits)</span>';
+
+    // Redirect to AUD-optimized Ramp flow
+    const rampUrl = `https://buy.ramp.network/?ref=tradearena&swapAsset=BASE_ETH&fiatCurrency=AUD&fiatValue=50&userAddress=${address}`;
+
+    setTimeout(() => {
+        window.open(rampUrl, '_blank');
+        s.innerHTML = '✅ Redirected! Return here once your deposit arrives.<br><button onclick="loginMetaMask()" style="margin-top:8px;padding:6px 12px;background:var(--cyan);border:none;border-radius:4px;color:var(--bg);cursor:pointer;font-family:Bungee;font-size:9px">I HAVE FUNDS NOW</button>';
+    }, 1500);
+
+  } catch (e) {
+    console.error('PayID Error:', e);
+    s.innerHTML = '❌ Onboarding failed: ' + (e.message || 'Unknown error');
+  }
 }
 
 // OSKO Fiat On/Off Ramp Functions
@@ -4852,13 +4962,14 @@ function renderLog(){
     const pnlCls=isOpen?'open':isHold?'h':t.isWin?'p':'n';
     const ep=t.entryPrice?'\$'+t.entryPrice.toFixed(t.entryPrice<1?5:2):'—';
     const xp=t.exitPrice?'\$'+t.exitPrice.toFixed(t.exitPrice<1?5:2):(isOpen?'⏳':'—');
+    const txLink = t.txHash ? `<a href="${REAL_WALLET_CONFIG.network.explorerUrl}/tx/${t.txHash}" target="_blank" style="text-decoration:none;color:var(--cyan);font-size:8px;margin-left:4px">🔗</a>` : "";
     const cost=t.costs?.total?'-\$'+t.costs.total.toFixed(2):'';
     return`<div class="log-row">
       <div class="log-bot">#${t.botId}</div>
       <div class="log-coin" style="color:${isOpen?'var(--blue)':isHold?'var(--amber)':t.isWin?'var(--green)':'var(--hot)'}">${t.token}</div>
       <div class="log-method">${t.method}</div>
       <div class="log-entry">${ep}</div>
-      <div class="log-exit">${xp}</div>
+      <div class="log-exit">${xp}${txLink}</div>
       <div class="log-pnl ${pnlCls}">${pnlStr}</div>
       <div class="log-cost">${cost}</div>
       <div class="log-t">${t.time}</div>
@@ -5260,6 +5371,8 @@ document.addEventListener('keydown', function(e) {
 <script src="audio-engine.js" defer></script>
 <script src="ACOUSTIC_CORE.js" defer></script>
 <script src="contract-helpers.js" defer></script>
+<script src="real-wallet.js" defer></script>
+<script src="crucible-real-trading.js" defer></script>
 <script src="execution-engine.js" defer></script>
 <script src="elo-tournament-engine.js" defer></script>
 <script src="task-center.js" defer></script>

@@ -14,8 +14,9 @@
 // CONFIGURATION
 // ═══════════════════════════════════════════════════════════
 
-const REAL_WALLET_CONFIG = {
-  network: {
+
+const REAL_WALLET_NETWORKS = {
+  8453: {
     id: 8453,
     name: 'Base Mainnet',
     rpcUrl: 'https://mainnet.base.org',
@@ -23,6 +24,19 @@ const REAL_WALLET_CONFIG = {
     explorerUrl: 'https://basescan.org',
     nativeCurrency: 'ETH',
   },
+  84532: {
+    id: 84532,
+    name: 'Base Sepolia',
+    rpcUrl: 'https://sepolia.base.org',
+    chainId: '0x14a34',
+    explorerUrl: 'https://sepolia.basescan.org',
+    nativeCurrency: 'ETH',
+  }
+};
+
+var REAL_WALLET_CONFIG = {
+  network: REAL_WALLET_NETWORKS[8453],
+
   
   gas: {
     estimatedSwapGas: 120000, // units
@@ -93,8 +107,16 @@ if (typeof window !== 'undefined' && window.ethereum) {
     window.ethereum.on('chainChanged', (chainId) => {
       try {
         console.log('🔗 Chain changed to:', chainId);
+
         walletState.networkId = parseInt(chainId, 16);
-        walletState.isCorrectNetwork = walletState.networkId === REAL_WALLET_CONFIG.network.id;
+        walletState.isCorrectNetwork = (walletState.networkId === 8453 || walletState.networkId === 84532);
+        if (walletState.isCorrectNetwork) {
+            REAL_WALLET_CONFIG.network = REAL_WALLET_NETWORKS[walletState.networkId];
+            if (typeof ContractHelper !== 'undefined' && ContractHelper.switchNetwork) {
+                ContractHelper.switchNetwork(walletState.networkId);
+            }
+        }
+
         // Don't auto-reload, let user decide
         console.log('🔄 Please refresh the page to apply network changes');
       } catch (e) {
@@ -126,10 +148,17 @@ if (typeof window !== 'undefined' && window.ethereum) {
 async function validateNetwork(provider) {
   try {
     const network = await provider.getNetwork();
-    walletState.networkId = network.chainId;
-    walletState.isCorrectNetwork = network.chainId === REAL_WALLET_CONFIG.network.id;
     
-    if (!walletState.isCorrectNetwork) {
+    walletState.networkId = Number(network.chainId);
+    walletState.isCorrectNetwork = (walletState.networkId === 8453 || walletState.networkId === 84532);
+
+    if (walletState.isCorrectNetwork) {
+        REAL_WALLET_CONFIG.network = REAL_WALLET_NETWORKS[walletState.networkId];
+        if (typeof ContractHelper !== 'undefined' && ContractHelper.switchNetwork) {
+            ContractHelper.switchNetwork(walletState.networkId);
+        }
+    } else {
+
       console.warn(`❌ Wrong network! Connected to chain ${network.chainId}, need ${REAL_WALLET_CONFIG.network.id}`);
       return false;
     }
@@ -360,7 +389,7 @@ async function simulateRealTrade(betUSD, method, volatility, pnlMultiplier) {
 // NETWORK SWITCHING
 // ═══════════════════════════════════════════════════════════
 
-async function switchToBaseNetwork() {
+async function switchToBaseNetwork(targetChainId = 8453) {
   if (!window.ethereum) {
     console.error('MetaMask not installed');
     return false;
@@ -370,24 +399,25 @@ async function switchToBaseNetwork() {
     // Try to switch to Base
     await window.ethereum.request({
       method: 'wallet_switchEthereumChain',
-      params: [{ chainId: REAL_WALLET_CONFIG.network.chainId }],
+      params: [{ chainId: REAL_WALLET_NETWORKS[targetChainId].chainId }],
     });
     return true;
   } catch (switchError) {
     // Chain doesn't exist, add it
     if (switchError.code === 4902) {
+      const net = REAL_WALLET_NETWORKS[targetChainId];
       try {
         await window.ethereum.request({
           method: 'wallet_addEthereumChain',
           params: [
             {
-              chainId: REAL_WALLET_CONFIG.network.chainId,
-              chainName: REAL_WALLET_CONFIG.network.name,
-              rpcUrls: [REAL_WALLET_CONFIG.network.rpcUrl],
-              blockExplorerUrls: [REAL_WALLET_CONFIG.network.explorerUrl],
+              chainId: net.chainId,
+              chainName: net.name,
+              rpcUrls: [net.rpcUrl],
+              blockExplorerUrls: [net.explorerUrl],
               nativeCurrency: {
                 name: 'Ether',
-                symbol: REAL_WALLET_CONFIG.network.nativeCurrency,
+                symbol: net.nativeCurrency,
                 decimals: 18,
               },
             },
@@ -569,6 +599,7 @@ if (typeof window !== 'undefined') {
   window.verifyWalletReadiness = verifyWalletReadiness;
   window.walletState = walletState;
   window.REAL_WALLET_CONFIG = REAL_WALLET_CONFIG;
+  window.getWalletBalanceUSD = getWalletBalanceUSD;
   
   console.log('✅ Real Wallet Integration loaded. Available commands:');
   console.log('  → diagnoseMetaMask()');
@@ -630,4 +661,3 @@ async function getWalletBalanceUSD() {
     }
 }
 
-window.getWalletBalanceUSD = getWalletBalanceUSD;
