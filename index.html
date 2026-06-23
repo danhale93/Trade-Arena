@@ -1056,10 +1056,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
          <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
            <label style="color:var(--dim);font-size:10px">Regime:</label>
            <div style="display:flex;gap:2px">
-             <button id="regimeBull" class="regime-btn" onclick="selectRegime('BULL')">BULL</button>
-             <button id="regimeBear" class="regime-btn" onclick="selectRegime('BEAR')">BEAR</button>
-             <button id="regimeChop" class="regime-btn" onclick="selectRegime('CHOP')">CHOP</button>
-             <button id="regimeHighVol" class="regime-btn" onclick="selectRegime('HIGH_VOL')">HIGH_VOL</button>
+             <button id="regimeBull" class="regime-btn active" onclick="selectRegime('BULL')" aria-pressed="true">BULL</button>
+             <button id="regimeBear" class="regime-btn" onclick="selectRegime('BEAR')" aria-pressed="false">BEAR</button>
+             <button id="regimeChop" class="regime-btn" onclick="selectRegime('CHOP')" aria-pressed="false">CHOP</button>
+             <button id="regimeHighVol" class="regime-btn" onclick="selectRegime('HIGH_VOL')" aria-pressed="false">HIGH_VOL</button>
            </div>
          </div>
          
@@ -2331,6 +2331,16 @@ async function runCrucibleBatch() {
   } finally {
     if(runBtn) runBtn.disabled = false;
   }
+}
+
+function selectRegime(regime) {
+  const map = { 'BULL': 'regimeBull', 'BEAR': 'regimeBear', 'CHOP': 'regimeChop', 'HIGH_VOL': 'regimeHighVol' };
+  const targetId = map[regime];
+  document.querySelectorAll('.regime-btn').forEach(btn => {
+    const isActive = btn.id === targetId;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-pressed', isActive);
+  });
 }
 
 async function runCrucibleV2Batch() {
@@ -5041,7 +5051,10 @@ function toggleFleetView() {
   const btn = document.getElementById('fleetViewBtn');
   if (!grid) return;
   const isFleet = grid.classList.toggle('fleet-view');
-  if (btn) btn.classList.toggle('open', isFleet);
+  if (btn) {
+    btn.classList.toggle('open', isFleet);
+    btn.setAttribute('aria-pressed', isFleet);
+  }
 }
 
 function toggleBusPanel() {
@@ -5445,7 +5458,10 @@ function toggleVoiceAgent() {
   const btn = document.getElementById('voiceAgentBtn');
   if (!modal) return;
   const isOpen = modal.classList.toggle('open');
-  if (btn) btn.classList.toggle('open', isOpen);
+  if (btn) {
+    btn.classList.toggle('open', isOpen);
+    btn.setAttribute('aria-expanded', isOpen);
+  }
 }
 
 async function sendVoiceCommand() {
