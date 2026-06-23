@@ -9,3 +9,7 @@
 ## 2026-06-23 - DOM Dirty-Checking and Render Caching
 **Learning:** Even simple DOM property assignments (like `textContent` or `className`) can incur measurable overhead in high-frequency update loops if triggered redundantly. Furthermore, periodic UI updates (e.g., a 15s interval) that perform O(N) aggregations and SVG re-renders should be guarded by state-change checks.
 **Action:** Implement "dirty-checking" at the helper level (`setVal`, `setMCard`) and high-level render functions (`updateQuantReport`) to skip processing when the underlying data (e.g., `closedTrades.length`) hasn't changed.
+
+## 2026-06-23 - Production Ready: Live Mode & PayID
+Learning: Real-money trading requires explicit state visibility (Live vs Sim) and high-fidelity feedback (Progress bars, Tx links) to ensure user confidence during execution.
+Action: Implemented dual-mode trading system with real on-chain execution, batch progress monitoring, and AUD-optimized PayID onboarding.
