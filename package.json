@@ -14,7 +14,7 @@
     "axios": "^1.13.6",
     "ccxt": "^4.2.77",
     "dotenv": "^16.6.1",
-    "ethers": "^5.8.0",
+    "ethers": "^6.17.0",
     "websocket": "^1.0.35"
   },
   "devDependencies": {
