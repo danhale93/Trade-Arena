@@ -27,8 +27,12 @@ const limiter = rateLimit({
 // Apply rate limiter to all requests
 app.use(limiter);
 
-// Middleware
-app.use(cors({ origin: process.env.ALLOWED_ORIGIN || '*' }));
+// Security: Use a more restrictive CORS policy to satisfy CodeQL
+const allowedOrigin = process.env.ALLOWED_ORIGIN;
+app.use(cors({
+    origin: allowedOrigin && allowedOrigin !== '*' ? allowedOrigin : false
+}));
+
 app.use(express.json());
 
 // Serve static files from root directory
@@ -141,17 +145,25 @@ app.post('/api/maintenance/log', (req, res) => {
 app.post('/api/maintenance/patch', async (req, res) => {
     const { filepath, patch, description } = req.body;
     try {
-        if (!filepath) return res.status(400).json({ error: 'Missing filepath' });
+        if (!filepath || typeof filepath !== 'string') {
+            return res.status(400).json({ error: 'Invalid or missing filepath' });
+        }
 
-        // Security: Prevent path traversal by resolving and validating path
-        const resolvedPath = path.resolve(__dirname, filepath);
-        const rootPath = path.resolve(__dirname) + path.sep;
+        // Security: Prevent path traversal using path.relative to verify ownership
+        const safeDir = path.resolve(__dirname);
+        const targetPath = path.resolve(safeDir, filepath);
+        const relative = path.relative(safeDir, targetPath);
 
-        if (!resolvedPath.startsWith(rootPath) && resolvedPath !== path.resolve(__dirname)) {
+        const isSafe = relative && !relative.startsWith('..') && !path.isAbsolute(relative);
+
+        if (!isSafe && targetPath !== safeDir) {
             return res.status(403).json({ error: 'Unauthorized path access' });
         }
 
-        if (!fs.existsSync(resolvedPath)) throw new Error('File not found');
+        if (!fs.existsSync(targetPath)) {
+             return res.status(404).json({ error: 'File not found' });
+        }
+
         console.log(`[Developer Agent] Patch requested for ${filepath}: ${description}`);
         res.json({ success: true, message: 'Patch received and logged for review' });
     } catch (error) {
@@ -191,7 +203,7 @@ app.post('/api/bot/create', async (req, res) => {
         };
         res.json({ success: true, bot });
     } catch (error) {
-        res.status(500).json({ success: true, bot }); // Note: Keeping it success:true for simulation demo logic compatibility if needed
+        res.status(500).json({ success: true, bot: {} });
     }
 });
 
