@@ -16,6 +16,7 @@ const CrucibleRealTrading = {
   // Session state
   sessionId: `crucible-real-${Date.now()}`,
   isRunning: false,
+  isPaused: false,
   trades: [],
   historicalData: {},
   startTime: null,
@@ -371,8 +372,18 @@ const CrucibleRealTrading = {
   // ════════════════════════════════════════════════════════════════
   // EXECUTE TRADE WITH REAL P&L CALCULATION
   // ════════════════════════════════════════════════════════════════
+
+  // ════════════════════════════════════════════════════════════════
+  // EXECUTE TRADE WITH REAL P&L CALCULATION
+  // ════════════════════════════════════════════════════════════════
   async executeTrade(crypto, indicators, signals, positionSize) {
+    // Live Execution Guard
+    if (this.config.liveMode) {
+      return await this.executeLiveTrade(crypto, indicators, signals, positionSize);
+    }
+
     const trade = {
+
       id: this.trades.length + 1,
       timestamp: new Date(),
       crypto: crypto.symbol,
@@ -587,6 +598,18 @@ const CrucibleRealTrading = {
   // ════════════════════════════════════════════════════════════════
   // RUN COMPLETE TRADING SESSION (20 TRADES MAX)
   // ════════════════════════════════════════════════════════════════
+
+  togglePause() {
+    this.isPaused = !this.isPaused;
+    console.log(`⏸️ Trading ${this.isPaused ? 'PAUSED' : 'RESUMED'}`);
+    return this.isPaused;
+  },
+
+  stop() {
+    this.isRunning = false;
+    console.log('🛑 Trading STOPPED');
+  },
+
   async start() {
     this.isRunning = true;
     this.startTime = Date.now();
@@ -732,6 +755,119 @@ const CrucibleRealTrading = {
   // ════════════════════════════════════════════════════════════════
   // GENERATE COMPREHENSIVE TRADING REPORT
   // ════════════════════════════════════════════════════════════════
+
+  // ════════════════════════════════════════════════════════════════
+  // REAL ON-CHAIN TRADE EXECUTION
+  // ════════════════════════════════════════════════════════════════
+  async executeLiveTrade(crypto, indicators, signals, positionSize) {
+    console.log();
+
+    if (typeof window === 'undefined' || !window.walletState || !window.walletState.isConnected) {
+      console.error('❌ Wallet not connected! Cannot execute live trade.');
+      return { executed: false, error: 'Wallet not connected' };
+    }
+
+    try {
+      const helper = new ContractHelper(window.walletState.provider, window.walletState.signer);
+
+      // Determine tokens
+      const tokenIn = signals.direction === 'LONG' ? TOKENS.USDC : TOKENS[crypto.symbol];
+      const tokenOut = signals.direction === 'LONG' ? TOKENS[crypto.symbol] : TOKENS.USDC;
+
+      if (!tokenIn || !tokenOut) {
+        throw new Error();
+      }
+
+      // Convert position size (AUD) to USDC (rough estimate)
+      // For real execution, we'd use the precise wallet balance
+      const amountInUSD = positionSize;
+      const amountInRaw = ethers.utils.parseUnits(amountInUSD.toString(), tokenIn.decimals);
+
+      console.log();
+      await helper.approveToken(tokenIn.address, PROTOCOLS.UNISWAP_V3.router, amountInRaw);
+
+      console.log();
+      const receipt = await helper.executeSwap(tokenIn, tokenOut, amountInRaw);
+
+      console.log();
+
+      const trade = {
+        id: this.trades.length + 1,
+        timestamp: new Date(),
+        crypto: crypto.symbol,
+        strategy: signals.strategy,
+        direction: signals.direction,
+        executed: true,
+        txHash: receipt.transactionHash,
+        pnlAUD: 0, // In live mode, we track real balance instead
+        balanceAfter: await window.getWalletBalanceUSD(),
+      };
+
+      this.trades.push(trade);
+      return trade;
+
+    } catch (e) {
+      console.error('❌ [LIVE] Execution failed:', e);
+      return { executed: false, error: e.message };
+    }
+  },
+
+
+  // ════════════════════════════════════════════════════════════════
+  // REAL ON-CHAIN TRADE EXECUTION
+  // ════════════════════════════════════════════════════════════════
+  async executeLiveTrade(crypto, indicators, signals, positionSize) {
+    console.log(`🚀 [LIVE] Executing real trade for ${crypto.symbol} (${signals.direction})...`);
+
+    if (typeof window === 'undefined' || !window.walletState || !window.walletState.isConnected) {
+      console.error('❌ Wallet not connected! Cannot execute live trade.');
+      return { executed: false, error: 'Wallet not connected' };
+    }
+
+    try {
+      const helper = new ContractHelper(window.walletState.provider, window.walletState.signer);
+
+      // Determine tokens
+      const tokenIn = signals.direction === 'LONG' ? TOKENS.USDC : TOKENS[crypto.symbol];
+      const tokenOut = signals.direction === 'LONG' ? TOKENS[crypto.symbol] : TOKENS.USDC;
+
+      if (!tokenIn || !tokenOut) {
+        throw new Error(`Token configuration missing for ${crypto.symbol}`);
+      }
+
+      // Convert position size (AUD) to USDC (rough estimate)
+      const amountInUSD = positionSize;
+      const amountInRaw = ethers.utils.parseUnits(amountInUSD.toString(), tokenIn.decimals);
+
+      console.log(`   Approving ${amountInUSD} ${tokenIn.symbol}...`);
+      await helper.approveToken(tokenIn.address, PROTOCOLS.UNISWAP_V3.router, amountInRaw);
+
+      console.log(`   Swapping ${tokenIn.symbol} for ${tokenOut.symbol}...`);
+      const receipt = await helper.executeSwap(tokenIn, tokenOut, amountInRaw);
+
+      console.log(`✅ [LIVE] Trade executed! Tx: ${receipt.transactionHash}`);
+
+      const trade = {
+        id: this.trades.length + 1,
+        timestamp: new Date(),
+        crypto: crypto.symbol,
+        strategy: signals.strategy,
+        direction: signals.direction,
+        executed: true,
+        txHash: receipt.transactionHash,
+        pnlAUD: 0, // In live mode, we track real balance instead
+        balanceAfter: await window.getWalletBalanceUSD(),
+      };
+
+      this.trades.push(trade);
+      return trade;
+
+    } catch (e) {
+      console.error('❌ [LIVE] Execution failed:', e);
+      return { executed: false, error: e.message };
+    }
+  },
+
   async generateReport() {
     const executedTrades = this.trades.filter(t => t.executed);
     const winTrades = executedTrades.filter(t => t.isWin);

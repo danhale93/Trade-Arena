@@ -59,12 +59,12 @@ cp .env.example .env
 # Start backend server
 npm start
 
-# Server runs on http://localhost:3001
+# Server runs on your-render-url
 ```
 
 #### Frontend Setup
 - Open `index.html` in browser
-- Backend automatically connects to API at `http://localhost:3001`
+- Backend automatically connects to API at `your-render-url`
 
 ## 🎮 How to Use
 

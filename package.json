@@ -2,23 +2,25 @@
   "name": "trade-arena",
   "version": "4.0.0",
   "description": "Multi-AI Trading Arena with Ridges Integration",
-  "main": "index.html",
+  "main": "server.js",
   "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "node tests.js",
     "proxy": "node proxy.js",
-    "serve": "npx serve .",
-    "dev": "concurrently \"npm run proxy\" \"npm run serve\"",
-    "test": "node tests.js"
+    "serve": "npx serve ."
   },
   "dependencies": {
-    "axios": "^1.13.6",
+    "axios": "^1.16.0",
     "ccxt": "^4.2.77",
+    "cors": "^2.8.5",
     "dotenv": "^16.6.1",
-    "ethers": "^5.8.0",
+    "ethers": "^6.17.0",
+    "express": "^4.19.2",
+    "express-rate-limit": "^8.5.2",
     "websocket": "^1.0.35"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2",
-    "cors": "^2.8.5",
-    "express": "^4.19.2"
+    "concurrently": "^8.2.2"
   }
 }

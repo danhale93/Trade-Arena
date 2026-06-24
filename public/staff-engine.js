@@ -140,7 +140,7 @@ class StaffEngine {
         // Persist critical logs to backend via Proxy
         if (type === 'warn' || type === 'error' || agentId === 'SENTINEL') {
             try {
-                await fetch('http://localhost:3001/api/maintenance/log', {
+                await fetch('/api/maintenance/log', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ agent: agentId, message, level: type.toUpperCase() })
@@ -219,10 +219,13 @@ class StaffEngine {
     runJanitorClean() {
         this.logSystemEvent('JANITOR', 'Starting log rotation and cache optimization...');
 
-        // Clear old trade results from memory if they exceed 500
+        // ⚡ Bolt Optimization: Prune equityHistory alongside closedTrades to maintain O(N) performance for charts
         if (window.closedTrades && window.closedTrades.length > 500) {
-            this.logSystemEvent('JANITOR', `Archiving ${window.closedTrades.length - 200} old trade records to persistent storage.`);
+            this.logSystemEvent('JANITOR', `Archiving ${window.closedTrades.length - 200} old trade records and history.`);
             window.closedTrades = window.closedTrades.slice(-200);
+            if (window.equityHistory && window.equityHistory.length > 500) {
+                window.equityHistory = window.equityHistory.slice(-200);
+            }
         }
 
         localStorage.setItem('ta_last_maintained', new Date().toISOString());

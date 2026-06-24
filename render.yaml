@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: trade-arena
+    runtime: node
+    plan: starter
+    buildCommand: pnpm install
+    startCommand: node server.js
+    envVars:
+      - key: PORT
+        value: 3001
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: MOONPAY_WEBHOOK_SECRET
+        sync: false
+      - key: RPC_URL
+        value: https://mainnet.base.org
