@@ -3,7 +3,18 @@
  * Contains contract addresses, ABIs, and interaction utilities
  */
 
-// Base Network Configuration
+const BASE_SEPOLIA_CONFIG = {
+  chainId: 84532,
+  name: "Base Sepolia",
+  rpcUrl: "https://sepolia.base.org",
+  blockExplorerUrl: "https://sepolia.basescan.org",
+  currency: {
+    name: "Ethereum",
+    symbol: "ETH",
+    decimals: 18,
+  },
+};
+
 const BASE_CONFIG = {
   chainId: 8453,
   name: "Base Mainnet",
@@ -16,80 +27,35 @@ const BASE_CONFIG = {
   },
 };
 
-// Token Addresses on Base
-if (typeof TOKENS === "undefined") {
-  var TOKENS = {
-    WETH: {
-      address: "0x4200000000000000000000000000000000000006",
-      symbol: "WETH",
-      decimals: 18,
-      name: "Wrapped Ethereum",
-    },
-    USDC: {
-      address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-      symbol: "USDC",
-      decimals: 6,
-      name: "USD Coin",
-    },
-    USDbC: {
-      address: "0xd9aAEc860b8293fb2064Ef2953eF989f7f72396f",
-      symbol: "USDbC",
-      decimals: 6,
-      name: "USD Base Coin",
-    },
-    DAI: {
-      address: "0x50c5725949A6F48849662A6be79b833364E4661F",
-      symbol: "DAI",
-      decimals: 18,
-      name: "Dai Stablecoin",
-    },
-    ARB: {
-      address: "0x608D0fC37bDb7Cc6d1e3e7e4f2c0db5e9f0b0e7E",
-      symbol: "ARB",
-      decimals: 18,
-      name: "Arbitrum",
-    },
-    OP: {
-      address: "0x4200000000000000000000000000000000000042",
-      symbol: "OP",
-      decimals: 18,
-      name: "Optimism",
-    },
-  };
-}
-
-// DEX & Protocol Addresses on Base
-const PROTOCOLS = {
-  UNISWAP_V3: {
-    name: "Uniswap V3",
-    router: "0x68b3465833fb72B5A828cCEA02FFAD6bCFB8ACBA",
-    factory: "0x33128a8fC17869897dcE68Ed026d694621f6FDfD",
-    quoter: "0xB048bbc1Ee6b733FFfCFb9e9CeF7375518e6C026",
+// Token Addresses (Network Aware)
+const NETWORK_TOKENS = {
+  8453: { // Mainnet
+    WETH: { address: "0x4200000000000000000000000000000000000006", symbol: "WETH", decimals: 18, name: "Wrapped Ethereum" },
+    USDC: { address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", symbol: "USDC", decimals: 6, name: "USD Coin" },
+    USDbC: { address: "0xd9aAEc860b8293fb2064Ef2953eF989f7f72396f", symbol: "USDbC", decimals: 6, name: "USD Base Coin" },
   },
-  UNISWAP_V4: {
-    name: "Uniswap V4",
-    router: "0x540B5387Dab612CF3A70EC0344e1A5051b00C64e",
-  },
-  SUSHISWAP: {
-    name: "SushiSwap",
-    router: "0x6BDED42c6DA8FBf0d2f75cA8480F3521d6D44556",
-    factory: "0x71524B4f93c58fcbF659783284E38825f0622859",
-  },
-  CURVE: {
-    name: "Curve",
-    factory: "0xd12eCF9b6f77DAF3cE09C4980f80D17b06D1f5cE",
-  },
-  AAVE_V3: {
-    name: "Aave V3",
-    pool: "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
-    lendingPool: "0xe20fCBdBfFC4Dd138cE8b763582e8335c29F9015",
-    flashLoanFee: 0.0009, // 0.09%
-  },
-  LIDO: {
-    name: "Lido",
-    stETH: "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452",
-  },
+  84532: { // Sepolia
+    WETH: { address: "0x4200000000000000000000000000000000000006", symbol: "WETH", decimals: 18, name: "Wrapped Ethereum" },
+    USDC: { address: "0x036CbD53842c5426634e7929541eC2318f3dCF7e", symbol: "USDC", decimals: 6, name: "USD Coin" },
+    CBETH: { address: "0x2Ae3F1Ec7F1F5012CFEab018507e126dee250199", symbol: "cbETH", decimals: 18, name: "Coinbase Wrapped Staked ETH" },
+    DAI: { address: "0x1256338bE51e70e1762294158F28373979808389", symbol: "DAI", decimals: 18, name: "Dai Stablecoin" }
+  }
 };
+
+var TOKENS = NETWORK_TOKENS[8453]; // Default to mainnet
+
+const NETWORK_PROTOCOLS = {
+  8453: { // Mainnet
+    UNISWAP_V3: { name: "Uniswap V3", router: "0x68b3465833fb72B5A828cCEA02FFAD6bCFB8ACBA", factory: "0x33128a8fC17869897dcE68Ed026d694621f6FDfD", quoter: "0xB048bbc1Ee6b733FFfCFb9e9CeF7375518e6C026" },
+    AAVE_V3: { name: "Aave V3", pool: "0x794a61358D6845594F94dc1DB02A252b5b4814aD", flashLoanFee: 0.0009 },
+  },
+  84532: { // Sepolia
+    UNISWAP_V3: { name: "Uniswap V3", router: "0x3bFA4769FB09eefC5a80d6E87c3B91650a7646a5", factory: "0x0227628f9F02343C44553D5b3591740164054D3F", quoter: "0xEdF1c9da31230214881ad99935a8567160ad6b09" },
+    AAVE_V3: { name: "Aave V3", pool: "0x07eA79F68B2B3df564D0A34F8e19D9B1e339814b", flashLoanFee: 0.0009 },
+  }
+};
+
+var PROTOCOLS = NETWORK_PROTOCOLS[8453]; // Default to mainnet
 
 // Contract ABIs (Simplified)
 const ABIS = {
@@ -129,6 +95,18 @@ const ABIS = {
  * Helper Class for Smart Contract Interactions
  */
 class ContractHelper {
+  /**
+   * Switch helper context to a specific network
+   */
+  static switchNetwork(chainId) {
+    if (NETWORK_TOKENS[chainId]) {
+      TOKENS = NETWORK_TOKENS[chainId];
+      PROTOCOLS = NETWORK_PROTOCOLS[chainId];
+      return true;
+    }
+    return false;
+  }
+
   constructor(provider, signer) {
     this.provider = provider;
     this.signer = signer;
@@ -163,15 +141,13 @@ class ContractHelper {
    * Get optimal path for swap
    */
   async getSwapPath(tokenIn, tokenOut, intermediateToken = null) {
-    // Common path: WETH <-> USDC for stability
     const paths = {
       direct: [tokenIn.address, tokenOut.address],
       viaUsdc: intermediateToken
         ? [tokenIn.address, intermediateToken.address, tokenOut.address]
         : null,
     };
-
-    return paths.direct; // Simple implementation
+    return paths.direct;
   }
 
   /**
@@ -183,15 +159,13 @@ class ContractHelper {
       ABIS.UNISWAP_V3_ROUTER,
       this.provider,
     );
-
     const path = await this.getSwapPath(tokenIn, tokenOut);
-
     try {
       const amounts = await router.getAmountsOut(amountIn, path);
-      return amounts[amounts.length - 1]; // Return output amount
+      return amounts[amounts.length - 1];
     } catch (e) {
       console.error("Swap estimation failed:", e);
-      return ethers.BigNumber.from(0);
+      return ethers.BigNumber ? ethers.BigNumber.from(0) : BigInt(0);
     }
   }
 
@@ -204,15 +178,17 @@ class ContractHelper {
       ABIS.UNISWAP_V3_ROUTER,
       this.signer,
     );
-
     const path = await this.getSwapPath(tokenIn, tokenOut);
     const estimatedOut = await this.estimateSwap(tokenIn, tokenOut, amountIn);
-    const minOut = estimatedOut
-      .mul(10000 - Math.floor(slippage * 100))
-      .div(10000);
 
-    const deadline = Math.floor(Date.now() / 1000) + 3600; // 1 hour deadline
+    let minOut;
+    if (typeof estimatedOut.mul === 'function') {
+        minOut = estimatedOut.mul(10000 - Math.floor(slippage * 100)).div(10000);
+    } else {
+        minOut = (estimatedOut * BigInt(10000 - Math.floor(slippage * 100))) / BigInt(10000);
+    }
 
+    const deadline = Math.floor(Date.now() / 1000) + 3600;
     const tx = await router.swapExactTokensForTokens(
       amountIn,
       minOut,
@@ -220,9 +196,7 @@ class ContractHelper {
       await this.signer.getAddress(),
       deadline,
     );
-
-    const receipt = await tx.wait();
-    return receipt;
+    return await tx.wait();
   }
 
   /**
@@ -234,31 +208,20 @@ class ContractHelper {
       ABIS.AAVE_POOL,
       this.signer,
     );
-
-    // In real implementation, would deploy a flash loan receiver contract
-    // This is a simplified version
     const tx = await aavePool.flashLoan(
-      await this.signer.getAddress(), // receiver (would be contract in production)
+      await this.signer.getAddress(),
       tokenAddress,
       loanAmount,
       callbackData,
     );
-
-    const receipt = await tx.wait();
-    return receipt;
+    return await tx.wait();
   }
 
-  /**
-   * Check if token is stablecoin
-   */
   isStablecoin(tokenSymbol) {
     const stablecoins = ["USDC", "USDT", "DAI", "USDbC", "FRAX"];
     return stablecoins.includes(tokenSymbol);
   }
 
-  /**
-   * Get token details
-   */
   getTokenDetails(tokenAddress) {
     for (const [key, token] of Object.entries(TOKENS)) {
       if (token.address.toLowerCase() === tokenAddress.toLowerCase()) {
@@ -277,62 +240,40 @@ class SecurityHelper {
     const stablecoins = ["USDC", "USDT", "DAI", "USDbC", "FRAX"];
     return stablecoins.includes(tokenSymbol);
   }
-
-  /**
-   * Check if transaction might face MEV
-   */
   static analyzeMEVRisk(swapDetails) {
-    const largeSwapThreshold = 10; // 10 ETH
-
+    const largeSwapThreshold = 10;
     let riskScore = 0;
     let warnings = [];
-
-    // Large swap = higher MEV risk
     if (swapDetails.amountIn > largeSwapThreshold) {
       riskScore += 30;
       warnings.push("Large swap amount - higher MEV risk");
     }
-
-    // Volatile token = higher risk
     if (swapDetails.volatility > 5) {
       riskScore += 20;
       warnings.push("High volatility token - increased slippage risk");
     }
-
-    // Low liquidity = higher risk
     if (swapDetails.liquidity < 100000) {
       riskScore += 40;
       warnings.push("Low liquidity pool - execution risk");
     }
-
     return {
       riskScore: Math.min(100, riskScore),
       warnings,
       recommendation: riskScore > 50 ? "WAIT" : "PROCEED",
     };
   }
-
-  /**
-   * Estimate slippage for a swap
-   */
   static estimateSlippage(amountIn, liquidity, volatility) {
     const baseSlippage = (amountIn / liquidity) * 100;
     const volatilityAdjustment = Math.sqrt(volatility) * 0.1;
     const totalSlippage = baseSlippage + volatilityAdjustment;
-
-    return Math.min(10, Math.max(0.1, totalSlippage)); // 0.1% - 10%
+    return Math.min(10, Math.max(0.1, totalSlippage));
   }
-
-  /**
-   * Validate smart contract interaction
-   */
   static validateContractInteraction(contractAddress, methodName, params) {
     const validations = {
       isValidAddress: /^0x[a-fA-F0-9]{40}$/.test(contractAddress),
       methodExists: Boolean(methodName),
       paramsValid: Array.isArray(params),
     };
-
     return {
       valid: Object.values(validations).every((v) => v),
       details: validations,
@@ -344,22 +285,16 @@ class SecurityHelper {
  * Arbitrage Opportunity Analyzer
  */
 class ArbitrageAnalyzer {
-  /**
-   * Calculate arbitrage profit considering all fees
-   */
   static calculateArbitrage(buyPrice, sellPrice, amountUSD, gasPrice = 50) {
-    const gasEstimate = 150000; // Wei units
-    const gasCost = (gasPrice * gasEstimate) / 1e9; // Convert to ETH
-    const gasCostUSD = gasCost * buyPrice; // Rough conversion
-
-    const buyFee = amountUSD * 0.005; // 0.5% buy fee
-    const sellFee = amountUSD * 0.005; // 0.5% sell fee
+    const gasEstimate = 150000;
+    const gasCost = (gasPrice * gasEstimate) / 1e9;
+    const gasCostUSD = gasCost * buyPrice;
+    const buyFee = amountUSD * 0.005;
+    const sellFee = amountUSD * 0.005;
     const totalFees = buyFee + sellFee + gasCostUSD;
-
     const grossProfit = (sellPrice - buyPrice) * (amountUSD / buyPrice);
     const netProfit = grossProfit - totalFees;
     const profitPercent = (netProfit / amountUSD) * 100;
-
     return {
       grossProfit: grossProfit.toFixed(4),
       totalFees: totalFees.toFixed(4),
@@ -368,15 +303,9 @@ class ArbitrageAnalyzer {
       isViable: netProfit > 0,
     };
   }
-
-  /**
-   * Find triangular arbitrage opportunity
-   */
   static findTriangularArbitrage(prices) {
-    // prices = { 'ETH/USD': 2500, 'USD/USDC': 1, 'USDC/ETH': 0.0004 }
     const product = Object.values(prices).reduce((a, b) => a * b, 1);
     const profit = (product - 1) * 100;
-
     return {
       opportunity: product > 1,
       profitPercent: profit.toFixed(2),
@@ -389,18 +318,10 @@ class ArbitrageAnalyzer {
  * Flash Loan Strategy Simulator
  */
 class FlashLoanSimulator {
-  /**
-   * Simulate liquidation profit
-   */
-  static simulateLiquidation(
-    borrowedAmount,
-    targetDebtAmount,
-    collateralPrice,
-  ) {
-    const flashLoanFee = borrowedAmount * PROTOCOLS.AAVE_V3.flashLoanFee;
-    const liquidationBonus = targetDebtAmount * 0.05; // 5% liquidation bonus
+  static simulateLiquidation(borrowedAmount, targetDebtAmount, collateralPrice) {
+    const flashLoanFee = borrowedAmount * 0.0009;
+    const liquidationBonus = targetDebtAmount * 0.05;
     const profit = liquidationBonus - flashLoanFee;
-
     return {
       borrowedAmount,
       flashLoanFee: flashLoanFee.toFixed(4),
@@ -409,19 +330,10 @@ class FlashLoanSimulator {
       roi: ((profit / borrowedAmount) * 100).toFixed(2),
     };
   }
-
-  /**
-   * MEV sandwich attack simulation
-   */
   static simulateSandwich(frontRunAmount, victimAmount, backRunAmount) {
-    const frontRunPrice = 1.0;
-    const victimPrice = 1.01; // Victim's trade increases price
-    const backRunPrice = 1.02;
-
     const frontRunProfit = (victimAmount * 0.01 * frontRunAmount) / 100;
     const backRunProfit = (backRunAmount * 0.01) / 100;
     const totalProfit = frontRunProfit + backRunProfit;
-
     return {
       frontRunAmount,
       victimAmount,

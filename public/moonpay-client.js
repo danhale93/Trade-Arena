@@ -11,8 +11,6 @@
 const MOONPAY_CONFIG = {
     // MoonPay test key for development
     apiKey: 'pk_test_5rdSBYM23wRwK1L3icX9RqYdypJ6jGEC',
-    // TODO: Replace with your secret key for webhooks
-    secretKey: 'YOUR_MOONPAY_SECRET_KEY',
     // Base mainnet
     network: 'base',
     // USDC on Base
@@ -270,56 +268,6 @@ function deployBotsAfterDeposit(amount) {
 }
 
 /**
- * Handle webhook from MoonPay
- * POST from MoonPay server when transaction confirms
- */
-async function handleMoonPayWebhook(req, res) {
-    const body = req.body;
-    const signature = req.headers['x-moonpay-signature'];
-    
-    // Verify webhook signature
-    if (!verifyMoonPaySignature(body, signature)) {
-        console.error('[MoonPay] Invalid webhook signature');
-        res.status(401).json({ error: 'Invalid signature' });
-        return;
-    }
-    
-    const { status, cryptoTransactionHash, amount, walletAddress } = body;
-    
-    if (status === 'completed' || status === 'confirmed') {
-        console.log('[MoonPay] Webhook: deposit confirmed', { amount, walletAddress });
-        onMoonPayDepositSuccess({ amount, walletAddress, hash: cryptoTransactionHash });
-        res.json({ success: true });
-    } else if (status === 'failed') {
-        console.log('[MoonPay] Webhook: deposit failed');
-        showToast('Deposit failed. Please contact support.', 'error');
-        res.json({ success: false });
-    } else {
-        res.json({ received: true });
-    }
-}
-
-/**
- * Verify MoonPay webhook signature
- */
-function verifyMoonPaySignature(body, signature) {
-    // TODO: Implement HMAC verification with MOONPAY_CONFIG.secretKey
-    // For development, accept all signatures
-    if (MOONPAY_CONFIG.secretKey.startsWith('YOUR_')) {
-        return true;
-    }
-    
-    try {
-        const crypto = require('crypto');
-        const hmac = crypto.createHmac('sha256', MOONPAY_CONFIG.secretKey);
-        const digest = hmac.update(JSON.stringify(body)).digest('base64');
-        return digest === signature;
-    } catch (e) {
-        return false;
-    }
-}
-
-/**
  * Get network fee display
  * Transparent to user (not "gas")
  */
@@ -356,4 +304,3 @@ window.moonpayInit = moonpayInit;
 window.moonpayBuyCrypto = moonpayBuyCrypto;
 window.moonpaySellCrypto = moonpaySellCrypto;
 window.getNetworkFeeDisplay = getNetworkFeeDisplay;
-window.handleMoonPayWebhook = handleMoonPayWebhook;

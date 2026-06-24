@@ -27,36 +27,57 @@ const limiter = rateLimit({
 // Apply rate limiter to all requests
 app.use(limiter);
 
+// Sentinel: Limit JSON payload size to prevent DoS attacks
+app.use(express.json({ limit: '100kb' }));
+
 // Security: Use a more restrictive CORS policy
 const allowedOrigin = process.env.ALLOWED_ORIGIN;
 app.use(cors({
     origin: allowedOrigin && allowedOrigin !== '*' ? allowedOrigin : false
 }));
 
-app.use(express.json());
-
 // Security: Serve static files from 'public' directory ONLY
 const publicDir = path.join(__dirname, 'public');
 app.use(express.static(publicDir));
 
 /**
- * Health Check & Market Overview
- */
-app.get('/api/health', (req, res) => {
-    res.json({
-        status: 'OK',
-        timestamp: Date.now(),
-        network: 'Base',
-        services: ['AI_PROXY', 'TRADING_ENGINE', 'MAINTENANCE']
-    });
-});
-
-/**
  * AI PROXY ENDPOINTS
  */
 
+// Sentinel: Whitelisted models to prevent unauthorized expensive API usage
+const ALLOWED_CLAUDE_MODELS = new Set([
+  'claude-3-5-sonnet-20240620',
+  'claude-3-5-sonnet-latest',
+  'claude-3-opus-20240229',
+  'claude-3-sonnet-20240229',
+  'claude-3-haiku-20240307',
+  'claude-3.5-sonnet'
+]);
+
+const ALLOWED_OPENAI_MODELS = new Set([
+  'gpt-4o',
+  'gpt-4o-latest',
+  'gpt-4o-mini',
+  'gpt-4-turbo',
+  'gpt-4',
+  'gpt-3.5-turbo'
+]);
+
+const ALLOWED_GEMINI_MODELS = new Set([
+  'gemini-1.5-flash',
+  'gemini-1.5-pro',
+  'gemini-2.0-flash',
+  'gemini-2.0-flash-lite',
+  'gemini-2.0-flash-exp'
+]);
+
 app.post('/api/claude', async (req, res) => {
     try {
+        const { model, messages, system, max_tokens, temperature, top_p, top_k, stop_sequences } = req.body;
+        if (!ALLOWED_CLAUDE_MODELS.has(model)) {
+            return res.status(400).json({ error: 'Invalid or unauthorized model requested' });
+        }
+
         const response = await fetch('https://api.anthropic.com/v1/messages', {
             method: 'POST',
             headers: {
@@ -64,7 +85,16 @@ app.post('/api/claude', async (req, res) => {
                 'x-api-key': process.env.ANTHROPIC_API_KEY || '',
                 'anthropic-version': '2023-06-01'
             },
-            body: JSON.stringify(req.body)
+            body: JSON.stringify({
+                model,
+                messages,
+                system,
+                max_tokens: max_tokens || 1024,
+                temperature,
+                top_p,
+                top_k,
+                stop_sequences
+            })
         });
         const data = await response.json();
         res.status(response.status).json(data);
@@ -76,13 +106,27 @@ app.post('/api/claude', async (req, res) => {
 
 app.post('/api/openai', async (req, res) => {
     try {
+        const { model, messages, max_tokens, temperature, top_p, frequency_penalty, presence_penalty, stop } = req.body;
+        if (!ALLOWED_OPENAI_MODELS.has(model)) {
+            return res.status(400).json({ error: 'Invalid or unauthorized model requested' });
+        }
+
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${process.env.OPENAI_API_KEY || ''}`
             },
-            body: JSON.stringify(req.body)
+            body: JSON.stringify({
+                model,
+                messages,
+                max_tokens: max_tokens || 1024,
+                temperature,
+                top_p,
+                frequency_penalty,
+                presence_penalty,
+                stop
+            })
         });
         const data = await response.json();
         res.status(response.status).json(data);
@@ -92,13 +136,10 @@ app.post('/api/openai', async (req, res) => {
     }
 });
 
-// Security: Whitelist allowed models
-const ALLOWED_GEMINI_MODELS = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash-exp'];
-
 app.post('/api/gemini', async (req, res) => {
     try {
         const requestedModel = req.body.model || 'gemini-1.5-flash';
-        if (!ALLOWED_GEMINI_MODELS.includes(requestedModel)) {
+        if (!ALLOWED_GEMINI_MODELS.has(requestedModel)) {
             return res.status(400).json({ error: 'Invalid model specified' });
         }
 

@@ -47,7 +47,14 @@
   text-align:center!important;
   margin-top:12px!important;
   color:var(--dim)!important;
-  font-size:10px!important
+  font-size:10px!important;
+  background:none;
+  border:none;
+  width:100%;
+  cursor:pointer
+}
+.advanced-toggle:hover{
+  color:var(--cyan)!important
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{overflow-y:auto;height:100%}
@@ -82,6 +89,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 .cb-btn:hover{box-shadow:0 4px 20px rgba(0,82,255,.6)}
 .demo-btn{width:100%;padding:10px;background:transparent;border:1px dashed var(--border);border-radius:8px;cursor:pointer;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--dim);transition:all .15s}
 .demo-btn:hover{border-color:var(--cyan);color:var(--cyan);background:rgba(0,255,231,.04)}
+
+.payid-btn{width:100%;padding:12px;margin-top:10px;background:linear-gradient(135deg,#ff4500,#ff8c00);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:'Bungee',display;font-size:11px;letter-spacing:1px;box-shadow:0 4px 15px rgba(255,69,0,0.3);transition:all .2s;display:flex;align-items:center;justify-content:center;gap:10px}
+.payid-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(255,69,0,0.4);filter:brightness(1.1)}
+
 /* OSKO On/Off Ramp Buttons */
 .onramp-btn,.offramp-btn{width:48%;padding:10px;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;border:none;border-radius:6px;cursor:pointer;transition:all .15s}
 .onramp-btn{background:linear-gradient(135deg,#00d4ff,#0099ff);color:#fff}
@@ -157,7 +168,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
 /* ══ COLLAPSIBLE PANEL BASE ══ */
 .cpanel{background:var(--panel);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden}
-.cpanel-hd{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;cursor:pointer;user-select:none;border-bottom:1px solid transparent}
+.cpanel-hd{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;cursor:pointer;user-select:none;border-bottom:1px solid transparent;transition:background 0.2s}
+.cpanel-hd:hover, .audit-hd:hover, .learn-hd:hover { background: rgba(255,255,255,0.03); }
 .cpanel-hd.open{border-bottom-color:var(--border)}
 .cpanel-body{display:none;padding:12px}
 .cpanel-body.open{display:block}
@@ -720,7 +732,12 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         SIGN IN WITH APPLE
       </button>
       <div class="divider">— or —</div>
-      <button class="mm-btn" onclick="loginMetaMask()">
+
+      <button class="payid-btn" onclick="loginPayID()">
+        <span style="font-size:16px">⚡</span> PAYID NO-KYC ONBOARDING (AUD)
+      </button>
+      <div class="divider" style="margin:12px 0">— or —</div>
+<button class="mm-btn" onclick="loginMetaMask()">
         <svg width="20" height="20" viewBox="0 0 318 318"><path d="M274 35L174 109l19-44z" fill="#E17726"/><path d="M44 35l99 75-18-44z" fill="#E27625"/><path d="M234 218l-27 41 58 16 17-56z" fill="#E27625"/><path d="M36 219l17 56 57-16-26-41z" fill="#E27625"/><path d="M107 143l-17 25 60 3-2-64z" fill="#E27625"/><path d="M211 143l-42-37-2 64 60-3z" fill="#E27625"/></svg>
         METAMASK
       </button>
@@ -730,9 +747,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       </button>
       <div class="divider">— or —</div>
       <button class="demo-btn" onclick="loginDemo()">🎮 ENTER DEMO MODE — NO SETUP NEEDED</button>
-      <div class="advanced-toggle" onclick="document.getElementById('advancedSettings').style.display = 'block'; this.style.display = 'none';">
-        ⚙´©Å Advanced Settings
-      </div>
+      <button class="advanced-toggle" onclick="document.getElementById('advancedSettings').style.display = 'block'; this.style.display = 'none';" aria-expanded="false" aria-controls="advancedSettings">
+        ⚙️ Advanced Settings
+      </button>
       <div class="fiat-ramp-row">
         <button class="onramp-btn" onclick="window.openMoonpay && window.openMoonpay()">💳 DEPOSIT USDC</button>
         <button class="offramp-btn" onclick="openOskoRamp('offramp')">💵 WITHDRAW</button>
@@ -747,12 +764,13 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       </button>
     </div>
   </div>
-  <p id="cStatus" style="min-height:16px;font-size:11px;color:var(--cyan);text-align:center;transition:all .3s"></p>
+  <p id="cStatus" aria-live="polite" style="min-height:16px;font-size:11px;color:var(--cyan);text-align:center;transition:all .3s"></p>
   <div class="setup-note">
     <label for="apiKeyInput"><strong>Optional: Anthropic API Key</strong></label> — enables full Claude AI agents. Get one free at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>
     <div style="display:flex;gap:4px;margin-top:5px">
       <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-..." style="flex:1;padding:5px 8px;background:var(--bg);border:1px solid var(--border);color:var(--cyan);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px;" oninput="if(this.value.trim().startsWith('sk-'))window._userApiKey=this.value.trim()">
       <button onclick="toggleVisibility('apiKeyInput', this)" style="padding:4px 8px;background:var(--chrome);border:1px solid var(--border);color:var(--dim);border-radius:4px;font-family:'Bungee',display;font-size:8px;cursor:pointer">SHOW</button>
+      <button onclick="copyToClipboard('apiKeyInput', this)" style="padding:4px 8px;background:var(--chrome);border:1px solid var(--border);color:var(--dim);border-radius:4px;font-family:'Bungee',display;font-size:8px;cursor:pointer">COPY</button>
     </div>
     <span style="color:var(--dim);font-size:8px">Without a key the app uses rule-based signals and still trades. Demo Mode requires no wallet or key.</span>
   </div>
@@ -832,12 +850,13 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     </div>
      <!-- bot controls -->
      <div class="gh-controls">
-         <button class="gh-bus-btn" onclick="togglePanel('staff')" title="Application Maintenance & Support">👷 STAFF</button>
-       <button class="gh-bus-btn" onclick="togglePanel('task')" title="Earn Trade Credits">💰 EARN</button>
-       <button class="gh-bus-btn" onclick="togglePanel('elo')" title="ELO Arena - Recursive Improvement">🏆 ARENA</button>
-       <button class="gh-bus-btn" id="voiceAgentBtn" onclick="toggleVoiceAgent()" title="AI Floor Manager (Voice Chat)">🎙️ AGENT</button>
+       <button class="gh-bus-btn" id="ghStaffBtn" onclick="togglePanel('staff')" title="Application Maintenance & Support" aria-expanded="false">👷 STAFF</button>
+       <button class="gh-bus-btn" id="ghTaskBtn" onclick="togglePanel('task')" title="Earn Trade Credits" aria-expanded="false">💰 EARN</button>
+       <button class="gh-bus-btn" id="ghEloBtn" onclick="togglePanel('elo')" title="ELO Arena - Recursive Improvement" aria-expanded="false">🏆 ARENA</button>
+       <button class="gh-bus-btn" id="voiceAgentBtn" onclick="toggleVoiceAgent()" title="AI Floor Manager (Voice Chat)" aria-expanded="false">🎙️ AGENT</button>
        <button class="gh-bus-btn" id="fleetViewBtn" onclick="toggleFleetView()" title="Toggle Fleet View (Compact Grid)">📊 FLEET</button>
        <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots" aria-expanded="false">⚙ BUS</button>
+       <button class="gh-auto-btn" id="liveToggleBtn" onclick="toggleLiveMode()" title="Toggle Live/Demo Mode" style="border-color:var(--gold2);color:var(--gold2)">DEMO</button>
        <button class="gh-auto-btn" id="ghAutoBtn" onclick="globalAutoToggle()" title="Toggle auto-trading on all bots" aria-pressed="false">AUTO</button>
        <button class="gh-bot-btn" id="ghRemoveBtn" onclick="removeLastBot()" title="Remove last bot" aria-label="Remove last bot" disabled>−</button>
        <button class="gh-bot-btn" id="ghAddBtn" onclick="addBot()" title="Add bot" aria-label="Add new bot">+</button>
@@ -1037,10 +1056,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
          <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
            <label style="color:var(--dim);font-size:10px">Regime:</label>
            <div style="display:flex;gap:2px">
-             <button id="regimeBull" class="regime-btn" onclick="selectRegime('BULL')">BULL</button>
-             <button id="regimeBear" class="regime-btn" onclick="selectRegime('BEAR')">BEAR</button>
-             <button id="regimeChop" class="regime-btn" onclick="selectRegime('CHOP')">CHOP</button>
-             <button id="regimeHighVol" class="regime-btn" onclick="selectRegime('HIGH_VOL')">HIGH_VOL</button>
+             <button id="regimeBull" class="regime-btn active" onclick="selectRegime('BULL')" aria-pressed="true">BULL</button>
+             <button id="regimeBear" class="regime-btn" onclick="selectRegime('BEAR')" aria-pressed="false">BEAR</button>
+             <button id="regimeChop" class="regime-btn" onclick="selectRegime('CHOP')" aria-pressed="false">CHOP</button>
+             <button id="regimeHighVol" class="regime-btn" onclick="selectRegime('HIGH_VOL')" aria-pressed="false">HIGH_VOL</button>
            </div>
          </div>
          
@@ -1117,7 +1136,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         <!-- Shadow baselines -->
         <div class="qr-section-title" style="margin-top:10px">Claude vs Shadow Baselines</div>
         <table class="baseline-table" id="baselineTable">
-          <tr><th>Strategy</th><th>Total P&L</th><th>Win Rate</th><th>Avg/trade</th><th>vs Cash</th></tr>
+          <tr><th>Strategy</th><th>Total P&L</th><th>Win Rate</th><th>Avg/trade</th><th>vs Claude</th></tr>
           <tr class="highlight-row"><td>🤖 Claude AI</td><td id="bl-claude-pnl">—</td><td id="bl-claude-wr">—</td><td id="bl-claude-avg">—</td><td id="bl-claude-vs">—</td></tr>
           <tr><td>🎲 Random</td><td id="bl-random-pnl">—</td><td id="bl-random-wr">—</td><td id="bl-random-avg">—</td><td id="bl-random-vs">—</td></tr>
           <tr><td>📈 Always Long</td><td id="bl-long-pnl">—</td><td id="bl-long-wr">—</td><td id="bl-long-avg">—</td><td id="bl-long-vs">—</td></tr>
@@ -1199,7 +1218,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
           <input type="text" id="staffInput" aria-label="Ask staff a question" placeholder="I lost money on that last trade, why?" onkeydown="if(event.key==='Enter') sendStaffQuery()" style="flex:1; background:var(--bg); border:1px solid var(--border); color:#fff; padding:8px; border-radius:6px; font-family:inherit; font-size:10px;">
           <button onclick="sendStaffQuery()" style="background:var(--cyan); color:#000; border:none; border-radius:6px; padding:0 15px; font-family:'Bungee'; font-size:10px; cursor:pointer;">ASK</button>
         </div>
-        <div id="staffResponse" style="margin-top:10px; padding:10px; background:rgba(0,255,231,0.05); border-radius:6px; font-size:10px; color:#ccc; display:none; border-left:2px solid var(--cyan);"></div>
+        <div id="staffResponse" aria-live="polite" style="margin-top:10px; padding:10px; background:rgba(0,255,231,0.05); border-radius:6px; font-size:10px; color:#ccc; display:none; border-left:2px solid var(--cyan);"></div>
       </div>
     </div>
   </div>
@@ -1288,7 +1307,88 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
   </div>
 
   <!-- Bots -->
-  <div class="bot-grid" id="botGrid"></div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:8px;background:var(--chrome);border-radius:6px;border:1px solid var(--border);">
+      <div style="font-family:'Bungee';font-size:10px;color:var(--dim)">TRADING MODE</div>
+      <div style="display:flex;gap:4px">
+        <button id="simModeBtn" class="mode-btn active" onclick="switchTradingMode('sim')">SIMULATED</button>
+        <button id="liveModeBtn" class="mode-btn" onclick="switchTradingMode('live')">LIVE (BASE)</button>
+      </div>
+    </div>
+    <div id="crucibleProgress" style="display:none;margin-top:10px;margin-bottom:10px;padding:10px;background:rgba(0,0,0,0.3);border-radius:6px;border:1px solid var(--border);">
+      <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+        <span style="font-family:'Bungee';font-size:10px;color:var(--cyan)">CRUCIBLE PROGRESS</span>
+        <span id="crucibleProgressText" style="font-family:'Share Tech Mono';font-size:10px;color:var(--dim)">0/20</span>
+      </div>
+      <div style="width:100%;height:4px;background:var(--bg);border-radius:2px;overflow:hidden;margin-bottom:8px;">
+        <div id="crucibleProgressBar" style="width:0%;height:100%;background:var(--cyan);transition:width 0.3s;"></div>
+      </div>
+      <div style="display:flex;gap:5px;">
+        <button onclick="toggleCruciblePause()" class="mode-btn" style="flex:1">PAUSE</button>
+        <button onclick="stopCrucible()" class="mode-btn" style="flex:1;border-color:#ff4444;color:#ff4444">STOP</button>
+      </div>
+    </div>
+    <style>
+      .mode-btn { padding:4px 8px; background:var(--bg); border:1px solid var(--border); color:var(--dim); font-family:'Bungee'; font-size:9px; cursor:pointer; border-radius:4px; transition: all 0.2s; }
+      .mode-btn.active { border-color:var(--cyan); color:var(--cyan); background:rgba(0,255,231,0.1); }
+      .mode-btn:hover { border-color: var(--cyan); color: #fff; }
+    </style>
+    <script>
+      function showToast(msg, type='info') {
+        const container = document.getElementById('toastContainer');
+        if (!container) {
+          const c = document.createElement('div');
+          c.id = 'toastContainer';
+          c.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;';
+          document.body.appendChild(c);
+        }
+        const t = document.createElement('div');
+        t.style.cssText = `background:rgba(0,0,0,0.9);color:${type==='error'?'var(--hot)':'var(--cyan)'};padding:8px 16px;border:1px solid ${type==='error'?'var(--hot)':'var(--cyan)'};border-radius:4px;font-family:monospace;font-size:12px;box-shadow:0 0 10px rgba(0,0,0,0.5);animation:fadeIn 0.3s ease;`;
+        t.textContent = `[${type.toUpperCase()}] ${msg}`;
+        document.getElementById('toastContainer').appendChild(t);
+        setTimeout(() => {
+          t.style.animation = 'fadeOut 0.3s ease';
+          setTimeout(() => t.remove(), 300);
+        }, 3000);
+      }
+
+      function switchTradingMode(mode) {
+        const isLive = mode === 'live';
+        if (isLive && (!window.walletState || !window.walletState.isConnected)) {
+           showToast('Connect real wallet first!', 'error');
+           return;
+        }
+        document.getElementById('simModeBtn').classList.toggle('active', !isLive);
+        document.getElementById('liveModeBtn').classList.toggle('active', isLive);
+        if (typeof CrucibleRealTrading !== 'undefined') {
+          CrucibleRealTrading.config.liveMode = isLive;
+          showToast(`Mode switched to ${isLive ? 'LIVE' : 'SIMULATED'}`, 'info');
+        }
+      }
+      function updateCrucibleProgress(current, total, equity) {
+        const prog = document.getElementById('crucibleProgress');
+        const bar = document.getElementById('crucibleProgressBar');
+        const text = document.getElementById('crucibleProgressText');
+        if (prog) prog.style.display = 'block';
+        if (bar) bar.style.width = (current / total * 100) + '%';
+        if (text) text.textContent = `${current}/${total} | $${equity.toFixed(2)}`;
+      }
+      function toggleCruciblePause() {
+        if (typeof CrucibleRealTrading !== 'undefined') {
+          const paused = CrucibleRealTrading.togglePause();
+          event.target.textContent = paused ? 'RESUME' : 'PAUSE';
+          event.target.classList.toggle('active', paused);
+        }
+      }
+      function stopCrucible() {
+        if (typeof CrucibleRealTrading !== 'undefined') {
+          CrucibleRealTrading.stop();
+          document.getElementById('crucibleProgress').style.display = 'none';
+          showToast('Trading session stopped', 'info');
+        }
+      }
+    </script>
+<div class="bot-grid" id="botGrid"></div>
 
   <!-- Log -->
   <div class="global-log">
@@ -1323,6 +1423,25 @@ function toggleVisibility(inputId, btn) {
   const isPassword = input.type === 'password';
   input.type = isPassword ? 'text' : 'password';
   btn.textContent = isPassword ? 'HIDE' : 'SHOW';
+}
+
+/**
+ * Copy text from an input field to the clipboard
+ */
+function copyToClipboard(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (!input || !input.value) return;
+  navigator.clipboard.writeText(input.value).then(() => {
+    const originalText = btn.textContent;
+    btn.textContent = 'COPIED!';
+    btn.style.color = 'var(--green)';
+    setTimeout(() => {
+      btn.textContent = originalText;
+      btn.style.color = '';
+    }, 2000);
+  }).catch(err => {
+    console.error('Copy failed:', err);
+  });
 }
 
 // ══════════════════════════════════════════════════════
@@ -1446,12 +1565,15 @@ const CRUCIBLE_METHODS = ['SPOT LONG','SPOT SHORT','HOLD'];
 // ══════════════════════════════════════════════════════
 // GLOBAL STATE
 // ══════════════════════════════════════════════════════
-let balance=50, startBalance=50, totalPnl=0;
-let closedTrades=[], openPositions=[], equityHistory=[10000];
+// ⚡ Bolt Optimization: Use var for critical globals so they are attached to window.
+// This allows the AutoRecovery engine in app-rebuild.js to correctly detect them,
+// preventing redundant O(N) localStorage parsing and state assignments every 10 seconds.
+var balance=50, startBalance=50, totalPnl=0;
+var closedTrades=[], openPositions=[], equityHistory=[10000];
+var _lastClosedCount = -1;
 let agentHistory=[]; // per-agent vote accuracy for quant report
-let baselines={ random:{trades:[]}, long:{trades:[]}, momentum:{trades:[]} };
 let globalLog=[];
-let bots=[], botCounter=0;
+var bots=[], botCounter=0;
 let marketCache=null, marketCacheTime=0, marketMap=new Map();
 let priceCache={};
 const inFlightRequests = new Map(); // Request deduplication map
@@ -1814,7 +1936,6 @@ async function checkExit(pos, bot) {
 
   // Compute shadow baselines
   pos.baselines=computeBaselines(pos.entryPrice,exitPrice,pos.bet,pos.method,pos.volumeUsd,pos.priceChangePct15m);
-  Object.keys(pos.baselines).forEach(k=>{ if(k!=='cash') baselines[k].trades.push(pos.baselines[k]); });
 
   // Track agent performance for quant report
   if(pos.ensemble) trackAgentPerformance(pos.ensemble, pos.isWin);
@@ -1928,6 +2049,10 @@ function updateQuantReport() {
   const body = document.getElementById('quantBody');
   if (body && !body.classList.contains('open')) return;
 
+  // ⚡ Bolt Optimization: Early return if no new trades have been closed since last update
+  if (closedTrades.length === _lastClosedCount) return;
+  _lastClosedCount = closedTrades.length;
+
   const trades=closedTrades.filter(t=>t.method!=='HOLD');
   const n=trades.length;
   document.getElementById('qTradeCount').textContent=n+' closed trades';
@@ -1942,36 +2067,61 @@ function updateQuantReport() {
   });
 
   if(n===0) return;
-  const wins=trades.filter(t=>t.isWin);
-  const losses=trades.filter(t=>!t.isWin);
-  const winRate=wins.length/n;
-  const grossW=wins.reduce((s,t)=>s+t.netPnl,0);
-  const grossL=Math.abs(losses.reduce((s,t)=>s+t.netPnl,0));
+
+  // ⚡ Bolt Optimization: Consolidate O(N) passes into a single loop
+  let winCount=0, lossCount=0, grossW=0, grossL=0, totalNetPnl=0, totalCosts=0;
+  const byStrat={}, baselinePnls={random:0,long:0,momentum:0}, baselineWins={random:0,long:0,momentum:0};
+  const returns=[];
+
+  for (const t of trades) {
+    totalNetPnl += t.netPnl;
+    totalCosts += t.costs.total;
+    returns.push(t.netPnl);
+
+    if (t.isWin) { winCount++; grossW += t.netPnl; }
+    else { lossCount++; grossL += Math.abs(t.netPnl); }
+
+    if (!byStrat[t.method]) byStrat[t.method] = { wins:0, total:0, pnl:0 };
+    byStrat[t.method].total++;
+    byStrat[t.method].pnl += t.netPnl;
+    if (t.isWin) byStrat[t.method].wins++;
+
+    if (t.baselines) {
+      ['random','long','momentum'].forEach(k => {
+        baselinePnls[k] += (t.baselines[k] || 0);
+        if (t.baselines[k] > 0) baselineWins[k]++;
+      });
+    }
+  }
+
+  const winRate=winCount/n;
   const pf=grossL>0?(grossW/grossL):grossW>0?99:0;
-  const avgPnl=trades.reduce((s,t)=>s+t.netPnl,0)/n;
-  const avgW=wins.length>0?grossW/wins.length:0;
-  const avgL=losses.length>0?grossL/losses.length:0;
+  const avgPnl=totalNetPnl/n;
+  const avgW=winCount>0?grossW/winCount:0;
+  const avgL=lossCount>0?grossL/lossCount:0;
   const maxDD=computeMaxDrawdown();
 
   // Metric cards
-  setMCard('mc-wr','mv-wr','ms-wr',(winRate*100).toFixed(1)+'%',wins.length+'W / '+losses.length+'L',winRate>=0.5?'good':'bad');
+  setMCard('mc-wr','mv-wr','ms-wr',(winRate*100).toFixed(1)+'%',winCount+'W / '+lossCount+'L',winRate>=0.5?'good':'bad');
   setMCard('mc-pf','mv-pf',null,pf>=99?'∞':pf.toFixed(2),null,pf>=1?'good':'bad');
   setMCard('mc-exp','mv-exp','ms-exp',(avgPnl>=0?'+':'')+'$'+avgPnl.toFixed(2),'per trade after costs',avgPnl>=0?'good':'bad');
   setMCard('mc-dd','mv-dd',null,'-$'+maxDD.toFixed(2),null,maxDD<startBalance*0.1?'good':'bad');
-  setVal('mv-avgW',wins.length>0?'+$'+avgW.toFixed(2):'—');
-  setVal('mv-avgL',losses.length>0?'-$'+avgL.toFixed(2):'—');
+  setVal('mv-avgW',winCount>0?'+$'+avgW.toFixed(2):'—');
+  setVal('mv-avgL',lossCount>0?'-$'+avgL.toFixed(2):'—');
   setVal('mv-open',openPositions.length);
 
   drawEquityCurve();
-  drawBaselines(trades, avgPnl);
-  drawStratBreakdown(trades);
-  drawReturnDist(trades);
-  drawCostSensitivity(trades);
+  drawBaselines(n, totalNetPnl, winRate, baselinePnls, baselineWins, avgPnl);
+  drawStratBreakdown(byStrat);
+  drawReturnDist(returns);
+  drawCostSensitivity(totalNetPnl, totalCosts);
   drawVerdict(n, winRate, pf, avgPnl);
 }
 
 function setMCard(cardId, valId, subId, val, sub, cls) {
-  const c=document.getElementById(cardId); if(c) c.className='mcard '+cls;
+  const c=document.getElementById(cardId);
+  const nextClass = 'mcard ' + cls;
+  if(c && c.className !== nextClass) c.className = nextClass;
   if(valId) setVal(valId,val);
   if(subId&&sub) setVal(subId,sub);
 }
@@ -2004,41 +2154,53 @@ function drawEquityCurve() {
   if(bl){ bl.setAttribute('y1',baseY.toFixed(1)); bl.setAttribute('y2',baseY.toFixed(1)); }
 }
 
-function drawBaselines(trades, claudeAvg) {
-  const n=trades.length;
-  const claudePnl=trades.reduce((s,t)=>s+t.netPnl,0);
-  const claudeWr=(trades.filter(t=>t.isWin).length/n*100).toFixed(1);
-
-  const bKeys=['random','long','momentum'];
-  const bData={};
-  bKeys.forEach(k=>{
-    const arr=baselines[k].trades.slice(0,n);
-    const pnl=arr.reduce((s,v)=>s+v,0);
-    const wins=arr.filter(v=>v>0).length;
-    bData[k]={ pnl, avg:arr.length?pnl/arr.length:0, wr:arr.length?(wins/arr.length*100).toFixed(1)+'%':'—' };
+function drawBaselines(n, claudePnl, winRate, baselinePnls, baselineWins, claudeAvg) {
+  const claudeWr = (winRate * 100).toFixed(1);
+  const bKeys = ['random', 'long', 'mom']; // Keys match the ID prefixes in HTML
+  const bData = {};
+  bKeys.forEach(k => {
+    const pnl = baselinePnls[k === 'mom' ? 'momentum' : k] || 0;
+    const wins = baselineWins[k === 'mom' ? 'momentum' : k] || 0;
+    bData[k] = { pnl, avg: n ? pnl / n : 0, wr: n ? (wins / n * 100).toFixed(1) + '%' : '—' };
   });
 
   // Highlight the winner
-  const allPnls={claude:claudePnl, ...Object.fromEntries(bKeys.map(k=>[k,bData[k].pnl]))};
-  const best=Object.keys(allPnls).reduce((a,b)=>allPnls[a]>allPnls[b]?a:b);
+  const allPnls = { claude: claudePnl, ...Object.fromEntries(bKeys.map(k => [k, bData[k].pnl])) };
+  const best = Object.keys(allPnls).reduce((a, b) => allPnls[a] > allPnls[b] ? a : b);
 
-  const fmt=(v)=>(v>=0?'+':'')+'$'+v.toFixed(2);
-  setVal('bl-claude-pnl',fmt(claudePnl)); setVal('bl-claude-wr',claudeWr+'%'); setVal('bl-claude-avg',fmt(claudeAvg)); setVal('bl-claude-vs',fmt(claudePnl));
-  bKeys.forEach(k=>{
-    setVal('bl-'+k+'-pnl',fmt(bData[k].pnl)); setVal('bl-'+k+'-wr',bData[k].wr); setVal('bl-'+k+'-avg',fmt(bData[k].avg)); setVal('bl-'+k+'-vs',fmt(bData[k].pnl-0));
+  const fmt = (v) => (v >= 0 ? '+' : '') + '$' + v.toFixed(2);
+
+  // Update Claude row
+  setVal('bl-claude-pnl', fmt(claudePnl));
+  setVal('bl-claude-wr', claudeWr + '%');
+  setVal('bl-claude-avg', fmt(claudeAvg));
+  setVal('bl-claude-vs', 'benchmark');
+
+  // Update Baseline rows
+  bKeys.forEach(k => {
+    setVal('bl-' + k + '-pnl', fmt(bData[k].pnl));
+    setVal('bl-' + k + '-wr', bData[k].wr);
+    setVal('bl-' + k + '-avg', fmt(bData[k].avg));
+    // Alpha metric: Baseline P&L vs Claude P&L
+    setVal('bl-' + k + '-vs', fmt(bData[k].pnl - claudePnl));
   });
-  document.querySelectorAll('.baseline-table tr').forEach(r=>r.classList.remove('best-row'));
-  const rowMap={claude:'highlight-row',random:'',long:'',momentum:''};
-  if(best==='claude') document.querySelector('.baseline-table .highlight-row')?.classList.add('best-row');
+
+  // Highlight best strategy
+  const table = document.getElementById('baselineTable');
+  if (table) {
+    table.querySelectorAll('tr').forEach(r => r.classList.remove('best-row'));
+    if (best === 'claude') {
+      table.querySelector('.highlight-row')?.classList.add('best-row');
+    } else {
+      // Find row for the winning baseline
+      const id = 'bl-' + best + '-pnl';
+      const cell = document.getElementById(id);
+      if (cell) cell.closest('tr')?.classList.add('best-row');
+    }
+  }
 }
 
-function drawStratBreakdown(trades) {
-  const byStrat={};
-  trades.forEach(t=>{
-    if(!byStrat[t.method]) byStrat[t.method]={wins:0,total:0,pnl:0};
-    byStrat[t.method].total++; byStrat[t.method].pnl+=t.netPnl;
-    if(t.isWin) byStrat[t.method].wins++;
-  });
+function drawStratBreakdown(byStrat) {
   const maxAbs=Math.max(...Object.values(byStrat).map(d=>Math.abs(d.pnl)),0.01);
   const el=document.getElementById('stratBreakdown');
   el.innerHTML=Object.entries(byStrat).sort((a,b)=>b[1].pnl-a[1].pnl).map(([name,d])=>{
@@ -2053,9 +2215,9 @@ function drawStratBreakdown(trades) {
   }).join('');
 }
 
-function drawReturnDist(trades) {
-  if(trades.length<5) return;
-  const returns=trades.map(t=>t.netPnl);
+function drawReturnDist(returns) {
+  const n=returns.length;
+  if(n<5) return;
   const min=Math.min(...returns), max=Math.max(...returns);
   const bins=10, size=(max-min)/bins||1;
   const counts=Array(bins).fill(0);
@@ -2071,14 +2233,12 @@ function drawReturnDist(trades) {
   setVal('distMin','$'+min.toFixed(1)); setVal('distMax','$'+max.toFixed(1));
 }
 
-function drawCostSensitivity(trades) {
+function drawCostSensitivity(totalNetPnl, totalCosts) {
   [1,1.5,2].forEach((mult,i)=>{
     const ids=['cs-1x','cs-15x','cs-2x'];
     const cols=['var(--green)','var(--amber)','var(--hot)'];
-    const adjPnl=trades.reduce((s,t)=>{
-      const extraCost=t.costs.total*(mult-1);
-      return s+t.netPnl-extraCost;
-    },0);
+    const extraCostMult = mult - 1;
+    const adjPnl = totalNetPnl - (totalCosts * extraCostMult);
     const el=document.getElementById(ids[i]);
     if(el){ el.textContent=(adjPnl>=0?'+':'')+'$'+adjPnl.toFixed(2); el.style.color=adjPnl>=0?cols[i]:cols[2]; }
   });
@@ -2192,6 +2352,16 @@ async function runCrucibleBatch() {
   } finally {
     if(runBtn) runBtn.disabled = false;
   }
+}
+
+function selectRegime(regime) {
+  const map = { 'BULL': 'regimeBull', 'BEAR': 'regimeBear', 'CHOP': 'regimeChop', 'HIGH_VOL': 'regimeHighVol' };
+  const targetId = map[regime];
+  document.querySelectorAll('.regime-btn').forEach(btn => {
+    const isActive = btn.id === targetId;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-pressed', isActive);
+  });
 }
 
 async function runCrucibleV2Batch() {
@@ -2463,6 +2633,15 @@ function togglePanel(name) {
   const isOpen=body.classList.toggle('open');
   hd?.classList.toggle('open',isOpen);
   hd?.setAttribute('aria-expanded', isOpen);
+
+  // Update header button affordance
+  const ghMap = { staff: 'ghStaffBtn', task: 'ghTaskBtn', elo: 'ghEloBtn' };
+  const ghBtn = document.getElementById(ghMap[name]);
+  if (ghBtn) {
+    ghBtn.classList.toggle('open', isOpen);
+    ghBtn.setAttribute('aria-expanded', isOpen);
+  }
+
   toggle.textContent=isOpen?'▴ HIDE':'▼ '+(name==='quant'?'EXPAND':'CONFIGURE');
   if(name==='quant'&&isOpen){ updateQuantReport(); setTimeout(drawEquityCurve,50); }
   if(name==='elo'&&isOpen){ if(typeof renderEloArena === 'function') renderEloArena(); }
@@ -2804,6 +2983,44 @@ async function loginCoinbase(){
   }catch(e){s.innerHTML='❌ '+e.message;console.error('Coinbase error:',e);}
 }
 
+
+async function loginPayID() {
+  const s = document.getElementById('cStatus');
+  if(!s) return;
+
+  if(!window.ethereum) {
+    s.innerHTML = '❌ MetaMask not found. Please install MetaMask to use PayID onboarding.';
+    return;
+  }
+
+  try {
+    s.innerHTML = '⚡ Initiating PayID Onboarding...<br><span style="font-size:9px;color:var(--dim)">Step 1: Connecting Wallet</span>';
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    const address = accounts[0];
+
+    s.innerHTML = '⚡ Initiating PayID Onboarding...<br><span style="font-size:9px;color:var(--dim)">Step 2: Switching to Base Network</span>';
+    // Switch to Base
+    await window.ethereum.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: '0x2105' }],
+    });
+
+    s.innerHTML = '⚡ Redirecting to Ramp (AUD)...<br><span style="font-size:9px;color:var(--dim)">Instant AUD -> crypto without KYC (under limits)</span>';
+
+    // Redirect to AUD-optimized Ramp flow
+    const rampUrl = `https://buy.ramp.network/?ref=tradearena&swapAsset=BASE_ETH&fiatCurrency=AUD&fiatValue=50&userAddress=${address}`;
+
+    setTimeout(() => {
+        window.open(rampUrl, '_blank');
+        s.innerHTML = '✅ Redirected! Return here once your deposit arrives.<br><button onclick="loginMetaMask()" style="margin-top:8px;padding:6px 12px;background:var(--cyan);border:none;border-radius:4px;color:var(--bg);cursor:pointer;font-family:Bungee;font-size:9px">I HAVE FUNDS NOW</button>';
+    }, 1500);
+
+  } catch (e) {
+    console.error('PayID Error:', e);
+    s.innerHTML = '❌ Onboarding failed: ' + (e.message || 'Unknown error');
+  }
+}
+
 // OSKO Fiat On/Off Ramp Functions
 function openOskoRamp(type) {
   const s = document.getElementById('cStatus');
@@ -2955,6 +3172,7 @@ function globalAutoToggle(){
 
 // ── Header countdown + open-trade tally ──
 let _ghTickerInterval=null;
+let _lastTickCount=-1, _lastTickCd='', _lastTickUrgent=null;
 function _startHeaderTicker(){
   if(_ghTickerInterval) clearInterval(_ghTickerInterval);
   _ghTickerInterval=setInterval(_tickHeader,500);
@@ -2965,25 +3183,46 @@ function _tickHeader(){
 
   // open trade count
   const count=openPositions.length;
-  const qWrap=document.getElementById('ghQueueWrap');
-  const qNum=document.getElementById('ghQueueNum');
-  if(qWrap){ qWrap.style.display=count>0?'flex':'none'; }
-  if(qNum) qNum.textContent=count;
+  // ⚡ Bolt Optimization: Dirty-check trade count to skip redundant style/text assignments
+  if (count !== _lastTickCount) {
+    const qWrap=document.getElementById('ghQueueWrap');
+    const qNum=document.getElementById('ghQueueNum');
+    if(qWrap){ qWrap.style.display=count>0?'flex':'none'; }
+    if(qNum) qNum.textContent=count;
+    _lastTickCount = count;
+  }
 
   // countdown to nearest exit
   const ticker=document.getElementById('ghTicker');
   const cd=document.getElementById('ghCountdown');
   if(!ticker||!cd) return;
-  if(count===0){ ticker.style.display='none'; return; }
-  ticker.style.display='flex';
+
+  if(count===0){
+    if (ticker.style.display !== 'none') ticker.style.display='none';
+    return;
+  }
+  if (ticker.style.display !== 'flex') ticker.style.display='flex';
+
   const now=Date.now();
   let nearest=null;
   openPositions.forEach(p=>{ if(p.exitTime&&(!nearest||p.exitTime<nearest)) nearest=p.exitTime; });
-  if(!nearest){ cd.textContent='--:--'; return; }
+  if(!nearest){
+    if (cd.textContent !== '--:--') cd.textContent='--:--';
+    return;
+  }
+
   const ms=Math.max(0,nearest-now);
   const s=Math.floor(ms/1000)%60, m=Math.floor(ms/60000)%60, h=Math.floor(ms/3600000);
-  cd.textContent=h>0?`${h}h${m}m`:m>0?`${m}:${String(s).padStart(2,'0')}`:`0:${String(s).padStart(2,'0')}`;
-  cd.className='gh-ticker-cd'+(ms<15000?' urgent':'');
+  const cdStr=h>0?`${h}h${m}m`:m>0?`${m}:${String(s).padStart(2,'0')}`:`0:${String(s).padStart(2,'0')}`;
+  const urgent=ms<15000;
+
+  // ⚡ Bolt Optimization: Skip DOM churn if countdown string and urgency state haven't changed
+  if (cdStr !== _lastTickCd || urgent !== _lastTickUrgent) {
+    cd.textContent=cdStr;
+    cd.className='gh-ticker-cd'+(urgent?' urgent':'');
+    _lastTickCd = cdStr;
+    _lastTickUrgent = urgent;
+  }
 }
 function renderBot(bot){
   const el=document.createElement('div'); el.className='machine'; el.id='bot-'+bot.id;
@@ -3152,7 +3391,11 @@ function setBet(id,amt){
   if(isNaN(amt)||amt<0.01) return;
   bot.bet=amt;
   // highlight matching preset, clear others
-  document.querySelectorAll(`#mbets-${id} .m-dd-bet`).forEach(b=>b.classList.toggle('on',parseFloat(b.dataset.bet)===amt));
+  document.querySelectorAll(`#mbets-${id} .m-dd-bet`).forEach(b=>{
+    const isOn = parseFloat(b.dataset.bet)===amt;
+    b.classList.toggle('on',isOn);
+    b.setAttribute('aria-pressed', isOn);
+  });
   // update display
   const disp=document.getElementById('mbetdisp-'+id);
   if(disp) disp.innerHTML=`$${amt%1===0?amt.toFixed(0):amt.toFixed(2)} <span>per trade</span>`;
@@ -3314,7 +3557,7 @@ async function spinBot(id){
     if(typeof VOICE!=='undefined') VOICE.tradeOpen(bot.id, decision.token, decision.method);
 
     // ON-CHAIN EXECUTION TRIGGER
-    if (window.isPrivyConnected && window.isPrivyConnected() && !decision.method.includes('PAPER')) {
+    if (window.isLiveMode && window.isPrivyConnected && window.isPrivyConnected() && !decision.method.includes('PAPER')) {
         console.log('[Arena] Routing to On-Chain Execution Engine...');
         try {
             await window.executeOnChainTrade({
@@ -4772,13 +5015,14 @@ function renderLog(){
     const pnlCls=isOpen?'open':isHold?'h':t.isWin?'p':'n';
     const ep=t.entryPrice?'\$'+t.entryPrice.toFixed(t.entryPrice<1?5:2):'—';
     const xp=t.exitPrice?'\$'+t.exitPrice.toFixed(t.exitPrice<1?5:2):(isOpen?'⏳':'—');
+    const txLink = t.txHash ? `<a href="${REAL_WALLET_CONFIG.network.explorerUrl}/tx/${t.txHash}" target="_blank" style="text-decoration:none;color:var(--cyan);font-size:8px;margin-left:4px">🔗</a>` : "";
     const cost=t.costs?.total?'-\$'+t.costs.total.toFixed(2):'';
     return`<div class="log-row">
       <div class="log-bot">#${t.botId}</div>
       <div class="log-coin" style="color:${isOpen?'var(--blue)':isHold?'var(--amber)':t.isWin?'var(--green)':'var(--hot)'}">${t.token}</div>
       <div class="log-method">${t.method}</div>
       <div class="log-entry">${ep}</div>
-      <div class="log-exit">${xp}</div>
+      <div class="log-exit">${xp}${txLink}</div>
       <div class="log-pnl ${pnlCls}">${pnlStr}</div>
       <div class="log-cost">${cost}</div>
       <div class="log-t">${t.time}</div>
@@ -4790,7 +5034,7 @@ function renderLog(){
 // HELPERS
 // ══════════════════════════════════════════════════════
 function closeResult(id){ document.getElementById('mresult-'+id)?.classList.remove('show'); }
-function setVal(id,v){ const e=document.getElementById(id); if(e) e.textContent=v; }
+function setVal(id,v){ const e=document.getElementById(id); if(e && e.textContent !== String(v)) e.textContent=v; }
 function spawnParticles(win,botId){
   const syms=win?['💰','🪙','✨','💎','🔥']:['💀','📉','💸','😤','❌'];
   const card=document.getElementById('bot-'+botId),rect=card?.getBoundingClientRect();
@@ -4809,7 +5053,10 @@ setInterval(function(){
   try{
     const appVisible=document.getElementById('mainApp')?.style.display!=='none';
     if(!appVisible) return;
-    if(openPositions.length>0||document.getElementById('quantBody')?.classList.contains('open')){
+    // ⚡ Bolt Optimization: Only trigger update if the panel is actually open AND data has changed.
+    // Trades are already processed in checkExit(), but this acts as a periodic sync guard.
+    const isQuantOpen = document.getElementById('quantBody')?.classList.contains('open');
+    if (isQuantOpen && closedTrades.length !== _lastClosedCount) {
       updateQuantReport();
     }
   }catch(e){}
@@ -4825,7 +5072,10 @@ function toggleFleetView() {
   const btn = document.getElementById('fleetViewBtn');
   if (!grid) return;
   const isFleet = grid.classList.toggle('fleet-view');
-  if (btn) btn.classList.toggle('open', isFleet);
+  if (btn) {
+    btn.classList.toggle('open', isFleet);
+    btn.setAttribute('aria-pressed', isFleet);
+  }
 }
 
 function toggleBusPanel() {
@@ -4849,7 +5099,9 @@ function _busStatus(msg, ok=true) {
 
 function _busHighlight(containerId, matchFn) {
   document.querySelectorAll(`#${containerId} .bus-preset`).forEach(b => {
-    b.classList.toggle('active', matchFn(b));
+    const isActive = matchFn(b);
+    b.classList.toggle('active', isActive);
+    b.setAttribute('aria-pressed', isActive);
   });
 }
 
@@ -5133,12 +5385,12 @@ function _injectAVControls() {
   const audioOn = typeof ACOUSTIC !== 'undefined' && ACOUSTIC.getConfig().audio.enabled;
 
   wrap.innerHTML = `
-    <button id="sfxBtn" style="${btnStyle}" class="${sfxOn?'av-on':''}" title="Sound Effects" aria-label="Toggle Sound Effects"
-      onclick="if(typeof ACOUSTIC!=='undefined'){ ACOUSTIC.toggleSFX(); this.classList.toggle('av-on', ACOUSTIC.getConfig().sfx.enabled); }">🔊</button>
-    <button id="voiceBtn" style="${btnStyle}" class="${voiceOn?'av-on':''}" title="Voice Announcements" aria-label="Toggle Voice Announcements"
-      onclick="if(typeof ACOUSTIC!=='undefined'){ ACOUSTIC.toggleVOICE(); this.classList.toggle('av-on', ACOUSTIC.getConfig().voice.enabled); }">🎙️</button>
-    <button id="audioBtn" style="${btnStyle}" class="${audioOn?'av-on':''}" title="Acoustic Core Sequencer" aria-label="Toggle Acoustic Core Sequencer"
-      onclick="if(typeof ACOUSTIC!=='undefined'){ ACOUSTIC.toggleAudio(); this.classList.toggle('av-on', ACOUSTIC.getConfig().audio.enabled); }">🎹</button>`;
+    <button id="sfxBtn" style="${btnStyle}" class="${sfxOn?'av-on':''}" title="Sound Effects" aria-label="Toggle Sound Effects" aria-pressed="${sfxOn}"
+      onclick="if(typeof ACOUSTIC!=='undefined'){ ACOUSTIC.toggleSFX(); const isOn=ACOUSTIC.getConfig().sfx.enabled; this.classList.toggle('av-on', isOn); this.setAttribute('aria-pressed', isOn); }">🔊</button>
+    <button id="voiceBtn" style="${btnStyle}" class="${voiceOn?'av-on':''}" title="Voice Announcements" aria-label="Toggle Voice Announcements" aria-pressed="${voiceOn}"
+      onclick="if(typeof ACOUSTIC!=='undefined'){ ACOUSTIC.toggleVOICE(); const isOn=ACOUSTIC.getConfig().voice.enabled; this.classList.toggle('av-on', isOn); this.setAttribute('aria-pressed', isOn); }">🎙️</button>
+    <button id="audioBtn" style="${btnStyle}" class="${audioOn?'av-on':''}" title="Acoustic Core Sequencer" aria-label="Toggle Acoustic Core Sequencer" aria-pressed="${audioOn}"
+      onclick="if(typeof ACOUSTIC!=='undefined'){ ACOUSTIC.toggleAudio(); const isOn=ACOUSTIC.getConfig().audio.enabled; this.classList.toggle('av-on', isOn); this.setAttribute('aria-pressed', isOn); }">🎹</button>`;
 
   const gen = document.getElementById('genBadge');
   if (gen) hdr.insertBefore(wrap, gen); else hdr.appendChild(wrap);
@@ -5178,6 +5430,8 @@ document.addEventListener('keydown', function(e) {
 <script src="audio-engine.js" defer></script>
 <script src="ACOUSTIC_CORE.js" defer></script>
 <script src="contract-helpers.js" defer></script>
+<script src="real-wallet.js" defer></script>
+<script src="crucible-real-trading.js" defer></script>
 <script src="execution-engine.js" defer></script>
 <script src="elo-tournament-engine.js" defer></script>
 <script src="task-center.js" defer></script>
@@ -5225,7 +5479,10 @@ function toggleVoiceAgent() {
   const btn = document.getElementById('voiceAgentBtn');
   if (!modal) return;
   const isOpen = modal.classList.toggle('open');
-  if (btn) btn.classList.toggle('open', isOpen);
+  if (btn) {
+    btn.classList.toggle('open', isOpen);
+    btn.setAttribute('aria-expanded', isOpen);
+  }
 }
 
 async function sendVoiceCommand() {

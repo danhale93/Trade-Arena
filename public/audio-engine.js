@@ -17,6 +17,39 @@ class AudioEngine {
     this.initialized = false;
   }
 
+
+  toggleMusic() {
+    if (!this.initialized) return false;
+    this.isPlaying = !this.isPlaying;
+    if (this.isPlaying) {
+      this.startSequencer();
+    } else {
+      this.stopSequencer();
+    }
+    return this.isPlaying;
+  }
+
+  startSequencer() {
+    if (this.sequencerInterval) clearInterval(this.sequencerInterval);
+    const stepTime = (60 / this.bpm) / 4 * 1000;
+    this.sequencerInterval = setInterval(() => {
+      this.playStep();
+      this.stepIndex = (this.stepIndex + 1) % this.steps;
+    }, stepTime);
+  }
+
+  stopSequencer() {
+    if (this.sequencerInterval) clearInterval(this.sequencerInterval);
+    this.sequencerInterval = null;
+  }
+
+  playStep() {
+    // Basic pulse for background music
+    if (this.stepIndex % 4 === 0) {
+      this.triggerPad(0, 0.1, { botId: 0, pnl: 0 });
+    }
+  }
+
 async init() {
     // Return promise if already initialized
     if (this.initialized) {
