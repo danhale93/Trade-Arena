@@ -1334,6 +1334,24 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       .mode-btn:hover { border-color: var(--cyan); color: #fff; }
     </style>
     <script>
+      function showToast(msg, type='info') {
+        const container = document.getElementById('toastContainer');
+        if (!container) {
+          const c = document.createElement('div');
+          c.id = 'toastContainer';
+          c.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;';
+          document.body.appendChild(c);
+        }
+        const t = document.createElement('div');
+        t.style.cssText = `background:rgba(0,0,0,0.9);color:${type==='error'?'var(--hot)':'var(--cyan)'};padding:8px 16px;border:1px solid ${type==='error'?'var(--hot)':'var(--cyan)'};border-radius:4px;font-family:monospace;font-size:12px;box-shadow:0 0 10px rgba(0,0,0,0.5);animation:fadeIn 0.3s ease;`;
+        t.textContent = `[${type.toUpperCase()}] ${msg}`;
+        document.getElementById('toastContainer').appendChild(t);
+        setTimeout(() => {
+          t.style.animation = 'fadeOut 0.3s ease';
+          setTimeout(() => t.remove(), 300);
+        }, 3000);
+      }
+
       function switchTradingMode(mode) {
         const isLive = mode === 'live';
         if (isLive && (!window.walletState || !window.walletState.isConnected)) {
@@ -1547,12 +1565,15 @@ const CRUCIBLE_METHODS = ['SPOT LONG','SPOT SHORT','HOLD'];
 // ══════════════════════════════════════════════════════
 // GLOBAL STATE
 // ══════════════════════════════════════════════════════
-let balance=50, startBalance=50, totalPnl=0;
-let closedTrades=[], openPositions=[], equityHistory=[10000];
-let _lastClosedCount = -1;
+// ⚡ Bolt Optimization: Use var for critical globals so they are attached to window.
+// This allows the AutoRecovery engine in app-rebuild.js to correctly detect them,
+// preventing redundant O(N) localStorage parsing and state assignments every 10 seconds.
+var balance=50, startBalance=50, totalPnl=0;
+var closedTrades=[], openPositions=[], equityHistory=[10000];
+var _lastClosedCount = -1;
 let agentHistory=[]; // per-agent vote accuracy for quant report
 let globalLog=[];
-let bots=[], botCounter=0;
+var bots=[], botCounter=0;
 let marketCache=null, marketCacheTime=0, marketMap=new Map();
 let priceCache={};
 const inFlightRequests = new Map(); // Request deduplication map
