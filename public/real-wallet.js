@@ -660,4 +660,3 @@ async function getWalletBalanceUSD() {
         return walletState.balanceUSD || 0;
     }
 }
-

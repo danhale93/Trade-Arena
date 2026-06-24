@@ -37,3 +37,9 @@
 **Vulnerability:** The AI proxy endpoints for Claude and OpenAI in `proxy.js` were blindly forwarding the entire request body to upstream APIs. This allowed any client to request the most expensive models (e.g., Claude 3 Opus, GPT-4o) and arbitrary parameters, potentially exhausting API quotas and increasing costs.
 **Learning:** Proxies that facilitate AI requests must act as gateways that enforce specific usage policies. Relying on clients to provide "safe" models is a security and financial risk.
 **Prevention:** Implement strict model whitelisting on the server-side. Explicitly define allowed models and restrict the forwarded payload to a whitelist of known, safe parameters (e.g., `messages`, `system`, `temperature`) to prevent parameter injection and maintain cost control.
+
+## 2026-06-23T00:09:08.077Z - [INFO] SENTINEL
+security fix verified
+
+## 2026-06-23T00:27:13.940Z - [INFO] SENTINEL
+Running security audit across localStorage and active config...

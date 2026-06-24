@@ -140,7 +140,7 @@ class StaffEngine {
         // Persist critical logs to backend via Proxy
         if (type === 'warn' || type === 'error' || agentId === 'SENTINEL') {
             try {
-                await fetch('http://localhost:3001/api/maintenance/log', {
+                await fetch('/api/maintenance/log', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ agent: agentId, message, level: type.toUpperCase() })

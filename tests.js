@@ -6,12 +6,12 @@
  */
 
 const crypto = require("crypto");
-const { TradingEngine } = require("./trading-engine.js");
+const { TradingEngine } = require("./public/trading-engine.js");
 const {
   SecurityHelper,
   ArbitrageAnalyzer,
   FlashLoanSimulator,
-} = require("./contract-helpers.js");
+} = require("./public/contract-helpers.js");
 const {
   CrucibleTest,
   runCrucibleTest,
@@ -20,31 +20,31 @@ const {
   calculateSMA,
   classifyRegime,
   validateAllRegimes,
-} = require("./crucible-test.js");
-const { TRADE_OLYMPICS } = require("./trade-olympics.js");
+} = require("./public/crucible-test.js");
+const { TRADE_OLYMPICS } = require("./public/trade-olympics.js");
 const {
   ARENA_COMPETITION,
   BOT_AI_MODELS,
   MODEL_SELECTION,
   callAIModel,
   getModelConfig,
-} = require("./multi-ai-arena.js");
-const { calculateSlippage } = require("./real-wallet.js");
-const { CrucibleRealTrading } = require("./crucible-real-trading.js");
+} = require("./public/multi-ai-arena.js");
+const { calculateSlippage } = require("./public/real-wallet.js");
+const { CrucibleRealTrading } = require("./public/crucible-real-trading.js");
 const {
   createRiskState,
   recordOpportunityResult,
   getRiskAdjustment,
-} = require("./arb-risk-engine.js");
+} = require("./public/arb-risk-engine.js");
 const {
   americanToProbability,
   removeVig,
   findSportsPredictionEdges,
-} = require("./sports-odds-arb.js");
+} = require("./public/sports-odds-arb.js");
 const {
   calculateFlashLoanArb,
   scanCrossDexFlashArb,
-} = require("./cross-dex-arb-scanner.js");
+} = require("./public/cross-dex-arb-scanner.js");
 
 const tests = [];
 let currentSuite = "";
