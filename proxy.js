@@ -1,11 +1,42 @@
 const express = require('express');
 const cors = require('cors');
 const app = express();
-app.use(express.json());
+// Sentinel: Limit JSON payload size to prevent DoS attacks
+app.use(express.json({ limit: '100kb' }));
 app.use(cors({ origin: '*' }));
+
+// Sentinel: Whitelisted models to prevent unauthorized expensive API usage
+const ALLOWED_CLAUDE_MODELS = new Set([
+  'claude-3-5-sonnet-20240620',
+  'claude-3-5-sonnet-latest',
+  'claude-3-opus-20240229',
+  'claude-3-sonnet-20240229',
+  'claude-3-haiku-20240307'
+]);
+
+const ALLOWED_OPENAI_MODELS = new Set([
+  'gpt-4o',
+  'gpt-4o-latest',
+  'gpt-4o-mini',
+  'gpt-4-turbo',
+  'gpt-4',
+  'gpt-3.5-turbo'
+]);
+
+const ALLOWED_GEMINI_MODELS = new Set([
+  'gemini-1.5-flash',
+  'gemini-1.5-pro',
+  'gemini-2.0-flash',
+  'gemini-2.0-flash-lite'
+]);
 
 app.post('/api/claude', async (req, res) => {
   try {
+    const { model, messages, system, max_tokens, temperature, top_p, top_k, stop_sequences } = req.body;
+    if (!ALLOWED_CLAUDE_MODELS.has(model)) {
+      return res.status(400).json({ error: 'Invalid or unauthorized model requested' });
+    }
+
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -13,52 +44,65 @@ app.post('/api/claude', async (req, res) => {
         'x-api-key': process.env.ANTHROPIC_API_KEY || '',
         'anthropic-version': '2023-06-01'
       },
-      body: JSON.stringify(req.body)
+      body: JSON.stringify({
+        model,
+        messages,
+        system,
+        max_tokens: max_tokens || 1024,
+        temperature,
+        top_p,
+        top_k,
+        stop_sequences
+      })
     });
     const data = await response.json();
-    console.log('Anthropic status:', response.status, JSON.stringify(data).slice(0, 300));
     res.status(response.status).json(data);
   } catch (error) {
-    console.error('Proxy error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('[Sentinel] Claude Proxy Error:', error.message);
+    res.status(500).json({ error: 'Internal server error during AI processing' });
   }
-
 });
 
 app.post('/api/openai', async (req, res) => {
-  // For GPT models
   try {
+    const { model, messages, max_tokens, temperature, top_p, frequency_penalty, presence_penalty, stop } = req.body;
+    if (!ALLOWED_OPENAI_MODELS.has(model)) {
+      return res.status(400).json({ error: 'Invalid or unauthorized model requested' });
+    }
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY || ''}`
       },
-      body: JSON.stringify(req.body)
+      body: JSON.stringify({
+        model,
+        messages,
+        max_tokens: max_tokens || 1024,
+        temperature,
+        top_p,
+        frequency_penalty,
+        presence_penalty,
+        stop
+      })
     });
     const data = await response.json();
-    res.json(data);
+    res.status(response.status).json(data);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('[Sentinel] OpenAI Proxy Error:', error.message);
+    res.status(500).json({ error: 'Internal server error during AI processing' });
   }
 });
 
 app.post('/api/gemini', async (req, res) => {
   try {
-    const allowedGeminiModels = new Set([
-      'gemini-1.5-flash',
-      'gemini-1.5-pro',
-      'gemini-2.0-flash',
-      'gemini-2.0-flash-lite'
-    ]);
-    const requestedModel = req.body.model;
-    const model = requestedModel || 'gemini-1.5-flash';
-
-    if (!allowedGeminiModels.has(model)) {
-      return res.status(400).json({ error: 'Invalid Gemini model' });
+    const requestedModel = req.body.model || 'gemini-1.5-flash';
+    if (!ALLOWED_GEMINI_MODELS.has(requestedModel)) {
+      return res.status(400).json({ error: 'Invalid or unauthorized model requested' });
     }
 
-    const safeModel = encodeURIComponent(model);
+    const safeModel = encodeURIComponent(requestedModel);
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${safeModel}:generateContent?key=${process.env.GEMINI_API_KEY || ''}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -68,9 +112,10 @@ app.post('/api/gemini', async (req, res) => {
       })
     });
     const data = await response.json();
-    res.json(data);
+    res.status(response.status).json(data);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('[Sentinel] Gemini Proxy Error:', error.message);
+    res.status(500).json({ error: 'Internal server error during AI processing' });
   }
 });
 
