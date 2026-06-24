@@ -39,7 +39,8 @@ function saveTaskState() {
  */
 function claimFaucet() {
     if (taskState.faucetClaimed) {
-        alert('Faucet already claimed!');
+        if (window.showToast) window.showToast('Faucet already claimed!', 'error');
+        else alert('Faucet already claimed!');
         return;
     }
 
@@ -54,7 +55,8 @@ function claimFaucet() {
     // SFX
     if (typeof SFX !== 'undefined') SFX.bigWin();
 
-    alert(`$${TASK_CONFIG.initialFaucetAmount} credited to your arena balance!`);
+    if (window.showToast) window.showToast(`$${TASK_CONFIG.initialFaucetAmount} credited to your arena balance!`, 'success');
+    else alert(`$${TASK_CONFIG.initialFaucetAmount} credited to your arena balance!`);
 }
 
 /**
@@ -75,6 +77,7 @@ function completeTask(taskId) {
     renderTaskCenter();
 
     if (typeof SFX !== 'undefined') SFX.win();
+    if (window.showToast) window.showToast(`Task completed! +$${task.reward}`, 'success');
 
     console.log(`[Tasks] Task ${taskId} completed! Reward: $${task.reward}`);
 }
@@ -99,7 +102,9 @@ function renderTaskCenter() {
                 <div style="font-size:11px; font-weight:bold; color:${task.completed ? 'var(--green)' : 'white'}">${task.label}</div>
                 <div style="font-size:8px; color:var(--dim)">REWARD: $${task.reward}</div>
             </div>
-            <button onclick="completeTask('${task.id}')" ${task.completed ? 'disabled' : ''} style="padding:5px 10px; border-radius:4px; border:none; background:${task.completed ? 'var(--dim)' : 'var(--cyan)'}; color:black; font-family:'Bungee'; font-size:9px; cursor:pointer">
+            <button onclick="completeTask('${task.id}')" ${task.completed ? 'disabled' : ''}
+                aria-label="${task.completed ? 'Task completed: ' + task.label : 'Complete task: ' + task.label}"
+                style="padding:5px 10px; border-radius:4px; border:none; background:${task.completed ? 'var(--dim)' : 'var(--cyan)'}; color:black; font-family:'Bungee'; font-size:9px; cursor:pointer">
                 ${task.completed ? 'DONE' : 'GO'}
             </button>
         </div>
