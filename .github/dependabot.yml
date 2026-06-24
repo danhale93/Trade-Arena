@@ -4,6 +4,14 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+  - package-ecosystem: "npm"
+    directory: "/public/kivy-app/assets"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "npm"
+    directory: "/public/kivy-app/assets/kivy-app/assets"
+    schedule:
+      interval: "weekly"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
