@@ -11,21 +11,47 @@ const axios = require('axios');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const rateLimit = require('express-rate-limit');
+// const rateLimit = require('express-rate-limit');
 const WebSocket = require('websocket').w3cwebsocket;
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Security: Rate limiting to prevent abuse and brute force
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per windowMs
-    message: { error: 'Too many requests, please try again later.' }
-});
+/**
+ * Simple in-memory rate limiter (avoids express-rate-limit Node 26+ subnet.networkForm bug)
+ */
+const rateLimitMap = new Map();
+const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
+const RATE_LIMIT_MAX = 100;
+
+function checkRateLimit(ip) {
+    const now = Date.now();
+    const record = rateLimitMap.get(ip) || { count: 0, resetAt: now + RATE_LIMIT_WINDOW };
+    if (now > record.resetAt) {
+        record.count = 0;
+        record.resetAt = now + RATE_LIMIT_WINDOW;
+    }
+    record.count += 1;
+    rateLimitMap.set(ip, record);
+    return record.count <= RATE_LIMIT_MAX;
+}
+
+// Cleanup expired entries periodically
+setInterval(() => {
+    const now = Date.now();
+    for (const [ip, record] of rateLimitMap.entries()) {
+        if (now > record.resetAt) rateLimitMap.delete(ip);
+    }
+}, 5 * 60 * 1000);
 
 // Apply rate limiter to all requests
-app.use(limiter);
+app.use((req, res, next) => {
+    const ip = req.ip || req.socket.remoteAddress || 'unknown';
+    if (!checkRateLimit(ip)) {
+        return res.status(429).json({ error: 'Too many requests, please try again later.' });
+    }
+    next();
+});
 
 // Sentinel: Limit JSON payload size to prevent DoS attacks
 app.use(express.json({ limit: '100kb' }));
@@ -255,6 +281,54 @@ app.post('/api/maintenance/patch', async (req, res) => {
 
 app.get('/api/deployments', (req, res) => {
     res.json({ success: true, deployments: deploymentEvents });
+});
+
+const FAUCET_CLAIMED_IPS = new Set();
+
+app.post('/api/faucet/claim', (req, res) => {
+    try {
+        const { userAddress } = req.body;
+        const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+        
+        if (FAUCET_CLAIMED_IPS.has(ip)) {
+            return res.status(429).json({ success: false, error: 'Faucet already claimed from this IP' });
+        }
+
+        const deployment = queueBotDeployment({
+            source: 'faucet',
+            amount: 50,
+            currency: 'USDC',
+            userAddress: userAddress || 'demo',
+            confirmedAt: Date.now()
+        });
+
+        FAUCET_CLAIMED_IPS.add(ip);
+        res.json({ success: true, deployment, amount: 50 });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+app.post('/api/tasks/claim', (req, res) => {
+    try {
+        const { taskId, reward, userAddress } = req.body;
+        if (!taskId || typeof reward !== 'number') {
+            return res.status(400).json({ success: false, error: 'Missing taskId or reward' });
+        }
+
+        const deployment = queueBotDeployment({
+            source: 'task',
+            taskId,
+            amount: reward,
+            currency: 'USDC',
+            userAddress: userAddress || 'demo',
+            confirmedAt: Date.now()
+        });
+
+        res.json({ success: true, deployment, taskId, reward });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
 });
 
 app.post('/api/webhooks/moonpay/deposit', (req, res) => {

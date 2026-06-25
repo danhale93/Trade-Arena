@@ -13,6 +13,8 @@ const TASK_CONFIG = {
     ]
 };
 
+const API_BASE = (location.protocol === 'https:' ? '' : 'http://localhost:3001');
+
 let taskState = {
     faucetClaimed: false,
     creditsEarned: 0,
@@ -34,54 +36,77 @@ function saveTaskState() {
     } catch(e) {}
 }
 
-/**
- * Claim the initial faucet
- */
-function claimFaucet() {
+async function claimFaucet() {
     if (taskState.faucetClaimed) {
         alert('Faucet already claimed!');
         return;
     }
 
-    // Add to balance
-    window.balance += TASK_CONFIG.initialFaucetAmount;
-    window.updateGlobalBalance();
+    const s = document.getElementById('cStatus');
+    if (s) s.innerHTML = '⛽ Claiming faucet...';
 
-    taskState.faucetClaimed = true;
-    saveTaskState();
-    renderTaskCenter();
+    try {
+        const resp = await fetch(`${API_BASE}/api/faucet/claim`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userAddress: window.ethereum?.selectedAddress || 'demo'
+            })
+        });
+        const data = await resp.json();
+        if (!data.success) throw new Error(data.error || 'Claim failed');
 
-    // SFX
-    if (typeof SFX !== 'undefined') SFX.bigWin();
+        window.balance += TASK_CONFIG.initialFaucetAmount;
+        window.updateGlobalBalance();
+        taskState.faucetClaimed = true;
+        saveTaskState();
+        renderTaskCenter();
 
-    alert(`$${TASK_CONFIG.initialFaucetAmount} credited to your arena balance!`);
+        if (typeof SFX !== 'undefined') SFX.bigWin();
+        if (s) s.innerHTML = '';
+        alert(`$${TASK_CONFIG.initialFaucetAmount} credited to your arena balance!`);
+    } catch (e) {
+        console.error('Faucet error:', e);
+        if (s) s.innerHTML = '❌ Faucet claim failed: ' + (e.message || 'Unknown error');
+    }
 }
 
-/**
- * Complete a task
- */
-function completeTask(taskId) {
+async function completeTask(taskId) {
     const task = taskState.tasks.find(t => t.id === taskId);
     if (!task || task.completed) return;
 
-    task.completed = true;
-    taskState.creditsEarned += task.reward;
+    const s = document.getElementById('cStatus');
+    if (s) s.innerHTML = '⚡ Processing task reward...';
 
-    // Add to balance
-    window.balance += task.reward;
-    window.updateGlobalBalance();
+    try {
+        const resp = await fetch(`${API_BASE}/api/tasks/claim`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                taskId,
+                reward: task.reward,
+                userAddress: window.ethereum?.selectedAddress || 'demo'
+            })
+        });
+        const data = await resp.json();
+        if (!data.success) throw new Error(data.error || 'Claim failed');
 
-    saveTaskState();
-    renderTaskCenter();
+        task.completed = true;
+        taskState.creditsEarned += task.reward;
+        window.balance += task.reward;
+        window.updateGlobalBalance();
+        saveTaskState();
+        renderTaskCenter();
 
-    if (typeof SFX !== 'undefined') SFX.win();
-
-    console.log(`[Tasks] Task ${taskId} completed! Reward: $${task.reward}`);
+        if (typeof SFX !== 'undefined') SFX.win();
+        if (s) s.innerHTML = '';
+        console.log(`[Tasks] Task ${taskId} completed! Reward: $${task.reward}`);
+    } catch (e) {
+        console.error('Task error:', e);
+        if (s) s.innerHTML = '❌ Task claim failed: ' + (e.message || 'Unknown error');
+    }
 }
 
-/**
- * UI: Render Task Center
- */
 function renderTaskCenter() {
     const container = document.getElementById('taskCenterRows');
     if (!container) return;
