@@ -11,21 +11,47 @@ const axios = require('axios');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const rateLimit = require('express-rate-limit');
+// const rateLimit = require('express-rate-limit');
 const WebSocket = require('websocket').w3cwebsocket;
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Security: Rate limiting to prevent abuse and brute force
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per windowMs
-    message: { error: 'Too many requests, please try again later.' }
-});
+/**
+ * Simple in-memory rate limiter (avoids express-rate-limit Node 26+ subnet.networkForm bug)
+ */
+const rateLimitMap = new Map();
+const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
+const RATE_LIMIT_MAX = 100;
+
+function checkRateLimit(ip) {
+    const now = Date.now();
+    const record = rateLimitMap.get(ip) || { count: 0, resetAt: now + RATE_LIMIT_WINDOW };
+    if (now > record.resetAt) {
+        record.count = 0;
+        record.resetAt = now + RATE_LIMIT_WINDOW;
+    }
+    record.count += 1;
+    rateLimitMap.set(ip, record);
+    return record.count <= RATE_LIMIT_MAX;
+}
+
+// Cleanup expired entries periodically
+setInterval(() => {
+    const now = Date.now();
+    for (const [ip, record] of rateLimitMap.entries()) {
+        if (now > record.resetAt) rateLimitMap.delete(ip);
+    }
+}, 5 * 60 * 1000);
 
 // Apply rate limiter to all requests
-app.use(limiter);
+app.use((req, res, next) => {
+    const ip = req.ip || req.socket.remoteAddress || 'unknown';
+    if (!checkRateLimit(ip)) {
+        return res.status(429).json({ error: 'Too many requests, please try again later.' });
+    }
+    next();
+});
 
 // Sentinel: Limit JSON payload size to prevent DoS attacks
 app.use(express.json({ limit: '100kb' }));
@@ -33,12 +59,46 @@ app.use(express.json({ limit: '100kb' }));
 // Security: Use a more restrictive CORS policy
 const allowedOrigin = process.env.ALLOWED_ORIGIN;
 app.use(cors({
-    origin: allowedOrigin && allowedOrigin !== '*' ? allowedOrigin : false
+    origin: (origin, cb) => {
+        if (!origin || origin.includes('localhost') || origin.includes('127.0.0.1') || allowedOrigin === '*' || origin === allowedOrigin) {
+            cb(null, true);
+        } else {
+            cb(null, false);
+        }
+    }
 }));
 
 // Security: Serve static files from 'public' directory ONLY
 const publicDir = path.join(__dirname, 'public');
 app.use(express.static(publicDir));
+
+/** Deployment queue for confirmed MoonPay deposits */
+const deploymentEvents = [];
+
+function queueBotDeployment(deposit) {
+    const event = {
+        id: generateId(),
+        type: 'BOT_DEPLOYMENT_TRIGGERED',
+        status: 'QUEUED',
+        source: 'moonpay',
+        created: Date.now(),
+        deposit
+    };
+    deploymentEvents.unshift(event);
+    if (deploymentEvents.length > 50) deploymentEvents.pop();
+    return event;
+}
+
+/**
+ * PUBLIC CONFIG (no secrets)
+ */
+app.get('/api/config', (req, res) => {
+    res.json({
+        privyAppId: process.env.PRIVY_APP_ID || '',
+        moonpayPublicKey: process.env.MOONPAY_PUBLIC_KEY || '',
+        googleClientId: process.env.GOOGLE_CLIENT_ID || ''
+    });
+});
 
 /**
  * AI PROXY ENDPOINTS
@@ -73,6 +133,9 @@ const ALLOWED_GEMINI_MODELS = new Set([
 
 app.post('/api/claude', async (req, res) => {
     try {
+        if (!process.env.ANTHROPIC_API_KEY) {
+            return res.status(503).json({ error: 'AI service unavailable' });
+        }
         const { model, messages, system, max_tokens, temperature, top_p, top_k, stop_sequences } = req.body;
         if (!ALLOWED_CLAUDE_MODELS.has(model)) {
             return res.status(400).json({ error: 'Invalid or unauthorized model requested' });
@@ -100,12 +163,15 @@ app.post('/api/claude', async (req, res) => {
         res.status(response.status).json(data);
     } catch (error) {
         console.error('Claude Proxy error:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: 'Internal server error during AI processing' });
     }
 });
 
 app.post('/api/openai', async (req, res) => {
     try {
+        if (!process.env.OPENAI_API_KEY) {
+            return res.status(503).json({ error: 'AI service unavailable' });
+        }
         const { model, messages, max_tokens, temperature, top_p, frequency_penalty, presence_penalty, stop } = req.body;
         if (!ALLOWED_OPENAI_MODELS.has(model)) {
             return res.status(400).json({ error: 'Invalid or unauthorized model requested' });
@@ -132,18 +198,22 @@ app.post('/api/openai', async (req, res) => {
         res.status(response.status).json(data);
     } catch (error) {
         console.error('OpenAI Proxy error:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: 'Internal server error during AI processing' });
     }
 });
 
 app.post('/api/gemini', async (req, res) => {
     try {
+        if (!process.env.GEMINI_API_KEY) {
+            return res.status(503).json({ error: 'AI service unavailable' });
+        }
         const requestedModel = req.body.model || 'gemini-1.5-flash';
         if (!ALLOWED_GEMINI_MODELS.has(requestedModel)) {
             return res.status(400).json({ error: 'Invalid model specified' });
         }
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${requestedModel}:generateContent?key=${process.env.GEMINI_API_KEY || ''}`, {
+        const safeModel = encodeURIComponent(requestedModel);
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${safeModel}:generateContent?key=${process.env.GEMINI_API_KEY}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -155,7 +225,7 @@ app.post('/api/gemini', async (req, res) => {
         res.status(response.status).json(data);
     } catch (error) {
         console.error('Gemini Proxy error:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: 'Internal server error during AI processing' });
     }
 });
 
@@ -215,9 +285,190 @@ app.post('/api/maintenance/patch', async (req, res) => {
  * TRADING & MARKET ENDPOINTS
  */
 
+app.get('/api/deployments', (req, res) => {
+    res.json({ success: true, deployments: deploymentEvents });
+});
+
+const FAUCET_CLAIMED_IPS = new Set();
+
+const PAYOUT_PRIVATE_KEY = process.env.PAYOUT_PRIVATE_KEY || '';
+const PAYOUT_RPC_URL = process.env.RPC_URL || 'https://mainnet.base.org';
+const PAYOUT_CHAIN_ID = 8453;
+const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+const BASE_ETH_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
+
+let payoutWallet = null;
+let payoutProvider = null;
+let usdcContract = null;
+
+try {
+    if (PAYOUT_PRIVATE_KEY) {
+        payoutProvider = new ethers.JsonRpcProvider(PAYOUT_RPC_URL);
+        payoutWallet = new ethers.Wallet(PAYOUT_PRIVATE_KEY, payoutProvider);
+        
+        const usdcAbi = [
+            'function transfer(address to, uint256 amount) returns (bool)',
+            'function decimals() view returns (uint8)'
+        ];
+        usdcContract = new ethers.Contract(USDC_CONTRACT, usdcAbi, payoutWallet);
+        console.log('[Payout] Wallet ready:', payoutWallet.address);
+    } else {
+        console.log('[Payout] No PAYOUT_PRIVATE_KEY set — running in simulation mode');
+    }
+} catch (e) {
+    console.error('[Payout] Init failed:', e);
+}
+
+async function sendPayout(userAddress, amount, currency = 'ETH') {
+    if (!payoutWallet) {
+        return { simulated: true, txHash: null, message: 'No payout wallet configured' };
+    }
+
+    try {
+        const to = ethers.getAddress(userAddress);
+        
+        if (currency === 'USDC' && usdcContract) {
+            const decimals = await usdcContract.decimals();
+            const amountWei = ethers.parseUnits(amount.toFixed(2), decimals);
+            const tx = await usdcContract.transfer(to, amountWei);
+            await tx.wait();
+            return { simulated: false, txHash: tx.hash, currency: 'USDC', amount };
+        } else {
+            const amountWei = ethers.parseEther(amount.toFixed(6));
+            const tx = await payoutWallet.sendTransaction({
+                to,
+                value: amountWei
+            });
+            await tx.wait();
+            return { simulated: false, txHash: tx.hash, currency: 'ETH', amount };
+        }
+    } catch (e) {
+        console.error('[Payout] Transfer failed:', e);
+        return { simulated: false, txHash: null, error: e.message };
+    }
+}
+
+app.get('/api/payout/status', (req, res) => {
+    res.json({
+        configured: !!payoutWallet,
+        wallet: payoutWallet ? payoutWallet.address : null,
+        chain: PAYOUT_CHAIN_ID,
+        currency: 'ETH / USDC'
+    });
+});
+
+app.post('/api/faucet/claim', async (req, res) => {
+    try {
+        const { userAddress } = req.body;
+        const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+        
+        if (FAUCET_CLAIMED_IPS.has(ip)) {
+            return res.status(429).json({ success: false, error: 'Faucet already claimed from this IP' });
+        }
+
+        const payout = await sendPayout(userAddress || 'demo', 5, 'ETH');
+
+        const deployment = queueBotDeployment({
+            source: 'faucet',
+            amount: 50,
+            currency: 'ETH',
+            userAddress: userAddress || 'demo',
+            confirmedAt: Date.now(),
+            payout
+        });
+
+        FAUCET_CLAIMED_IPS.add(ip);
+        res.json({ success: true, deployment, amount: 50, payout });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+app.post('/api/tasks/claim', async (req, res) => {
+    try {
+        const { taskId, reward, userAddress } = req.body;
+        if (!taskId || typeof reward !== 'number') {
+            return res.status(400).json({ success: false, error: 'Missing taskId or reward' });
+        }
+
+        const payoutAmount = reward <= 10 ? 0.01 : reward <= 25 ? 0.025 : 0.05;
+        const payout = await sendPayout(userAddress || 'demo', payoutAmount, 'ETH');
+
+        const deployment = queueBotDeployment({
+            source: 'task',
+            taskId,
+            amount: reward,
+            currency: 'ETH',
+            userAddress: userAddress || 'demo',
+            confirmedAt: Date.now(),
+            payout
+        });
+
+        res.json({ success: true, deployment, taskId, reward, payout });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+app.post('/api/webhooks/moonpay/deposit', (req, res) => {
+    try {
+        const signature = req.headers['x-moonpay-signature'];
+        const secret = process.env.MOONPAY_WEBHOOK_SECRET;
+
+        if (!secret) {
+            console.error('[MoonPay Webhook] MOONPAY_WEBHOOK_SECRET is missing');
+            return res.status(500).json({ success: false, error: 'Webhook configuration error' });
+        }
+
+        if (!signature || !verifyMoonPaySignature(req.body, signature, secret)) {
+            return res.status(401).json({ success: false, error: 'Invalid webhook signature' });
+        }
+
+        const payload = req.body || {};
+        const status = String(payload.status || payload.state || '').toLowerCase();
+        const amount = Number(payload.amount || payload.cryptoAmount || payload.fiatAmount || 0);
+        const currency = String(payload.currency || payload.cryptoCurrency || 'USDC').toUpperCase();
+        const destination = payload.walletAddress || payload.address || payload.destinationAddress || '';
+        const reference = payload.transactionId || payload.id || payload.reference || null;
+
+        const isConfirmed = ['completed', 'complete', 'confirmed', 'succeeded', 'success'].includes(status);
+
+        if (!isConfirmed) {
+            return res.json({
+                success: true,
+                received: true,
+                ignored: true,
+                reason: 'Deposit not confirmed yet'
+            });
+        }
+
+        const deployment = queueBotDeployment({
+            reference,
+            currency,
+            amount,
+            destination,
+            source: 'moonpay',
+            confirmedAt: Date.now()
+        });
+
+        res.json({
+            success: true,
+            received: true,
+            deployment,
+            message: 'Deposit confirmed and deployment queued'
+        });
+    } catch (error) {
+        console.error('[MoonPay Webhook] Error:', error);
+        res.status(500).json({ success: false, error: 'Webhook processing failed' });
+    }
+});
+
 app.get('/api/market/prices', async (req, res) => {
     try {
-        const symbols = req.query.symbols?.split(',') || ['WETH', 'USDC', 'ARB'];
+        const allowedSymbols = new Set(['WETH', 'USDC', 'ARB', 'OP']);
+        const symbols = (req.query.symbols?.split(',') || ['WETH', 'USDC', 'ARB'])
+            .map(s => s.trim().toUpperCase())
+            .filter(s => allowedSymbols.has(s));
         const prices = {};
         for (const symbol of symbols) {
             const price = await fetchCoinGeckoPrice(symbol);
@@ -225,7 +476,7 @@ app.get('/api/market/prices', async (req, res) => {
         }
         res.json({ success: true, prices, timestamp: Date.now() });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Failed to fetch market prices' });
     }
 });
 
@@ -275,6 +526,19 @@ app.post('/api/execute/swap', async (req, res) => {
 /**
  * Helper Functions
  */
+
+function verifyMoonPaySignature(body, signature, secret) {
+    try {
+        const hmac = crypto.createHmac('sha256', secret);
+        const digest = hmac.update(JSON.stringify(body)).digest('hex');
+        const digestBuffer = Buffer.from(digest);
+        const signatureBuffer = Buffer.from(signature);
+        if (digestBuffer.length !== signatureBuffer.length) return false;
+        return crypto.timingSafeEqual(digestBuffer, signatureBuffer);
+    } catch (e) {
+        return false;
+    }
+}
 
 async function fetchCoinGeckoPrice(symbol) {
     try {
