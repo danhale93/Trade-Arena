@@ -68,7 +68,7 @@ function openOskoRamp(type) {
   let url;
   if(type === 'onramp') {
     // Buy ETH - opens Ramp's buy widget
-    url = 'https://buy.ramp.network/?ref=tradearena&swapAsset=ETH&fiatCurrency=USD';
+    url = 'https://app.ramp.network/buy?ref=tradearena&swapAsset=ETH&fiatCurrency=USD';
     s.innerHTML = '💳 Opening OSKO On-Ramp...<br><span style="font-size:9px;color:var(--dim)">Buy ETH with card, receive in connected wallet</span>';
   } else {
     // Check if wallet connected
@@ -77,7 +77,7 @@ function openOskoRamp(type) {
       return;
     }
     // Sell - opens Ramp's sell widget
-    url = `https://sell.ramp.network/?ref=tradearena&cryptoAsset=ETH&walletAddress=${window.ethereum.selectedAddress}`;
+    url = `https://app.ramp.network/sell?ref=tradearena&cryptoAsset=ETH&walletAddress=${window.ethereum.selectedAddress}`;
     s.innerHTML = '💵 Opening OSKO Off-Ramp...<br><span style="font-size:9px;color:var(--dim)">Sell ETH, receive USD to bank</span>';
   }
   

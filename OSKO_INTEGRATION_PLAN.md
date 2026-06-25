@@ -59,7 +59,7 @@ async function openOnRamp() {
   const RAMP_APP_ID = 'YOUR_RAMP_APP_ID'; // Get from ramp.network
   
   // Build checkout URL with user email if available
-  let checkoutUrl = `https://buy.ramp.network/?` + 
+  let checkoutUrl = `https://app.ramp.network/buy?` + 
     `appId=${RAMP_APP_ID}&` +
     `swapAsset=ETH&` +
     `swapAmount=100&` + // default $100
@@ -93,7 +93,7 @@ async function openOffRamp() {
   const sellAddress = address || window._walletAddress;
   
   // Ramp sell URL
-  let sellUrl = `https://sell.ramp.network/?` +
+  let sellUrl = `https://app.ramp.network/sell?` +
     `appId=${RAMP_APP_ID}&` +
     `cryptoAsset=ETH&` +
     `fiatCurrency=USD&` +

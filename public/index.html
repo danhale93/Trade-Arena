@@ -3027,7 +3027,7 @@ async function loginPayID() {
     s.innerHTML = '⚡ Redirecting to Ramp (AUD)...<br><span style="font-size:9px;color:var(--dim)">Instant AUD -> crypto without KYC (under limits)</span>';
 
     // Redirect to AUD-optimized Ramp flow
-    const rampUrl = `https://buy.ramp.network/?ref=tradearena&swapAsset=BASE_ETH&fiatCurrency=AUD&fiatValue=50&userAddress=${address}`;
+    const rampUrl = `https://app.ramp.network/buy?ref=tradearena&swapAsset=ETH&fiatCurrency=AUD&fiatValue=50&userAddress=${address}`;
 
     setTimeout(() => {
         window.open(rampUrl, '_blank');
@@ -3049,7 +3049,7 @@ function openOskoRamp(type) {
   let url;
   if(type === 'onramp') {
     // Buy ETH - opens Ramp's buy widget
-    url = 'https://buy.ramp.network/?ref=tradearena&swapAsset=ETH&fiatCurrency=USD';
+    url = 'https://app.ramp.network/buy?ref=tradearena&swapAsset=ETH&fiatCurrency=USD';
     s.innerHTML = '💳 Opening OSKO On-Ramp...<br><span style="font-size:9px;color:var(--dim)">Buy ETH with card, receive in connected wallet</span>';
   } else {
     // Sell - check if wallet connected first
@@ -3058,7 +3058,7 @@ function openOskoRamp(type) {
       return;
     }
     // Sell - opens Ramp's sell widget
-    url = `https://sell.ramp.network/?ref=tradearena&cryptoAsset=ETH&walletAddress=${window.ethereum.selectedAddress}`;
+    url = `https://app.ramp.network/sell?ref=tradearena&cryptoAsset=ETH&walletAddress=${window.ethereum.selectedAddress}`;
     s.innerHTML = '💵 Opening OSKO Off-Ramp...<br><span style="font-size:9px;color:var(--dim)">Sell ETH, receive USD to bank</span>';
   }
   

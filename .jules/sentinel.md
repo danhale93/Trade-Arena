@@ -33,13 +33,13 @@
 **Learning:** Client-side bundles should never contain logic meant for server-side endpoints, especially if it involves HMAC verification or references to secret keys. Including Node.js-specific modules (like `crypto`) in client-side code is also a sign of architectural mismatch.
 **Prevention:** Consolidate all webhook processing and signature verification to the server-side. Ensure client-side configuration objects only contain public keys and never include placeholders for sensitive secrets, as these are easily exposed and can be accidentally filled with real credentials.
 
-## 2026-06-24 - [HIGH] Unauthorized Expensive Model Usage via AI Proxy
-**Vulnerability:** The AI proxy endpoints for Claude and OpenAI in `proxy.js` were blindly forwarding the entire request body to upstream APIs. This allowed any client to request the most expensive models (e.g., Claude 3 Opus, GPT-4o) and arbitrary parameters, potentially exhausting API quotas and increasing costs.
-**Learning:** Proxies that facilitate AI requests must act as gateways that enforce specific usage policies. Relying on clients to provide "safe" models is a security and financial risk.
-**Prevention:** Implement strict model whitelisting on the server-side. Explicitly define allowed models and restrict the forwarded payload to a whitelist of known, safe parameters (e.g., `messages`, `system`, `temperature`) to prevent parameter injection and maintain cost control.
-
 ## 2026-06-23T00:09:08.077Z - [INFO] SENTINEL
 security fix verified
 
 ## 2026-06-23T00:27:13.940Z - [INFO] SENTINEL
 Running security audit across localStorage and active config...
+
+## 2026-06-24 - [HIGH] Unauthorized Expensive Model Usage via AI Proxy
+**Vulnerability:** The AI proxy endpoints for Claude and OpenAI in `proxy.js` were blindly forwarding the entire request body to upstream APIs. This allowed any client to request the most expensive models (e.g., Claude 3 Opus, GPT-4o) and arbitrary parameters, potentially exhausting API quotas and increasing costs.
+**Learning:** Proxies that facilitate AI requests must act as gateways that enforce specific usage policies. Relying on clients to provide "safe" models is a security and financial risk.
+**Prevention:** Implement strict model whitelisting on the server-side. Explicitly define allowed models and restrict the forwarded payload to a whitelist of known, safe parameters (e.g., `messages`, `system`, `temperature`) to prevent parameter injection and maintain cost control.

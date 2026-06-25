@@ -546,7 +546,7 @@ function buildReels(id){
     });
     t.style.transform=\`translateY(-\${Math.floor(Math.random()*6)*36}px)\`;
   }
-  fill(\`mt0-\${id}\`,TOKENS); fill(\`mt1-\${id}\`,METHODS_V1); fill(\`mt2-\${id}\`,TOKENS.slice(0,6));
+  fill(\`mt0-\${id}\`,REEL_TOKENS); fill(\`mt1-\${id}\`,METHODS_V1); fill(\`mt2-\${id}\`,REEL_TOKENS.slice(0,6));
 }
 
 function startTicker(bot){
@@ -612,7 +612,7 @@ async function spinBot(id){
 
 async function animateReels(id,decision){
   const IH=36;
-  const ti=Math.max(0,TOKENS.findIndex(t=>t.l===decision.token)%10);
+  const ti=Math.max(0,REEL_TOKENS.findIndex(t=>t.l===decision.token)%10);
   const mi={'SPOT LONG':0,'SPOT SHORT':1,'YIELD FARM':2,'PERP LONG':3,'PERP SHORT':4,'HOLD':5}[decision.method]??0;
   await Promise.all([spinReel(\`mt0-\${id}\`,ti,10,0,IH),spinReel(\`mt1-\${id}\`,mi,6,220,IH),spinReel(\`mt2-\${id}\`,ti%6,6,440,IH)]);
 }
