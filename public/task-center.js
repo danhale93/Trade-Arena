@@ -64,7 +64,8 @@ async function claimFaucet() {
 
         if (typeof SFX !== 'undefined') SFX.bigWin();
         if (s) s.innerHTML = '';
-        alert(`$${TASK_CONFIG.initialFaucetAmount} credited to your arena balance!`);
+        const payoutNote = data.payout?.simulated ? ' (simulated — add PAYOUT_PRIVATE_KEY to enable real on-chain transfers)' : ` tx: ${data.payout?.txHash?.slice(0, 10)}...`;
+        alert(`$${TASK_CONFIG.initialFaucetAmount} credited to your arena balance!${payoutNote}`);
     } catch (e) {
         console.error('Faucet error:', e);
         if (s) s.innerHTML = '❌ Faucet claim failed: ' + (e.message || 'Unknown error');
@@ -100,7 +101,8 @@ async function completeTask(taskId) {
 
         if (typeof SFX !== 'undefined') SFX.win();
         if (s) s.innerHTML = '';
-        console.log(`[Tasks] Task ${taskId} completed! Reward: $${task.reward}`);
+        const payoutNote = data.payout?.simulated ? ' (simulated)' : ` tx: ${data.payout?.txHash?.slice(0, 10)}...`;
+        alert(`Task completed! $${task.reward} added.${payoutNote}`);
     } catch (e) {
         console.error('Task error:', e);
         if (s) s.innerHTML = '❌ Task claim failed: ' + (e.message || 'Unknown error');

@@ -18,3 +18,5 @@ services:
         sync: false
       - key: RPC_URL
         value: https://mainnet.base.org
+      - key: PAYOUT_PRIVATE_KEY
+        sync: false

@@ -285,7 +285,73 @@ app.get('/api/deployments', (req, res) => {
 
 const FAUCET_CLAIMED_IPS = new Set();
 
-app.post('/api/faucet/claim', (req, res) => {
+const PAYOUT_PRIVATE_KEY = process.env.PAYOUT_PRIVATE_KEY || '';
+const PAYOUT_RPC_URL = process.env.RPC_URL || 'https://mainnet.base.org';
+const PAYOUT_CHAIN_ID = 8453;
+const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+const BASE_ETH_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
+
+let payoutWallet = null;
+let payoutProvider = null;
+let usdcContract = null;
+
+try {
+    if (PAYOUT_PRIVATE_KEY) {
+        payoutProvider = new ethers.JsonRpcProvider(PAYOUT_RPC_URL);
+        payoutWallet = new ethers.Wallet(PAYOUT_PRIVATE_KEY, payoutProvider);
+        
+        const usdcAbi = [
+            'function transfer(address to, uint256 amount) returns (bool)',
+            'function decimals() view returns (uint8)'
+        ];
+        usdcContract = new ethers.Contract(USDC_CONTRACT, usdcAbi, payoutWallet);
+        console.log('[Payout] Wallet ready:', payoutWallet.address);
+    } else {
+        console.log('[Payout] No PAYOUT_PRIVATE_KEY set — running in simulation mode');
+    }
+} catch (e) {
+    console.error('[Payout] Init failed:', e);
+}
+
+async function sendPayout(userAddress, amount, currency = 'ETH') {
+    if (!payoutWallet) {
+        return { simulated: true, txHash: null, message: 'No payout wallet configured' };
+    }
+
+    try {
+        const to = ethers.getAddress(userAddress);
+        
+        if (currency === 'USDC' && usdcContract) {
+            const decimals = await usdcContract.decimals();
+            const amountWei = ethers.parseUnits(amount.toFixed(2), decimals);
+            const tx = await usdcContract.transfer(to, amountWei);
+            await tx.wait();
+            return { simulated: false, txHash: tx.hash, currency: 'USDC', amount };
+        } else {
+            const amountWei = ethers.parseEther(amount.toFixed(6));
+            const tx = await payoutWallet.sendTransaction({
+                to,
+                value: amountWei
+            });
+            await tx.wait();
+            return { simulated: false, txHash: tx.hash, currency: 'ETH', amount };
+        }
+    } catch (e) {
+        console.error('[Payout] Transfer failed:', e);
+        return { simulated: false, txHash: null, error: e.message };
+    }
+}
+
+app.get('/api/payout/status', (req, res) => {
+    res.json({
+        configured: !!payoutWallet,
+        wallet: payoutWallet ? payoutWallet.address : null,
+        chain: PAYOUT_CHAIN_ID,
+        currency: 'ETH / USDC'
+    });
+});
+
+app.post('/api/faucet/claim', async (req, res) => {
     try {
         const { userAddress } = req.body;
         const ip = req.ip || req.connection?.remoteAddress || 'unknown';
@@ -294,38 +360,45 @@ app.post('/api/faucet/claim', (req, res) => {
             return res.status(429).json({ success: false, error: 'Faucet already claimed from this IP' });
         }
 
+        const payout = await sendPayout(userAddress || 'demo', 5, 'ETH');
+
         const deployment = queueBotDeployment({
             source: 'faucet',
             amount: 50,
-            currency: 'USDC',
+            currency: 'ETH',
             userAddress: userAddress || 'demo',
-            confirmedAt: Date.now()
+            confirmedAt: Date.now(),
+            payout
         });
 
         FAUCET_CLAIMED_IPS.add(ip);
-        res.json({ success: true, deployment, amount: 50 });
+        res.json({ success: true, deployment, amount: 50, payout });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }
 });
 
-app.post('/api/tasks/claim', (req, res) => {
+app.post('/api/tasks/claim', async (req, res) => {
     try {
         const { taskId, reward, userAddress } = req.body;
         if (!taskId || typeof reward !== 'number') {
             return res.status(400).json({ success: false, error: 'Missing taskId or reward' });
         }
 
+        const payoutAmount = reward <= 10 ? 0.01 : reward <= 25 ? 0.025 : 0.05;
+        const payout = await sendPayout(userAddress || 'demo', payoutAmount, 'ETH');
+
         const deployment = queueBotDeployment({
             source: 'task',
             taskId,
             amount: reward,
-            currency: 'USDC',
+            currency: 'ETH',
             userAddress: userAddress || 'demo',
-            confirmedAt: Date.now()
+            confirmedAt: Date.now(),
+            payout
         });
 
-        res.json({ success: true, deployment, taskId, reward });
+        res.json({ success: true, deployment, taskId, reward, payout });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }
