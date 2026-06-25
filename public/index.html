@@ -2070,6 +2070,7 @@ function updateQuantReport() {
 
   // ⚡ Bolt Optimization: Consolidate O(N) passes into a single loop
   let winCount=0, lossCount=0, grossW=0, grossL=0, totalNetPnl=0, totalCosts=0;
+  let minReturn=Infinity, maxReturn=-Infinity;
   const byStrat={}, baselinePnls={random:0,long:0,momentum:0}, baselineWins={random:0,long:0,momentum:0};
   const returns=[];
 
@@ -2077,6 +2078,8 @@ function updateQuantReport() {
     totalNetPnl += t.netPnl;
     totalCosts += t.costs.total;
     returns.push(t.netPnl);
+    if(t.netPnl < minReturn) minReturn = t.netPnl;
+    if(t.netPnl > maxReturn) maxReturn = t.netPnl;
 
     if (t.isWin) { winCount++; grossW += t.netPnl; }
     else { lossCount++; grossL += Math.abs(t.netPnl); }
@@ -2099,7 +2102,16 @@ function updateQuantReport() {
   const avgPnl=totalNetPnl/n;
   const avgW=winCount>0?grossW/winCount:0;
   const avgL=lossCount>0?grossL/lossCount:0;
-  const maxDD=computeMaxDrawdown();
+
+  // ⚡ Bolt Optimization: Consolidate equityHistory processing (min, max, and drawdown) in one pass
+  let minEq=equityHistory[0]||startBalance, maxEq=equityHistory[0]||startBalance, peak=equityHistory[0]||startBalance, maxDD=0;
+  for (const v of equityHistory) {
+    if (v < minEq) minEq = v;
+    if (v > maxEq) maxEq = v;
+    if (v > peak) peak = v;
+    const dd = peak - v;
+    if (dd > maxDD) maxDD = dd;
+  }
 
   // Metric cards
   setMCard('mc-wr','mv-wr','ms-wr',(winRate*100).toFixed(1)+'%',winCount+'W / '+lossCount+'L',winRate>=0.5?'good':'bad');
@@ -2110,10 +2122,10 @@ function updateQuantReport() {
   setVal('mv-avgL',lossCount>0?'-$'+avgL.toFixed(2):'—');
   setVal('mv-open',openPositions.length);
 
-  drawEquityCurve();
+  drawEquityCurve(minEq, maxEq);
   drawBaselines(n, totalNetPnl, winRate, baselinePnls, baselineWins, avgPnl);
   drawStratBreakdown(byStrat);
-  drawReturnDist(returns);
+  drawReturnDist(returns, minReturn, maxReturn);
   drawCostSensitivity(totalNetPnl, totalCosts);
   drawVerdict(n, winRate, pf, avgPnl);
 }
@@ -2126,24 +2138,22 @@ function setMCard(cardId, valId, subId, val, sub, cls) {
   if(subId&&sub) setVal(subId,sub);
 }
 
-function computeMaxDrawdown() {
-  let peak=equityHistory[0]||startBalance, maxDD=0;
-  equityHistory.forEach(v=>{ if(v>peak) peak=v; const dd=peak-v; if(dd>maxDD) maxDD=dd; });
-  return maxDD;
-}
-
-function drawEquityCurve() {
+function drawEquityCurve(min, max) {
   const svg=document.getElementById('eqSvg');
   const line=document.getElementById('eqLine'); const fill=document.getElementById('eqFill');
   if(!svg||equityHistory.length<2) return;
   const W=svg.clientWidth||340, H=72;
-  const min=Math.min(...equityHistory), max=Math.max(...equityHistory);
   const range=max-min||1;
-  const pts=equityHistory.map((v,i)=>{
-    const x=(i/(equityHistory.length-1))*W;
-    const y=H-((v-min)/range)*(H-6)-3;
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  }).join(' ');
+
+  // ⚡ Bolt Optimization: Use efficient for loop and avoid intermediate arrays for SVG string
+  let pts = "";
+  const len = equityHistory.length;
+  for (let i = 0; i < len; i++) {
+    const v = equityHistory[i];
+    const x = (i / (len - 1)) * W;
+    const y = H - ((v - min) / range) * (H - 6) - 3;
+    pts += (i === 0 ? "" : " ") + x.toFixed(1) + "," + y.toFixed(1);
+  }
   line.setAttribute('points',pts); fill.setAttribute('points',pts+` ${W},${H} 0,${H}`);
   const isUp=equityHistory[equityHistory.length-1]>=startBalance;
   line.setAttribute('stroke',isUp?'var(--green)':'var(--hot)');
@@ -2201,35 +2211,54 @@ function drawBaselines(n, claudePnl, winRate, baselinePnls, baselineWins, claude
 }
 
 function drawStratBreakdown(byStrat) {
-  const maxAbs=Math.max(...Object.values(byStrat).map(d=>Math.abs(d.pnl)),0.01);
+  const values = Object.values(byStrat);
+  let maxAbs = 0.01;
+  for (const d of values) {
+    const absPnl = Math.abs(d.pnl);
+    if (absPnl > maxAbs) maxAbs = absPnl;
+  }
   const el=document.getElementById('stratBreakdown');
-  el.innerHTML=Object.entries(byStrat).sort((a,b)=>b[1].pnl-a[1].pnl).map(([name,d])=>{
+  if(!el) return;
+
+  const entries = Object.entries(byStrat).sort((a,b)=>b[1].pnl-a[1].pnl);
+  let html = "";
+  for (const [name, d] of entries) {
     const wr=(d.wins/d.total*100).toFixed(0);
     const isPos=d.pnl>=0;
     const barW=(Math.abs(d.pnl)/maxAbs*100).toFixed(0);
-    return `<div class="strat-row">
-      <div class="strat-name">${name}</div>
+    html += `<div class="strat-row">
+      <div class="strat-name">${escapeHTML(name)}</div>
       <div class="strat-bar-wrap"><div class="strat-bar ${isPos?'pos':'neg'}" style="width:${barW}%"></div></div>
       <div class="strat-stat" style="color:${isPos?'var(--green)':'var(--hot)'}">${isPos?'+':''}$${d.pnl.toFixed(2)} · ${wr}% WR</div>
     </div>`;
-  }).join('');
+  }
+  el.innerHTML = html;
 }
 
-function drawReturnDist(returns) {
+function drawReturnDist(returns, min, max) {
   const n=returns.length;
   if(n<5) return;
-  const min=Math.min(...returns), max=Math.max(...returns);
   const bins=10, size=(max-min)/bins||1;
   const counts=Array(bins).fill(0);
-  returns.forEach(r=>{ const i=Math.min(Math.floor((r-min)/size),bins-1); counts[i]++; });
-  const maxC=Math.max(...counts);
+  for (const r of returns) {
+    const i=Math.min(Math.floor((r-min)/size),bins-1);
+    counts[i]++;
+  }
+  let maxC=0;
+  for (const c of counts) { if (c > maxC) maxC = c; }
+
   const el=document.getElementById('distBars');
-  el.innerHTML=counts.map((c,i)=>{
+  if(!el) return;
+
+  let html = "";
+  for (let i = 0; i < bins; i++) {
+    const c = counts[i];
     const pct=(c/maxC*100)||0;
     const center=min+(i+0.5)*size;
     const col=center>=0?'var(--green)':'var(--hot)';
-    return `<div class="dist-bar" style="height:${pct}%;background:${col}" title="${c} trades ~$${center.toFixed(1)}"></div>`;
-  }).join('');
+    html += `<div class="dist-bar" style="height:${pct}%;background:${col}" title="${c} trades ~$${center.toFixed(1)}"></div>`;
+  }
+  el.innerHTML = html;
   setVal('distMin','$'+min.toFixed(1)); setVal('distMax','$'+max.toFixed(1));
 }
 
