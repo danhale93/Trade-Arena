@@ -13,3 +13,7 @@
 ## 2026-06-23 - Production Ready: Live Mode & PayID
 Learning: Real-money trading requires explicit state visibility (Live vs Sim) and high-fidelity feedback (Progress bars, Tx links) to ensure user confidence during execution.
 Action: Implemented dual-mode trading system with real on-chain execution, batch progress monitoring, and AUD-optimized PayID onboarding.
+
+## 2026-06-25 - Efficient SVG String Building and Loop Optimization
+**Learning:** For high-frequency dashboard updates, even O(N) operations like `.map().join()` for SVG paths or `Math.max(...array)` can become bottlenecks as N grows, due to intermediate array allocations and spread operator overhead. Replacing these with manual loops and string accumulation provides a smoother UI experience.
+**Action:** Optimized Quant Report drawing functions to use single-pass traversals and manual string accumulation for SVG rendering.
