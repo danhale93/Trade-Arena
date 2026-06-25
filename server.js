@@ -36,6 +36,19 @@ app.use(cors({
     origin: allowedOrigin && allowedOrigin !== '*' ? allowedOrigin : false
 }));
 
+// Security: Block access to sensitive files and hidden dot-files
+app.use((req, res, next) => {
+    const sensitive = [
+        'server.js', 'proxy.js', 'package.json', 'package-lock.json',
+        'pnpm-lock.yaml', '.env', '.gitignore'
+    ];
+    const basename = path.basename(req.path);
+    if (sensitive.includes(basename) || basename.startsWith('.')) {
+        return res.status(403).json({ error: 'Forbidden' });
+    }
+    next();
+});
+
 // Security: Serve static files from 'public' directory ONLY
 const publicDir = path.join(__dirname, 'public');
 app.use(express.static(publicDir));
