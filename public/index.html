@@ -1245,16 +1245,14 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
   <div class="cpanel" id="taskPanel">
     <div class="cpanel-hd" id="taskHd" onclick="togglePanel('task')" style="background:linear-gradient(90deg,rgba(57,255,20,.06),transparent)" role="button" tabindex="0">
       <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:14px">💰</span>
-        <span class="cpanel-title" style="color:var(--green)">TASK CENTER</span>
-        <span style="font-size:9px;color:var(--dim)">Earn Trade Credits</span>
+        <span style="font-size:14px">📡</span>
+        <span class="cpanel-title" style="color:var(--green)">LIVE DEPLOYMENT MONITOR</span>
+        <span style="font-size:9px;color:var(--dim)">Real task queue</span>
       </div>
-      <span class="cpanel-toggle" id="taskToggle">▼ EXPAND</span>
+      <span class="cpanel-toggle" id="taskToggle">▼ MONITOR</span>
     </div>
     <div class="cpanel-body" id="taskBody">
-      <button id="claimFaucetBtn" onclick="claimFaucet()" style="width:100%; padding:12px; margin-bottom:15px; background:linear-gradient(90deg, var(--gold), var(--amber)); border:none; border-radius:8px; font-family:'Bungee'; font-size:12px; cursor:pointer; box-shadow:0 0 15px rgba(255,215,0,0.3)">
-        CLAIM $50 STARTING CAPITAL
-      </button>
+      <div id="cStatus" style="font-size:10px;color:var(--dim);margin-bottom:8px">Loading deployment queue…</div>
       <div id="taskCenterRows"></div>
     </div>
   </div>
@@ -2645,7 +2643,7 @@ function togglePanel(name) {
   toggle.textContent=isOpen?'▴ HIDE':'▼ '+(name==='quant'?'EXPAND':'CONFIGURE');
   if(name==='quant'&&isOpen){ updateQuantReport(); setTimeout(drawEquityCurve,50); }
   if(name==='elo'&&isOpen){ if(typeof renderEloArena === 'function') renderEloArena(); }
-  if(name==='task'&&isOpen){ if(typeof renderTaskCenter === 'function') renderTaskCenter(); }
+  if(name==='task'&&isOpen){ if(typeof renderDeploymentMonitor === 'function') renderDeploymentMonitor(); if(typeof startDeploymentPolling === 'function') startDeploymentPolling(); }
   if(name==='staff'&&isOpen){ if(typeof renderStaffPanel === 'function') renderStaffPanel(); }
 }
 function updateBreakers() {
@@ -3071,7 +3069,8 @@ function setupApp({name,avatar,badge,address}){
       try{ loadLearningState(); }catch(e){ console.warn('learning:',e); }
       try{ if(typeof loadEloState === 'function') loadEloState(); }catch(e){}
       try{ if(typeof renderEloArena === 'function') renderEloArena(); }catch(e){}
-      try{ if(typeof renderTaskCenter === 'function') renderTaskCenter(); }catch(e){}
+      try{ if(typeof renderDeploymentMonitor === 'function') renderDeploymentMonitor(); }catch(e){}
+      try{ if(typeof startDeploymentPolling === 'function') startDeploymentPolling(); }catch(e){}
       try{ updateAuditSummaryBadge(); }catch(e){}
       try{ addBot(); }catch(e){ console.error('addBot:',e); }
       _startHeaderTicker();

@@ -1,118 +1,142 @@
 /**
- * TASK CENTER & FAUCET SYSTEM
- * Trade Arena v4 • Engagement & Onboarding
+ * LIVE DEPLOYMENT MONITOR
+ * Trade Arena v4 • Real-time task queue viewer
  */
 
-const TASK_CONFIG = {
-    initialFaucetAmount: 50,
-    tasks: [
-        { id: 'follow_twitter', label: 'Follow on Twitter', reward: 10, completed: false, icon: '🐦' },
-        { id: 'join_discord', label: 'Join Discord Arena', reward: 15, completed: false, icon: '💬' },
-        { id: 'share_win', label: 'Share a Big Win', reward: 25, completed: false, icon: '🚀' },
-        { id: 'first_trade', label: 'Execute First Trade', reward: 5, completed: false, icon: '🎰' },
-    ]
-};
+const API_BASE = (location.protocol === 'https:' ? '' : 'http://localhost:3001');
+const DEPLOYMENT_POLL_INTERVAL = 4000;
+let deploymentTimer = null;
+let latestDeployments = [];
 
 let taskState = {
     faucetClaimed: false,
     creditsEarned: 0,
-    tasks: [...TASK_CONFIG.tasks]
+    tasks: []
 };
 
-function loadTaskState() {
+async function fetchDeployments() {
     try {
-        const raw = localStorage.getItem('ta_tasks_v4');
-        if (raw) {
-            taskState = JSON.parse(raw);
+        const resp = await fetch(`${API_BASE}/api/deployments`);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+        if (data.success) {
+            latestDeployments = data.deployments || [];
+            renderDeploymentMonitor();
         }
-    } catch(e) {}
-}
-
-function saveTaskState() {
-    try {
-        localStorage.setItem('ta_tasks_v4', JSON.stringify(taskState));
-    } catch(e) {}
-}
-
-/**
- * Claim the initial faucet
- */
-function claimFaucet() {
-    if (taskState.faucetClaimed) {
-        alert('Faucet already claimed!');
-        return;
+    } catch (e) {
+        console.error('[Monitor] Failed to fetch deployments:', e);
     }
-
-    // Add to balance
-    window.balance += TASK_CONFIG.initialFaucetAmount;
-    window.updateGlobalBalance();
-
-    taskState.faucetClaimed = true;
-    saveTaskState();
-    renderTaskCenter();
-
-    // SFX
-    if (typeof SFX !== 'undefined') SFX.bigWin();
-
-    alert(`$${TASK_CONFIG.initialFaucetAmount} credited to your arena balance!`);
 }
 
-/**
- * Complete a task
- */
-function completeTask(taskId) {
-    const task = taskState.tasks.find(t => t.id === taskId);
-    if (!task || task.completed) return;
-
-    task.completed = true;
-    taskState.creditsEarned += task.reward;
-
-    // Add to balance
-    window.balance += task.reward;
-    window.updateGlobalBalance();
-
-    saveTaskState();
-    renderTaskCenter();
-
-    if (typeof SFX !== 'undefined') SFX.win();
-
-    console.log(`[Tasks] Task ${taskId} completed! Reward: $${task.reward}`);
+function startDeploymentPolling() {
+    if (deploymentTimer) return;
+    fetchDeployments();
+    deploymentTimer = setInterval(fetchDeployments, DEPLOYMENT_POLL_INTERVAL);
 }
 
-/**
- * UI: Render Task Center
- */
-function renderTaskCenter() {
+function stopDeploymentPolling() {
+    if (deploymentTimer) {
+        clearInterval(deploymentTimer);
+        deploymentTimer = null;
+    }
+}
+
+async function claimFaucet() {
+    try {
+        await fetch(`${API_BASE}/api/faucet/claim`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userAddress: window.ethereum?.selectedAddress || 'demo' })
+        });
+        fetchDeployments();
+    } catch (e) {
+        console.error('[Monitor] Faucet claim failed:', e);
+    }
+}
+
+async function completeTask(taskId) {
+    try {
+        await fetch(`${API_BASE}/api/tasks/claim`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                taskId,
+                reward: 0,
+                userAddress: window.ethereum?.selectedAddress || 'demo'
+            })
+        });
+        fetchDeployments();
+    } catch (e) {
+        console.error('[Monitor] Task claim failed:', e);
+    }
+}
+
+function renderDeploymentMonitor() {
     const container = document.getElementById('taskCenterRows');
     if (!container) return;
 
-    const faucetBtn = document.getElementById('claimFaucetBtn');
-    if (faucetBtn) {
-        faucetBtn.disabled = taskState.faucetClaimed;
-        faucetBtn.textContent = taskState.faucetClaimed ? 'CLAIMED' : 'CLAIM $50 STARTING CAPITAL';
+    const statusEl = document.getElementById('cStatus');
+    if (statusEl) {
+        statusEl.textContent = latestDeployments.length > 0
+            ? `Live: ${latestDeployments.length} deployment(s) in queue · polling every 4s`
+            : '⚡ No deployments queued yet — completing tasks will populate this monitor';
+        statusEl.style.color = latestDeployments.length > 0 ? 'var(--green)' : 'var(--dim)';
     }
 
-    container.innerHTML = taskState.tasks.map(task => `
-        <div class="task-row" style="display:flex; align-items:center; gap:10px; padding:10px; background:rgba(0,0,0,0.2); border-radius:8px; margin-bottom:5px; border:1px solid ${task.completed ? 'var(--green)' : 'var(--border)'}">
-            <div style="font-size:20px">${task.icon}</div>
-            <div style="flex:1">
-                <div style="font-size:11px; font-weight:bold; color:${task.completed ? 'var(--green)' : 'white'}">${task.label}</div>
-                <div style="font-size:8px; color:var(--dim)">REWARD: $${task.reward}</div>
+    container.innerHTML = latestDeployments.length > 0 ? latestDeployments.slice(0, 12).map(dep => {
+        const src = dep.deposit?.source || dep.source || 'unknown';
+        const srcIcon = src === 'faucet' ? '⛽' : src === 'task' ? '📋' : src === 'moonpay' ? '💳' : '🤖';
+        const amt = dep.deposit?.amount || dep.amount || 0;
+        const currency = dep.deposit?.currency || dep.currency || '';
+        const tx = dep.deposit?.payout?.txHash || dep.payout?.txHash;
+        const status = dep.status || 'QUEUED';
+        const statusColor = status === 'QUEUED' ? 'var(--amber)' : status === 'DEPLOYED' ? 'var(--green)' : 'var(--dim)';
+        const simNote = dep.deposit?.payout?.simulated ? ' (sim)' : tx ? ` tx:${tx.slice(0, 10)}...` : ' pending';
+        const created = new Date(dep.created || dep.deposit?.confirmedAt).toLocaleTimeString();
+
+        return `
+            <div style="display:flex; flex-direction:column; gap:4px; padding:10px 12px; background:rgba(0,0,0,0.25); border-radius:8px; margin-bottom:6px; border-left:3px solid ${statusColor}">
+                <div style="display:flex; align-items:center; gap:8px; justify-content:space-between">
+                    <span style="font-size:16px">${srcIcon}</span>
+                    <span style="font-size:9px; padding:2px 8px; border-radius:8px; background:${statusColor}; color:var(--bg); font-weight:bold; text-transform:uppercase">
+                        ${status}
+                    </span>
+                </div>
+                <div style="font-size:11px; color:white">
+                    <strong>${src.toUpperCase()}</strong> · ${amt} ${currency}${simNote}
+                </div>
+                <div style="font-size:9px; color:var(--dim); display:flex; justify-content:space-between">
+                    <span>ID: ${dep.id?.slice(0, 10)}...</span>
+                    <span>${created}</span>
+                </div>
             </div>
-            <button onclick="completeTask('${task.id}')" ${task.completed ? 'disabled' : ''} style="padding:5px 10px; border-radius:4px; border:none; background:${task.completed ? 'var(--dim)' : 'var(--cyan)'}; color:black; font-family:'Bungee'; font-size:9px; cursor:pointer">
-                ${task.completed ? 'DONE' : 'GO'}
-            </button>
+        `;
+    }).join('') : `
+        <div style="padding:20px; text-align:center; color:var(--dim); font-size:11px">
+            <div style="font-size:28px; margin-bottom:8px">📡</div>
+            <div>No deployments in queue</div>
+            <div style="font-size:9px; margin-top:4px">Complete tasks or claim faucet to see live entries here</div>
         </div>
-    `).join('');
+    `;
 }
 
 // Export
 window.claimFaucet = claimFaucet;
 window.completeTask = completeTask;
-window.renderTaskCenter = renderTaskCenter;
+window.startDeploymentPolling = startDeploymentPolling;
+window.stopDeploymentPolling = stopDeploymentPolling;
+window.fetchDeployments = fetchDeployments;
+window.renderDeploymentMonitor = renderDeploymentMonitor;
+window.latestDeployments = latestDeployments;
 
 // Init
-loadTaskState();
 
 // Export to window for bot auto-onboarding
 window.taskState = taskState;
+
+// Start polling immediately after load (outside setupApp timing issues)
+setTimeout(() => {
+    if (typeof startDeploymentPolling === 'function') {
+        startDeploymentPolling();
+    }
+}, 200);
