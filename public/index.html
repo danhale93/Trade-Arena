@@ -1265,6 +1265,13 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <button id="claimFaucetBtn" onclick="claimFaucet()" style="width:100%; padding:12px; margin-bottom:15px; background:linear-gradient(90deg, var(--gold), var(--amber)); border:none; border-radius:8px; font-family:'Bungee'; font-size:12px; cursor:pointer; box-shadow:0 0 15px rgba(255,215,0,0.3)">
         CLAIM $50 STARTING CAPITAL
       </button>
+
+      <!-- hCaptcha Widget Container (Hidden by default) -->
+      <div id="hcaptcha-container" style="display:none; margin-bottom:15px; text-align:center">
+        <div style="font-size:10px; color:var(--cyan); margin-bottom:8px">PROVE YOU ARE HUMAN TO EARN</div>
+        <div class="h-captcha" id="h-captcha-widget" data-sitekey="10000000-ffff-ffff-ffff-000000000001" data-callback="onHCaptchaSuccess"></div>
+      </div>
+
       <div id="taskCenterRows"></div>
     </div>
   </div>
@@ -2890,8 +2897,15 @@ async function loginMetaMask(){
     
     const address = accounts[0];
     
-    // Create provider
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    // Create provider (ethers v5 syntax, check for v6)
+    let provider;
+    if (ethers.BrowserProvider) {
+        provider = new ethers.BrowserProvider(window.ethereum);
+    } else if (ethers.providers && ethers.providers.Web3Provider) {
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+    } else {
+        provider = new ethers.BrowserProvider(window.ethereum); // Fallback to v6
+    }
     
     // Switch to Base Mainnet (optional, but recommended)
     s.textContent='⏳ Verifying network…';
@@ -2930,8 +2944,15 @@ async function loginMetaMask(){
     let balanceUSD = 0; // Default to $0 to enable Earn-to-Trade flow
     
     try { 
-      const balanceWei = await provider.getBalance(address);
-      const balanceETH = parseFloat(ethers.utils.formatEther(balanceWei));
+      let balanceWei;
+      if (provider.getBalance) {
+          balanceWei = await provider.getBalance(address);
+      } else {
+          const signer = await provider.getSigner();
+          balanceWei = await provider.getBalance(address);
+      }
+
+      const balanceETH = parseFloat(ethers.formatEther ? ethers.formatEther(balanceWei) : ethers.utils.formatEther(balanceWei));
       
       // Get ETH price in USD
       const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
@@ -5444,6 +5465,7 @@ document.addEventListener('keydown', function(e) {
 <script src="crucible-real-trading.js" defer></script>
 <script src="execution-engine.js" defer></script>
 <script src="elo-tournament-engine.js" defer></script>
+<script src="https://js.hcaptcha.com/1/api.js" async defer></script>
 <script src="task-center.js" defer></script>
 <script src="privy-client.js" defer></script>
 <script src="staff-engine.js" defer></script>
