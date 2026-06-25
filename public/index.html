@@ -2976,11 +2976,11 @@ async function loginCoinbase(){
       const a=await window.coinbaseWalletExtension.request({method:'eth_requestAccounts'});
       if(a&&a[0]){
         w=window.coinbaseWalletExtension;walletAddress=a[0];
-        s.innerHTML=`🔗 <a href="${etherscanBase}${walletAddress}" target="_blank" style="color:var(--accent)">${walletAddress.slice(0,6)}...${walletAddress.slice(-4)}</a><br>✅ Coinbase Wallet connected!`;
+        s.innerHTML=`🔗 <a href="${etherscanBase}${escapeHTML(walletAddress)}" target="_blank" style="color:var(--accent)">${escapeHTML(walletAddress.slice(0,6))}...${escapeHTML(walletAddress.slice(-4))}</a><br>✅ Coinbase Wallet connected!`;
         if(p) p.classList.add('live');return;
       }
     }else{s.innerHTML='⚠️ Coinbase Wallet not found.<br><a href="https://www.coinbase.com/wallet" target="_blank" style="color:var(--hot)">Install Coinbase Wallet</a>';}
-  }catch(e){s.innerHTML='❌ '+e.message;console.error('Coinbase error:',e);}
+  }catch(e){s.innerHTML='❌ '+escapeHTML(e.message);console.error('Coinbase error:',e);}
 }
 
 
@@ -3017,7 +3017,7 @@ async function loginPayID() {
 
   } catch (e) {
     console.error('PayID Error:', e);
-    s.innerHTML = '❌ Onboarding failed: ' + (e.message || 'Unknown error');
+    s.innerHTML = '❌ Onboarding failed: ' + escapeHTML(e.message || 'Unknown error');
   }
 }
 

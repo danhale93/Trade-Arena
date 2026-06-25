@@ -100,7 +100,7 @@ app.post('/api/claude', async (req, res) => {
         res.status(response.status).json(data);
     } catch (error) {
         console.error('Claude Proxy error:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -132,7 +132,7 @@ app.post('/api/openai', async (req, res) => {
         res.status(response.status).json(data);
     } catch (error) {
         console.error('OpenAI Proxy error:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -155,7 +155,7 @@ app.post('/api/gemini', async (req, res) => {
         res.status(response.status).json(data);
     } catch (error) {
         console.error('Gemini Proxy error:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -207,7 +207,8 @@ app.post('/api/maintenance/patch', async (req, res) => {
         console.log(`[Developer Agent] Patch requested for ${filepath}: ${description}`);
         res.json({ success: true, message: 'Patch received and logged for review' });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error('Maintenance Patch error:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -225,7 +226,8 @@ app.get('/api/market/prices', async (req, res) => {
         }
         res.json({ success: true, prices, timestamp: Date.now() });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        console.error('Market Prices error:', error);
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 
@@ -268,7 +270,8 @@ app.post('/api/execute/swap', async (req, res) => {
         };
         res.json(result);
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        console.error('Execute Swap error:', error);
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 
