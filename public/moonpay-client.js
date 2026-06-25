@@ -9,8 +9,7 @@
  */
 
 const MOONPAY_CONFIG = {
-    // MoonPay test key for development
-    apiKey: 'pk_test_5rdSBYM23wRwK1L3icX9RqYdypJ6jGEC',
+    apiKey: '',
     // Base mainnet
     network: 'base',
     // USDC on Base
@@ -32,15 +31,27 @@ let pendingDeposit = null;
  */
 function moonpayInit() {
     console.log('[MoonPay] Initializing...');
-    
-    // Load MoonPay SDK if available
-    loadMoonPayScript();
+
+    loadPublicConfig().then(() => {
+        loadMoonPayScript();
+    });
     
     return {
         isConfigured: !!MOONPAY_CONFIG.apiKey && !MOONPAY_CONFIG.apiKey.startsWith('YOUR_'),
         defaultAmount: MOONPAY_CONFIG.defaultAmount,
         networkFee: MOONPAY_CONFIG.networkFee,
     };
+}
+
+async function loadPublicConfig() {
+    try {
+        const res = await fetch('/api/config');
+        if (!res.ok) return;
+        const cfg = await res.json();
+        if (cfg.moonpayPublicKey) MOONPAY_CONFIG.apiKey = cfg.moonpayPublicKey;
+    } catch (e) {
+        console.warn('[MoonPay] Could not load public config');
+    }
 }
 
 /**

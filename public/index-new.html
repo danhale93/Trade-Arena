@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏟️</text></svg>">
 <title>TRADE ARENA • AUDITED ENSEMBLE v11</title>
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Bungee+Shade&family=Share+Tech+Mono&family=Oswald:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" defer></script>
@@ -356,7 +357,7 @@ let agentProbationStart = {};
 let auditHistory = [];
 let lastAuditAt = 0;
 
-const TOKENS=[
+const REEL_TOKENS=[
   {e:'🐸',l:'PEPE'},{e:'🐕',l:'DOGE'},{e:'💎',l:'ETH'},{e:'🌕',l:'BTC'},
   {e:'🔥',l:'WIF'},{e:'💀',l:'BONK'},{e:'🦊',l:'FLOKI'},{e:'🚀',l:'ARB'},
   {e:'⚡',l:'SOL'},{e:'🌊',l:'MATIC'},
@@ -428,7 +429,14 @@ async function loginMetaMask(){
     try{ const b=await provider.getBalance(addr); const eth=parseFloat(ethers.utils.formatEther(b)); const d=await(await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd')).json(); bal=eth*(d?.ethereum?.usd||3200); }catch(e){}
     balance=bal; startBalance=bal;
     setupApp({name:addr.slice(0,6)+'···'+addr.slice(-4), avatar:null, badge:'🦊 METAMASK'});
-  }catch(e){ if(s) s.textContent='❌ '+(e.message||'Connection failed'); }
+  }catch(e){
+    if(!s) return;
+    if(e.code === -32603) {
+      s.innerHTML='❌ No active wallet found.<br><small style="color:var(--dim);margin-top:6px;display:block">Open MetaMask, create or unlock your wallet, then try again.</small>';
+    } else {
+      s.textContent='❌ '+(e.message||'Connection failed');
+    }
+  }
 }
 
 function loginDemo(){
@@ -539,7 +547,7 @@ function buildReels(id){
     });
     t.style.transform=\`translateY(-\${Math.floor(Math.random()*6)*36}px)\`;
   }
-  fill(\`mt0-\${id}\`,TOKENS); fill(\`mt1-\${id}\`,METHODS_V1); fill(\`mt2-\${id}\`,TOKENS.slice(0,6));
+  fill(\`mt0-\${id}\`,REEL_TOKENS); fill(\`mt1-\${id}\`,METHODS_V1); fill(\`mt2-\${id}\`,REEL_TOKENS.slice(0,6));
 }
 
 function startTicker(bot){
@@ -605,7 +613,7 @@ async function spinBot(id){
 
 async function animateReels(id,decision){
   const IH=36;
-  const ti=Math.max(0,TOKENS.findIndex(t=>t.l===decision.token)%10);
+  const ti=Math.max(0,REEL_TOKENS.findIndex(t=>t.l===decision.token)%10);
   const mi={'SPOT LONG':0,'SPOT SHORT':1,'YIELD FARM':2,'PERP LONG':3,'PERP SHORT':4,'HOLD':5}[decision.method]??0;
   await Promise.all([spinReel(\`mt0-\${id}\`,ti,10,0,IH),spinReel(\`mt1-\${id}\`,mi,6,220,IH),spinReel(\`mt2-\${id}\`,ti%6,6,440,IH)]);
 }

@@ -1224,7 +1224,7 @@ async function loginMetaMask() {
     let errorMsg = 'Connection failed';
     if (e.code === 4001) errorMsg = 'Connection rejected by user';
     else if (e.code === -32602) errorMsg = 'Invalid RPC params';
-    else if (e.code === -32603) errorMsg = 'Internal RPC error - might be network issue';
+    else if (e.code === -32603) errorMsg = 'No active wallet found - open MetaMask, create/unlock your wallet';
     else if (e.message?.includes('eth_requestAccounts')) errorMsg = 'Failed to request accounts';
     else if (e.message?.includes('network')) errorMsg = 'Network error - check Base network setup';
     else if (e.message?.includes('Failed to create provider')) errorMsg = 'MetaMask provider error';

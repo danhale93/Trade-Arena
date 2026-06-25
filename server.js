@@ -40,6 +40,34 @@ app.use(cors({
 const publicDir = path.join(__dirname, 'public');
 app.use(express.static(publicDir));
 
+/** Deployment queue for confirmed MoonPay deposits */
+const deploymentEvents = [];
+
+function queueBotDeployment(deposit) {
+    const event = {
+        id: generateId(),
+        type: 'BOT_DEPLOYMENT_TRIGGERED',
+        status: 'QUEUED',
+        source: 'moonpay',
+        created: Date.now(),
+        deposit
+    };
+    deploymentEvents.unshift(event);
+    if (deploymentEvents.length > 50) deploymentEvents.pop();
+    return event;
+}
+
+/**
+ * PUBLIC CONFIG (no secrets)
+ */
+app.get('/api/config', (req, res) => {
+    res.json({
+        privyAppId: process.env.PRIVY_APP_ID || '',
+        moonpayPublicKey: process.env.MOONPAY_PUBLIC_KEY || '',
+        googleClientId: process.env.GOOGLE_CLIENT_ID || ''
+    });
+});
+
 /**
  * AI PROXY ENDPOINTS
  */
@@ -73,6 +101,9 @@ const ALLOWED_GEMINI_MODELS = new Set([
 
 app.post('/api/claude', async (req, res) => {
     try {
+        if (!process.env.ANTHROPIC_API_KEY) {
+            return res.status(503).json({ error: 'AI service unavailable' });
+        }
         const { model, messages, system, max_tokens, temperature, top_p, top_k, stop_sequences } = req.body;
         if (!ALLOWED_CLAUDE_MODELS.has(model)) {
             return res.status(400).json({ error: 'Invalid or unauthorized model requested' });
@@ -100,12 +131,15 @@ app.post('/api/claude', async (req, res) => {
         res.status(response.status).json(data);
     } catch (error) {
         console.error('Claude Proxy error:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: 'Internal server error during AI processing' });
     }
 });
 
 app.post('/api/openai', async (req, res) => {
     try {
+        if (!process.env.OPENAI_API_KEY) {
+            return res.status(503).json({ error: 'AI service unavailable' });
+        }
         const { model, messages, max_tokens, temperature, top_p, frequency_penalty, presence_penalty, stop } = req.body;
         if (!ALLOWED_OPENAI_MODELS.has(model)) {
             return res.status(400).json({ error: 'Invalid or unauthorized model requested' });
@@ -132,18 +166,22 @@ app.post('/api/openai', async (req, res) => {
         res.status(response.status).json(data);
     } catch (error) {
         console.error('OpenAI Proxy error:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: 'Internal server error during AI processing' });
     }
 });
 
 app.post('/api/gemini', async (req, res) => {
     try {
+        if (!process.env.GEMINI_API_KEY) {
+            return res.status(503).json({ error: 'AI service unavailable' });
+        }
         const requestedModel = req.body.model || 'gemini-1.5-flash';
         if (!ALLOWED_GEMINI_MODELS.has(requestedModel)) {
             return res.status(400).json({ error: 'Invalid model specified' });
         }
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${requestedModel}:generateContent?key=${process.env.GEMINI_API_KEY || ''}`, {
+        const safeModel = encodeURIComponent(requestedModel);
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${safeModel}:generateContent?key=${process.env.GEMINI_API_KEY}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -155,7 +193,7 @@ app.post('/api/gemini', async (req, res) => {
         res.status(response.status).json(data);
     } catch (error) {
         console.error('Gemini Proxy error:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: 'Internal server error during AI processing' });
     }
 });
 
@@ -215,9 +253,69 @@ app.post('/api/maintenance/patch', async (req, res) => {
  * TRADING & MARKET ENDPOINTS
  */
 
+app.get('/api/deployments', (req, res) => {
+    res.json({ success: true, deployments: deploymentEvents });
+});
+
+app.post('/api/webhooks/moonpay/deposit', (req, res) => {
+    try {
+        const signature = req.headers['x-moonpay-signature'];
+        const secret = process.env.MOONPAY_WEBHOOK_SECRET;
+
+        if (!secret) {
+            console.error('[MoonPay Webhook] MOONPAY_WEBHOOK_SECRET is missing');
+            return res.status(500).json({ success: false, error: 'Webhook configuration error' });
+        }
+
+        if (!signature || !verifyMoonPaySignature(req.body, signature, secret)) {
+            return res.status(401).json({ success: false, error: 'Invalid webhook signature' });
+        }
+
+        const payload = req.body || {};
+        const status = String(payload.status || payload.state || '').toLowerCase();
+        const amount = Number(payload.amount || payload.cryptoAmount || payload.fiatAmount || 0);
+        const currency = String(payload.currency || payload.cryptoCurrency || 'USDC').toUpperCase();
+        const destination = payload.walletAddress || payload.address || payload.destinationAddress || '';
+        const reference = payload.transactionId || payload.id || payload.reference || null;
+
+        const isConfirmed = ['completed', 'complete', 'confirmed', 'succeeded', 'success'].includes(status);
+
+        if (!isConfirmed) {
+            return res.json({
+                success: true,
+                received: true,
+                ignored: true,
+                reason: 'Deposit not confirmed yet'
+            });
+        }
+
+        const deployment = queueBotDeployment({
+            reference,
+            currency,
+            amount,
+            destination,
+            source: 'moonpay',
+            confirmedAt: Date.now()
+        });
+
+        res.json({
+            success: true,
+            received: true,
+            deployment,
+            message: 'Deposit confirmed and deployment queued'
+        });
+    } catch (error) {
+        console.error('[MoonPay Webhook] Error:', error);
+        res.status(500).json({ success: false, error: 'Webhook processing failed' });
+    }
+});
+
 app.get('/api/market/prices', async (req, res) => {
     try {
-        const symbols = req.query.symbols?.split(',') || ['WETH', 'USDC', 'ARB'];
+        const allowedSymbols = new Set(['WETH', 'USDC', 'ARB', 'OP']);
+        const symbols = (req.query.symbols?.split(',') || ['WETH', 'USDC', 'ARB'])
+            .map(s => s.trim().toUpperCase())
+            .filter(s => allowedSymbols.has(s));
         const prices = {};
         for (const symbol of symbols) {
             const price = await fetchCoinGeckoPrice(symbol);
@@ -225,7 +323,7 @@ app.get('/api/market/prices', async (req, res) => {
         }
         res.json({ success: true, prices, timestamp: Date.now() });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Failed to fetch market prices' });
     }
 });
 
@@ -275,6 +373,19 @@ app.post('/api/execute/swap', async (req, res) => {
 /**
  * Helper Functions
  */
+
+function verifyMoonPaySignature(body, signature, secret) {
+    try {
+        const hmac = crypto.createHmac('sha256', secret);
+        const digest = hmac.update(JSON.stringify(body)).digest('hex');
+        const digestBuffer = Buffer.from(digest);
+        const signatureBuffer = Buffer.from(signature);
+        if (digestBuffer.length !== signatureBuffer.length) return false;
+        return crypto.timingSafeEqual(digestBuffer, signatureBuffer);
+    } catch (e) {
+        return false;
+    }
+}
 
 async function fetchCoinGeckoPrice(symbol) {
     try {

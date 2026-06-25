@@ -9,10 +9,10 @@
  */
 
 const PRIVY_CONFIG = {
-    // Privy App ID from dashboard.privy.com
-    appId: 'cmpl1hc0k00ui0djsr3qo8gg8',
-    // JWKS URL for token verification
-    jwksUrl: 'https://auth.privy.io/api/v1/apps/cmpl1hc0k00ui0djsr3qo8gg8/jwks.json',
+    // Loaded from server /api/config at runtime
+    appId: '',
+    // JWKS URL derived from app ID after config load
+    jwksUrl: '',
     // Base mainnet ONLY - NO network dropdown
     chain: 'base',
     chainId: '0x2105',
@@ -36,6 +36,12 @@ let privyConnected = false;
  */
 async function privyInit() {
     console.log('[Privy] Initializing...');
+
+    await loadPrivyPublicConfig();
+    if (!PRIVY_CONFIG.appId) {
+        console.warn('[Privy] App ID not configured');
+        return false;
+    }
     
     //动态加载 Privy SDK
     if (!window.Privy) {
@@ -70,6 +76,20 @@ async function privyInit() {
     }
 }
 
+async function loadPrivyPublicConfig() {
+    try {
+        const res = await fetch('/api/config');
+        if (!res.ok) return;
+        const cfg = await res.json();
+        if (cfg.privyAppId) {
+            PRIVY_CONFIG.appId = cfg.privyAppId;
+            PRIVY_CONFIG.jwksUrl = `https://auth.privy.io/api/v1/apps/${cfg.privyAppId}/jwks.json`;
+        }
+    } catch (e) {
+        console.warn('[Privy] Could not load public config');
+    }
+}
+
 /**
  * Load Privy SDK script dynamically
  */
@@ -81,7 +101,7 @@ async function loadPrivyScript() {
         }
         
         const script = document.createElement('script');
-        script.src = 'https://cdn.privy.io/widget.js';
+        script.src = 'https://widget.privy.com/widget.js';
         script.async = true;
         script.onload = () => resolve();
         script.onerror = () => {

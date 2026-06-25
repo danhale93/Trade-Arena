@@ -4,9 +4,8 @@
   "description": "Multi-AI Trading Arena with Ridges Integration",
   "main": "index.html",
   "scripts": {
-    "proxy": "node proxy.js",
     "serve": "npx serve .",
-    "dev": "concurrently \"npm run proxy\" \"npm run serve\"",
+    "dev": "npx serve .",
     "test": "node tests.js"
   },
   "devDependencies": {

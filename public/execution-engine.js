@@ -92,10 +92,10 @@ async function executeOnChainTrade(tradeRequest) {
 
     try {
         const userAddress = window.getPrivyAddress();
-        const usdcAddress = TOKENS.USDC.address;
-        const targetTokenAddress = TOKENS[token]?.address;
+        const usdcAddress = TOKENS?.USDC?.address;
+        const targetTokenAddress = TOKENS?.[token]?.address;
 
-        if (!targetTokenAddress) throw new Error(`Token ${token} address unknown`);
+        if (!usdcAddress || !targetTokenAddress) throw new Error(`Token ${token} address unknown`);
 
         // 1. Get Quote
         // For simplicity, we assume $1 = 1,000,000 USDC units (6 decimals)

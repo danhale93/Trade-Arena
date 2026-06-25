@@ -122,7 +122,7 @@ const requiredFunctions = [
 requiredFunctions.forEach(funcName => {
   if (typeof window[funcName] === 'function') {
     console.log(`✅ ${funcName}`);
-  } else if (typeof eval(funcName) === 'function') {
+  } else if (typeof globalThis[funcName] === 'function') {
     console.log(`✅ ${funcName} (global)`);
   } else {
     console.log(`❌ ${funcName} - NOT FOUND`);

@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏟️</text></svg>">
 <title>TRADE ARENA — AI TRADING FLOOR</title>
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Bungee+Shade&family=JetBrains+Mono:wght@400;700&family=Oswald:wght@400;700&family=Share+Tech+Mono&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" defer></script>
@@ -688,6 +689,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
 <!-- iOS Meta Tags -->
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Trade Arena">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -751,7 +753,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         ⚙️ Advanced Settings
       </button>
       <div class="fiat-ramp-row">
-        <button class="onramp-btn" onclick="window.openMoonpay && window.openMoonpay()">💳 DEPOSIT USDC</button>
+        <button class="onramp-btn" onclick="openDepositFlow(50)">💳 DEPOSIT USDC</button>
         <button class="offramp-btn" onclick="openOskoRamp('offramp')">💵 WITHDRAW</button>
       </div>
     </div>
@@ -1600,7 +1602,7 @@ let agentProbationStart = {};
 let auditHistory = [];
 let lastAuditAt = 0;
 
-const TOKENS=[
+const REEL_TOKENS=[
   {e:'🐸',l:'PEPE'},{e:'🐕',l:'DOGE'},{e:'💎',l:'ETH'},{e:'🌕',l:'BTC'},
   {e:'🔥',l:'WIF'},{e:'💀',l:'BONK'},{e:'🦊',l:'FLOKI'},{e:'🚀',l:'ARB'},
   {e:'⚡',l:'SOL'},{e:'🌊',l:'MATIC'},
@@ -1875,6 +1877,18 @@ function startLivePnlTicker(pos, bot) {
         ?` · SL${bot.stopLossPct?` −${bot.stopLossPct}%`:'—'} TP${bot.takeProfitPct?` +${bot.takeProfitPct}%`:'—'}`:'';
       timerEl.textContent=`Exit in ${m}:${s.toString().padStart(2,'0')}${slLabel}`;
     }
+    const cdEl=document.getElementById('cd-'+pos.botId);
+    if(cdEl){
+      const rem2=Math.max(0,pos.exitTime-Date.now());
+      const m2=Math.floor(rem2/60000),s2=Math.floor((rem2%60000)/1000);
+      cdEl.textContent=`${m2}:${s2.toString().padStart(2,'0')}`;
+    }
+    const mp2El=document.getElementById('mpv2-'+pos.botId);
+    if(mp2El){
+      const rem3=Math.max(0,pos.exitTime-Date.now());
+      const m3=Math.floor(rem3/60000);
+      mp2El.textContent=m3+'m';
+    }
     // Optimization: updateLiveBalance() moved to _tickHeader (500ms) to avoid DOM churn when multiple positions tick
     if(pos.status==='open') setTimeout(tick,2000);  // Increased frequency: 5s → 2s
   };
@@ -1960,6 +1974,8 @@ async function checkExit(pos, bot) {
   document.getElementById('opOverlay-'+pos.botId)?.classList.remove('show');
   const card=document.getElementById('bot-'+pos.botId);
   if(card&&!openPositions.find(p=>p.botId===pos.botId)) card.classList.remove('has-open');
+  setVal('mpv2-'+pos.botId,'—');
+  setVal('cd-'+pos.botId,'—');
 
   updateGlobalBalance(); updateBotPnl(bot); updateQuantReport(); updateOpenCount();
   showExitResult(pos,bot); addToLog(pos);
@@ -1992,8 +2008,9 @@ function showOpenOverlay(botId, pos) {
   setVal('opMethod-'+botId,pos.method);
   setVal('opEntry-'+botId,'Entry: $'+pos.entryPrice.toFixed(pos.entryPrice<1?6:2));
   const el=document.getElementById('opLivePnl-'+botId); if(el){el.textContent='…';el.className='op-live-pnl pend';}
-  const exitM=Math.round(pos.exitDuration/60000);
-  setVal('opTimer-'+botId,`Exit in ${exitM}m 0s`);
+  const exitM=Math.floor(pos.exitDuration/60000);
+  const exitS=Math.floor((pos.exitDuration%60000)/1000);
+  setVal('opTimer-'+botId,`Exit in ${exitM}m ${exitS}s`);
   setVal('opExit-'+botId,`−$${pos.costs.total.toFixed(2)} gas+slip+spread`);
   ov.classList.add('show');
 }
@@ -2957,6 +2974,8 @@ async function loginMetaMask(){
       s.textContent='❌ Connection rejected by user';
     } else if(error.code === -32002) {
       s.textContent='❌ MetaMask request already pending';
+    } else if(error.code === -32603) {
+      s.innerHTML='❌ No active wallet found.<br><small style="color:var(--dim);margin-top:6px;display:block">Open MetaMask, create or unlock your wallet, then try again.</small>';
     } else {
       s.textContent='❌ MetaMask Error: '+(error.message||'Connection failed'); 
     }
@@ -3046,6 +3065,37 @@ function openOskoRamp(type) {
   // Open in new tab
   window.open(url, '_blank');
 }
+
+function openDepositFlow(amount){
+  if(typeof window.moonpayBuyCrypto==='function'){
+    window.moonpayBuyCrypto(getPrivyAddress(), amount);
+  } else {
+    const s=document.getElementById('cStatus');
+    if(s) s.textContent='💳 Opening deposit flow...';
+    window.open('https://buy.moonpay.com?currency=usdc&network=base&amount='+amount, '_blank');
+  }
+  updateFeeBreakdown(amount);
+}
+
+function retryDeposit(){
+  const lastAmount = pendingDeposit?.amount || 50;
+  openDepositFlow(lastAmount);
+}
+
+function updateFeeBreakdown(amount){
+  const fb=document.getElementById('feeBreakdown');
+  if(!fb) return;
+  fb.style.display='block';
+  const moonPayFee=amount*0.035;
+  const networkFee=1.50;
+  const total=amount+moonPayFee+networkFee;
+  setVal('depositAmountDisplay','$'+amount.toFixed(2));
+  setVal('moonpayFeeDisplay','$'+moonPayFee.toFixed(2));
+  setVal('networkFeeDisplay','$'+networkFee.toFixed(2));
+  setVal('totalAmountDisplay','$'+total.toFixed(2));
+}
+
+window.openPrivy = window.openPrivy || function(){ if(typeof privyLoginGoogle==='function') privyLoginGoogle(); };
 
 window.onPrivyReady = function(user, walletAddress) {
   setupApp({
@@ -3263,6 +3313,7 @@ function renderBot(bot){
       <div class="m-pill" id="mp0-${bot.id}"><div class="pl">Token</div><div class="pv" id="mpv0-${bot.id}">—</div></div>
       <div class="m-pill" id="mp1-${bot.id}"><div class="pl">Strategy</div><div class="pv" id="mpv1-${bot.id}">—</div></div>
       <div class="m-pill" id="mp2-${bot.id}"><div class="pl">Exit In</div><div class="pv" id="mpv2-${bot.id}">—</div></div>
+      <div class="m-pill" id="mp3-${bot.id}"><div class="pl">Countdown</div><div class="pv" id="cd-${bot.id}">—</div></div>
     </div>
     <!-- Agent vote cards -->
     <div class="agent-grid" id="agentGrid-${bot.id}">
@@ -3356,7 +3407,7 @@ function buildReels(id){
     });
     t.style.transform=`translateY(-${Math.floor(Math.random()*6)*36}px)`;
   }
-  fill(`mt0-${id}`,TOKENS); fill(`mt1-${id}`,METHODS_V1); fill(`mt2-${id}`,TOKENS.slice(0,6));
+  fill(`mt0-${id}`,REEL_TOKENS); fill(`mt1-${id}`,METHODS_V1); fill(`mt2-${id}`,REEL_TOKENS.slice(0,6));
 }
 function startTicker(bot){
   function tick(){ 
@@ -3543,7 +3594,9 @@ async function spinBot(id){
   setVal('mpv0-'+id,decision.token);
   setVal('mpv1-'+id,decision.method==='HOLD'?'🧠 HOLD':decision.method);
   const exitM=decision.method==='HOLD'?'—':Math.round(EXIT_TIMES[decision.method]/60000)+'m';
-  setVal('mpv2-'+id,exitM);
+      setVal('mpv2-'+id,exitM);
+      const cdEl=document.getElementById('cd-'+id);
+      if(cdEl) cdEl.textContent=exitM+'m';
   ['mp0-','mp1-','mp2-'].forEach(pfx=>{document.getElementById(pfx+id)?.classList.add('lit');setTimeout(()=>document.getElementById(pfx+id)?.classList.remove('lit'),1200);});
   const tick=document.getElementById('mtick-'+id);
   if(tick) tick.textContent=decision.method==='HOLD'?`🧠 HOLD — ${decision.reasoning}`:`⏱ ${decision.token} ${decision.method} @ $${entryPrice.toFixed(entryPrice<1?4:2)}`;
@@ -3636,6 +3689,7 @@ async function fetchPoliticianFilings(){
     try{
       // House Stock Watcher — public S3, no auth needed
       const r=await fetch('https://house-stock-watcher-data.s3-us-west-2.amazonaws.com/data/all_transactions.json');
+      if (!r.ok) throw new Error('House Stock Watcher unavailable: ' + r.status);
       const data=await r.json();
       // Get last 90 days, sort by recency
       const cutoff=new Date(); cutoff.setDate(cutoff.getDate()-90);
@@ -4217,9 +4271,10 @@ function updateAgentPerfUI(){
   el.innerHTML=agentHistory.map(a=>{
     const wr=a.total>0?a.correct/a.total:0;
     const col=wr>=0.55?'var(--green)':wr>=0.45?'var(--amber)':'var(--hot)';
+    const key=escapeHTML(a.key);
     return`<div class="ep-agent-row">
       <div class="ep-agent-icon">${ICONS[a.key]||'🤖'}</div>
-      <div class="ep-agent-name" style="text-transform:capitalize">${a.key}</div>
+      <div class="ep-agent-name" style="text-transform:capitalize">${key}</div>
       <div class="ep-agent-bar-wrap"><div class="ep-agent-bar" style="width:${(wr*100).toFixed(0)}%;background:${col}"></div></div>
       <div class="ep-agent-stat" style="color:${col}">${(wr*100).toFixed(0)}% WR · ${a.total}t</div>
     </div>`;
@@ -4947,7 +5002,7 @@ async function callAI(marketData, bet, botId, bot){
 // ══════════════════════════════════════════════════════
 async function animateReels(id,decision){
   const IH=36;
-  const ti=Math.max(0,TOKENS.findIndex(t=>t.l===decision.token)%10);
+  const ti=Math.max(0,REEL_TOKENS.findIndex(t=>t.l===decision.token)%10);
   const mi={'SPOT LONG':0,'SPOT SHORT':1,'YIELD FARM':2,'PERP LONG':3,'PERP SHORT':4,'HOLD':5}[decision.method]??0;
   // Speed up animation: shorter delays between reels for snappier feel
   await Promise.all([
@@ -5015,17 +5070,18 @@ function renderLog(){
     const pnlCls=isOpen?'open':isHold?'h':t.isWin?'p':'n';
     const ep=t.entryPrice?'\$'+t.entryPrice.toFixed(t.entryPrice<1?5:2):'—';
     const xp=t.exitPrice?'\$'+t.exitPrice.toFixed(t.exitPrice<1?5:2):(isOpen?'⏳':'—');
-    const txLink = t.txHash ? `<a href="${REAL_WALLET_CONFIG.network.explorerUrl}/tx/${t.txHash}" target="_blank" style="text-decoration:none;color:var(--cyan);font-size:8px;margin-left:4px">🔗</a>` : "";
+    const safeTxHash = t.txHash && /^0x[a-fA-F0-9]+$/.test(t.txHash) ? t.txHash : '';
+    const txLink = safeTxHash ? `<a href="${REAL_WALLET_CONFIG.network.explorerUrl}/tx/${safeTxHash}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;color:var(--cyan);font-size:8px;margin-left:4px">🔗</a>` : "";
     const cost=t.costs?.total?'-\$'+t.costs.total.toFixed(2):'';
     return`<div class="log-row">
-      <div class="log-bot">#${t.botId}</div>
-      <div class="log-coin" style="color:${isOpen?'var(--blue)':isHold?'var(--amber)':t.isWin?'var(--green)':'var(--hot)'}">${t.token}</div>
-      <div class="log-method">${t.method}</div>
+      <div class="log-bot">#${escapeHTML(String(t.botId))}</div>
+      <div class="log-coin" style="color:${isOpen?'var(--blue)':isHold?'var(--amber)':t.isWin?'var(--green)':'var(--hot)'}">${escapeHTML(t.token)}</div>
+      <div class="log-method">${escapeHTML(t.method)}</div>
       <div class="log-entry">${ep}</div>
       <div class="log-exit">${xp}${txLink}</div>
       <div class="log-pnl ${pnlCls}">${pnlStr}</div>
       <div class="log-cost">${cost}</div>
-      <div class="log-t">${t.time}</div>
+      <div class="log-t">${escapeHTML(t.time)}</div>
     </div>`;
   }).join('');
 }
@@ -5434,6 +5490,7 @@ document.addEventListener('keydown', function(e) {
 <script src="crucible-real-trading.js" defer></script>
 <script src="execution-engine.js" defer></script>
 <script src="elo-tournament-engine.js" defer></script>
+<script src="moonpay-client.js" defer></script>
 <script src="task-center.js" defer></script>
 <script src="privy-client.js" defer></script>
 <script src="staff-engine.js" defer></script>

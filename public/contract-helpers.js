@@ -42,7 +42,7 @@ const NETWORK_TOKENS = {
   }
 };
 
-var TOKENS = NETWORK_TOKENS[8453]; // Default to mainnet
+let TOKENS = (typeof globalThis.TOKENS !== 'undefined') ? globalThis.TOKENS : NETWORK_TOKENS[8453]; // Default to mainnet
 
 const NETWORK_PROTOCOLS = {
   8453: { // Mainnet
@@ -55,7 +55,7 @@ const NETWORK_PROTOCOLS = {
   }
 };
 
-var PROTOCOLS = NETWORK_PROTOCOLS[8453]; // Default to mainnet
+let PROTOCOLS = (typeof globalThis.PROTOCOLS !== 'undefined') ? globalThis.PROTOCOLS : NETWORK_PROTOCOLS[8453]; // Default to mainnet
 
 // Contract ABIs (Simplified)
 const ABIS = {

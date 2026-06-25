@@ -356,7 +356,7 @@ let agentProbationStart = {};
 let auditHistory = [];
 let lastAuditAt = 0;
 
-const TOKENS=[
+const REEL_TOKENS=[
   {e:'🐸',l:'PEPE'},{e:'🐕',l:'DOGE'},{e:'💎',l:'ETH'},{e:'🌕',l:'BTC'},
   {e:'🔥',l:'WIF'},{e:'💀',l:'BONK'},{e:'🦊',l:'FLOKI'},{e:'🚀',l:'ARB'},
   {e:'⚡',l:'SOL'},{e:'🌊',l:'MATIC'},
@@ -428,7 +428,14 @@ async function loginMetaMask(){
     try{ const b=await provider.getBalance(addr); const eth=parseFloat(ethers.utils.formatEther(b)); const d=await(await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd')).json(); bal=eth*(d?.ethereum?.usd||3200); }catch(e){}
     balance=bal; startBalance=bal;
     setupApp({name:addr.slice(0,6)+'···'+addr.slice(-4), avatar:null, badge:'🦊 METAMASK'});
-  }catch(e){ if(s) s.textContent='❌ '+(e.message||'Connection failed'); }
+  }catch(e){
+    if(!s) return;
+    if(e.code === -32603) {
+      s.innerHTML='❌ No active wallet found.<br><small style="color:var(--dim);margin-top:6px;display:block">Open MetaMask, create or unlock your wallet, then try again.</small>';
+    } else {
+      s.textContent='❌ '+(e.message||'Connection failed');
+    }
+  }
 }
 
 function loginDemo(){

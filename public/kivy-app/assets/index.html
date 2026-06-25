@@ -957,7 +957,7 @@ function loadSettings() {
 }// ════════════════════════════
 // SYMBOL POOLS
 // ════════════════════════════
-const TOKENS = [
+const REEL_TOKENS = [
   {e:'🐸',l:'PEPE'},{e:'🐕',l:'DOGE'},{e:'💎',l:'ETH'},{e:'🌕',l:'BTC'},
   {e:'🔥',l:'WIF'},{e:'💀',l:'BONK'},{e:'🦊',l:'FLOKI'},{e:'🚀',l:'ARB'},
   {e:'⚡',l:'SOL'},{e:'🌊',l:'MATIC'},
@@ -1224,7 +1224,7 @@ async function loginMetaMask() {
     let errorMsg = 'Connection failed';
     if (e.code === 4001) errorMsg = 'Connection rejected by user';
     else if (e.code === -32602) errorMsg = 'Invalid RPC params';
-    else if (e.code === -32603) errorMsg = 'Internal RPC error - might be network issue';
+    else if (e.code === -32603) errorMsg = 'No active wallet found - open MetaMask, create/unlock your wallet';
     else if (e.message?.includes('eth_requestAccounts')) errorMsg = 'Failed to request accounts';
     else if (e.message?.includes('network')) errorMsg = 'Network error - check Base network setup';
     else if (e.message?.includes('Failed to create provider')) errorMsg = 'MetaMask provider error';
@@ -1628,7 +1628,7 @@ function buildReels(id) {
     });
     t.style.transform = `translateY(-${Math.floor(Math.random()*8)*40}px)`;
   }
-  fill(`mt0-${id}`, TOKENS);
+  fill(`mt0-${id}`, REEL_TOKENS);
   fill(`mt1-${id}`, METHODS);
   fill(`mt2-${id}`, SIZES);
 }
@@ -1947,7 +1947,7 @@ function fallbackDecision(bet, botProfile = 'BALANCED') {
 // ════════════════════════════
 async function animateReels(id, decision) {
   const ITEM_H = 40;
-  const ti = Math.max(0, TOKENS.findIndex(t => t.l === decision.token));
+  const ti = Math.max(0, REEL_TOKENS.findIndex(t => t.l === decision.token));
   const mi = {'FLASH LOAN':0,'ARBITRAGE':1,'SPOT LONG':2,'SPOT SHORT':2,'NFT FLIP':3,'YIELD FARM':4,'PERP LONG':5,'PERP SHORT':5}[decision.method] ?? 1;
   const si = {'SNIPER':0,'DEGEN':1,'SAFE':2,'YOLO':3,'HEDGE':4,'SURF':5}[decision.size_label] ?? 2;
 
