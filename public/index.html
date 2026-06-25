@@ -3024,10 +3024,10 @@ async function loginPayID() {
       params: [{ chainId: '0x2105' }],
     });
 
-    s.innerHTML = '⚡ Redirecting to Ramp (AUD)...<br><span style="font-size:9px;color:var(--dim)">Instant AUD -> crypto without KYC (under limits)</span>';
+    s.innerHTML = '⚡ Redirecting to Ramp (ETH)...<br><span style="font-size:9px;color:var(--dim)">Buy ETH directly without KYC (under limits)</span>';
 
-    // Redirect to AUD-optimized Ramp flow
-    const rampUrl = `https://app.ramp.network/buy?ref=tradearena&swapAsset=ETH&fiatCurrency=AUD&fiatValue=50&userAddress=${address}`;
+    // Redirect to ETH Ramp flow
+    const rampUrl = `https://app.ramp.network/buy?ref=tradearena&swapAsset=ETH&fiatCurrency=USD&fiatValue=50&userAddress=${address}`;
 
     setTimeout(() => {
         window.open(rampUrl, '_blank');
@@ -3529,12 +3529,12 @@ async function spinBot(id){
         // Auto-Onboarding: if in auto mode and balance low, try to claim faucet and tasks
         if (!window.taskState.faucetClaimed) {
             console.log(`[Bot #${id}] Auto-claiming faucet...`);
-            if (window.claimFaucet) window.claimFaucet();
+            if (window.claimFaucet) await window.claimFaucet();
         } else {
             const nextTask = window.taskState.tasks.find(t => !t.completed);
             if (nextTask && window.completeTask) {
                 console.log(`[Bot #${id}] Auto-completing task: ${nextTask.label}`);
-                window.completeTask(nextTask.id);
+                await window.completeTask(nextTask.id);
             }
         }
     }
