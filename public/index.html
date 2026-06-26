@@ -1309,8 +1309,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:8px;background:var(--chrome);border-radius:6px;border:1px solid var(--border);">
       <div style="font-family:'Bungee';font-size:10px;color:var(--dim)">TRADING MODE</div>
       <div style="display:flex;gap:4px">
-        <button id="simModeBtn" class="mode-btn active" onclick="switchTradingMode('sim')">SIMULATED</button>
-        <button id="liveModeBtn" class="mode-btn" onclick="switchTradingMode('live')">LIVE (BASE)</button>
+        <button id="simModeBtn" class="mode-btn active" onclick="switchTradingMode('sim')" aria-pressed="true">SIMULATED</button>
+        <button id="liveModeBtn" class="mode-btn" onclick="switchTradingMode('live')" aria-pressed="false">LIVE (BASE)</button>
       </div>
     </div>
     <div id="crucibleProgress" style="display:none;margin-top:10px;margin-bottom:10px;padding:10px;background:rgba(0,0,0,0.3);border-radius:6px;border:1px solid var(--border);">
@@ -1356,8 +1356,15 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
            showToast('Connect real wallet first!', 'error');
            return;
         }
-        document.getElementById('simModeBtn').classList.toggle('active', !isLive);
-        document.getElementById('liveModeBtn').classList.toggle('active', isLive);
+        const simBtn = document.getElementById('simModeBtn');
+        const liveBtn = document.getElementById('liveModeBtn');
+
+        simBtn.classList.toggle('active', !isLive);
+        simBtn.setAttribute('aria-pressed', !isLive);
+
+        liveBtn.classList.toggle('active', isLive);
+        liveBtn.setAttribute('aria-pressed', isLive);
+
         if (typeof CrucibleRealTrading !== 'undefined') {
           CrucibleRealTrading.config.liveMode = isLive;
           showToast(`Mode switched to ${isLive ? 'LIVE' : 'SIMULATED'}`, 'info');
