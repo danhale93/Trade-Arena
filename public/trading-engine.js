@@ -8,6 +8,19 @@
 
 
 
+/**
+ * Helper to escape HTML and prevent XSS
+ */
+function escapeHTML(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 // ACOUSTIC CORE: UI Update Functions
 
 function updateVaultDisplay(balance, startBalance = 10000) {
@@ -52,7 +65,7 @@ function renderPadGrid() {
 
         const padState = pnl > 0 ? 'pad-hit' : pnl < 0 ? 'pad-miss' : i < 3 ? 'pad-active' : '';
 
-        return `<div class="pad ${padState}" id="pad-${bot.id}">
+        return `<div class="pad ${padState}" id="pad-${escapeHTML(bot.id)}">
 
           <span class="pad-agent-id">AG-${agentId}</span>
 

@@ -2240,7 +2240,7 @@ function drawStratBreakdown(byStrat) {
     const isPos=d.pnl>=0;
     const barW=(Math.abs(d.pnl)/maxAbs*100).toFixed(0);
     return `<div class="strat-row">
-      <div class="strat-name">${name}</div>
+      <div class="strat-name">${escapeHTML(name)}</div>
       <div class="strat-bar-wrap"><div class="strat-bar ${isPos?'pos':'neg'}" style="width:${barW}%"></div></div>
       <div class="strat-stat" style="color:${isPos?'var(--green)':'var(--hot)'}">${isPos?'+':''}$${d.pnl.toFixed(2)} · ${wr}% WR</div>
     </div>`;
@@ -4264,7 +4264,7 @@ function updateAgentPerfUI(){
     const col=wr>=0.55?'var(--green)':wr>=0.45?'var(--amber)':'var(--hot)';
     return`<div class="ep-agent-row">
       <div class="ep-agent-icon">${ICONS[a.key]||'🤖'}</div>
-      <div class="ep-agent-name" style="text-transform:capitalize">${a.key}</div>
+      <div class="ep-agent-name" style="text-transform:capitalize">${escapeHTML(a.key)}</div>
       <div class="ep-agent-bar-wrap"><div class="ep-agent-bar" style="width:${(wr*100).toFixed(0)}%;background:${col}"></div></div>
       <div class="ep-agent-stat" style="color:${col}">${(wr*100).toFixed(0)}% WR · ${a.total}t</div>
     </div>`;
@@ -5060,17 +5060,17 @@ function renderLog(){
     const pnlCls=isOpen?'open':isHold?'h':t.isWin?'p':'n';
     const ep=t.entryPrice?'\$'+t.entryPrice.toFixed(t.entryPrice<1?5:2):'—';
     const xp=t.exitPrice?'\$'+t.exitPrice.toFixed(t.exitPrice<1?5:2):(isOpen?'⏳':'—');
-    const txLink = t.txHash ? `<a href="${REAL_WALLET_CONFIG.network.explorerUrl}/tx/${t.txHash}" target="_blank" style="text-decoration:none;color:var(--cyan);font-size:8px;margin-left:4px">🔗</a>` : "";
+    const txLink = t.txHash ? `<a href="${escapeHTML(REAL_WALLET_CONFIG.network.explorerUrl)}/tx/${escapeHTML(t.txHash)}" target="_blank" style="text-decoration:none;color:var(--cyan);font-size:8px;margin-left:4px">🔗</a>` : "";
     const cost=t.costs?.total?'-\$'+t.costs.total.toFixed(2):'';
     return`<div class="log-row">
-      <div class="log-bot">#${t.botId}</div>
-      <div class="log-coin" style="color:${isOpen?'var(--blue)':isHold?'var(--amber)':t.isWin?'var(--green)':'var(--hot)'}">${t.token}</div>
-      <div class="log-method">${t.method}</div>
+      <div class="log-bot">#${escapeHTML(t.botId)}</div>
+      <div class="log-coin" style="color:${isOpen?'var(--blue)':isHold?'var(--amber)':t.isWin?'var(--green)':'var(--hot)'}">${escapeHTML(t.token)}</div>
+      <div class="log-method">${escapeHTML(t.method)}</div>
       <div class="log-entry">${ep}</div>
       <div class="log-exit">${xp}${txLink}</div>
       <div class="log-pnl ${pnlCls}">${pnlStr}</div>
       <div class="log-cost">${cost}</div>
-      <div class="log-t">${t.time}</div>
+      <div class="log-t">${escapeHTML(t.time)}</div>
     </div>`;
   }).join('');
 }
