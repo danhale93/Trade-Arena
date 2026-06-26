@@ -81,8 +81,15 @@ class MarketplaceEngine {
         // Mock API call to registry
         await new Promise(r => setTimeout(r, 1500));
 
-        const apiKey = `sk_${marketplace}_${Math.random().toString(36).substr(2, 16)}`;
-        const externalId = `${marketplace.charAt(0)}_${Math.random().toString(36).substr(2, 8)}`;
+        // Use cryptographically secure random values for API keys and IDs
+        const secureRandom = (len) => {
+            const arr = new Uint8Array(len);
+            (window.crypto || window.msCrypto).getRandomValues(arr);
+            return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
+        };
+
+        const apiKey = `sk_${marketplace}_${secureRandom(8)}`;
+        const externalId = `${marketplace.charAt(0)}_${secureRandom(4)}`;
 
         if (!this.identities[agentId]) this.identities[agentId] = {};
 
