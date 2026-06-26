@@ -2974,11 +2974,12 @@ async function loginCoinbase(){
       const a=await window.coinbaseWalletExtension.request({method:'eth_requestAccounts'});
       if(a&&a[0]){
         w=window.coinbaseWalletExtension;walletAddress=a[0];
-        s.innerHTML=`🔗 <a href="${etherscanBase}${walletAddress}" target="_blank" style="color:var(--accent)">${walletAddress.slice(0,6)}...${walletAddress.slice(-4)}</a><br>✅ Coinbase Wallet connected!`;
+        const safeAddr = escapeHTML(walletAddress);
+        s.innerHTML=`🔗 <a href="${etherscanBase}${safeAddr}" target="_blank" style="color:var(--accent)">${safeAddr.slice(0,6)}...${safeAddr.slice(-4)}</a><br>✅ Coinbase Wallet connected!`;
         if(p) p.classList.add('live');return;
       }
     }else{s.innerHTML='⚠️ Coinbase Wallet not found.<br><a href="https://www.coinbase.com/wallet" target="_blank" style="color:var(--hot)">Install Coinbase Wallet</a>';}
-  }catch(e){s.innerHTML='❌ '+e.message;console.error('Coinbase error:',e);}
+  }catch(e){s.innerHTML='❌ '+escapeHTML(e.message);console.error('Coinbase error:',e);}
 }
 
 
@@ -3015,7 +3016,7 @@ async function loginPayID() {
 
   } catch (e) {
     console.error('PayID Error:', e);
-    s.innerHTML = '❌ Onboarding failed: ' + (e.message || 'Unknown error');
+    s.innerHTML = '❌ Onboarding failed: ' + escapeHTML(e.message || 'Unknown error');
   }
 }
 
@@ -4498,7 +4499,7 @@ function logLearn(msg, type = 'info') {
 function renderLearnLog() {
   const el = document.getElementById('learnLog'); if (!el) return;
   el.innerHTML = learningLog.slice(0, 30).map(e =>
-    `<div class="ll-entry ${e.type}">[${e.ts}] ${e.msg}</div>`
+    `<div class="ll-entry ${escapeHTML(e.type)}">[${escapeHTML(e.ts)}] ${escapeHTML(e.msg)}</div>`
   ).join('');
 }
 
@@ -4884,7 +4885,7 @@ function logAudit(msg, type = 'audit') {
 function renderAuditLog() {
   const el = document.getElementById('auditLog'); if (!el) return;
   el.innerHTML = auditHistory.slice(0, 40).map(e =>
-    `<div class="al-entry ${e.type}"><span class="al-ts">${e.ts}</span><span class="al-msg">${e.msg}</span></div>`
+    `<div class="al-entry ${escapeHTML(e.type)}"><span class="al-ts">${escapeHTML(e.ts)}</span><span class="al-msg">${escapeHTML(e.msg)}</span></div>`
   ).join('') || '<div class="al-entry audit"><span class="al-ts">—</span><span class="al-msg">No audits yet.</span></div>';
 }
 
