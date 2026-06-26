@@ -58,8 +58,8 @@ app.post('/api/claude', async (req, res) => {
     const data = await response.json();
     res.status(response.status).json(data);
   } catch (error) {
-    console.error('[Sentinel] Claude Proxy Error:', error.message);
-    res.status(500).json({ error: 'Internal server error during AI processing' });
+    console.error('[Sentinel] Claude Proxy Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -90,8 +90,8 @@ app.post('/api/openai', async (req, res) => {
     const data = await response.json();
     res.status(response.status).json(data);
   } catch (error) {
-    console.error('[Sentinel] OpenAI Proxy Error:', error.message);
-    res.status(500).json({ error: 'Internal server error during AI processing' });
+    console.error('[Sentinel] OpenAI Proxy Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -114,8 +114,8 @@ app.post('/api/gemini', async (req, res) => {
     const data = await response.json();
     res.status(response.status).json(data);
   } catch (error) {
-    console.error('[Sentinel] Gemini Proxy Error:', error.message);
-    res.status(500).json({ error: 'Internal server error during AI processing' });
+    console.error('[Sentinel] Gemini Proxy Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -158,7 +158,7 @@ app.post('/api/maintenance/patch', async (req, res) => {
     res.json({ success: true, message: 'Patch received and logged for review' });
   } catch (error) {
     console.error('[Sentinel] Patch Error:', error);
-    res.status(500).json({ error: 'Internal server error during patch processing' });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

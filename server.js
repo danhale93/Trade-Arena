@@ -163,7 +163,7 @@ app.post('/api/claude', async (req, res) => {
         res.status(response.status).json(data);
     } catch (error) {
         console.error('Claude Proxy error:', error);
-        res.status(500).json({ error: 'Internal server error during AI processing' });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -198,7 +198,7 @@ app.post('/api/openai', async (req, res) => {
         res.status(response.status).json(data);
     } catch (error) {
         console.error('OpenAI Proxy error:', error);
-        res.status(500).json({ error: 'Internal server error during AI processing' });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -225,7 +225,7 @@ app.post('/api/gemini', async (req, res) => {
         res.status(response.status).json(data);
     } catch (error) {
         console.error('Gemini Proxy error:', error);
-        res.status(500).json({ error: 'Internal server error during AI processing' });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -278,7 +278,7 @@ app.post('/api/maintenance/patch', async (req, res) => {
         res.json({ success: true, message: 'Patch received and logged for review' });
     } catch (error) {
         console.error('Patch error:', error);
-        res.status(500).json({ error: 'Internal server error during patch request' });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -382,7 +382,7 @@ app.post('/api/faucet/claim', async (req, res) => {
         res.json({ success: true, deployment, amount: 50, payout });
     } catch (error) {
         console.error('Faucet claim error:', error);
-        res.status(500).json({ success: false, error: 'Internal server error during faucet claim' });
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 
@@ -409,7 +409,7 @@ app.post('/api/tasks/claim', async (req, res) => {
         res.json({ success: true, deployment, taskId, reward, payout });
     } catch (error) {
         console.error('Task claim error:', error);
-        res.status(500).json({ success: false, error: 'Internal server error during task reward processing' });
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 
@@ -498,7 +498,7 @@ app.post('/api/bot/create', async (req, res) => {
         res.json({ success: true, bot });
     } catch (error) {
         console.error('Bot creation error:', error);
-        res.status(500).json({ success: false, error: 'Internal server error during bot creation' });
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 
@@ -524,7 +524,7 @@ app.post('/api/execute/swap', async (req, res) => {
         res.json(result);
     } catch (error) {
         console.error('Swap execution error:', error);
-        res.status(500).json({ success: false, error: 'Internal server error during swap execution' });
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 

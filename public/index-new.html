@@ -421,10 +421,10 @@ function loginGoogle(){
       try{
         const p=JSON.parse(atob(r.credential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
         setupApp({name:p.name||p.email||'Google User', avatar:p.picture||null, badge:'🔵 GOOGLE'});
-      }catch(e){ s.textContent='❌ Google error: '+e.message; }
+      }catch(e){ s.textContent='❌ Google error: '+escapeHTML(e.message); }
     }});
     google.accounts.id.prompt();
-  }catch(e){ s.textContent='❌ '+e.message; }
+  }catch(e){ s.textContent='❌ '+escapeHTML(e.message); }
 }
 
 async function loginMetaMask(){
@@ -442,12 +442,12 @@ async function loginMetaMask(){
     try{ const b=await provider.getBalance(addr); const eth=parseFloat(ethers.utils.formatEther(b)); const d=await(await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd')).json(); bal=eth*(d?.ethereum?.usd||3200); }catch(e){}
     balance=bal; startBalance=bal;
     setupApp({name:addr.slice(0,6)+'···'+addr.slice(-4), avatar:null, badge:'🦊 METAMASK'});
-  }catch(e){ if(s) s.textContent='❌ '+(e.message||'Connection failed'); }
+  }catch(e){ if(s) s.textContent='❌ '+escapeHTML(e.message||'Connection failed'); }
 }
 
 function loginDemo(){
   try{ setupApp({name:'DEMO PLAYER', avatar:null, badge:'🎮 DEMO'}); }
-  catch(e){ const s=document.getElementById('cStatus'); if(s) s.textContent='❌ '+e.message; console.error('Demo error:',e); }
+  catch(e){ const s=document.getElementById('cStatus'); if(s) s.textContent='❌ '+escapeHTML(e.message); console.error('Demo error:',e); }
 }
 
 function setupApp({name,avatar,badge}){
@@ -507,9 +507,10 @@ function removeBot(id){
 function renderBot(bot){
   const el=document.createElement('div'); el.className='machine'; el.id='bot-'+bot.id;
   el.innerHTML=`
+    <div class="m-status-badge" id="mstatus-${bot.id}"></div>
     <div class="m-head">
-      <div style="display:flex;align-items:center;gap:5px"><span class="m-id">BOT #${bot.id}</span><span class="m-pnl" id="mpnl-${bot.id}">$0.00</span></div>
-      <div style="display:flex;align-items:center;gap:4px"><div class="m-ticker" id="mtick-${bot.id}">READY</div><button class="m-close" onclick="removeBot(${bot.id})">✕</button></div>
+      <div style="display:flex;align-items:center;gap:5px"><span class="m-id">BOT #${escapeHTML(bot.id)}</span><span class="m-pnl" id="mpnl-${bot.id}">$0.00</span></div>
+      <div style="display:flex;align-items:center;gap:4px"><div class="m-ticker" id="mtick-${bot.id}">READY</div><button class="m-close" onclick="removeBot(${bot.id})" aria-label="Remove bot ${bot.id}">✕</button></div>
     </div>
     <div style="position:relative">
       <div class="m-reels" id="mreels-${bot.id}">
@@ -530,11 +531,11 @@ function renderBot(bot){
     <div class="consensus-bar-wrap"><div class="consensus-bar-fill" id="cbar-${bot.id}" style="width:0%;background:var(--dim)"></div></div>
     <div class="m-controls">
       <div class="m-bet-row" id="mbets-${bot.id}">
-        ${[1,5,10,25,50,100].map(v=>\`<button class="m-bet\${v===10?' on':''}" data-bet="\${v}" onclick="setBet(\${bot.id},\${v})">\$\${v}</button>\`).join('')}
+        ${[1,5,10,25,50,100].map(v=>`<button class="m-bet${v===10?' on':''}" data-bet="${v}" onclick="setBet(${bot.id},${v})" aria-pressed="${v===10}">$${v}</button>`).join('')}
       </div>
       <div class="m-bottom">
         <button class="spin-btn" id="mspin-${bot.id}" onclick="spinBot(${bot.id})">🎰 SPIN</button>
-        <button class="auto-btn" id="mauto-${bot.id}" onclick="toggleAuto(${bot.id})">AUTO</button>
+        <button class="auto-btn" id="mauto-${bot.id}" onclick="toggleAuto(${bot.id})" aria-pressed="false">AUTO</button>
       </div>
       <div class="loss-streak-bar"><div class="loss-streak-fill" id="mstreak-${bot.id}" style="width:0%"></div></div>
     </div>`;
@@ -548,7 +549,7 @@ function buildReels(id){
     t.innerHTML='';
     [...pool,...pool].sort(()=>Math.random()-.5).slice(0,14).forEach(item=>{
       const d=document.createElement('div'); d.className='m-item';
-      d.innerHTML=\`<span class="m-emoji">\${item.e}</span><span class="m-label">\${item.l}</span>\`;
+      d.innerHTML=`<span class="m-emoji">${escapeHTML(item.e)}</span><span class="m-label">${escapeHTML(item.l)}</span>`;
       t.appendChild(d);
     });
     t.style.transform=\`translateY(-\${Math.floor(Math.random()*6)*36}px)\`;
@@ -788,7 +789,7 @@ function renderAuditPanel(){
     const status = agentStatus[key];
     return \`<div class="audit-agent-row">
       <div class="aa-icon">\${ICONS[key]}</div>
-      <div class="aa-name">\${key.toUpperCase()}</div>
+      <div class="aa-name">${escapeHTML(key.toUpperCase())}</div>
       <div class="aa-status-badge aas-active">ACTIVE</div>
     </div>\`;
   }).join('');
@@ -834,17 +835,17 @@ function renderLog(){
   setVal('logCount', globalLog.length+' trades');
   if(!globalLog.length){ el.innerHTML='<div class="empty-log">No trades yet.</div>'; return; }
   el.innerHTML=globalLog.map(t=>{
-    const pnlStr=(t.isWin?'+':'')+'\$'+Math.abs(t.netPnl).toFixed(2);
+    const pnlStr=(t.isWin?'+':'')+'$'+Math.abs(t.netPnl).toFixed(2);
     const pnlCls=t.isWin?'p':'n';
-    const ep=t.entryPrice?'\$'+t.entryPrice.toFixed(2):'—';
-    return\`<div class="log-row">
-      <div class="log-bot">#\${t.botId}</div>
-      <div class="log-coin" style="color:\${t.isWin?'var(--green)':'var(--hot)'}">\${t.token}</div>
-      <div class="log-method">\${t.method}</div>
-      <div class="log-entry">\${ep}</div>
-      <div class="log-pnl \${pnlCls}">\${pnlStr}</div>
-      <div class="log-t">\${t.time}</div>
-    </div>\`;
+    const ep=t.entryPrice?'$'+t.entryPrice.toFixed(2):'—';
+    return `<div class="log-row">
+      <div class="log-bot">#${escapeHTML(t.botId)}</div>
+      <div class="log-coin" style="color:${t.isWin?'var(--green)':'var(--hot)'}">${escapeHTML(t.token)}</div>
+      <div class="log-method">${escapeHTML(t.method)}</div>
+      <div class="log-entry">${escapeHTML(ep)}</div>
+      <div class="log-pnl ${pnlCls}">${escapeHTML(pnlStr)}</div>
+      <div class="log-t">${escapeHTML(t.time)}</div>
+    </div>`;
   }).join('');
 }
 
