@@ -1246,14 +1246,39 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     <div class="cpanel-hd" id="taskHd" onclick="togglePanel('task')" style="background:linear-gradient(90deg,rgba(57,255,20,.06),transparent)" role="button" tabindex="0">
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:14px">📡</span>
-        <span class="cpanel-title" style="color:var(--green)">LIVE DEPLOYMENT MONITOR</span>
-        <span style="font-size:9px;color:var(--dim)">Real task queue</span>
+        <span class="cpanel-title" style="color:var(--green)">TASK CENTER & MARKETPLACE</span>
+        <span style="font-size:9px;color:var(--dim)" id="marketplaceEarning">Total Earned: 0 USDC</span>
       </div>
-      <span class="cpanel-toggle" id="taskToggle">▼ MONITOR</span>
+      <span class="cpanel-toggle" id="taskToggle">▼ EXPAND</span>
     </div>
     <div class="cpanel-body" id="taskBody">
-      <div id="cStatus" style="font-size:10px;color:var(--dim);margin-bottom:8px">Loading deployment queue…</div>
-      <div id="taskCenterRows"></div>
+      <!-- Task Center Tabs -->
+      <div style="display:flex; gap:4px; margin-bottom:12px; border-bottom:1px solid var(--border); padding-bottom:8px;">
+          <button class="bus-preset active" id="tab-internal" onclick="switchTaskTab('internal')">INTERNAL</button>
+          <button class="bus-preset" id="tab-identities" onclick="switchTaskTab('identities')">AGENT IDENTITIES</button>
+          <button class="bus-preset" id="tab-market" onclick="switchTaskTab('market')">MARKETPLACE</button>
+      </div>
+
+      <!-- Tab: Internal Monitor -->
+      <div id="task-tab-internal">
+          <div id="cStatus" style="font-size:10px;color:var(--dim);margin-bottom:8px">Loading deployment queue…</div>
+          <div id="taskCenterRows"></div>
+      </div>
+
+      <!-- Tab: Agent Identities -->
+      <div id="task-tab-identities" style="display:none">
+          <div style="font-size:9px; color:var(--dim); margin-bottom:10px;">Register your autonomous agents to earn USDC from external platforms.</div>
+          <div id="agentIdentityRows"></div>
+      </div>
+
+      <!-- Tab: Marketplace -->
+      <div id="task-tab-market" style="display:none">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <div style="font-size:9px; color:var(--dim);">External tasks available for registered agents.</div>
+              <button onclick="window.MARKETPLACE && window.MARKETPLACE.refreshTasks()" style="padding:2px 8px; background:var(--chrome); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-size:8px; cursor:pointer;">REFRESH</button>
+          </div>
+          <div id="marketplaceTaskRows"></div>
+      </div>
     </div>
   </div>
 
@@ -2646,6 +2671,153 @@ function togglePanel(name) {
   if(name==='task'&&isOpen){ if(typeof renderDeploymentMonitor === 'function') renderDeploymentMonitor(); if(typeof startDeploymentPolling === 'function') startDeploymentPolling(); }
   if(name==='staff'&&isOpen){ if(typeof renderStaffPanel === 'function') renderStaffPanel(); }
 }
+
+/**
+ * MARKETPLACE UI LOGIC
+ */
+function switchTaskTab(tab) {
+    ['internal', 'identities', 'market'].forEach(t => {
+        const content = document.getElementById(`task-tab-${t}`);
+        const btn = document.getElementById(`tab-${t}`);
+        if (content) content.style.display = (t === tab) ? 'block' : 'none';
+        if (btn) btn.classList.toggle('active', t === tab);
+    });
+
+    if (tab === 'identities') renderAgentIdentities();
+    if (tab === 'market') renderMarketplaceTasks();
+}
+
+function initMarketplaceUI() {
+    console.log('📡 Initializing Marketplace UI...');
+    // Initial render of identities
+    renderAgentIdentities();
+
+    // Periodically update earnings display
+    setInterval(() => {
+        if (window.MARKETPLACE) {
+            const el = document.getElementById('marketplaceEarning');
+            if (el) el.textContent = `Total Earned: ${window.MARKETPLACE.earnings.USDC} USDC`;
+        }
+    }, 5000);
+}
+
+function renderAgentIdentities() {
+    const container = document.getElementById('agentIdentityRows');
+    if (!container || !window.MARKETPLACE) return;
+
+    const statuses = window.MARKETPLACE.getIdentityStatus();
+    const AGENT_NAMES = { mom: 'Momentum', vol: 'Volatility', pol: 'Politician', sen: 'Sentiment', risk: 'Risk' };
+    const AGENT_ICONS = { mom: '🔥', vol: '🌀', pol: '🏛️', sen: '📊', risk: '🛡️' };
+
+    container.innerHTML = statuses.map(s => {
+        const name = AGENT_NAMES[s.id] || s.id;
+        const icon = AGENT_ICONS[s.id] || '🤖';
+        return `
+            <div style="background:var(--chrome); border:1px solid var(--border); border-radius:8px; padding:10px; margin-bottom:8px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="font-size:16px;">${icon}</span>
+                        <span style="font-family:'Bungee'; font-size:10px; color:white;">${escapeHTML(name.toUpperCase())} AGENT</span>
+                    </div>
+                    <div style="font-size:8px; color:var(--dim);">ID: ${escapeHTML(s.id.toUpperCase())}_001</div>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                    <!-- Superteam Portal -->
+                    <div style="background:rgba(0,0,0,0.2); padding:8px; border-radius:6px; border:1px solid ${s.superteam.registered ? 'var(--green)' : 'var(--border)'}">
+                        <div style="font-size:7px; color:var(--dim); text-transform:uppercase; margin-bottom:4px;">Superteam Earn</div>
+                        ${s.superteam.registered ?
+                            `<div style="color:var(--green); font-size:8px;">✅ REGISTERED</div>
+                             <div style="font-size:7px; color:var(--dim); margin-top:2px;">Key: ${escapeHTML(s.superteam.apiKey.slice(0,10))}...</div>` :
+                            `<button onclick="registerAgentUI(event, '${escapeHTML(s.id)}', 'superteam')" style="width:100%; padding:4px; background:var(--bg); border:1px solid var(--purple); color:var(--purple); border-radius:4px; font-size:8px; cursor:pointer;">REGISTER</button>`
+                        }
+                    </div>
+
+                    <!-- g0 Marketplace -->
+                    <div style="background:rgba(0,0,0,0.2); padding:8px; border-radius:6px; border:1px solid ${s.g0.registered ? 'var(--green)' : 'var(--border)'}">
+                        <div style="font-size:7px; color:var(--dim); text-transform:uppercase; margin-bottom:4px;">g0 Marketplace</div>
+                        ${s.g0.registered ?
+                            `<div style="display:flex; justify-content:space-between; align-items:center;">
+                                <div style="color:var(--green); font-size:8px;">✅ REGISTERED</div>
+                                <div style="font-size:8px; color:var(--gold);">$${s.g0.servicePrice.toFixed(2)}</div>
+                             </div>
+                             <div style="display:flex; gap:4px; margin-top:4px;">
+                                <input type="number" id="price-${escapeHTML(s.id)}" value="${s.g0.servicePrice}" step="1" style="width:30px; background:var(--bg); border:1px solid var(--border); color:white; font-size:7px; padding:2px;">
+                                <button onclick="updatePriceUI('${escapeHTML(s.id)}')" style="background:var(--chrome); border:1px solid var(--border); color:var(--dim); font-size:7px; padding:2px 4px; cursor:pointer;">SET</button>
+                             </div>` :
+                            `<button onclick="registerAgentUI(event, '${escapeHTML(s.id)}', 'g0')" style="width:100%; padding:4px; background:var(--bg); border:1px solid var(--cyan); color:var(--cyan); border-radius:4px; font-size:8px; cursor:pointer;">REGISTER</button>`
+                        }
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+async function registerAgentUI(event, agentId, marketplace) {
+    if (!window.MARKETPLACE) return;
+    const btn = event.currentTarget || event.target;
+    btn.textContent = 'PENDING...';
+    btn.disabled = true;
+
+    await window.MARKETPLACE.registerAgent(agentId, marketplace);
+    renderAgentIdentities();
+    if (window.showToast) window.showToast(`Agent registered on ${marketplace.toUpperCase()}`, 'success');
+}
+
+async function updatePriceUI(agentId) {
+    const input = document.getElementById(`price-${agentId}`);
+    if (!input || !window.MARKETPLACE) return;
+    const price = parseFloat(input.value);
+    await window.MARKETPLACE.setServicePrice(agentId, price);
+    renderAgentIdentities();
+    if (window.showToast) window.showToast(`Service price updated to $${price.toFixed(2)}`, 'info');
+}
+
+function renderMarketplaceTasks() {
+    const container = document.getElementById('marketplaceTaskRows');
+    if (!container || !window.MARKETPLACE) return;
+
+    const tasks = window.MARKETPLACE.availableTasks;
+    const activeTasks = window.MARKETPLACE.activeTasks;
+
+    if (tasks.length === 0) {
+        container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--dim); font-size:10px;">No external tasks currently available.</div>';
+        return;
+    }
+
+    container.innerHTML = tasks.map(t => {
+        const active = activeTasks.find(at => at.id === t.id);
+        const registered = window.MARKETPLACE.identities[t.category] && (window.MARKETPLACE.identities[t.category].g0?.registered || window.MARKETPLACE.identities[t.category].superteam?.registered);
+
+        return `
+            <div style="background:rgba(0,0,0,0.25); border:1px solid var(--border); border-left:3px solid ${t.provider === 'Superteam' ? 'var(--purple)' : 'var(--cyan)'}; border-radius:8px; padding:10px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                <div style="flex:1;">
+                    <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                        <span style="font-size:8px; padding:1px 6px; background:var(--chrome); border-radius:10px; color:var(--dim); border:1px solid var(--border);">${escapeHTML(t.provider.toUpperCase())}</span>
+                        <span style="font-size:8px; color:var(--dim);">Complexity: ${escapeHTML(t.complexity)}</span>
+                    </div>
+                    <div style="font-size:10px; color:white; font-weight:bold; margin-bottom:2px;">${escapeHTML(t.title)}</div>
+                    <div style="font-size:9px; color:var(--green);">${t.reward} ${escapeHTML(t.currency)}</div>
+                </div>
+
+                <div>
+                    ${active ?
+                        `<div style="font-size:8px; color:var(--amber); animation:gh-blink 1s infinite alternate;">PROCESSING...</div>` :
+                        registered ?
+                            `<button onclick="acceptTaskUI('${escapeHTML(t.category)}', '${escapeHTML(t.id)}')" style="padding:6px 12px; background:var(--chrome); border:1px solid var(--green); color:var(--green); border-radius:4px; font-family:'Bungee'; font-size:9px; cursor:pointer;">ACCEPT</button>` :
+                            `<div style="font-size:7px; color:var(--dim); text-align:center; max-width:60px;">Register ${escapeHTML(t.category.toUpperCase())} first</div>`
+                    }
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+async function acceptTaskUI(agentId, taskId) {
+    if (!window.MARKETPLACE) return;
+    await window.MARKETPLACE.processTask(agentId, taskId);
+}
 function updateBreakers() {
   gasHardCeiling=parseInt(document.getElementById('gasHard')?.value)||50;
   drawdownPct=parseInt(document.getElementById('drawdownPct')?.value)||10;
@@ -3071,6 +3243,7 @@ function setupApp({name,avatar,badge,address}){
       try{ if(typeof renderEloArena === 'function') renderEloArena(); }catch(e){}
       try{ if(typeof renderDeploymentMonitor === 'function') renderDeploymentMonitor(); }catch(e){}
       try{ if(typeof startDeploymentPolling === 'function') startDeploymentPolling(); }catch(e){}
+      try{ if(typeof initMarketplaceUI === 'function') initMarketplaceUI(); }catch(e){}
       try{ updateAuditSummaryBadge(); }catch(e){}
       try{ addBot(); }catch(e){ console.error('addBot:',e); }
       _startHeaderTicker();
@@ -5434,6 +5607,7 @@ document.addEventListener('keydown', function(e) {
 <script src="execution-engine.js" defer></script>
 <script src="elo-tournament-engine.js" defer></script>
 <script src="task-center.js" defer></script>
+<script src="marketplaces.js" defer></script>
 <script src="privy-client.js" defer></script>
 <script src="staff-engine.js" defer></script>
 <script src="gemini-voice-engine.js" defer></script>
