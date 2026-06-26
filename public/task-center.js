@@ -5,6 +5,19 @@
 
 const API_BASE = (location.protocol === 'https:' ? '' : 'http://localhost:3001');
 const DEPLOYMENT_POLL_INTERVAL = 4000;
+
+/**
+ * Helper to escape HTML and prevent XSS
+ */
+function escapeHTML(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
 let deploymentTimer = null;
 let latestDeployments = [];
 
@@ -91,7 +104,7 @@ function renderDeploymentMonitor() {
         const tx = dep.deposit?.payout?.txHash || dep.payout?.txHash;
         const status = dep.status || 'QUEUED';
         const statusColor = status === 'QUEUED' ? 'var(--amber)' : status === 'DEPLOYED' ? 'var(--green)' : 'var(--dim)';
-        const simNote = dep.deposit?.payout?.simulated ? ' (sim)' : tx ? ` tx:${tx.slice(0, 10)}...` : ' pending';
+        const simNote = dep.deposit?.payout?.simulated ? ' (sim)' : tx ? ` tx:${escapeHTML(tx.slice(0, 10))}...` : ' pending';
         const created = new Date(dep.created || dep.deposit?.confirmedAt).toLocaleTimeString();
 
         return `
@@ -99,15 +112,15 @@ function renderDeploymentMonitor() {
                 <div style="display:flex; align-items:center; gap:8px; justify-content:space-between">
                     <span style="font-size:16px">${srcIcon}</span>
                     <span style="font-size:9px; padding:2px 8px; border-radius:8px; background:${statusColor}; color:var(--bg); font-weight:bold; text-transform:uppercase">
-                        ${status}
+                        ${escapeHTML(status)}
                     </span>
                 </div>
                 <div style="font-size:11px; color:white">
-                    <strong>${src.toUpperCase()}</strong> · ${amt} ${currency}${simNote}
+                    <strong>${escapeHTML(src.toUpperCase())}</strong> · ${escapeHTML(amt)} ${escapeHTML(currency)}${simNote}
                 </div>
                 <div style="font-size:9px; color:var(--dim); display:flex; justify-content:space-between">
-                    <span>ID: ${dep.id?.slice(0, 10)}...</span>
-                    <span>${created}</span>
+                    <span>ID: ${escapeHTML(dep.id?.slice(0, 10))}...</span>
+                    <span>${escapeHTML(created)}</span>
                 </div>
             </div>
         `;
