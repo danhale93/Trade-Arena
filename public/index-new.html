@@ -283,6 +283,20 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 // ══════════════════════════════════════════════════════
 const ANTHROPIC_API_KEY = '';
 const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+
+/**
+ * Helper to escape HTML and prevent XSS
+ */
+function escapeHTML(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 function getApiKey(){ return window._userApiKey || ANTHROPIC_API_KEY || ''; }
 const MAX_BOTS = 6;
 
@@ -791,7 +805,7 @@ function renderAuditLog(){
   const el = document.getElementById('auditLog');
   if(!el) return;
   el.innerHTML = auditHistory.slice(0,40).map(e=>
-    \`<div class="al-entry \${e.type}"><span class="al-ts">\${e.ts}</span><span class="al-icon">•</span><span class="al-msg">\${e.msg}</span></div>\`
+    `<div class="al-entry ${escapeHTML(e.type)}"><span class="al-ts">${escapeHTML(e.ts)}</span><span class="al-icon">•</span><span class="al-msg">${escapeHTML(e.msg)}</span></div>`
   ).join('') || '<div class="al-entry audit"><span class="al-ts">—</span><span class="al-msg">System ready.</span></div>';
 }
 
