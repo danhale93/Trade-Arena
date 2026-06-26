@@ -4498,7 +4498,7 @@ function logLearn(msg, type = 'info') {
 function renderLearnLog() {
   const el = document.getElementById('learnLog'); if (!el) return;
   el.innerHTML = learningLog.slice(0, 30).map(e =>
-    `<div class="ll-entry ${e.type}">[${e.ts}] ${e.msg}</div>`
+    `<div class="ll-entry ${escapeHTML(e.type)}">[${escapeHTML(e.ts)}] ${escapeHTML(e.msg)}</div>`
   ).join('');
 }
 
