@@ -13,3 +13,7 @@
 ## 2026-06-23 - Production Ready: Live Mode & PayID
 Learning: Real-money trading requires explicit state visibility (Live vs Sim) and high-fidelity feedback (Progress bars, Tx links) to ensure user confidence during execution.
 Action: Implemented dual-mode trading system with real on-chain execution, batch progress monitoring, and AUD-optimized PayID onboarding.
+
+## 2026-06-26 - High-Frequency UI Data Processing
+**Learning:** In high-frequency drawing functions like those used for the Quant Report, patterns that allocate intermediate arrays (e.g., `Object.values().map()`) or use spread operators for mathematical reductions (`Math.max(...arr)`) create unnecessary memory pressure and garbage collection churn. Replacing these with single-pass manual loops significantly stabilizes scripting performance during active trading bursts.
+**Action:** Prefer manual `for` or `for...in` loops for finding extrema or aggregating data within periodic UI update functions, especially when processing objects or large telemetry arrays.

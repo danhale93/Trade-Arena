@@ -2232,8 +2232,19 @@ function drawBaselines(n, claudePnl, winRate, baselinePnls, baselineWins, claude
   }
 }
 
+/**
+ * ⚡ Bolt Optimization: Manual loop to find max absolute P&L.
+ * This avoids two intermediate array allocations (Object.values and .map)
+ * and eliminates spread operator overhead, improving performance as the number
+ * of strategies and closed trades grows.
+ */
 function drawStratBreakdown(byStrat) {
-  const maxAbs=Math.max(...Object.values(byStrat).map(d=>Math.abs(d.pnl)),0.01);
+  let maxAbs = 0.01;
+  for (const k in byStrat) {
+    if (!Object.prototype.hasOwnProperty.call(byStrat, k)) continue;
+    const abs = Math.abs(byStrat[k].pnl);
+    if (abs > maxAbs) maxAbs = abs;
+  }
   const el=document.getElementById('stratBreakdown');
   el.innerHTML=Object.entries(byStrat).sort((a,b)=>b[1].pnl-a[1].pnl).map(([name,d])=>{
     const wr=(d.wins/d.total*100).toFixed(0);
