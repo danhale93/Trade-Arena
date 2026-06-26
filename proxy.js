@@ -157,7 +157,8 @@ app.post('/api/maintenance/patch', async (req, res) => {
 
     res.json({ success: true, message: 'Patch received and logged for review' });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('[Sentinel] Patch Error:', error);
+    res.status(500).json({ error: 'Internal server error during patch processing' });
   }
 });
 

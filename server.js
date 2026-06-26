@@ -277,7 +277,8 @@ app.post('/api/maintenance/patch', async (req, res) => {
         console.log(`[Developer Agent] Patch requested for ${filepath}: ${description}`);
         res.json({ success: true, message: 'Patch received and logged for review' });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error('Patch error:', error);
+        res.status(500).json({ error: 'Internal server error during patch request' });
     }
 });
 
@@ -380,7 +381,8 @@ app.post('/api/faucet/claim', async (req, res) => {
         FAUCET_CLAIMED_IPS.add(ip);
         res.json({ success: true, deployment, amount: 50, payout });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        console.error('Faucet claim error:', error);
+        res.status(500).json({ success: false, error: 'Internal server error during faucet claim' });
     }
 });
 
@@ -406,7 +408,8 @@ app.post('/api/tasks/claim', async (req, res) => {
 
         res.json({ success: true, deployment, taskId, reward, payout });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        console.error('Task claim error:', error);
+        res.status(500).json({ success: false, error: 'Internal server error during task reward processing' });
     }
 });
 
@@ -494,7 +497,8 @@ app.post('/api/bot/create', async (req, res) => {
         };
         res.json({ success: true, bot });
     } catch (error) {
-        res.status(500).json({ success: true, bot: {} });
+        console.error('Bot creation error:', error);
+        res.status(500).json({ success: false, error: 'Internal server error during bot creation' });
     }
 });
 
@@ -519,7 +523,8 @@ app.post('/api/execute/swap', async (req, res) => {
         };
         res.json(result);
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        console.error('Swap execution error:', error);
+        res.status(500).json({ success: false, error: 'Internal server error during swap execution' });
     }
 });
 
