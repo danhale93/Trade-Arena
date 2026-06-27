@@ -4,13 +4,33 @@ const { ethers } = require('ethers');
 class PayoutService {
     constructor(config) {
         this.config = config;
-        this.oracleWallet = new ethers.Wallet(config.oraclePrivateKey);
+        this.oracleWallet = null;
+
+        if (config.oraclePrivateKey && config.oraclePrivateKey !== '0x...' && config.oraclePrivateKey.startsWith('0x')) {
+            try {
+                this.oracleWallet = new ethers.Wallet(config.oraclePrivateKey);
+                console.log(`[Payout] Oracle ready: ${this.oracleWallet.address}`);
+            } catch (e) {
+                console.warn(`[Payout] Invalid ORACLE_PRIVATE_KEY provided`);
+            }
+        } else {
+            console.log('[Payout] Running without ORACLE_PRIVATE_KEY (Simulation Mode)');
+        }
+
         this.rewardTokenAddress = config.rewardTokenAddress;
         this.payoutManagerAddress = config.payoutManagerAddress;
         this.chainId = config.chainId;
     }
 
+    isConfigured() {
+        return !!this.oracleWallet && !!this.payoutManagerAddress;
+    }
+
     async generatePayoutSignature(userAddress, taskId, amount, nonce) {
+        if (!this.oracleWallet) {
+            return "0x_simulated_signature";
+        }
+
         const domain = {
             name: 'PayoutManager',
             version: '1',

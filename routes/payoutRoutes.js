@@ -20,11 +20,27 @@ const payoutService = new PayoutService({
 router.post('/claim', payoutLimiter, async (req, res) => {
     try {
         const { userAddress, taskId, proofOfWork } = req.body;
+
+        if (!payoutService.isConfigured()) {
+            return res.status(503).json({
+                success: false,
+                message: "Payout system is currently in simulation mode (unconfigured)"
+            });
+        }
+
         const authPayload = await payoutService.authorizePayout(userAddress, taskId, proofOfWork);
         res.json({ success: true, data: authPayload });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
+});
+
+router.get('/status', (req, res) => {
+    res.json({
+        configured: payoutService.isConfigured(),
+        manager: process.env.PAYOUT_MANAGER_ADDRESS || null,
+        token: process.env.REWARD_TOKEN_ADDRESS || null
+    });
 });
 
 module.exports = router;

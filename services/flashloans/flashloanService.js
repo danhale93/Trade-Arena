@@ -5,11 +5,26 @@ class FlashloanService {
     constructor(config) {
         this.config = config;
         this.provider = new ethers.JsonRpcProvider(config.rpcUrl);
-        this.wallet = new ethers.Wallet(config.privateKey, this.provider);
+        this.wallet = null;
+
+        if (config.privateKey && config.privateKey !== '0x...' && config.privateKey.startsWith('0x')) {
+            try {
+                this.wallet = new ethers.Wallet(config.privateKey, this.provider);
+                console.log(`[Flashloan] Bot Operator ready: ${this.wallet.address}`);
+            } catch (e) {
+                console.warn(`[Flashloan] Invalid BOT_OPERATOR_PRIVATE_KEY provided`);
+            }
+        }
+
         this.arbitrageContractAddress = config.arbitrageContractAddress;
     }
 
+    isConfigured() {
+        return !!this.wallet && !!this.arbitrageContractAddress;
+    }
+
     async checkGasBalance(threshold = "0.05") {
+        if (!this.wallet) return true;
         const balance = await this.provider.getBalance(this.wallet.address);
         const ethBalance = ethers.formatEther(balance);
         if (parseFloat(ethBalance) < parseFloat(threshold)) {
@@ -26,6 +41,8 @@ class FlashloanService {
     }
 
     async simulateTransaction(token, amount, params) {
+        if (!this.wallet) return { success: true, simulated: true };
+
         const simulationPayload = {
             network_id: this.config.chainId.toString(),
             from: this.wallet.address,
