@@ -7,28 +7,42 @@ class FlashloanService {
         this.provider = new ethers.JsonRpcProvider(config.rpcUrl);
         this.wallet = null;
 
-        if (config.privateKey && config.privateKey !== '0x...' && config.privateKey.startsWith('0x')) {
+        const key = config.privateKey;
+        const isHex = (str) => {
+            if (typeof str !== 'string') return false;
+            const clean = str.startsWith('0x') ? str.slice(2) : str;
+            return clean.length === 64 && /^[0-9a-fA-F]+$/.test(clean);
+        };
+
+        if (isHex(key)) {
             try {
-                this.wallet = new ethers.Wallet(config.privateKey, this.provider);
-                console.log(`[Flashloan] Bot Operator ready: ${this.wallet.address}`);
+                this.wallet = new ethers.Wallet(key.startsWith('0x') ? key : '0x' + key, this.provider);
+                console.log(`[Flashloan] Bot Operator initialized successfully`);
             } catch (e) {
-                console.warn(`[Flashloan] Invalid BOT_OPERATOR_PRIVATE_KEY provided`);
+                console.warn(`[Flashloan] Failed to initialize wallet: ${e.message}`);
             }
+        } else {
+            console.log('[Flashloan] Running in Simulation Mode (No valid BOT_OPERATOR_PRIVATE_KEY)');
         }
 
         this.arbitrageContractAddress = config.arbitrageContractAddress;
     }
 
     isConfigured() {
-        return !!this.wallet && !!this.arbitrageContractAddress;
+        return !!this.wallet && !!this.arbitrageContractAddress && this.arbitrageContractAddress.startsWith('0x');
     }
 
     async checkGasBalance(threshold = "0.05") {
         if (!this.wallet) return true;
-        const balance = await this.provider.getBalance(this.wallet.address);
-        const ethBalance = ethers.formatEther(balance);
-        if (parseFloat(ethBalance) < parseFloat(threshold)) {
-            throw new Error(`Insufficient gas balance: ${ethBalance}`);
+        try {
+            const balance = await this.provider.getBalance(this.wallet.address);
+            const ethBalance = ethers.formatEther(balance);
+            if (parseFloat(ethBalance) < parseFloat(threshold)) {
+                throw new Error(`Insufficient gas balance: ${ethBalance}`);
+            }
+        } catch (e) {
+            console.error(`[Flashloan] Gas check failed: ${e.message}`);
+            return false;
         }
         return true;
     }

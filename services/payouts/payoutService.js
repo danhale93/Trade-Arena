@@ -6,15 +6,24 @@ class PayoutService {
         this.config = config;
         this.oracleWallet = null;
 
-        if (config.oraclePrivateKey && config.oraclePrivateKey !== '0x...' && config.oraclePrivateKey.startsWith('0x')) {
+        const key = config.oraclePrivateKey;
+
+        // Robust hex check: must be a string, 64 chars (66 with 0x), and only hex digits
+        const isHex = (str) => {
+            if (typeof str !== 'string') return false;
+            const clean = str.startsWith('0x') ? str.slice(2) : str;
+            return clean.length === 64 && /^[0-9a-fA-F]+$/.test(clean);
+        };
+
+        if (isHex(key)) {
             try {
-                this.oracleWallet = new ethers.Wallet(config.oraclePrivateKey);
-                console.log(`[Payout] Oracle ready: ${this.oracleWallet.address}`);
+                this.oracleWallet = new ethers.Wallet(key.startsWith('0x') ? key : '0x' + key);
+                console.log(`[Payout] Oracle initialized successfully`);
             } catch (e) {
-                console.warn(`[Payout] Invalid ORACLE_PRIVATE_KEY provided`);
+                console.warn(`[Payout] Failed to initialize wallet even after hex check: ${e.message}`);
             }
         } else {
-            console.log('[Payout] Running without ORACLE_PRIVATE_KEY (Simulation Mode)');
+            console.log('[Payout] Running in Simulation Mode (No valid ORACLE_PRIVATE_KEY)');
         }
 
         this.rewardTokenAddress = config.rewardTokenAddress;
@@ -23,7 +32,7 @@ class PayoutService {
     }
 
     isConfigured() {
-        return !!this.oracleWallet && !!this.payoutManagerAddress;
+        return !!this.oracleWallet && !!this.payoutManagerAddress && this.payoutManagerAddress.startsWith('0x');
     }
 
     async generatePayoutSignature(userAddress, taskId, amount, nonce) {
@@ -54,7 +63,7 @@ class PayoutService {
     async authorizePayout(userAddress, taskId, proofOfWork) {
         if (!proofOfWork) throw new Error('Invalid proof of work');
         const amount = ethers.parseUnits("10", 6);
-        const nonce = Date.now();
+        const nonce = BigInt(Date.now());
         const signature = await this.generatePayoutSignature(userAddress, taskId, amount, nonce);
 
         return { user: userAddress, taskId, amount: amount.toString(), nonce: nonce.toString(), signature };
