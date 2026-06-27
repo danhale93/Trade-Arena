@@ -600,6 +600,14 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 .ptc{position:fixed;pointer-events:none;z-index:8999;animation:pf 1.3s ease forwards}
 @keyframes pf{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(160px) rotate(720deg);opacity:0}}
 @keyframes pulse{0%{opacity:1;transform:scale(1)}50%{opacity:0.6;transform:scale(1.05)}100%{opacity:1;transform:scale(1)}}
+@keyframes highlight-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(0, 255, 231, 0.7); border-color: var(--cyan); }
+  70% { box-shadow: 0 0 0 15px rgba(0, 255, 231, 0); border-color: var(--cyan); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 255, 231, 0); }
+}
+.highlight-pulse {
+  animation: highlight-pulse 1.5s ease-out 2;
+}
 @media(max-width:640px){.bot-grid{grid-template-columns:1fr}}
 @media(min-width:641px) and (max-width:900px){.bot-grid{grid-template-columns:1fr 1fr}}
 @media(min-width:901px){.bot-grid{grid-template-columns:repeat(3,1fr)}}
@@ -854,7 +862,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
        <button class="gh-bus-btn" id="ghTaskBtn" onclick="togglePanel('task')" title="Earn Trade Credits" aria-expanded="false">💰 EARN</button>
        <button class="gh-bus-btn" id="ghEloBtn" onclick="togglePanel('elo')" title="ELO Arena - Recursive Improvement" aria-expanded="false">🏆 ARENA</button>
        <button class="gh-bus-btn" id="voiceAgentBtn" onclick="toggleVoiceAgent()" title="AI Floor Manager (Voice Chat)" aria-expanded="false">🎙️ AGENT</button>
-       <button class="gh-bus-btn" id="fleetViewBtn" onclick="toggleFleetView()" title="Toggle Fleet View (Compact Grid)">📊 FLEET</button>
+       <button class="gh-bus-btn" id="fleetViewBtn" onclick="toggleFleetView()" title="Toggle Fleet View (Compact Grid)" aria-pressed="false">📊 FLEET</button>
        <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots" aria-expanded="false">⚙ BUS</button>
        <button class="gh-auto-btn" id="liveToggleBtn" onclick="toggleLiveMode()" title="Toggle Live/Demo Mode" style="border-color:var(--gold2);color:var(--gold2)">DEMO</button>
        <button class="gh-auto-btn" id="ghAutoBtn" onclick="globalAutoToggle()" title="Toggle auto-trading on all bots" aria-pressed="false">AUTO</button>
@@ -1825,6 +1833,14 @@ async function openPosition(bot, decision, entryPrice, bet, volumeUsd, priceChan
   updateOpenCount();
   setTimeout(()=>checkExit(pos,bot), EXIT_TIMES[decision.method]);
   startLivePnlTicker(pos, bot);
+
+  // Sync Matrix Pad state
+  const pad = document.getElementById('pad-' + bot.id);
+  if (pad) {
+    pad.classList.remove('pad-hit', 'pad-miss');
+    pad.classList.add('pad-active');
+  }
+
   return pos;
 }
 
@@ -1968,6 +1984,17 @@ async function checkExit(pos, bot) {
 
   updateGlobalBalance(); updateBotPnl(bot); updateQuantReport(); updateOpenCount();
   showExitResult(pos,bot); addToLog(pos);
+
+  // Sync Matrix Pad state
+  const pad = document.getElementById('pad-' + bot.id);
+  if (pad) {
+    pad.classList.remove('pad-active');
+    pad.classList.add(pos.isWin ? 'pad-hit' : 'pad-miss');
+
+    // Update aria-label for accessibility
+    const agentId = String(bot.id).padStart(2, '0');
+    pad.setAttribute('aria-label', `Agent ${agentId}, P&L: $${bot.pnl.toFixed(2)}`);
+  }
 
   // ── ACOUSTIC CORE on trade close ──
   try {
@@ -3119,6 +3146,7 @@ function setupApp({name,avatar,badge,address}){
       try{ if(typeof startDeploymentPolling === 'function') startDeploymentPolling(); }catch(e){}
       try{ updateAuditSummaryBadge(); }catch(e){}
       try{ addBot(); }catch(e){ console.error('addBot:',e); }
+      try{ updateMatrix(); }catch(e){}
       _startHeaderTicker();
       _syncHeaderBotBtns();
       _injectAVControls();
@@ -3146,6 +3174,13 @@ function updateBotPnl(bot){
   const el=document.getElementById('mpnl-'+bot.id); if(!el) return;
   el.textContent=(bot.pnl>=0?'+':'')+'$'+bot.pnl.toFixed(2);
   el.className='m-pnl '+(bot.pnl>=0?'pos':'neg');
+
+  // Sync P&L on Matrix Pad
+  const padPnl = document.getElementById('pad-pnl-' + bot.id);
+  if (padPnl) {
+    padPnl.textContent = (bot.pnl >= 0 ? '+' : '') + '$' + bot.pnl.toFixed(2);
+    padPnl.className = 'pad-pnl ' + (bot.pnl >= 0 ? 'pnl-pos' : 'pnl-neg');
+  }
 }
 
 // ══════════════════════════════════════════════════════
@@ -3167,6 +3202,7 @@ function addBot(){
   };
   bots.push(bot); renderBot(bot);
   _syncHeaderBotBtns();
+  updateMatrix();
 }
 function removeBot(id){
   const bot=bots.find(b=>b.id===id);
@@ -3174,6 +3210,7 @@ function removeBot(id){
   bots=bots.filter(b=>b.id!==id);
   document.getElementById('bot-'+id)?.remove();
   _syncHeaderBotBtns();
+  updateMatrix();
 }
 function removeLastBot(){
   if(bots.length===0) return;
@@ -5079,6 +5116,62 @@ function renderLog(){
 // HELPERS
 // ══════════════════════════════════════════════════════
 function closeResult(id){ document.getElementById('mresult-'+id)?.classList.remove('show'); }
+
+/**
+ * Update Agent/Machine Matrix (Pad Grid)
+ */
+function updateMatrix() {
+  const grid = document.getElementById('padGrid');
+  if (!grid) return;
+
+  grid.innerHTML = bots.map((bot, i) => {
+    const agentId = String(bot.id).padStart(2, '0');
+    const pnl = bot.pnl || 0;
+    const pnlClass = pnl >= 0 ? 'pnl-pos' : 'pnl-neg';
+
+    // Determine current pad state based on open positions and bot history
+    const hasOpen = openPositions.some(p => p.botId === bot.id);
+    const lastTrade = bot.tradeHistory && bot.tradeHistory.length > 0 ? bot.tradeHistory[bot.tradeHistory.length - 1] : null;
+
+    let padState = '';
+    if (hasOpen) padState = 'pad-active';
+    else if (lastTrade) {
+        padState = pnl > 0 ? 'pad-hit' : pnl < 0 ? 'pad-miss' : '';
+    }
+
+    return `
+      <div class="pad ${padState}" id="pad-${bot.id}"
+           role="button" tabindex="0"
+           onclick="scrollToBot(${bot.id})"
+           onkeydown="if(event.key==='Enter'||event.key===' ') scrollToBot(${bot.id})"
+           aria-label="Agent ${agentId}, P&L: $${pnl.toFixed(2)}">
+        <span class="pad-agent-id">AG-${agentId}</span>
+        <span class="pad-pnl ${pnlClass}" id="pad-pnl-${bot.id}">${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}</span>
+      </div>`;
+  }).join('');
+
+  const count = document.getElementById('matrixCount');
+  if (count) count.textContent = bots.length + ' ACTIVE';
+}
+
+/**
+ * Smoothly scroll to a bot card and highlight it
+ */
+function scrollToBot(id) {
+  const el = document.getElementById('bot-' + id);
+  if (!el) return;
+
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+  // Apply highlight animation
+  el.classList.remove('highlight-pulse');
+  void el.offsetWidth; // Trigger reflow
+  el.classList.add('highlight-pulse');
+
+  // Play subtle tick
+  if (typeof SFX !== 'undefined') SFX.tick();
+}
+
 function setVal(id,v){ const e=document.getElementById(id); if(e && e.textContent !== String(v)) e.textContent=v; }
 function spawnParticles(win,botId){
   const syms=win?['💰','🪙','✨','💎','🔥']:['💀','📉','💸','😤','❌'];
