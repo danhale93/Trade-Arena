@@ -17,3 +17,11 @@
 ## 2026-06-22 - [Panel Navigation Affordance]
 **Learning:** In a multi-panel dashboard where top-level navigation buttons toggle collapsible sections, visual state synchronization is critical. Without an "active" class on the header button, users lose the relationship between the trigger and the content. Standardizing these triggers as semantic `<button>` elements with `aria-expanded` ensures both visual and assistive clarity.
 **Action:** Always map dashboard toggle buttons to their panel state using a shared logic (like `togglePanel`) that manages both the content visibility and the trigger's visual 'open' state.
+
+## 2026-06-26 - [ARIA State Synchronization for Mode Toggles]
+**Learning:** For mutually exclusive mode toggles (like "SIMULATED" vs "LIVE"), synchronizing the `aria-pressed` attribute across both buttons is essential. Screen readers rely on this attribute to communicate the current active state, which visual users see through CSS classes.
+**Action:** Always update `aria-pressed` on all related toggle buttons within the state change handler to ensure assistive technology remains in sync with the visual UI.
+
+## 2026-06-27 - [Dashboard Navigation via Status Matrix]
+**Learning:** In dashboards with many dynamic entities (like trading bots), a top-level status matrix provides an essential scannable overview. By implementing smooth navigation from the matrix to individual entities, we bridge the gap between "birds-eye" monitoring and detailed inspection. Ensuring these matrix elements are fully accessible (semantic roles, keyboard support) transforms a purely visual widget into a powerful navigation tool.
+**Action:** Always implement bidirectional synchronization between status overviews and detailed views, and use smooth scrolling with visual highlights to maintain user orientation during navigation.

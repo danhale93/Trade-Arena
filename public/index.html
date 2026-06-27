@@ -600,6 +600,14 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 .ptc{position:fixed;pointer-events:none;z-index:8999;animation:pf 1.3s ease forwards}
 @keyframes pf{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(160px) rotate(720deg);opacity:0}}
 @keyframes pulse{0%{opacity:1;transform:scale(1)}50%{opacity:0.6;transform:scale(1.05)}100%{opacity:1;transform:scale(1)}}
+@keyframes highlight-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(0, 255, 231, 0.7); border-color: var(--cyan); }
+  70% { box-shadow: 0 0 0 15px rgba(0, 255, 231, 0); border-color: var(--cyan); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 255, 231, 0); }
+}
+.highlight-pulse {
+  animation: highlight-pulse 1.5s ease-out 2;
+}
 @media(max-width:640px){.bot-grid{grid-template-columns:1fr}}
 @media(min-width:641px) and (max-width:900px){.bot-grid{grid-template-columns:1fr 1fr}}
 @media(min-width:901px){.bot-grid{grid-template-columns:repeat(3,1fr)}}
@@ -854,7 +862,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
        <button class="gh-bus-btn" id="ghTaskBtn" onclick="togglePanel('task')" title="Earn Trade Credits" aria-expanded="false">💰 EARN</button>
        <button class="gh-bus-btn" id="ghEloBtn" onclick="togglePanel('elo')" title="ELO Arena - Recursive Improvement" aria-expanded="false">🏆 ARENA</button>
        <button class="gh-bus-btn" id="voiceAgentBtn" onclick="toggleVoiceAgent()" title="AI Floor Manager (Voice Chat)" aria-expanded="false">🎙️ AGENT</button>
-       <button class="gh-bus-btn" id="fleetViewBtn" onclick="toggleFleetView()" title="Toggle Fleet View (Compact Grid)">📊 FLEET</button>
+       <button class="gh-bus-btn" id="fleetViewBtn" onclick="toggleFleetView()" title="Toggle Fleet View (Compact Grid)" aria-pressed="false">📊 FLEET</button>
        <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots" aria-expanded="false">⚙ BUS</button>
        <button class="gh-auto-btn" id="liveToggleBtn" onclick="toggleLiveMode()" title="Toggle Live/Demo Mode" style="border-color:var(--gold2);color:var(--gold2)">DEMO</button>
        <button class="gh-auto-btn" id="ghAutoBtn" onclick="globalAutoToggle()" title="Toggle auto-trading on all bots" aria-pressed="false">AUTO</button>
@@ -1334,8 +1342,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:8px;background:var(--chrome);border-radius:6px;border:1px solid var(--border);">
       <div style="font-family:'Bungee';font-size:10px;color:var(--dim)">TRADING MODE</div>
       <div style="display:flex;gap:4px">
-        <button id="simModeBtn" class="mode-btn active" onclick="switchTradingMode('sim')">SIMULATED</button>
-        <button id="liveModeBtn" class="mode-btn" onclick="switchTradingMode('live')">LIVE (BASE)</button>
+        <button id="simModeBtn" class="mode-btn active" onclick="switchTradingMode('sim')" aria-pressed="true">SIMULATED</button>
+        <button id="liveModeBtn" class="mode-btn" onclick="switchTradingMode('live')" aria-pressed="false">LIVE (BASE)</button>
       </div>
     </div>
     <div id="crucibleProgress" style="display:none;margin-top:10px;margin-bottom:10px;padding:10px;background:rgba(0,0,0,0.3);border-radius:6px;border:1px solid var(--border);">
@@ -1381,8 +1389,15 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
            showToast('Connect real wallet first!', 'error');
            return;
         }
-        document.getElementById('simModeBtn').classList.toggle('active', !isLive);
-        document.getElementById('liveModeBtn').classList.toggle('active', isLive);
+        const simBtn = document.getElementById('simModeBtn');
+        const liveBtn = document.getElementById('liveModeBtn');
+
+        simBtn.classList.toggle('active', !isLive);
+        simBtn.setAttribute('aria-pressed', (!isLive).toString());
+
+        liveBtn.classList.toggle('active', isLive);
+        liveBtn.setAttribute('aria-pressed', isLive.toString());
+
         if (typeof CrucibleRealTrading !== 'undefined') {
           CrucibleRealTrading.config.liveMode = isLive;
           showToast(`Mode switched to ${isLive ? 'LIVE' : 'SIMULATED'}`, 'info');
@@ -1843,6 +1858,14 @@ async function openPosition(bot, decision, entryPrice, bet, volumeUsd, priceChan
   updateOpenCount();
   setTimeout(()=>checkExit(pos,bot), EXIT_TIMES[decision.method]);
   startLivePnlTicker(pos, bot);
+
+  // Sync Matrix Pad state
+  const pad = document.getElementById('pad-' + bot.id);
+  if (pad) {
+    pad.classList.remove('pad-hit', 'pad-miss');
+    pad.classList.add('pad-active');
+  }
+
   return pos;
 }
 
@@ -1987,6 +2010,17 @@ async function checkExit(pos, bot) {
   updateGlobalBalance(); updateBotPnl(bot); updateQuantReport(); updateOpenCount();
   showExitResult(pos,bot); addToLog(pos);
 
+  // Sync Matrix Pad state
+  const pad = document.getElementById('pad-' + bot.id);
+  if (pad) {
+    pad.classList.remove('pad-active');
+    pad.classList.add(pos.isWin ? 'pad-hit' : 'pad-miss');
+
+    // Update aria-label for accessibility
+    const agentId = String(bot.id).padStart(2, '0');
+    pad.setAttribute('aria-label', `Agent ${agentId}, P&L: $${bot.pnl.toFixed(2)}`);
+  }
+
   // ── ACOUSTIC CORE on trade close ──
   try {
     const earlyReason = pos._earlyExitReason || '';
@@ -2076,8 +2110,40 @@ function updateQuantReport() {
   if (closedTrades.length === _lastClosedCount) return;
   _lastClosedCount = closedTrades.length;
 
-  const trades=closedTrades.filter(t=>t.method!=='HOLD');
-  const n=trades.length;
+  // ⚡ Bolt Optimization: Consolidate all O(N) passes into a single loop
+  let n = 0;
+  let winCount=0, lossCount=0, grossW=0, grossL=0, totalNetPnl=0, totalCosts=0;
+  const byStrat={}, baselinePnls={random:0,long:0,momentum:0}, baselineWins={random:0,long:0,momentum:0};
+  const returns=[];
+  let retMin = Infinity, retMax = -Infinity;
+
+  for (const t of closedTrades) {
+    if (t.method === 'HOLD') continue;
+    n++;
+    totalNetPnl += t.netPnl;
+    totalCosts += t.costs.total;
+    returns.push(t.netPnl);
+    if (t.netPnl < retMin) retMin = t.netPnl;
+    if (t.netPnl > retMax) retMax = t.netPnl;
+
+    if (t.isWin) { winCount++; grossW += t.netPnl; }
+    else { lossCount++; grossL += Math.abs(t.netPnl); }
+
+    if (!byStrat[t.method]) byStrat[t.method] = { wins:0, total:0, pnl:0 };
+    byStrat[t.method].total++;
+    byStrat[t.method].pnl += t.netPnl;
+    if (t.isWin) byStrat[t.method].wins++;
+
+    if (t.baselines) {
+      baselinePnls.random += (t.baselines.random || 0);
+      if (t.baselines.random > 0) baselineWins.random++;
+      baselinePnls.long += (t.baselines.long || 0);
+      if (t.baselines.long > 0) baselineWins.long++;
+      baselinePnls.momentum += (t.baselines.momentum || 0);
+      if (t.baselines.momentum > 0) baselineWins.momentum++;
+    }
+  }
+
   document.getElementById('qTradeCount').textContent=n+' closed trades';
 
   // Sig ladder
@@ -2091,38 +2157,23 @@ function updateQuantReport() {
 
   if(n===0) return;
 
-  // ⚡ Bolt Optimization: Consolidate O(N) passes into a single loop
-  let winCount=0, lossCount=0, grossW=0, grossL=0, totalNetPnl=0, totalCosts=0;
-  const byStrat={}, baselinePnls={random:0,long:0,momentum:0}, baselineWins={random:0,long:0,momentum:0};
-  const returns=[];
-
-  for (const t of trades) {
-    totalNetPnl += t.netPnl;
-    totalCosts += t.costs.total;
-    returns.push(t.netPnl);
-
-    if (t.isWin) { winCount++; grossW += t.netPnl; }
-    else { lossCount++; grossL += Math.abs(t.netPnl); }
-
-    if (!byStrat[t.method]) byStrat[t.method] = { wins:0, total:0, pnl:0 };
-    byStrat[t.method].total++;
-    byStrat[t.method].pnl += t.netPnl;
-    if (t.isWin) byStrat[t.method].wins++;
-
-    if (t.baselines) {
-      ['random','long','momentum'].forEach(k => {
-        baselinePnls[k] += (t.baselines[k] || 0);
-        if (t.baselines[k] > 0) baselineWins[k]++;
-      });
-    }
-  }
-
   const winRate=winCount/n;
   const pf=grossL>0?(grossW/grossL):grossW>0?99:0;
   const avgPnl=totalNetPnl/n;
   const avgW=winCount>0?grossW/winCount:0;
   const avgL=lossCount>0?grossL/lossCount:0;
-  const maxDD=computeMaxDrawdown();
+
+  // ⚡ Bolt Optimization: Single-pass O(N) for equity history metrics (min, max, drawdown)
+  let eqMin = Infinity, eqMax = -Infinity, peak = equityHistory[0] || startBalance, maxDD = 0;
+  for (let i = 0; i < equityHistory.length; i++) {
+    const v = equityHistory[i];
+    if (v < eqMin) eqMin = v;
+    if (v > eqMax) eqMax = v;
+    if (v > peak) peak = v;
+    const dd = peak - v;
+    if (dd > maxDD) maxDD = dd;
+  }
+  if (eqMin === Infinity) { eqMin = startBalance; eqMax = startBalance; }
 
   // Metric cards
   setMCard('mc-wr','mv-wr','ms-wr',(winRate*100).toFixed(1)+'%',winCount+'W / '+lossCount+'L',winRate>=0.5?'good':'bad');
@@ -2133,10 +2184,10 @@ function updateQuantReport() {
   setVal('mv-avgL',lossCount>0?'-$'+avgL.toFixed(2):'—');
   setVal('mv-open',openPositions.length);
 
-  drawEquityCurve();
+  drawEquityCurve(eqMin, eqMax);
   drawBaselines(n, totalNetPnl, winRate, baselinePnls, baselineWins, avgPnl);
   drawStratBreakdown(byStrat);
-  drawReturnDist(returns);
+  drawReturnDist(returns, retMin, retMax);
   drawCostSensitivity(totalNetPnl, totalCosts);
   drawVerdict(n, winRate, pf, avgPnl);
 }
@@ -2149,24 +2200,34 @@ function setMCard(cardId, valId, subId, val, sub, cls) {
   if(subId&&sub) setVal(subId,sub);
 }
 
-function computeMaxDrawdown() {
-  let peak=equityHistory[0]||startBalance, maxDD=0;
-  equityHistory.forEach(v=>{ if(v>peak) peak=v; const dd=peak-v; if(dd>maxDD) maxDD=dd; });
-  return maxDD;
-}
-
-function drawEquityCurve() {
+function drawEquityCurve(preMin, preMax) {
   const svg=document.getElementById('eqSvg');
   const line=document.getElementById('eqLine'); const fill=document.getElementById('eqFill');
   if(!svg||equityHistory.length<2) return;
   const W=svg.clientWidth||340, H=72;
-  const min=Math.min(...equityHistory), max=Math.max(...equityHistory);
+
+  // ⚡ Bolt Optimization: Use pre-calculated min/max or fallback to O(N) manual loop to avoid spread operator
+  let min = preMin, max = preMax;
+  if (min === undefined || max === undefined) {
+    min = Infinity; max = -Infinity;
+    for (let i = 0; i < equityHistory.length; i++) {
+      const v = equityHistory[i];
+      if (v < min) min = v;
+      if (v > max) max = v;
+    }
+  }
+
   const range=max-min||1;
-  const pts=equityHistory.map((v,i)=>{
-    const x=(i/(equityHistory.length-1))*W;
-    const y=H-((v-min)/range)*(H-6)-3;
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  }).join(' ');
+
+  // ⚡ Bolt Optimization: Manual loop for point generation to avoid intermediate array allocations
+  let pts = "";
+  const len = equityHistory.length;
+  for (let i = 0; i < len; i++) {
+    const v = equityHistory[i];
+    const x = (i / (len - 1)) * W;
+    const y = H - ((v - min) / range) * (H - 6) - 3;
+    pts += (i === 0 ? "" : " ") + x.toFixed(1) + "," + y.toFixed(1);
+  }
   line.setAttribute('points',pts); fill.setAttribute('points',pts+` ${W},${H} 0,${H}`);
   const isUp=equityHistory[equityHistory.length-1]>=startBalance;
   line.setAttribute('stroke',isUp?'var(--green)':'var(--hot)');
@@ -2223,25 +2284,47 @@ function drawBaselines(n, claudePnl, winRate, baselinePnls, baselineWins, claude
   }
 }
 
+/**
+ * ⚡ Bolt Optimization: Manual loop to find max absolute P&L.
+ * This avoids two intermediate array allocations (Object.values and .map)
+ * and eliminates spread operator overhead, improving performance as the number
+ * of strategies and closed trades grows.
+ */
 function drawStratBreakdown(byStrat) {
-  const maxAbs=Math.max(...Object.values(byStrat).map(d=>Math.abs(d.pnl)),0.01);
+  let maxAbs = 0.01;
+  for (const k in byStrat) {
+    if (!Object.prototype.hasOwnProperty.call(byStrat, k)) continue;
+    const abs = Math.abs(byStrat[k].pnl);
+    if (abs > maxAbs) maxAbs = abs;
+  }
   const el=document.getElementById('stratBreakdown');
   el.innerHTML=Object.entries(byStrat).sort((a,b)=>b[1].pnl-a[1].pnl).map(([name,d])=>{
     const wr=(d.wins/d.total*100).toFixed(0);
     const isPos=d.pnl>=0;
     const barW=(Math.abs(d.pnl)/maxAbs*100).toFixed(0);
     return `<div class="strat-row">
-      <div class="strat-name">${name}</div>
+      <div class="strat-name">${escapeHTML(name)}</div>
       <div class="strat-bar-wrap"><div class="strat-bar ${isPos?'pos':'neg'}" style="width:${barW}%"></div></div>
       <div class="strat-stat" style="color:${isPos?'var(--green)':'var(--hot)'}">${isPos?'+':''}$${d.pnl.toFixed(2)} · ${wr}% WR</div>
     </div>`;
   }).join('');
 }
 
-function drawReturnDist(returns) {
+function drawReturnDist(returns, preMin, preMax) {
   const n=returns.length;
   if(n<5) return;
-  const min=Math.min(...returns), max=Math.max(...returns);
+
+  // ⚡ Bolt Optimization: Use pre-calculated min/max or fallback to O(N) manual loop to avoid spread operator
+  let min = preMin, max = preMax;
+  if (min === undefined || max === undefined) {
+    min = Infinity; max = -Infinity;
+    for (let i = 0; i < n; i++) {
+      const r = returns[i];
+      if (r < min) min = r;
+      if (r > max) max = r;
+    }
+  }
+
   const bins=10, size=(max-min)/bins||1;
   const counts=Array(bins).fill(0);
   returns.forEach(r=>{ const i=Math.min(Math.floor((r-min)/size),bins-1); counts[i]++; });
@@ -3146,11 +3229,12 @@ async function loginCoinbase(){
       const a=await window.coinbaseWalletExtension.request({method:'eth_requestAccounts'});
       if(a&&a[0]){
         w=window.coinbaseWalletExtension;walletAddress=a[0];
-        s.innerHTML=`🔗 <a href="${etherscanBase}${walletAddress}" target="_blank" style="color:var(--accent)">${walletAddress.slice(0,6)}...${walletAddress.slice(-4)}</a><br>✅ Coinbase Wallet connected!`;
+        const safeAddr = escapeHTML(walletAddress);
+        s.innerHTML=`🔗 <a href="${etherscanBase}${safeAddr}" target="_blank" style="color:var(--accent)">${safeAddr.slice(0,6)}...${safeAddr.slice(-4)}</a><br>✅ Coinbase Wallet connected!`;
         if(p) p.classList.add('live');return;
       }
     }else{s.innerHTML='⚠️ Coinbase Wallet not found.<br><a href="https://www.coinbase.com/wallet" target="_blank" style="color:var(--hot)">Install Coinbase Wallet</a>';}
-  }catch(e){s.innerHTML='❌ '+e.message;console.error('Coinbase error:',e);}
+  }catch(e){s.innerHTML='❌ '+escapeHTML(e.message);console.error('Coinbase error:',e);}
 }
 
 
@@ -3187,7 +3271,7 @@ async function loginPayID() {
 
   } catch (e) {
     console.error('PayID Error:', e);
-    s.innerHTML = '❌ Onboarding failed: ' + (e.message || 'Unknown error');
+    s.innerHTML = '❌ Onboarding failed: ' + escapeHTML(e.message || 'Unknown error');
   }
 }
 
@@ -3246,6 +3330,7 @@ function setupApp({name,avatar,badge,address}){
       try{ if(typeof initMarketplaceUI === 'function') initMarketplaceUI(); }catch(e){}
       try{ updateAuditSummaryBadge(); }catch(e){}
       try{ addBot(); }catch(e){ console.error('addBot:',e); }
+      try{ updateMatrix(); }catch(e){}
       _startHeaderTicker();
       _syncHeaderBotBtns();
       _injectAVControls();
@@ -3273,6 +3358,13 @@ function updateBotPnl(bot){
   const el=document.getElementById('mpnl-'+bot.id); if(!el) return;
   el.textContent=(bot.pnl>=0?'+':'')+'$'+bot.pnl.toFixed(2);
   el.className='m-pnl '+(bot.pnl>=0?'pos':'neg');
+
+  // Sync P&L on Matrix Pad
+  const padPnl = document.getElementById('pad-pnl-' + bot.id);
+  if (padPnl) {
+    padPnl.textContent = (bot.pnl >= 0 ? '+' : '') + '$' + bot.pnl.toFixed(2);
+    padPnl.className = 'pad-pnl ' + (bot.pnl >= 0 ? 'pnl-pos' : 'pnl-neg');
+  }
 }
 
 // ══════════════════════════════════════════════════════
@@ -3294,6 +3386,7 @@ function addBot(){
   };
   bots.push(bot); renderBot(bot);
   _syncHeaderBotBtns();
+  updateMatrix();
 }
 function removeBot(id){
   const bot=bots.find(b=>b.id===id);
@@ -3301,6 +3394,7 @@ function removeBot(id){
   bots=bots.filter(b=>b.id!==id);
   document.getElementById('bot-'+id)?.remove();
   _syncHeaderBotBtns();
+  updateMatrix();
 }
 function removeLastBot(){
   if(bots.length===0) return;
@@ -4391,7 +4485,7 @@ function updateAgentPerfUI(){
     const col=wr>=0.55?'var(--green)':wr>=0.45?'var(--amber)':'var(--hot)';
     return`<div class="ep-agent-row">
       <div class="ep-agent-icon">${ICONS[a.key]||'🤖'}</div>
-      <div class="ep-agent-name" style="text-transform:capitalize">${a.key}</div>
+      <div class="ep-agent-name" style="text-transform:capitalize">${escapeHTML(a.key)}</div>
       <div class="ep-agent-bar-wrap"><div class="ep-agent-bar" style="width:${(wr*100).toFixed(0)}%;background:${col}"></div></div>
       <div class="ep-agent-stat" style="color:${col}">${(wr*100).toFixed(0)}% WR · ${a.total}t</div>
     </div>`;
@@ -4671,7 +4765,7 @@ function logLearn(msg, type = 'info') {
 function renderLearnLog() {
   const el = document.getElementById('learnLog'); if (!el) return;
   el.innerHTML = learningLog.slice(0, 30).map(e =>
-    `<div class="ll-entry ${e.type}">[${e.ts}] ${e.msg}</div>`
+    `<div class="ll-entry ${escapeHTML(e.type)}">[${escapeHTML(e.ts)}] ${escapeHTML(e.msg)}</div>`
   ).join('');
 }
 
@@ -5057,7 +5151,7 @@ function logAudit(msg, type = 'audit') {
 function renderAuditLog() {
   const el = document.getElementById('auditLog'); if (!el) return;
   el.innerHTML = auditHistory.slice(0, 40).map(e =>
-    `<div class="al-entry ${e.type}"><span class="al-ts">${e.ts}</span><span class="al-msg">${e.msg}</span></div>`
+    `<div class="al-entry ${escapeHTML(e.type)}"><span class="al-ts">${escapeHTML(e.ts)}</span><span class="al-msg">${escapeHTML(e.msg)}</span></div>`
   ).join('') || '<div class="al-entry audit"><span class="al-ts">—</span><span class="al-msg">No audits yet.</span></div>';
 }
 
@@ -5187,17 +5281,17 @@ function renderLog(){
     const pnlCls=isOpen?'open':isHold?'h':t.isWin?'p':'n';
     const ep=t.entryPrice?'\$'+t.entryPrice.toFixed(t.entryPrice<1?5:2):'—';
     const xp=t.exitPrice?'\$'+t.exitPrice.toFixed(t.exitPrice<1?5:2):(isOpen?'⏳':'—');
-    const txLink = t.txHash ? `<a href="${REAL_WALLET_CONFIG.network.explorerUrl}/tx/${t.txHash}" target="_blank" style="text-decoration:none;color:var(--cyan);font-size:8px;margin-left:4px">🔗</a>` : "";
+    const txLink = t.txHash ? `<a href="${escapeHTML(REAL_WALLET_CONFIG.network.explorerUrl)}/tx/${escapeHTML(t.txHash)}" target="_blank" style="text-decoration:none;color:var(--cyan);font-size:8px;margin-left:4px">🔗</a>` : "";
     const cost=t.costs?.total?'-\$'+t.costs.total.toFixed(2):'';
     return`<div class="log-row">
-      <div class="log-bot">#${t.botId}</div>
-      <div class="log-coin" style="color:${isOpen?'var(--blue)':isHold?'var(--amber)':t.isWin?'var(--green)':'var(--hot)'}">${t.token}</div>
-      <div class="log-method">${t.method}</div>
+      <div class="log-bot">#${escapeHTML(t.botId)}</div>
+      <div class="log-coin" style="color:${isOpen?'var(--blue)':isHold?'var(--amber)':t.isWin?'var(--green)':'var(--hot)'}">${escapeHTML(t.token)}</div>
+      <div class="log-method">${escapeHTML(t.method)}</div>
       <div class="log-entry">${ep}</div>
       <div class="log-exit">${xp}${txLink}</div>
       <div class="log-pnl ${pnlCls}">${pnlStr}</div>
       <div class="log-cost">${cost}</div>
-      <div class="log-t">${t.time}</div>
+      <div class="log-t">${escapeHTML(t.time)}</div>
     </div>`;
   }).join('');
 }
@@ -5206,6 +5300,62 @@ function renderLog(){
 // HELPERS
 // ══════════════════════════════════════════════════════
 function closeResult(id){ document.getElementById('mresult-'+id)?.classList.remove('show'); }
+
+/**
+ * Update Agent/Machine Matrix (Pad Grid)
+ */
+function updateMatrix() {
+  const grid = document.getElementById('padGrid');
+  if (!grid) return;
+
+  grid.innerHTML = bots.map((bot, i) => {
+    const agentId = String(bot.id).padStart(2, '0');
+    const pnl = bot.pnl || 0;
+    const pnlClass = pnl >= 0 ? 'pnl-pos' : 'pnl-neg';
+
+    // Determine current pad state based on open positions and bot history
+    const hasOpen = openPositions.some(p => p.botId === bot.id);
+    const lastTrade = bot.tradeHistory && bot.tradeHistory.length > 0 ? bot.tradeHistory[bot.tradeHistory.length - 1] : null;
+
+    let padState = '';
+    if (hasOpen) padState = 'pad-active';
+    else if (lastTrade) {
+        padState = pnl > 0 ? 'pad-hit' : pnl < 0 ? 'pad-miss' : '';
+    }
+
+    return `
+      <div class="pad ${padState}" id="pad-${bot.id}"
+           role="button" tabindex="0"
+           onclick="scrollToBot(${bot.id})"
+           onkeydown="if(event.key==='Enter'||event.key===' ') scrollToBot(${bot.id})"
+           aria-label="Agent ${agentId}, P&L: $${pnl.toFixed(2)}">
+        <span class="pad-agent-id">AG-${agentId}</span>
+        <span class="pad-pnl ${pnlClass}" id="pad-pnl-${bot.id}">${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}</span>
+      </div>`;
+  }).join('');
+
+  const count = document.getElementById('matrixCount');
+  if (count) count.textContent = bots.length + ' ACTIVE';
+}
+
+/**
+ * Smoothly scroll to a bot card and highlight it
+ */
+function scrollToBot(id) {
+  const el = document.getElementById('bot-' + id);
+  if (!el) return;
+
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+  // Apply highlight animation
+  el.classList.remove('highlight-pulse');
+  void el.offsetWidth; // Trigger reflow
+  el.classList.add('highlight-pulse');
+
+  // Play subtle tick
+  if (typeof SFX !== 'undefined') SFX.tick();
+}
+
 function setVal(id,v){ const e=document.getElementById(id); if(e && e.textContent !== String(v)) e.textContent=v; }
 function spawnParticles(win,botId){
   const syms=win?['💰','🪙','✨','💎','🔥']:['💀','📉','💸','😤','❌'];
