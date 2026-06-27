@@ -4,13 +4,26 @@ const { ethers } = require('ethers');
 class PayoutService {
     constructor(config) {
         this.config = config;
-        this.oracleWallet = new ethers.Wallet(config.oraclePrivateKey);
+        this.oracleWallet = null;
+        try {
+            if (config.oraclePrivateKey) {
+                this.oracleWallet = new ethers.Wallet(config.oraclePrivateKey);
+                console.log(`[PayoutService] Oracle wallet initialized: ${this.oracleWallet.address}`);
+            } else {
+                console.warn('[PayoutService] No oraclePrivateKey provided. Signature generation will be disabled.');
+            }
+        } catch (error) {
+            console.error('[PayoutService] Failed to initialize oracle wallet:', error.message);
+        }
         this.rewardTokenAddress = config.rewardTokenAddress;
         this.payoutManagerAddress = config.payoutManagerAddress;
         this.chainId = config.chainId;
     }
 
     async generatePayoutSignature(userAddress, taskId, amount, nonce) {
+        if (!this.oracleWallet) {
+            throw new Error('Oracle wallet not configured');
+        }
         const domain = {
             name: 'PayoutManager',
             version: '1',
