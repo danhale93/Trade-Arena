@@ -41,7 +41,6 @@
   opacity:0.9!important;
   background:rgba(0,255,231,.02)!important
 }
-#advancedSettings{display:none!important}
 .advanced-toggle{
   display:block!important;
   text-align:center!important;
@@ -2733,6 +2732,7 @@ function downloadFile(content, filename, type) {
 // CIRCUIT BREAKERS
 // ══════════════════════════════════════════════════════
 function togglePanel(name) {
+  if(typeof SFX !== 'undefined') SFX.tick();
   const bodyId=name+'Body', hdId=name+'Hd', toggleId=name+'Toggle';
   const body=document.getElementById(bodyId), toggle=document.getElementById(toggleId), hd=document.getElementById(hdId);
   if(!body||!toggle) return;
@@ -2748,7 +2748,7 @@ function togglePanel(name) {
     ghBtn.setAttribute('aria-expanded', isOpen);
   }
 
-  toggle.textContent=isOpen?'▴ HIDE':'▼ '+(name==='quant'?'EXPAND':'CONFIGURE');
+  toggle.textContent=isOpen?'▴ HIDE':'▼ '+(name==='breaker'?'CONFIGURE':'EXPAND');
   if(name==='quant'&&isOpen){ updateQuantReport(); setTimeout(drawEquityCurve,50); }
   if(name==='elo'&&isOpen){ if(typeof renderEloArena === 'function') renderEloArena(); }
   if(name==='task'&&isOpen){ if(typeof renderDeploymentMonitor === 'function') renderDeploymentMonitor(); if(typeof startDeploymentPolling === 'function') startDeploymentPolling(); }
@@ -3413,6 +3413,7 @@ function _syncHeaderBotBtns(){
 // ── Global auto toggle ──
 let _ghAutoOn=false;
 function globalAutoToggle(){
+  if(typeof SFX !== 'undefined') SFX.tick();
   _ghAutoOn=!_ghAutoOn;
   bots.forEach(b=>{
     if(_ghAutoOn===b.auto) return; // already in target state
@@ -4839,6 +4840,7 @@ function renderRegimeTable() {
 
 // ── UI toggles ──
 function toggleLearn() {
+  if(typeof SFX !== 'undefined') SFX.tick();
   const body = document.getElementById('learnBody');
   const hd = document.getElementById('learnHd');
   const toggle = document.getElementById('learnToggle');
@@ -5156,6 +5158,7 @@ function renderAuditLog() {
 }
 
 function toggleAudit() {
+  if(typeof SFX !== 'undefined') SFX.tick();
   const body = document.getElementById('auditBody');
   const hd = document.getElementById('auditHd');
   const toggle = document.getElementById('auditToggle');
@@ -5390,6 +5393,7 @@ setInterval(function(){
 const PERSONALITIES = ['AGGRESSIVE','CONSERVATIVE','MOMENTUM','CONTRARIAN','BALANCED'];
 
 function toggleFleetView() {
+  if(typeof SFX !== 'undefined') SFX.tick();
   const grid = document.getElementById('botGrid');
   const btn = document.getElementById('fleetViewBtn');
   if (!grid) return;
@@ -5401,6 +5405,7 @@ function toggleFleetView() {
 }
 
 function toggleBusPanel() {
+  if(typeof SFX !== 'undefined') SFX.tick();
   const panel = document.getElementById('busPanel');
   const btn   = document.getElementById('ghBusBtn');
   if (!panel) return;
@@ -5798,6 +5803,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script>
 function toggleVoiceAgent() {
+  if(typeof SFX !== 'undefined') SFX.tick();
   const modal = document.getElementById('voiceAgentModal');
   const btn = document.getElementById('voiceAgentBtn');
   if (!modal) return;
