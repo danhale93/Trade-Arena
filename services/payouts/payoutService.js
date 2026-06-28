@@ -6,9 +6,9 @@ class PayoutService {
         this.config = config;
         this.oracleWallet = null;
 
-        const key = config.oraclePrivateKey;
+        // Fallback to PAYOUT_PRIVATE_KEY if ORACLE_PRIVATE_KEY is missing
+        const key = config.oraclePrivateKey || process.env.PAYOUT_PRIVATE_KEY;
 
-        // Robust hex check: must be a string, 64 chars (66 with 0x), and only hex digits
         const isHex = (str) => {
             if (typeof str !== 'string') return false;
             const clean = str.startsWith('0x') ? str.slice(2) : str;
@@ -18,17 +18,17 @@ class PayoutService {
         if (isHex(key)) {
             try {
                 this.oracleWallet = new ethers.Wallet(key.startsWith('0x') ? key : '0x' + key);
-                console.log(`[Payout] Oracle initialized successfully`);
+                console.log(`[Payout] Oracle initialized using ${config.oraclePrivateKey ? 'ORACLE' : 'PAYOUT'}_PRIVATE_KEY`);
             } catch (e) {
-                console.warn(`[Payout] Failed to initialize wallet even after hex check: ${e.message}`);
+                console.warn(`[Payout] Failed to initialize wallet: ${e.message}`);
             }
         } else {
-            console.log('[Payout] Running in Simulation Mode (No valid ORACLE_PRIVATE_KEY)');
+            console.log('[Payout] Running in Simulation Mode (No valid Private Key)');
         }
 
-        this.rewardTokenAddress = config.rewardTokenAddress;
+        this.rewardTokenAddress = config.rewardTokenAddress || '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'; // Default to USDC on Base
         this.payoutManagerAddress = config.payoutManagerAddress;
-        this.chainId = config.chainId;
+        this.chainId = config.chainId || 8453;
     }
 
     isConfigured() {

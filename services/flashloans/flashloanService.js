@@ -4,10 +4,12 @@ const axios = require('axios');
 class FlashloanService {
     constructor(config) {
         this.config = config;
-        this.provider = new ethers.JsonRpcProvider(config.rpcUrl);
+        this.provider = new ethers.JsonRpcProvider(config.rpcUrl || process.env.RPC_URL || 'https://mainnet.base.org');
         this.wallet = null;
 
-        const key = config.privateKey;
+        // Fallback to PAYOUT_PRIVATE_KEY if BOT_OPERATOR_PRIVATE_KEY is missing
+        const key = config.privateKey || process.env.PAYOUT_PRIVATE_KEY;
+
         const isHex = (str) => {
             if (typeof str !== 'string') return false;
             const clean = str.startsWith('0x') ? str.slice(2) : str;
@@ -17,12 +19,12 @@ class FlashloanService {
         if (isHex(key)) {
             try {
                 this.wallet = new ethers.Wallet(key.startsWith('0x') ? key : '0x' + key, this.provider);
-                console.log(`[Flashloan] Bot Operator initialized successfully`);
+                console.log(`[Flashloan] Bot Operator initialized using ${config.privateKey ? 'BOT_OPERATOR' : 'PAYOUT'}_PRIVATE_KEY`);
             } catch (e) {
                 console.warn(`[Flashloan] Failed to initialize wallet: ${e.message}`);
             }
         } else {
-            console.log('[Flashloan] Running in Simulation Mode (No valid BOT_OPERATOR_PRIVATE_KEY)');
+            console.log('[Flashloan] Running in Simulation Mode (No valid Private Key)');
         }
 
         this.arbitrageContractAddress = config.arbitrageContractAddress;
@@ -55,7 +57,7 @@ class FlashloanService {
     }
 
     async simulateTransaction(token, amount, params) {
-        if (!this.wallet) return { success: true, simulated: true };
+        if (!this.wallet) return { status: false, error: "Simulation mode active" };
 
         const simulationPayload = {
             network_id: this.config.chainId.toString(),

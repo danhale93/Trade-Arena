@@ -16,6 +16,7 @@ const WebSocket = require('websocket').w3cwebsocket;
 
 const app = express();
 const payoutRoutes = require("./routes/payoutRoutes");
+const flashloanRoutes = require("./routes/flashloanRoutes");
 const PORT = process.env.PORT || 3001;
 
 /**
@@ -57,6 +58,7 @@ app.use((req, res, next) => {
 // Sentinel: Limit JSON payload size to prevent DoS attacks
 app.use(express.json({ limit: '100kb' }));
 app.use("/api/v1/payouts", payoutRoutes);
+app.use("/api/v1/flashloans", flashloanRoutes);
 
 // Security: Use a more restrictive CORS policy
 const allowedOrigin = process.env.ALLOWED_ORIGIN;

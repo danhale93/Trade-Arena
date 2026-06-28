@@ -11,6 +11,7 @@ const requiredFiles = [
     'services/payouts/biconomyNexus.js',
     'services/flashloans/flashloanService.js',
     'routes/payoutRoutes.js',
+    'routes/flashloanRoutes.js',
     '.env.example',
     'contracts/foundry.toml'
 ];
@@ -22,10 +23,10 @@ requiredFiles.forEach(file => {
     }
 });
 
-console.log("Checking for PayoutManager server integration...");
+console.log("Checking for PayoutManager and Flashloan routes integration...");
 const serverContent = fs.readFileSync('server.js', 'utf8');
-if (!serverContent.includes('payoutRoutes') || !serverContent.includes('/api/v1/payouts')) {
-    console.error("CRITICAL: payoutRoutes not correctly integrated in server.js");
+if (!serverContent.includes('payoutRoutes') || !serverContent.includes('flashloanRoutes')) {
+    console.error("CRITICAL: Routes not correctly integrated in server.js");
     process.exit(1);
 }
 
