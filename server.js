@@ -17,6 +17,8 @@ const WebSocket = require('websocket').w3cwebsocket;
 const app = express();
 const payoutRoutes = require("./routes/payoutRoutes");
 const flashloanRoutes = require("./routes/flashloanRoutes");
+const ArbitrageMonitor = require("./services/flashloans/arbitrageMonitor");
+const FlashloanService = require("./services/flashloans/flashloanService");
 const PORT = process.env.PORT || 3001;
 
 /**
@@ -575,6 +577,17 @@ function generateBotConfig(strategy, riskLevel) {
 function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
+
+// Initialize Background Arbitrage Monitor
+const flashService = new FlashloanService({
+    privateKey: process.env.BOT_OPERATOR_PRIVATE_KEY,
+    arbitrageContractAddress: process.env.FLASHLOAN_ARBITRAGE_ADDRESS,
+    tenderlyUser: process.env.TENDERLY_USER,
+    tenderlyProject: process.env.TENDERLY_PROJECT,
+    tenderlyKey: process.env.TENDERLY_KEY
+});
+const monitor = new ArbitrageMonitor({}, flashService);
+monitor.start();
 
 app.listen(PORT, () => {
     console.log(`🚀 Trade Arena Server running on port ${PORT}`);

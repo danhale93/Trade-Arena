@@ -6,9 +6,6 @@
 const API_BASE = (location.protocol === 'https:' ? '' : 'http://localhost:3001');
 const DEPLOYMENT_POLL_INTERVAL = 4000;
 
-/**
- * Helper to escape HTML and prevent XSS
- */
 function escapeHTML(str) {
     if (!str) return '';
     return String(str)
@@ -18,6 +15,7 @@ function escapeHTML(str) {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
 }
+
 let deploymentTimer = null;
 let latestDeployments = [];
 
@@ -55,12 +53,26 @@ function stopDeploymentPolling() {
 }
 
 async function claimFaucet() {
+    const isLive = document.getElementById('liveModeBtn')?.classList.contains('active');
+    const endpoint = isLive ? '/api/v1/payouts/claim' : '/api/faucet/claim';
+
     try {
-        await fetch(`${API_BASE}/api/faucet/claim`, {
+        const payload = {
+            userAddress: window.ethereum?.selectedAddress || 'demo',
+            taskId: 'faucet-claim',
+            proofOfWork: 'verified-captcha'
+        };
+
+        const resp = await fetch(`${API_BASE}${endpoint}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userAddress: window.ethereum?.selectedAddress || 'demo' })
+            body: JSON.stringify(payload)
         });
+
+        const result = await resp.json();
+        if (result.success) {
+            showToast(isLive ? 'Gasless reward authorized!' : 'Faucet claimed!', 'success');
+        }
         fetchDeployments();
     } catch (e) {
         console.error('[Monitor] Faucet claim failed:', e);
@@ -68,16 +80,27 @@ async function claimFaucet() {
 }
 
 async function completeTask(taskId) {
+    const isLive = document.getElementById('liveModeBtn')?.classList.contains('active');
+    const endpoint = isLive ? '/api/v1/payouts/claim' : '/api/tasks/claim';
+
     try {
-        await fetch(`${API_BASE}/api/tasks/claim`, {
+        const payload = {
+            taskId,
+            reward: 10,
+            userAddress: window.ethereum?.selectedAddress || 'demo',
+            proofOfWork: 'task-completed-signature'
+        };
+
+        const resp = await fetch(`${API_BASE}${endpoint}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                taskId,
-                reward: 0,
-                userAddress: window.ethereum?.selectedAddress || 'demo'
-            })
+            body: JSON.stringify(payload)
         });
+
+        const result = await resp.json();
+        if (result.success) {
+            showToast(isLive ? 'Micro-task payout authorized!' : 'Task completed!', 'success');
+        }
         fetchDeployments();
     } catch (e) {
         console.error('[Monitor] Task claim failed:', e);
@@ -133,7 +156,6 @@ function renderDeploymentMonitor() {
     `;
 }
 
-// Export
 window.claimFaucet = claimFaucet;
 window.completeTask = completeTask;
 window.startDeploymentPolling = startDeploymentPolling;
@@ -141,13 +163,8 @@ window.stopDeploymentPolling = stopDeploymentPolling;
 window.fetchDeployments = fetchDeployments;
 window.renderDeploymentMonitor = renderDeploymentMonitor;
 window.latestDeployments = latestDeployments;
-
-// Init
-
-// Export to window for bot auto-onboarding
 window.taskState = taskState;
 
-// Start polling immediately after load (outside setupApp timing issues)
 setTimeout(() => {
     if (typeof startDeploymentPolling === 'function') {
         startDeploymentPolling();
