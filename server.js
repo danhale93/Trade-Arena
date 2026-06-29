@@ -11,10 +11,16 @@ const axios = require('axios');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-// const rateLimit = require('express-rate-limit');
+const rateLimit = require('express-rate-limit');
 const WebSocket = require('websocket').w3cwebsocket;
 
 const app = express();
+const maintenanceLogLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 30,
+    standardHeaders: true,
+    legacyHeaders: false
+});
 const payoutRoutes = require("./routes/payoutRoutes");
 const { loadUsers, saveUsers } = require('./user_persistence');
 const PORT = process.env.PORT || 3001;
@@ -241,7 +247,7 @@ app.post('/api/gemini', async (req, res) => {
  * MAINTENANCE & LOGGING
  */
 
-app.post('/api/maintenance/log', (req, res) => {
+app.post('/api/maintenance/log', maintenanceLogLimiter, (req, res) => {
     const { agent, message, level } = req.body;
     if (!agent || !message) return res.status(400).json({ error: 'Missing agent or message' });
 
