@@ -598,6 +598,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 .empty-log{font-size:10px;color:var(--dim);text-align:center;padding:14px;border:1px dashed var(--border);border-radius:6px}
 .ptc{position:fixed;pointer-events:none;z-index:8999;animation:pf 1.3s ease forwards}
 @keyframes pf{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(160px) rotate(720deg);opacity:0}}
+/* Toast animations used by showToast() */
+@keyframes toastFadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes toastFadeOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-20px)}}
 @keyframes pulse{0%{opacity:1;transform:scale(1)}50%{opacity:0.6;transform:scale(1.05)}100%{opacity:1;transform:scale(1)}}
 @keyframes highlight-pulse {
   0% { box-shadow: 0 0 0 0 rgba(0, 255, 231, 0.7); border-color: var(--cyan); }
@@ -1260,26 +1263,26 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     </div>
     <div class="cpanel-body" id="taskBody">
       <!-- Task Center Tabs -->
-      <div style="display:flex; gap:4px; margin-bottom:12px; border-bottom:1px solid var(--border); padding-bottom:8px;">
-          <button class="bus-preset active" id="tab-internal" onclick="switchTaskTab('internal')">INTERNAL</button>
-          <button class="bus-preset" id="tab-identities" onclick="switchTaskTab('identities')">AGENT IDENTITIES</button>
-          <button class="bus-preset" id="tab-market" onclick="switchTaskTab('market')">MARKETPLACE</button>
+      <div role="tablist" style="display:flex; gap:4px; margin-bottom:12px; border-bottom:1px solid var(--border); padding-bottom:8px;">
+          <button role="tab" class="bus-preset active" id="tab-internal" onclick="switchTaskTab('internal')" aria-selected="true" aria-controls="task-tab-internal">INTERNAL</button>
+          <button role="tab" class="bus-preset" id="tab-identities" onclick="switchTaskTab('identities')" aria-selected="false" aria-controls="task-tab-identities">AGENT IDENTITIES</button>
+          <button role="tab" class="bus-preset" id="tab-market" onclick="switchTaskTab('market')" aria-selected="false" aria-controls="task-tab-market">MARKETPLACE</button>
       </div>
 
       <!-- Tab: Internal Monitor -->
-      <div id="task-tab-internal">
+      <div id="task-tab-internal" role="tabpanel" aria-labelledby="tab-internal">
           <div id="cStatus" style="font-size:10px;color:var(--dim);margin-bottom:8px">Loading deployment queue…</div>
           <div id="taskCenterRows"></div>
       </div>
 
       <!-- Tab: Agent Identities -->
-      <div id="task-tab-identities" style="display:none">
+      <div id="task-tab-identities" style="display:none" role="tabpanel" aria-labelledby="tab-identities">
           <div style="font-size:9px; color:var(--dim); margin-bottom:10px;">Register your autonomous agents to earn USDC from external platforms.</div>
           <div id="agentIdentityRows"></div>
       </div>
 
       <!-- Tab: Marketplace -->
-      <div id="task-tab-market" style="display:none">
+      <div id="task-tab-market" style="display:none" role="tabpanel" aria-labelledby="tab-market">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
               <div style="font-size:9px; color:var(--dim);">External tasks available for registered agents.</div>
               <button onclick="window.MARKETPLACE && window.MARKETPLACE.refreshTasks()" style="padding:2px 8px; background:var(--chrome); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-size:8px; cursor:pointer;">REFRESH</button>
@@ -1373,11 +1376,11 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
           document.body.appendChild(c);
         }
         const t = document.createElement('div');
-        t.style.cssText = `background:rgba(0,0,0,0.9);color:${type==='error'?'var(--hot)':'var(--cyan)'};padding:8px 16px;border:1px solid ${type==='error'?'var(--hot)':'var(--cyan)'};border-radius:4px;font-family:monospace;font-size:12px;box-shadow:0 0 10px rgba(0,0,0,0.5);animation:fadeIn 0.3s ease;`;
+        t.style.cssText = `background:rgba(0,0,0,0.9);color:${type==='error'?'var(--hot)':'var(--cyan)'};padding:8px 16px;border:1px solid ${type==='error'?'var(--hot)':'var(--cyan)'};border-radius:4px;font-family:monospace;font-size:12px;box-shadow:0 0 10px rgba(0,0,0,0.5);animation:toastFadeIn 0.3s ease;`;
         t.textContent = `[${type.toUpperCase()}] ${msg}`;
         document.getElementById('toastContainer').appendChild(t);
         setTimeout(() => {
-          t.style.animation = 'fadeOut 0.3s ease';
+          t.style.animation = 'toastFadeOut 0.3s ease';
           setTimeout(() => t.remove(), 300);
         }, 3000);
       }
@@ -2765,7 +2768,10 @@ function switchTaskTab(tab) {
         const content = document.getElementById(`task-tab-${t}`);
         const btn = document.getElementById(`tab-${t}`);
         if (content) content.style.display = (t === tab) ? 'block' : 'none';
-        if (btn) btn.classList.toggle('active', t === tab);
+        if (btn) {
+          btn.classList.toggle('active', t === tab);
+          btn.setAttribute('aria-selected', (t === tab).toString());
+        }
     });
 
     if (tab === 'identities') renderAgentIdentities();
