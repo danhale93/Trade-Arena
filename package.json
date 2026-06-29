@@ -14,16 +14,16 @@
     "@biconomy/abstractjs": "^1.2.4",
     "@biconomy/account": "^4.5.7",
     "axios": "^1.16.0",
-    "ccxt": "^4.2.77",
+    "ccxt": "^4.5.61",
     "cors": "^2.8.5",
-    "dotenv": "^16.6.1",
+    "dotenv": "^17.4.2",
     "ethers": "^6.17.0",
-    "express": "^4.19.2",
+    "express": "^5.2.1",
     "express-rate-limit": "^8.5.2",
     "viem": "^2.53.1",
     "websocket": "^1.0.35"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^10.0.3"
   }
 }

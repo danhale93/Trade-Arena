@@ -310,47 +310,43 @@ class TradingEngine {
      */
 
     analyzeVolatility(priceHistory) {
-
-        const returns = [];
-
-        for (let i = 1; i < priceHistory.length; i++) {
-
-            returns.push((priceHistory[i] - priceHistory[i-1]) / priceHistory[i-1]);
-
-        }
-
-
-
-        // Calculate standard deviation (volatility)
-
-        const mean = returns.reduce((a, b) => a + b) / returns.length;
-
-        const variance = returns.reduce((sq, n) => sq + Math.pow(n - mean, 2)) / returns.length;
-
-        const volatility = Math.sqrt(variance) * 100; // Convert to percentage
-
-
-
-        // GARCH estimation for 1h forecast
-
-        const garchForecast = volatility * (0.95 + Math.random() * 0.1);
-
-
-
-        return {
-
-            current: volatility.toFixed(2),
-
-            forecast1h: garchForecast.toFixed(2),
-
-            forecast24h: (garchForecast * 1.2).toFixed(2),
-
-            trend: volatility > 5 ? 'HIGH' : volatility > 2 ? 'MEDIUM' : 'LOW',
-
-            recommendation: volatility > 5 ? 'REDUCE_LEVERAGE' : 'NORMAL'
-
+        const n = priceHistory.length;
+        if (n < 2) return {
+            current: "0.00",
+            forecast1h: "0.00",
+            forecast24h: "0.00",
+            trend: 'LOW',
+            recommendation: 'NORMAL'
         };
 
+        // ⚡ Bolt Optimization: Single-pass O(N) for returns, mean, and variance
+        // Eliminates intermediate array allocation and redundant iterations (was O(3N))
+        let sum = 0;
+        let sumSq = 0;
+        const count = n - 1;
+
+        for (let i = 1; i < n; i++) {
+            const prev = priceHistory[i - 1];
+            const ret = (priceHistory[i] - prev) / prev;
+            sum += ret;
+            sumSq += ret * ret;
+        }
+
+        const mean = sum / count;
+        // variance = E[X^2] - (E[X])^2
+        const variance = Math.max(0, (sumSq / count) - (mean * mean));
+        const volatility = Math.sqrt(variance) * 100; // Convert to percentage
+
+        // GARCH estimation for 1h forecast
+        const garchForecast = volatility * (0.95 + Math.random() * 0.1);
+
+        return {
+            current: volatility.toFixed(2),
+            forecast1h: garchForecast.toFixed(2),
+            forecast24h: (garchForecast * 1.2).toFixed(2),
+            trend: volatility > 5 ? 'HIGH' : volatility > 2 ? 'MEDIUM' : 'LOW',
+            recommendation: volatility > 5 ? 'REDUCE_LEVERAGE' : 'NORMAL'
+        };
     }
 
 

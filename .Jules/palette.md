@@ -25,3 +25,7 @@
 ## 2026-06-27 - [Dashboard Navigation via Status Matrix]
 **Learning:** In dashboards with many dynamic entities (like trading bots), a top-level status matrix provides an essential scannable overview. By implementing smooth navigation from the matrix to individual entities, we bridge the gap between "birds-eye" monitoring and detailed inspection. Ensuring these matrix elements are fully accessible (semantic roles, keyboard support) transforms a purely visual widget into a powerful navigation tool.
 **Action:** Always implement bidirectional synchronization between status overviews and detailed views, and use smooth scrolling with visual highlights to maintain user orientation during navigation.
+
+## 2026-06-28 - [WAI-ARIA Tab Pattern & Animation Isolation]
+**Learning:** For tabbed navigation within complex panels, the standard WAI-ARIA Tab pattern (`role="tablist"`, `role="tab"`, `aria-selected`, `aria-controls`) provides a more robust accessibility model than generic toggles by explicitly linking navigation to content panels. Additionally, when implementing global CSS animations, using specific names (e.g., `toastFadeIn`) prevents collisions with generic logic in existing scripts that may use identical names for different effects.
+**Action:** Prefer the full Tab pattern for sub-navigation and always namespace custom CSS keyframes to avoid project-wide naming conflicts.

@@ -10,8 +10,8 @@
     "test": "node tests.js"
   },
   "devDependencies": {
-    "express": "^4.19.2",
+    "express": "^5.2.1",
     "cors": "^2.8.5",
-    "concurrently": "^8.2.2"
+    "concurrently": "^10.0.3"
   }
 }
