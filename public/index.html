@@ -1272,7 +1272,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <!-- Tab: Internal Monitor -->
       <div id="task-tab-internal" role="tabpanel" aria-labelledby="tab-internal">
           <div id="cStatus" style="font-size:10px;color:var(--dim);margin-bottom:8px">Loading deployment queue…</div>
-          <div id="taskCenterRows"></div>
+          <div id="taskQuestList" style="margin-bottom:15px"></div><div id="taskCenterRows"></div>
       </div>
 
       <!-- Tab: Agent Identities -->
@@ -2307,7 +2307,7 @@ function drawStratBreakdown(byStrat) {
     const isPos=d.pnl>=0;
     const barW=(Math.abs(d.pnl)/maxAbs*100).toFixed(0);
     return `<div class="strat-row">
-      <div class="strat-name">${escapeHTML(name)}</div>
+      <div class="strat-name">${name}</div>
       <div class="strat-bar-wrap"><div class="strat-bar ${isPos?'pos':'neg'}" style="width:${barW}%"></div></div>
       <div class="strat-stat" style="color:${isPos?'var(--green)':'var(--hot)'}">${isPos?'+':''}$${d.pnl.toFixed(2)} · ${wr}% WR</div>
     </div>`;
@@ -2737,6 +2737,7 @@ function downloadFile(content, filename, type) {
 // CIRCUIT BREAKERS
 // ══════════════════════════════════════════════════════
 function togglePanel(name) {
+  if(typeof SFX !== "undefined") SFX.tick();
   if(typeof SFX !== 'undefined') SFX.tick();
   const bodyId=name+'Body', hdId=name+'Hd', toggleId=name+'Toggle';
   const body=document.getElementById(bodyId), toggle=document.getElementById(toggleId), hd=document.getElementById(hdId);
@@ -3141,8 +3142,15 @@ async function loginMetaMask(){
     
     const address = accounts[0];
     
-    // Create provider
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    // Create provider (ethers v5 syntax, check for v6)
+    let provider;
+    if (ethers.BrowserProvider) {
+        provider = new ethers.BrowserProvider(window.ethereum);
+    } else if (ethers.providers && ethers.providers.Web3Provider) {
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+    } else {
+        provider = new ethers.BrowserProvider(window.ethereum); // Fallback to v6
+    }
     
     // Switch to Base Mainnet (optional, but recommended)
     s.textContent='⏳ Verifying network…';
@@ -3181,8 +3189,15 @@ async function loginMetaMask(){
     let balanceUSD = 0; // Default to $0 to enable Earn-to-Trade flow
     
     try { 
-      const balanceWei = await provider.getBalance(address);
-      const balanceETH = parseFloat(ethers.utils.formatEther(balanceWei));
+      let balanceWei;
+      if (provider.getBalance) {
+          balanceWei = await provider.getBalance(address);
+      } else {
+          const signer = await provider.getSigner();
+          balanceWei = await provider.getBalance(address);
+      }
+
+      const balanceETH = parseFloat(ethers.formatEther ? ethers.formatEther(balanceWei) : ethers.utils.formatEther(balanceWei));
       
       // Get ETH price in USD
       const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
@@ -3208,15 +3223,15 @@ async function loginMetaMask(){
       provider: 'metamask'
     };
     
-    s.textContent='✅ Connected to MetaMask!';
     setupApp(userData);
-    
-  }catch(error) { 
-    console.error('MetaMask connection error:', error);
-    
-    if(error.code === 4001) {
-      s.textContent='❌ Connection rejected by user';
-    } else if(error.code === -32002) {
+    if(window.showToast) window.showToast('Wallet connected!', 'success');
+  }
+  catch(e){
+    console.error('MetaMask login failed:', e);
+    s.textContent='❌ Connection failed: ' + (e.message || 'Unknown error');
+  }
+}
+ else if(error.code === -32002) {
       s.textContent='❌ MetaMask request already pending';
     } else {
       s.textContent='❌ MetaMask Error: '+(error.message||'Connection failed'); 
@@ -3337,6 +3352,7 @@ function setupApp({name,avatar,badge,address}){
       try{ if(typeof startDeploymentPolling === 'function') startDeploymentPolling(); }catch(e){}
       try{ if(typeof initMarketplaceUI === 'function') initMarketplaceUI(); }catch(e){}
       try{ updateAuditSummaryBadge(); }catch(e){}
+      try{ updateMatrix(); }catch(e){}
       try{ addBot(); }catch(e){ console.error('addBot:',e); }
       try{ updateMatrix(); }catch(e){}
       _startHeaderTicker();
@@ -3393,6 +3409,7 @@ function addBot(){
     lastTradeTime:0
   };
   bots.push(bot); renderBot(bot);
+  updateMatrix();
   _syncHeaderBotBtns();
   updateMatrix();
 }
@@ -3401,6 +3418,7 @@ function removeBot(id){
   if(bot){if(bot.autoTimer)clearTimeout(bot.autoTimer);if(bot.tickerTimer)clearTimeout(bot.tickerTimer);}
   bots=bots.filter(b=>b.id!==id);
   document.getElementById('bot-'+id)?.remove();
+  updateMatrix();
   _syncHeaderBotBtns();
   updateMatrix();
 }
@@ -3421,6 +3439,7 @@ function _syncHeaderBotBtns(){
 // ── Global auto toggle ──
 let _ghAutoOn=false;
 function globalAutoToggle(){
+  if(typeof SFX !== "undefined") SFX.tick();
   if(typeof SFX !== 'undefined') SFX.tick();
   _ghAutoOn=!_ghAutoOn;
   bots.forEach(b=>{
@@ -4848,6 +4867,7 @@ function renderRegimeTable() {
 
 // ── UI toggles ──
 function toggleLearn() {
+  if(typeof SFX !== "undefined") SFX.tick();
   if(typeof SFX !== 'undefined') SFX.tick();
   const body = document.getElementById('learnBody');
   const hd = document.getElementById('learnHd');
@@ -5166,6 +5186,7 @@ function renderAuditLog() {
 }
 
 function toggleAudit() {
+  if(typeof SFX !== "undefined") SFX.tick();
   if(typeof SFX !== 'undefined') SFX.tick();
   const body = document.getElementById('auditBody');
   const hd = document.getElementById('auditHd');
@@ -5308,14 +5329,14 @@ function renderLog(){
     const txLink = t.txHash ? `<a href="${escapeHTML(REAL_WALLET_CONFIG.network.explorerUrl)}/tx/${escapeHTML(t.txHash)}" target="_blank" style="text-decoration:none;color:var(--cyan);font-size:8px;margin-left:4px">🔗</a>` : "";
     const cost=t.costs?.total?'-\$'+t.costs.total.toFixed(2):'';
     return`<div class="log-row">
-      <div class="log-bot">#${escapeHTML(t.botId)}</div>
-      <div class="log-coin" style="color:${isOpen?'var(--blue)':isHold?'var(--amber)':t.isWin?'var(--green)':'var(--hot)'}">${escapeHTML(t.token)}</div>
-      <div class="log-method">${escapeHTML(t.method)}</div>
+      <div class="log-bot">#${t.botId}</div>
+      <div class="log-coin" style="color:${isOpen?'var(--blue)':isHold?'var(--amber)':t.isWin?'var(--green)':'var(--hot)'}">${t.token}</div>
+      <div class="log-method">${t.method}</div>
       <div class="log-entry">${ep}</div>
       <div class="log-exit">${xp}${txLink}</div>
       <div class="log-pnl ${pnlCls}">${pnlStr}</div>
       <div class="log-cost">${cost}</div>
-      <div class="log-t">${escapeHTML(t.time)}</div>
+      <div class="log-t">${t.time}</div>
     </div>`;
   }).join('');
 }
@@ -5414,6 +5435,7 @@ setInterval(function(){
 const PERSONALITIES = ['AGGRESSIVE','CONSERVATIVE','MOMENTUM','CONTRARIAN','BALANCED'];
 
 function toggleFleetView() {
+  if(typeof SFX !== "undefined") SFX.tick();
   if(typeof SFX !== 'undefined') SFX.tick();
   const grid = document.getElementById('botGrid');
   const btn = document.getElementById('fleetViewBtn');
@@ -5426,6 +5448,7 @@ function toggleFleetView() {
 }
 
 function toggleBusPanel() {
+  if(typeof SFX !== "undefined") SFX.tick();
   if(typeof SFX !== 'undefined') SFX.tick();
   const panel = document.getElementById('busPanel');
   const btn   = document.getElementById('ghBusBtn');
@@ -5782,6 +5805,7 @@ document.addEventListener('keydown', function(e) {
 <script src="crucible-real-trading.js" defer></script>
 <script src="execution-engine.js" defer></script>
 <script src="elo-tournament-engine.js" defer></script>
+<script src="https://js.hcaptcha.com/1/api.js" async defer></script>
 <script src="task-center.js" defer></script>
 <script src="marketplaces.js" defer></script>
 <script src="privy-client.js" defer></script>
@@ -5824,6 +5848,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script>
 function toggleVoiceAgent() {
+  if(typeof SFX !== "undefined") SFX.tick();
   if(typeof SFX !== 'undefined') SFX.tick();
   const modal = document.getElementById('voiceAgentModal');
   const btn = document.getElementById('voiceAgentBtn');

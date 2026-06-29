@@ -1,10 +1,31 @@
 /**
- * LIVE DEPLOYMENT MONITOR
- * Trade Arena v4 • Real-time task queue viewer
+ * HYBRID TASK CENTER & DEPLOYMENT MONITOR
+ * Trade Arena v4 • Real-time rewards & queue viewer
  */
 
 const API_BASE = (location.protocol === 'https:' ? '' : 'http://localhost:3001');
 const DEPLOYMENT_POLL_INTERVAL = 4000;
+
+const TASK_CONFIG = {
+    initialFaucetAmount: 50,
+    quests: [
+        { id: 'follow_twitter', label: 'Follow on Twitter', reward: 10, completed: false, icon: '🐦', type: 'social' },
+        { id: 'join_discord', label: 'Join Discord Arena', reward: 15, completed: false, icon: '💬', type: 'social' },
+        { id: 'share_win', label: 'Share a Big Win', reward: 25, completed: false, icon: '🚀', type: 'social' },
+        { id: 'first_trade', label: 'Execute First Trade', reward: 5, completed: false, icon: '🎰', type: 'action' },
+        { id: 'hcaptcha_verify', label: 'AI Data Verification', reward: 20, completed: false, icon: '🧠', type: 'verified', provider: 'hcaptcha' },
+        { id: 'ai_feedback', label: 'Rate AI Prediction', reward: 30, completed: false, icon: '📊', type: 'verified', provider: 'internal' }
+    ]
+};
+
+let taskState = {
+    faucetClaimed: false,
+    creditsEarned: 0,
+    quests: [...TASK_CONFIG.quests]
+};
+
+let deploymentTimer = null;
+let latestDeployments = [];
 
 /**
  * Helper to escape HTML and prevent XSS
@@ -18,14 +39,29 @@ function escapeHTML(str) {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
 }
-let deploymentTimer = null;
-let latestDeployments = [];
 
-let taskState = {
-    faucetClaimed: false,
-    creditsEarned: 0,
-    tasks: []
-};
+function loadTaskState() {
+    try {
+        const raw = localStorage.getItem('ta_tasks_v4_quests');
+        if (raw) {
+            const saved = JSON.parse(raw);
+            taskState.faucetClaimed = saved.faucetClaimed || false;
+            taskState.creditsEarned = saved.creditsEarned || 0;
+            if (saved.quests) {
+                taskState.quests.forEach(q => {
+                    const s = saved.quests.find(sq => sq.id === q.id);
+                    if (s) q.completed = s.completed;
+                });
+            }
+        }
+    } catch(e) {}
+}
+
+function saveTaskState() {
+    try {
+        localStorage.setItem('ta_tasks_v4_quests', JSON.stringify(taskState));
+    } catch(e) {}
+}
 
 async function fetchDeployments() {
     try {
@@ -55,101 +91,200 @@ function stopDeploymentPolling() {
 }
 
 async function claimFaucet() {
+    if (taskState.faucetClaimed) {
+        if (window.showToast) window.showToast('Faucet already claimed!', 'error');
+        return;
+    }
+
     try {
-        await fetch(`${API_BASE}/api/faucet/claim`, {
+        if (window.showToast) window.showToast('Requesting Faucet Payout...', 'info');
+        const resp = await fetch(`${API_BASE}/api/faucet/claim`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userAddress: window.ethereum?.selectedAddress || 'demo' })
         });
-        fetchDeployments();
+        const data = await resp.json();
+
+        if (data.success) {
+            taskState.faucetClaimed = true;
+            if (window.balance !== undefined) {
+                window.balance += TASK_CONFIG.initialFaucetAmount;
+                if (window.updateGlobalBalance) window.updateGlobalBalance();
+            }
+            saveTaskState();
+            renderTaskCenter();
+            fetchDeployments();
+            if (typeof SFX !== 'undefined') SFX.bigWin();
+            if (window.showToast) window.showToast('Faucet Claimed! Deployment Queued.', 'success');
+        } else {
+            if (window.showToast) window.showToast(data.error || 'Faucet claim failed', 'error');
+        }
     } catch (e) {
         console.error('[Monitor] Faucet claim failed:', e);
     }
 }
 
 async function completeTask(taskId) {
+    const quest = taskState.quests.find(q => q.id === taskId);
+    if (!quest || quest.completed) return;
+
+    if (quest.type === 'verified') {
+        if (quest.provider === 'hcaptcha') {
+            return startHCaptchaFlow(quest);
+        }
+        if (quest.provider === 'internal') {
+            return startAIFeedbackFlow(quest);
+        }
+    }
+
+    await submitTaskToBackend(quest);
+}
+
+async function submitTaskToBackend(quest) {
     try {
-        await fetch(`${API_BASE}/api/tasks/claim`, {
+        if (window.showToast) window.showToast(`Submitting ${quest.label}...`, 'info');
+        const resp = await fetch(`${API_BASE}/api/tasks/claim`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                taskId,
-                reward: 0,
+                taskId: quest.id,
+                reward: quest.reward,
                 userAddress: window.ethereum?.selectedAddress || 'demo'
             })
         });
-        fetchDeployments();
+        const data = await resp.json();
+
+        if (data.success) {
+            quest.completed = true;
+            taskState.creditsEarned += quest.reward;
+            if (window.balance !== undefined) {
+                window.balance += quest.reward;
+                if (window.updateGlobalBalance) window.updateGlobalBalance();
+            }
+            saveTaskState();
+            renderTaskCenter();
+            fetchDeployments();
+            if (typeof SFX !== 'undefined') SFX.win();
+            if (window.showToast) window.showToast(`${quest.label} Complete!`, 'success');
+        } else {
+            if (window.showToast) window.showToast(data.error || 'Task submission failed', 'error');
+        }
     } catch (e) {
         console.error('[Monitor] Task claim failed:', e);
     }
+}
+
+function startHCaptchaFlow(quest) {
+    const container = document.getElementById('hcaptcha-container');
+    if (!container) return;
+    container.style.display = 'block';
+    if (window.showToast) window.showToast('Prove you are human to earn...', 'info');
+    container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    window._activeVerifiedTaskId = quest.id;
+}
+
+window.onHCaptchaSuccess = function(token) {
+    const taskId = window._activeVerifiedTaskId;
+    const container = document.getElementById('hcaptcha-container');
+    if (container) container.style.display = 'none';
+    const quest = taskState.quests.find(q => q.id === taskId);
+    if (quest) submitTaskToBackend(quest);
+};
+
+function startAIFeedbackFlow(quest) {
+    setTimeout(() => {
+        const rating = prompt(\`[AI Feedback Loop]\nHow accurate was the last AI prediction for BTC/USD?\n(1: Poor, 5: Excellent)\`);
+        if (rating >= 1 && rating <= 5) {
+            submitTaskToBackend(quest);
+        }
+    }, 500);
+}
+
+function renderTaskCenter() {
+    const questContainer = document.getElementById('taskQuestList');
+    const deployContainer = document.getElementById('taskCenterRows');
+    if (!questContainer || !deployContainer) return;
+
+    const faucetBtn = document.getElementById('claimFaucetBtn');
+    if (faucetBtn) {
+        faucetBtn.disabled = taskState.faucetClaimed;
+        faucetBtn.textContent = taskState.faucetClaimed ? 'CLAIMED' : 'CLAIM $50 STARTING CAPITAL';
+    }
+
+    questContainer.innerHTML = \`
+        <div style=\"margin-bottom:10px; font-size:10px; color:var(--cyan); font-family:'Bungee'\">EARNING OPPORTUNITIES</div>
+        \${taskState.quests.map(quest => renderQuestRow(quest)).join('')}
+        <div style=\"margin-top:15px; margin-bottom:10px; font-size:10px; color:var(--green); font-family:'Bungee'\">LIVE DEPLOYMENTS</div>
+    \`;
+
+    renderDeploymentMonitor();
+}
+
+function renderQuestRow(quest) {
+    const isVerified = quest.type === 'verified';
+    const rowColor = quest.completed ? 'var(--green)' : (isVerified ? 'var(--cyan)' : 'var(--border)');
+    return \`
+        <div class=\"task-row\" style=\"display:flex; align-items:center; gap:10px; padding:10px; background:rgba(0,0,0,0.2); border-radius:8px; margin-bottom:5px; border:1px solid \${rowColor}\">
+            <div style=\"font-size:20px\">\${quest.icon}</div>
+            <div style=\"flex:1\">
+                <div style=\"display:flex; align-items:center; gap:5px\">
+                    <div style=\"font-size:11px; font-weight:bold; color:\${quest.completed ? 'var(--green)' : 'white'}\">\${quest.label}</div>
+                    \${isVerified ? '<span style=\"font-size:7px; padding:2px 4px; background:var(--cyan); color:black; border-radius:3px\">VERIFIED</span>' : ''}
+                </div>
+                <div style=\"font-size:8px; color:var(--dim)\">REWARD: $\${quest.reward} \${isVerified ? 'REAL CRYPTO' : 'CREDITS'}</div>
+            </div>
+            <button onclick=\"completeTask('\${quest.id}')\" \${quest.completed ? 'disabled' : ''}
+                style=\"padding:5px 10px; border-radius:4px; border:none; background:\${quest.completed ? 'var(--dim)' : 'var(--cyan)'}; color:black; font-family:'Bungee'; font-size:9px; cursor:pointer\">
+                \${quest.completed ? 'DONE' : 'GO'}
+            </button>
+        </div>
+    \`;
 }
 
 function renderDeploymentMonitor() {
     const container = document.getElementById('taskCenterRows');
     if (!container) return;
 
-    const statusEl = document.getElementById('cStatus');
-    if (statusEl) {
-        statusEl.textContent = latestDeployments.length > 0
-            ? `Live: ${latestDeployments.length} deployment(s) in queue · polling every 4s`
-            : '⚡ No deployments queued yet — completing tasks will populate this monitor';
-        statusEl.style.color = latestDeployments.length > 0 ? 'var(--green)' : 'var(--dim)';
-    }
-
-    container.innerHTML = latestDeployments.length > 0 ? latestDeployments.slice(0, 12).map(dep => {
+    container.innerHTML = latestDeployments.length > 0 ? latestDeployments.slice(0, 8).map(dep => {
         const src = dep.deposit?.source || dep.source || 'unknown';
         const srcIcon = src === 'faucet' ? '⛽' : src === 'task' ? '📋' : src === 'moonpay' ? '💳' : '🤖';
         const amt = dep.deposit?.amount || dep.amount || 0;
-        const currency = dep.deposit?.currency || dep.currency || '';
-        const tx = dep.deposit?.payout?.txHash || dep.payout?.txHash;
         const status = dep.status || 'QUEUED';
         const statusColor = status === 'QUEUED' ? 'var(--amber)' : status === 'DEPLOYED' ? 'var(--green)' : 'var(--dim)';
-        const simNote = dep.deposit?.payout?.simulated ? ' (sim)' : tx ? ` tx:${escapeHTML(tx.slice(0, 10))}...` : ' pending';
-        const created = new Date(dep.created || dep.deposit?.confirmedAt).toLocaleTimeString();
 
-        return `
-            <div style="display:flex; flex-direction:column; gap:4px; padding:10px 12px; background:rgba(0,0,0,0.25); border-radius:8px; margin-bottom:6px; border-left:3px solid ${statusColor}">
-                <div style="display:flex; align-items:center; gap:8px; justify-content:space-between">
-                    <span style="font-size:16px">${srcIcon}</span>
-                    <span style="font-size:9px; padding:2px 8px; border-radius:8px; background:${statusColor}; color:var(--bg); font-weight:bold; text-transform:uppercase">
-                        ${escapeHTML(status)}
+        return \`
+            <div style=\"display:flex; flex-direction:column; gap:4px; padding:10px 12px; background:rgba(0,0,0,0.25); border-radius:8px; margin-bottom:6px; border-left:3px solid \${statusColor}\">
+                <div style=\"display:flex; align-items:center; gap:8px; justify-content:space-between\">
+                    <span style=\"font-size:16px\">\${srcIcon}</span>
+                    <span style=\"font-size:9px; padding:2px 8px; border-radius:8px; background:\${statusColor}; color:var(--bg); font-weight:bold; text-transform:uppercase\">
+                        \${escapeHTML(status)}
                     </span>
                 </div>
-                <div style="font-size:11px; color:white">
-                    <strong>${escapeHTML(src.toUpperCase())}</strong> · ${escapeHTML(amt)} ${escapeHTML(currency)}${simNote}
-                </div>
-                <div style="font-size:9px; color:var(--dim); display:flex; justify-content:space-between">
-                    <span>ID: ${escapeHTML(dep.id?.slice(0, 10))}...</span>
-                    <span>${escapeHTML(created)}</span>
+                <div style=\"font-size:11px; color:white\">
+                    <strong>\${escapeHTML(src.toUpperCase())}</strong> · \${escapeHTML(amt)} ETH
                 </div>
             </div>
-        `;
-    }).join('') : `
-        <div style="padding:20px; text-align:center; color:var(--dim); font-size:11px">
-            <div style="font-size:28px; margin-bottom:8px">📡</div>
+        \`;
+    }).join('') : \`
+        <div style=\"padding:20px; text-align:center; color:var(--dim); font-size:11px\">
+            <div style=\"font-size:28px; margin-bottom:8px\">📡</div>
             <div>No deployments in queue</div>
-            <div style="font-size:9px; margin-top:4px">Complete tasks or claim faucet to see live entries here</div>
         </div>
-    `;
+    \`;
 }
 
 // Export
 window.claimFaucet = claimFaucet;
 window.completeTask = completeTask;
+window.renderTaskCenter = renderTaskCenter;
 window.startDeploymentPolling = startDeploymentPolling;
 window.stopDeploymentPolling = stopDeploymentPolling;
-window.fetchDeployments = fetchDeployments;
-window.renderDeploymentMonitor = renderDeploymentMonitor;
-window.latestDeployments = latestDeployments;
 
 // Init
-
-// Export to window for bot auto-onboarding
+loadTaskState();
 window.taskState = taskState;
 
-// Start polling immediately after load (outside setupApp timing issues)
 setTimeout(() => {
-    if (typeof startDeploymentPolling === 'function') {
-        startDeploymentPolling();
-    }
+    startDeploymentPolling();
+    renderTaskCenter();
 }, 200);
