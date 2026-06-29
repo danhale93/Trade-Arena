@@ -715,6 +715,36 @@ describe("Cross-Market Arbitrage Dry Run Scanners", () => {
   });
 });
 
+describe("Payout Service - Robustness & Security", () => {
+  const PayoutService = require('./services/payouts/payoutService');
+
+  it("handles missing private key gracefully", () => {
+    const service = new PayoutService({
+      rewardTokenAddress: "0x123",
+      payoutManagerAddress: "0x456",
+      chainId: 8453
+    });
+    expect(service.oracleWallet).toBe(null);
+  });
+
+  it("throws clear error when signing without wallet", async () => {
+    const service = new PayoutService({});
+    try {
+      await service.generatePayoutSignature("0xabc", "task-1", 100, 123);
+      throw new Error("Should have thrown");
+    } catch (e) {
+      expect(e.message).toBe("Oracle wallet not configured");
+    }
+  });
+
+  it("initializes wallet correctly when key provided", () => {
+    const privateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+    const service = new PayoutService({ oraclePrivateKey: privateKey });
+    expect(service.oracleWallet !== null).toBe(true);
+    expect(service.oracleWallet.address).toBe("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266");
+  });
+});
+
 describe("MoonPay Webhook - Security Verification", () => {
   const verifyMoonPaySignature = (body, signature, secret) => {
     try {

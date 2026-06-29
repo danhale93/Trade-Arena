@@ -23,7 +23,8 @@ router.post('/claim', payoutLimiter, async (req, res) => {
         const authPayload = await payoutService.authorizePayout(userAddress, taskId, proofOfWork);
         res.json({ success: true, data: authPayload });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error('[Payout API] Error during claim:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 

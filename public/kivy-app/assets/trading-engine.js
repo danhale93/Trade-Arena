@@ -95,14 +95,31 @@ class TradingEngine {
      * Volatility Analysis & Prediction
      */
     analyzeVolatility(priceHistory) {
-        const returns = [];
-        for (let i = 1; i < priceHistory.length; i++) {
-            returns.push((priceHistory[i] - priceHistory[i-1]) / priceHistory[i-1]);
+        const n = priceHistory.length;
+        if (n < 2) return {
+            current: "0.00",
+            forecast1h: "0.00",
+            forecast24h: "0.00",
+            trend: 'LOW',
+            recommendation: 'NORMAL'
+        };
+
+        // ⚡ Bolt Optimization: Single-pass O(N) for returns, mean, and variance
+        // Eliminates intermediate array allocation and redundant iterations (was O(3N))
+        let sum = 0;
+        let sumSq = 0;
+        const count = n - 1;
+
+        for (let i = 1; i < n; i++) {
+            const prev = priceHistory[i - 1];
+            const ret = (priceHistory[i] - prev) / prev;
+            sum += ret;
+            sumSq += ret * ret;
         }
 
-        // Calculate standard deviation (volatility)
-        const mean = returns.reduce((a, b) => a + b) / returns.length;
-        const variance = returns.reduce((sq, n) => sq + Math.pow(n - mean, 2)) / returns.length;
+        const mean = sum / count;
+        // variance = E[X^2] - (E[X])^2
+        const variance = Math.max(0, (sumSq / count) - (mean * mean));
         const volatility = Math.sqrt(variance) * 100; // Convert to percentage
 
         // GARCH estimation for 1h forecast
