@@ -793,6 +793,7 @@ window.toggleLiveMode = toggleLiveMode;
  * Handle Privy Ready
  */
 window.onPrivyReady = (user, address) => {
+    if(typeof setupWalletListeners === "function") setupWalletListeners();
     console.log('[App] Privy ready, switching to LIVE mode preference');
     if (!window.isLiveMode) {
         window.toggleLiveMode();
