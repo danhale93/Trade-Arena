@@ -52,3 +52,7 @@ Running security audit across localStorage and active config...
 
 ## 2026-06-29T08:49:13.354Z - [INFO] SENTINEL
 Running security audit across localStorage and active config...
+## 2026-06-29 - MetaMask Event Leak and Logic Fixes
+Vulnerability: MaxListenersExceededWarning due to repeated event listener registration on window.ethereum.
+Learning: Ensure wallet listeners are only attached once using global flags (e.g., window._listenersInitialized).
+Prevention: Implement idempotent initialization functions for third-party event emitters.
