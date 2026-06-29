@@ -1,1493 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>TRADE ARENA — AI TRADING FLOOR</title>
-<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Bungee+Shade&family=JetBrains+Mono:wght@400;700&family=Oswald:wght@400;700&family=Share+Tech+Mono&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" defer></script>
-<script src="https://accounts.google.com/gsi/client" async></script>
-<style>
-:root{
-  --gold:#ffd700;--gold2:#ffaa00;--hot:#ff2d78;--cyan:#00ffe7;
-  --green:#39ff14;--amber:#ffb300;--blue:#4488ff;--purple:#bf5fff;
-}
-/* Focus-visible for better accessibility */
-*:focus-visible {
-  outline: 2px solid var(--cyan);
-  outline-offset: 2px;
-}
-:root {
-  --bg:#06030a;--panel:#0e0914;--chrome:#160f1e;--border:#241830;--dim:#6a5878;
-}
-/* Demo-first UI enhancements */
-.g-btn{
-  background:linear-gradient(135deg,#4285F4,#3367D6)!important;
-  color:white!important;
-  font-weight:bold!important;
-  box-shadow:0 4px 12px rgba(66,133,244,.4)!important;
-  border:none!important
-}
-.g-btn:hover{
-  transform:scale(1.03)!important;
-  box-shadow:0 6px 16px rgba(66,133,244,.6)!important
-}
-.demo-btn{
-  border-style:dotted!important;
-  opacity:0.7!important;
-  font-size:10px!important
-}
-.demo-btn:hover{
-  opacity:0.9!important;
-  background:rgba(0,255,231,.02)!important
-}
-.advanced-toggle{
-  display:block!important;
-  text-align:center!important;
-  margin-top:12px!important;
-  color:var(--dim)!important;
-  font-size:10px!important;
-  background:none;
-  border:none;
-  width:100%;
-  cursor:pointer
-}
-.advanced-toggle:hover{
-  color:var(--cyan)!important
-}
-*{box-sizing:border-box;margin:0;padding:0}
-html{overflow-y:auto;height:100%}
-body{background:var(--bg);font-family:'Share Tech Mono',monospace;color:#fff;min-height:100vh;
-  background-image:radial-gradient(ellipse 100% 60% at 50% -10%,rgba(255,45,120,.09) 0%,transparent 60%),radial-gradient(ellipse 60% 40% at 80% 80%,rgba(0,255,231,.04) 0%,transparent 60%),repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,255,255,.009) 2px,rgba(255,255,255,.009) 4px)}
-body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
-  background:repeating-linear-gradient(0deg,rgba(0,0,0,.1) 0px,rgba(0,0,0,.1) 1px,transparent 1px,transparent 3px)}
-.edge{position:fixed;top:0;left:0;right:0;height:4px;z-index:9999;
-  background:linear-gradient(90deg,var(--hot),var(--gold),var(--cyan),var(--green),var(--gold),var(--hot));
-  background-size:200%;animation:edge 3s linear infinite}
-@keyframes edge{to{background-position:200%}}
 
-/* ══ CONNECT ══ */
-#connectScreen{max-width:440px;margin:0 auto;display:flex;flex-direction:column;align-items:center;padding:28px 22px 52px;gap:16px}
-.marquee-wrap{width:100%;overflow:hidden;border-top:2px solid var(--gold);border-bottom:2px solid var(--gold);padding:6px 0}
-.marquee-inner{display:inline-flex;gap:40px;animation:mq 14s linear infinite;white-space:nowrap;font-size:10px;color:var(--gold2)}
-@keyframes mq{to{transform:translateX(-50%)}}
-.logo{font-family:'Bungee Shade',display;font-size:clamp(40px,12vw,60px);line-height:1;text-align:center;
-  background:linear-gradient(180deg,#fff,var(--gold) 60%,var(--hot));-webkit-background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 24px rgba(255,215,0,.45))}
-@keyframes flk{0%,100%{opacity:1}93%{opacity:.3}95%{opacity:1}97%{opacity:.6}98%{opacity:1}}
-.flk{animation:flk 4s infinite}
-.sub{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:5px;color:var(--cyan);text-shadow:0 0 10px var(--cyan);text-align:center}
-.login-card{width:100%;background:linear-gradient(180deg,#110b18,var(--panel));border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.5)}
-.login-card-hd{padding:10px 18px 8px;border-bottom:1px solid var(--border);text-align:center;font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:3px;color:var(--dim)}
-.login-card-bd{padding:12px 14px 14px;display:flex;flex-direction:column;gap:8px}
-.g-btn{width:100%;padding:12px 18px;display:flex;align-items:center;justify-content:center;gap:10px;background:#fff;border:none;border-radius:8px;cursor:pointer;font-family:'Oswald',sans-serif;font-size:14px;letter-spacing:1px;color:#111;font-weight:700;box-shadow:0 2px 12px rgba(0,0,0,.5);transition:all .15s}
-.g-btn:hover{transform:scale(1.01)}
-.g-icon{width:20px;height:20px;flex-shrink:0}
-.mm-btn{width:100%;padding:12px 18px;display:flex;align-items:center;justify-content:center;gap:10px;background:linear-gradient(135deg,#f6851b,#e2761b);border:none;border-radius:8px;cursor:pointer;font-family:'Bungee',display;font-size:13px;letter-spacing:2px;color:#fff;box-shadow:0 2px 12px rgba(246,133,27,.3);transition:all .15s}
-.mm-btn:hover{box-shadow:0 4px 20px rgba(246,133,27,.6)}
-.cb-btn{width:100%;padding:12px 18px;display:flex;align-items:center;justify-content:center;gap:10px;background:linear-gradient(135deg,#0052FF,#0044CC);border:none;border-radius:8px;cursor:pointer;font-family:'Bungee',display;font-size:13px;letter-spacing:2px;color:#fff;box-shadow:0 2px 12px rgba(0,82,255,.3);transition:all .15s;margin-top:4px}
-.cb-btn:hover{box-shadow:0 4px 20px rgba(0,82,255,.6)}
-.demo-btn{width:100%;padding:10px;background:transparent;border:1px dashed var(--border);border-radius:8px;cursor:pointer;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--dim);transition:all .15s}
-.demo-btn:hover{border-color:var(--cyan);color:var(--cyan);background:rgba(0,255,231,.04)}
-
-.payid-btn{width:100%;padding:12px;margin-top:10px;background:linear-gradient(135deg,#ff4500,#ff8c00);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:'Bungee',display;font-size:11px;letter-spacing:1px;box-shadow:0 4px 15px rgba(255,69,0,0.3);transition:all .2s;display:flex;align-items:center;justify-content:center;gap:10px}
-.payid-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(255,69,0,0.4);filter:brightness(1.1)}
-
-/* OSKO On/Off Ramp Buttons */
-.onramp-btn,.offramp-btn{width:48%;padding:10px;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;border:none;border-radius:6px;cursor:pointer;transition:all .15s}
-.onramp-btn{background:linear-gradient(135deg,#00d4ff,#0099ff);color:#fff}
-.onramp-btn:hover{box-shadow:0 0 16px rgba(0,212,255,.5)}
-.offramp-btn{background:linear-gradient(135deg,#00ff9d,#00cc7a);color:#000}
-.offramp-btn:hover{box-shadow:0 0 16px rgba(0,255,157,.5)}
-.fiat-ramp-row{display:flex;gap:8px;margin-top:4px}
-.divider{display:flex;align-items:center;gap:8px;font-size:10px;color:var(--dim)}
-.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
-#cStatus{font-size:11px;color:var(--cyan);text-align:center;min-height:14px}
-.setup-note{width:100%;padding:10px 13px;background:rgba(255,170,0,.07);border:1px solid rgba(255,170,0,.2);border-radius:8px;font-size:9px;color:var(--dim);line-height:1.7}
-.setup-note strong{color:var(--gold2)}
-.setup-note a{color:var(--cyan);text-decoration:none}
-
-/* ══ MAIN APP ══ */
-#mainApp{display:none;flex-direction:column;width:100%;max-width:1160px;margin:0 auto;padding:10px 12px 60px}
-
-/* GLOBAL HEADER */
-.global-header{display:flex;align-items:center;gap:8px;padding:7px 10px;background:linear-gradient(90deg,var(--panel),rgba(22,15,30,.95));border:1px solid var(--border);border-radius:10px;margin-bottom:8px;flex-wrap:wrap;box-shadow:0 2px 20px rgba(0,0,0,.4)}
-.gh-avatar{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--gold2);display:flex;align-items:center;justify-content:center;font-size:12px;background:var(--chrome);flex-shrink:0}
-.gh-name{font-size:10px;color:var(--cyan);flex:1;min-width:80px}
-.gh-balance{font-size:13px;font-weight:bold;color:var(--gold);font-family:'Oswald',sans-serif}
-.gh-pnl{font-size:10px}
-.pnl-pos{color:var(--green)}
-.pnl-neg{color:var(--hot)}
-.add-bot-btn{padding:6px 12px;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;background:linear-gradient(90deg,var(--hot),var(--gold2));border:none;border-radius:6px;color:#fff;cursor:pointer;white-space:nowrap;box-shadow:0 0 10px rgba(255,45,120,.3);transition:all .15s}
-.add-bot-btn:hover{box-shadow:0 0 18px rgba(255,45,120,.6)}
-.add-bot-btn:disabled{opacity:.35;cursor:not-allowed}
-/* ── bus panel ── */
-.gh-bus-btn{padding:0 9px;height:26px;border:1px solid var(--border);border-radius:5px;background:var(--chrome);color:var(--dim);font-family:'Bungee',display;font-size:9px;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0}
-.gh-bus-btn:hover{border-color:var(--gold2);color:var(--gold2)}
-.gh-bus-btn.open{border-color:var(--gold2);color:var(--gold2);background:rgba(255,170,0,.08)}
-.bus-panel{display:none;background:linear-gradient(180deg,rgba(14,9,20,.98),rgba(10,6,16,.98));border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;padding:12px 14px 14px;margin-top:-8px;margin-bottom:8px;box-shadow:0 8px 32px rgba(0,0,0,.6)}
-.bus-panel.open{display:block}
-.bus-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
-.bus-section{background:var(--chrome);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
-.bus-section-title{font-family:'Bungee',display;font-size:9px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px}
-.bus-section-title span{font-size:12px}
-.bus-presets{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
-.bus-preset{padding:4px 9px;font-family:'Bungee',display;font-size:8px;letter-spacing:.5px;background:var(--panel);border:1px solid var(--border);border-radius:4px;color:var(--dim);cursor:pointer;transition:all .12s;white-space:nowrap}
-.bus-preset:hover{border-color:var(--gold2);color:var(--gold2)}
-.bus-preset.active{background:rgba(255,170,0,.1);border-color:var(--gold2);color:var(--gold2)}
-.bus-custom-row{display:flex;gap:5px;margin-top:4px}
-.bus-custom-row input{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--gold);padding:4px 7px;border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px;min-width:0}
-.bus-custom-row input:focus{outline:none;border-color:var(--gold2)}
-.bus-custom-row button{padding:4px 10px;font-family:'Bungee',display;font-size:8px;background:var(--chrome);border:1px solid var(--border);border-radius:4px;color:var(--dim);cursor:pointer;white-space:nowrap;transition:all .12s}
-.bus-custom-row button:hover{border-color:var(--gold2);color:var(--gold2)}
-.bus-apply-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
-.bus-apply-btn{flex:1;min-width:120px;padding:7px 10px;font-family:'Bungee',display;font-size:9px;letter-spacing:1px;border:none;border-radius:5px;cursor:pointer;transition:all .15s;white-space:nowrap}
-.bus-apply-primary{background:linear-gradient(90deg,var(--hot),var(--gold2));color:#fff;box-shadow:0 0 10px rgba(255,45,120,.3)}
-.bus-apply-primary:hover{box-shadow:0 0 18px rgba(255,45,120,.5)}
-.bus-apply-secondary{background:var(--chrome);border:1px solid var(--border);color:var(--dim)}
-.bus-apply-secondary:hover{border-color:var(--cyan);color:var(--cyan)}
-.bus-status{font-size:8px;color:var(--dim);margin-top:6px;min-height:12px;transition:color .3s}
-/* ── header controls ── */
-.gh-controls{display:flex;align-items:center;gap:5px;flex-shrink:0}
-.gh-bot-btn{width:26px;height:26px;border:1px solid var(--border);border-radius:5px;background:var(--chrome);color:#fff;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
-.gh-bot-btn:hover{border-color:var(--gold2);color:var(--gold2)}
-.gh-bot-btn:disabled{opacity:.3;cursor:not-allowed}
-.gh-auto-btn{padding:0 9px;height:26px;border:1px solid var(--border);border-radius:5px;background:var(--chrome);color:var(--dim);font-family:'Bungee',display;font-size:9px;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0}
-.gh-auto-btn:hover{border-color:var(--cyan);color:var(--cyan)}
-.gh-auto-btn.on{background:rgba(0,255,231,.1);border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 8px rgba(0,255,231,.2)}
-.gh-ticker{display:flex;flex-direction:column;align-items:center;flex-shrink:0;min-width:44px}
-.gh-ticker-cd{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--cyan);line-height:1}
-.gh-ticker-cd.urgent{color:var(--hot);animation:gh-blink .5s ease infinite alternate}
-@keyframes gh-blink{from{opacity:1}to{opacity:.4}}
-.gh-ticker-lbl{font-size:7px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-top:1px}
-.gh-queue{display:flex;flex-direction:column;align-items:center;flex-shrink:0;min-width:24px}
-.gh-queue-num{font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;color:var(--blue);line-height:1}
-.gh-queue-lbl{font-size:7px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-top:1px}
-
-
-
-/* ══ COLLAPSIBLE PANEL BASE ══ */
-.cpanel{background:var(--panel);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden}
-.cpanel-hd{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;cursor:pointer;user-select:none;border-bottom:1px solid transparent;transition:background 0.2s}
-.cpanel-hd:hover, .audit-hd:hover, .learn-hd:hover { background: rgba(255,255,255,0.03); }
-.cpanel-hd.open{border-bottom-color:var(--border)}
-.cpanel-body{display:none;padding:12px}
-.cpanel-body.open{display:block}
-.cpanel-title{font-family:'Bungee',display;font-size:11px;letter-spacing:2px}
-.cpanel-toggle{font-size:10px;color:var(--dim)}
-
-/* ══ CRUCIBLE MODE ══ */
-.crucible-bar{
-  padding:8px 12px;background:linear-gradient(90deg,rgba(191,95,255,.08),transparent);
-  border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap
-}
-.crucible-label{font-family:'Bungee',display;font-size:10px;letter-spacing:1px;color:var(--purple)}
-.crucible-progress{flex:1;min-width:100px;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
-.crucible-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--purple),var(--cyan));transition:width .4s ease}
-.crucible-count{font-family:'Oswald',sans-serif;font-size:11px;color:var(--purple);white-space:nowrap}
-.crucible-toggle{padding:4px 10px;font-family:'Bungee',display;font-size:9px;background:none;border:1px solid var(--purple);color:var(--purple);border-radius:4px;cursor:pointer;letter-spacing:1px}
-.crucible-toggle:hover{background:rgba(191,95,255,.1)}
-.crucible-toggle.active{background:rgba(191,95,255,.15)}
-
-/* Regime buttons */
-.regime-btn{
-  padding:4px 8px;
-  font-family:'Bungee',display;
-  font-size:9px;
-  letter-spacing:1px;
-  border:1px solid var(--border);
-  border-radius:4px;
-  background:var(--chrome);
-  color:var(--dim);
-  cursor:pointer;
-  transition:all .2s;
-  white-space:nowrap;
-}
-.regime-btn:hover{
-  border-color:var(--gold2);
-  color:var(--gold2);
-  background:rgba(255,170,0,.08);
-}
-.regime-btn.active{
-  background:rgba(57,255,20,.2);
-  border-color:var(--green);
-  color:var(--green);
-  box-shadow:0 0 8px rgba(57,255,20,.3);
-}
-
-/* ══ QUANT REPORT ══ */
-.qr-section-title{font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;margin-top:10px}
-.qr-section-title:first-child{margin-top:0}
-.metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:2px}
-.metrics-grid-6{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-@media(max-width:600px){.metrics-grid{grid-template-columns:repeat(2,1fr)}.metrics-grid-6{grid-template-columns:repeat(2,1fr)}}
-.mcard{background:var(--chrome);border:1px solid var(--border);border-radius:7px;padding:7px 9px;text-align:center}
-.mcard .mv{font-family:'Oswald',sans-serif;font-size:18px;font-weight:700;line-height:1}
-.mcard .ml{font-size:7px;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-top:3px}
-.mcard .ms{font-size:7px;color:var(--dim);margin-top:1px}
-.mcard.good .mv{color:var(--green)}
-.mcard.bad .mv{color:var(--hot)}
-.mcard.neu .mv{color:var(--gold)}
-.mcard.info .mv{color:var(--blue)}
-.mcard.purple .mv{color:var(--purple)}
-/* Equity curve */
-.eq-chart{height:72px;position:relative;background:rgba(0,0,0,.3);border-radius:4px;overflow:hidden;margin-bottom:2px}
-.eq-svg{width:100%;height:100%}
-/* Baseline comparison table */
-.baseline-table{width:100%;border-collapse:collapse;font-size:9px;margin-bottom:4px}
-.baseline-table th{padding:5px 8px;background:rgba(68,136,255,.08);color:var(--blue);font-family:'Oswald',sans-serif;letter-spacing:1px;text-align:left;border-bottom:1px solid var(--border)}
-.baseline-table td{padding:5px 8px;border-bottom:1px solid rgba(255,255,255,.04);color:#bbb}
-.baseline-table tr.highlight-row td{color:#fff;font-weight:bold}
-.baseline-table tr.best-row td{color:var(--green)}
-/* Return distribution */
-.dist-bars{display:flex;align-items:flex-end;gap:2px;height:48px;margin-bottom:3px}
-.dist-bar{flex:1;border-radius:2px 2px 0 0;min-height:2px;transition:height .4s ease}
-.dist-label{display:flex;justify-content:space-between;font-size:7px;color:var(--dim)}
-/* Strategy breakdown */
-.strat-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:9px}
-.strat-name{min-width:86px;color:var(--dim)}
-.strat-bar-wrap{flex:1;height:5px;background:var(--border);border-radius:2px;overflow:hidden}
-.strat-bar{height:100%;border-radius:2px;transition:width .5s ease}
-.strat-bar.pos{background:var(--green)}
-.strat-bar.neg{background:var(--hot)}
-.strat-stat{min-width:70px;text-align:right;font-size:8px}
-/* Cost sensitivity */
-.cost-sens-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:4px}
-.cs-card{background:var(--chrome);border:1px solid var(--border);border-radius:6px;padding:6px 8px;text-align:center}
-.cs-card .csv{font-family:'Oswald',sans-serif;font-size:16px;font-weight:700}
-.cs-card .csl{font-size:7px;color:var(--dim);margin-top:2px}
-/* Verdict */
-.verdict{padding:10px 12px;border-radius:8px;font-size:10px;line-height:1.6;margin-top:8px}
-.verdict.edge{background:rgba(57,255,20,.07);border:1px solid rgba(57,255,20,.2);color:var(--green)}
-.verdict.losing{background:rgba(255,45,120,.07);border:1px solid rgba(255,45,120,.2);color:var(--hot)}
-.verdict.marginal{background:rgba(255,179,0,.07);border:1px solid rgba(255,179,0,.2);color:var(--amber)}
-.verdict.waiting{background:rgba(100,100,100,.07);border:1px solid var(--border);color:var(--dim)}
-/* Stat significance */
-.sig-ladder{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap}
-.sig-step{padding:3px 8px;border-radius:10px;font-size:8px;border:1px solid var(--border);color:var(--dim)}
-.sig-step.done{color:var(--green);border-color:rgba(57,255,20,.3);background:rgba(57,255,20,.07)}
-.sig-step.active{color:var(--amber);border-color:rgba(255,179,0,.3);background:rgba(255,179,0,.07);animation:sigpulse .8s ease infinite alternate}
-@keyframes sigpulse{from{opacity:.7}to{opacity:1}}
-/* Export buttons */
-.export-row{display:flex;gap:6px;margin-top:8px}
-.export-btn{padding:7px 14px;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;border:none;border-radius:5px;cursor:pointer;transition:all .15s}
-.export-csv{background:linear-gradient(90deg,#006644,#004422);color:var(--green);box-shadow:0 0 10px rgba(57,255,20,.2)}
-.export-csv:hover{box-shadow:0 0 18px rgba(57,255,20,.4)}
-.export-json{background:linear-gradient(90deg,#002266,#001144);color:var(--blue);box-shadow:0 0 10px rgba(68,136,255,.2)}
-.export-json:hover{box-shadow:0 0 18px rgba(68,136,255,.4)}
-
-/* ══ CIRCUIT BREAKERS ══ */
-.breaker-status{font-size:9px;padding:2px 8px;border-radius:10px}
-.bs-ok{background:rgba(57,255,20,.12);border:1px solid rgba(57,255,20,.3);color:var(--green)}
-.bs-warn{background:rgba(255,179,0,.15);border:1px solid rgba(255,179,0,.4);color:var(--amber);animation:amb .8s ease infinite alternate}
-.bs-stop{background:rgba(255,45,120,.15);border:1px solid rgba(255,45,120,.4);color:var(--hot);animation:amb .4s ease infinite alternate}
-@keyframes amb{from{opacity:.7}to{opacity:1}}
-.breaker-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
-@media(max-width:480px){.breaker-grid{grid-template-columns:1fr}}
-.b-control{background:var(--chrome);border:1px solid var(--border);border-radius:8px;padding:8px 10px}
-.b-control label{font-size:8px;color:var(--dim);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:1px}
-.b-control input[type=number]{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--gold);padding:4px 6px;border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:11px}
-.b-control input[type=range]{width:100%;accent-color:var(--amber)}
-.b-val{font-size:10px;color:var(--amber);text-align:right;margin-top:2px}
-.cooldown-table{width:100%;border-collapse:collapse;font-size:9px;margin-bottom:8px}
-.cooldown-table th{padding:4px 8px;background:rgba(255,179,0,.08);color:var(--amber);font-family:'Oswald',sans-serif;letter-spacing:1px;text-align:left;border-bottom:1px solid var(--border)}
-.cooldown-table td{padding:4px 8px;border-bottom:1px solid rgba(255,255,255,.04);color:#bbb}
-.cooldown-table tr.active-row td{color:var(--hot);background:rgba(255,45,120,.06)}
-.global-kill-btn{width:100%;padding:8px;font-family:'Bungee',display;font-size:12px;letter-spacing:2px;background:linear-gradient(180deg,#c00030,#7a001e);border:none;border-radius:6px;color:#fff;cursor:pointer;box-shadow:0 2px 0 #400010,0 0 16px rgba(255,0,48,.4);transition:all .1s;margin-top:4px}
-.global-kill-btn:hover{box-shadow:0 2px 0 #400010,0 0 28px rgba(255,0,48,.7)}
-
-/* THE VAULT - Acoustic Core Balance Display */
-/* Pot of Gold visual */
-.vault-pot{display:flex;align-items:flex-end;justify-content:center;gap:4px;margin-bottom:8px;min-height:36px}
-.vault-coin{width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#ffd700,#b8860b);box-shadow:inset -2px -2px 4px rgba(0,0,0,.3),0 0 6px rgba(255,215,0,.4);position:relative}
-.vault-coin::after{content:'$';font-size:9px;font-weight:700;color:#704200;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
-/* Rainbow */
-.vault-rainbow{position:absolute;top:-50px;left:-10%;width:120%;height:60px;opacity:.12;pointer-events:none;background:linear-gradient(90deg,red,orange,yellow,green,blue,indigo,violet);border-radius:50%;filter:blur(15px)}
-.vault-hero{background:linear-gradient(180deg,#1a0d00,#050508);border:2px solid var(--gold);border-radius:16px;padding:16px;margin-bottom:12px;position:relative;overflow:hidden}
-.vault-label{font-size:9px;color:var(--gold);letter-spacing:3px;text-transform:uppercase;margin-bottom:8px}
-.vault-container{height:120px;background:rgba(0,0,0,.4);border-radius:12px;position:relative;overflow:hidden}
-.vault-fill{position:absolute;bottom:0;left:0;right:0;height:0%;background:linear-gradient(180deg,#fbbf24,#ff8c00);transition:height .8s cubic-bezier(.34,1.56,.64,1)}
-.vault-hero.live-mode .vault-fill{background:linear-gradient(180deg,#ff2d78,#ff0044)}
-.vault-balance-display{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
-.vault-balance{font-family:'Bungee',display;font-size:28px;color:#fff;text-shadow:0 2px 20px rgba(251,191,36,.5)}
-.vault-label-small{font-size:8px;color:var(--dim);letter-spacing:2px;display:block;margin-top:2px}
-
-
-/* AGENT/MACHINE MATRIX - Pad Grid */
-.matrix-section{margin-bottom:12px}
-.matrix-header{display:flex;justify-content:space-between;font-size:9px;color:var(--dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}
-.matrix-count{color:var(--cyan)}
-.pad-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-top:8px}
-.pad{background:var(--chrome);border:1px solid var(--border);border-radius:8px;padding:8px 4px;text-align:center;transition:all .3s ease;min-height:52px;cursor:pointer}
-.pad:hover{border-color:var(--cyan)}
-.pad-agent-id{font-size:8px;color:var(--dim);display:block}
-.pad-pnl{font-family:'Bungee',display;font-size:10px;display:block;margin-top:2px;color:#fff}
-.pad-active{border-color:var(--cyan);box-shadow:0 0 12px rgba(0,255,231,.4);animation:padPulse 1s ease infinite}
-.pad-hit{border-color:var(--green);box-shadow:0 0 8px rgba(57,255,20,.3);background:rgba(57,255,20,.08)}
-.pad-hit .pad-pnl{color:var(--green)}
-.pad-miss{border-color:rgba(255,45,120,.3);opacity:.6;background:rgba(255,45,120,.04)}
-.pad-miss .pad-pnl{color:#ff2d78}
-@keyframes padPulse{0%,100%{box-shadow:0 0 12px rgba(0,255,231,.4)}50%{box-shadow:0 0 20px rgba(0,255,231,.7)}}
-@media(max-width:640px){.pad-grid{grid-template-columns:repeat(4,1fr)} .vault-balance{font-size:22px}}
-@media(min-width:641px) and (max-width:900px){.pad-grid{grid-template-columns:repeat(6,1fr)}}
-
-/*BOT GRID*/
-.bot-grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(285px,1fr))}
-
-/* ══ MACHINE ══ */
-.machine{background:linear-gradient(180deg,#110b18,var(--panel));border:2px solid var(--gold2);border-radius:14px;overflow:hidden;position:relative;box-shadow:0 0 32px rgba(255,170,0,.18),0 8px 32px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,215,0,.08);transition:border-color .3s,box-shadow .3s}
-.machine.winning{animation:wf .15s ease 4;}
-.machine.losing{animation:lf .15s ease 4}
-.machine.auto-on{border-color:var(--cyan);box-shadow:0 0 28px rgba(0,255,231,.2)}
-.machine.gas-paused{border-color:var(--amber)!important;box-shadow:0 0 20px rgba(255,179,0,.3)!important}
-.machine.cooling{border-color:var(--hot)!important;box-shadow:0 0 20px rgba(255,45,120,.3)!important}
-.machine.has-open{border-color:var(--blue)!important;box-shadow:0 0 20px rgba(68,136,255,.25)!important}
-@keyframes wf{0%,100%{border-color:var(--gold2);box-shadow:0 0 32px rgba(255,170,0,.18)}50%{border-color:var(--green);box-shadow:0 0 60px rgba(57,255,20,.6),inset 0 0 30px rgba(57,255,20,.08)}}
-@keyframes lf{0%,100%{border-color:var(--gold2);box-shadow:0 0 32px rgba(255,170,0,.18)}50%{border-color:var(--hot);box-shadow:0 0 50px rgba(255,45,120,.6)}}
-.m-status-badge{display:none;position:absolute;top:36px;left:0;right:0;z-index:25;text-align:center;padding:5px;font-family:'Bungee',display;font-size:10px;letter-spacing:2px}
-.m-status-badge.gas{display:block;background:rgba(255,179,0,.94);color:#1a0800}
-.m-status-badge.cool{display:block;background:rgba(200,0,48,.94);color:#fff}
-.m-head{display:flex;align-items:center;justify-content:space-between;padding:6px 9px;background:linear-gradient(180deg,#1a0d24,var(--panel));border-bottom:1px solid var(--border)}
-.m-id{font-family:'Bungee',display;font-size:10px;letter-spacing:2px;color:var(--gold)}
-.m-pnl{font-size:8px;font-family:'Oswald',sans-serif;font-weight:700;padding:1px 5px;border-radius:8px;background:var(--chrome);border:1px solid var(--border)}
-.m-pnl.pos{color:var(--green);border-color:rgba(57,255,20,.3)}
-.m-pnl.neg{color:var(--hot);border-color:rgba(255,45,120,.3)}
-.m-ticker{font-size:7px;color:var(--cyan);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.8}
-.m-close{background:none;border:none;color:var(--dim);cursor:pointer;font-size:13px;padding:0 1px;line-height:1}
-.m-close:hover{color:var(--hot)}
-.m-reels{margin:5px 9px;background:#000;border:2px solid var(--chrome);border-radius:5px;overflow:hidden;display:flex;position:relative;height:108px}
-.m-reels::before{content:'';position:absolute;top:50%;left:0;right:0;height:2px;z-index:11;background:linear-gradient(90deg,transparent,var(--gold),var(--hot),var(--gold),transparent);transform:translateY(-50%);box-shadow:0 0 6px var(--gold)}
-.m-reels::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:10;background:linear-gradient(180deg,rgba(0,0,0,.65) 0%,transparent 30%,transparent 70%,rgba(0,0,0,.65) 100%)}
-.m-reel{flex:1;height:108px;overflow:hidden;border-right:1px solid #1a0a20}
-.m-reel:last-child{border-right:none}
-.m-reel-track{display:flex;flex-direction:column;will-change:transform}
-.m-item{height:36px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;flex-shrink:0}
-.m-emoji{font-size:15px;line-height:1}
-.m-label{font-family:'Oswald',sans-serif;font-size:6px;letter-spacing:.5px;color:#999;text-transform:uppercase}
-.m-thinking{position:absolute;inset:0;background:rgba(0,0,0,.85);z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;opacity:0;pointer-events:none;transition:opacity .2s}
-.m-thinking.show{opacity:1}
-.think-spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--cyan);border-radius:50%;animation:spin .5s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.think-label{font-size:8px;color:var(--cyan);letter-spacing:1px}
-.think-step{font-size:7px;color:var(--dim);max-width:120px;text-align:center;line-height:1.4}
-.open-pos-overlay{position:absolute;inset:0;background:rgba(4,20,60,.88);z-index:15;display:none;flex-direction:column;align-items:center;justify-content:center;gap:2px}
-.open-pos-overlay.show{display:flex}
-.op-token{font-family:'Bungee',display;font-size:16px;color:var(--blue)}
-.op-method{font-size:8px;color:var(--dim);letter-spacing:1px}
-.op-entry-price{font-size:9px;color:#aaa;margin-top:1px}
-.op-live-pnl{font-family:'Oswald',sans-serif;font-size:20px;font-weight:700;margin-top:2px}
-.op-live-pnl.pos{color:var(--green)}
-.op-live-pnl.neg{color:var(--hot)}
-.op-live-pnl.pend{color:var(--amber)}
-.op-timer{font-size:8px;color:var(--cyan);margin-top:1px}
-.op-exit-label{font-size:7px;color:var(--dim)}
-.m-strats{display:flex;gap:4px;padding:3px 9px}
-.m-pill{flex:1;background:var(--chrome);border:1px solid var(--border);border-radius:4px;padding:3px 2px;text-align:center}
-.m-pill .pl{font-size:6px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px}
-.m-pill .pv{font-family:'Oswald',sans-serif;font-size:9px;color:var(--gold);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.m-pill.lit{border-color:var(--gold);box-shadow:0 0 5px rgba(255,215,0,.3)}
-.m-result{position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.9);opacity:0;pointer-events:none;transition:opacity .25s;padding:8px}
-.m-result.show{opacity:1;pointer-events:all}
-.m-r-title{font-family:'Bungee Shade',display;font-size:24px;animation:rj .4s ease infinite alternate}
-@keyframes rj{from{transform:scale(1) rotate(-1.5deg);filter:drop-shadow(0 0 8px var(--gold))}to{transform:scale(1.06) rotate(1.5deg);filter:drop-shadow(0 0 20px var(--hot))}}
-.m-r-amt{font-family:'Bungee',display;font-size:17px;margin-top:1px}
-.m-r-detail{font-size:7px;color:#777;margin-top:4px;text-align:center;max-width:200px;line-height:1.5;padding:0 8px}
-.m-r-baseline{font-size:7px;margin-top:3px;padding:3px 8px;border-radius:10px;background:rgba(68,136,255,.1);border:1px solid rgba(68,136,255,.2);color:var(--blue);text-align:center}
-.m-r-close{margin-top:7px;padding:4px 14px;font-family:'Bungee',display;font-size:10px;background:var(--hot);border:none;border-radius:4px;color:#fff;cursor:pointer}
-.m-controls{padding:5px 9px 7px;background:var(--chrome);border-top:1px solid var(--border)}
-.m-bet-row{display:flex;gap:3px;margin-bottom:4px}
-.m-bet{flex:1;padding:4px 1px;font-family:'Bungee',display;font-size:8px;background:var(--panel);border:1px solid var(--border);border-radius:3px;color:var(--dim);cursor:pointer;transition:all .12s}
-.m-bet:hover{border-color:var(--gold2);color:var(--gold2)}
-.m-bet.on{background:linear-gradient(180deg,#2a1a00,#160e00);border-color:var(--gold);color:var(--gold);box-shadow:0 0 6px rgba(255,215,0,.2)}
-.m-bottom{display:flex;gap:4px}
-.spin-btn{flex:1;padding:9px;font-family:'Bungee',display;font-size:13px;letter-spacing:1px;background:linear-gradient(180deg,#ff3d7f,#cc0040);border:none;border-radius:6px;color:#fff;cursor:pointer;box-shadow:0 4px 0 #660025,0 0 18px rgba(255,45,120,.5),inset 0 1px 0 rgba(255,255,255,.15);transition:all .1s}
-.spin-btn:not(:disabled):hover{box-shadow:0 3px 0 #660025,0 0 26px rgba(255,45,120,.7)}
-.spin-btn:not(:disabled):active{transform:translateY(2px);box-shadow:0 1px 0 #660025;filter:brightness(1.2)}
-.spin-btn:disabled{opacity:.4;cursor:not-allowed}
-.spin-btn.going{animation:pb .35s ease infinite alternate}
-@keyframes pb{from{box-shadow:0 3px 0 #660025,0 0 10px rgba(255,45,120,.3)}to{box-shadow:0 3px 0 #660025,0 0 30px rgba(255,45,120,.8)}}
-.auto-btn{padding:8px 10px;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;background:var(--panel);border:2px solid var(--border);border-radius:5px;color:var(--dim);cursor:pointer;transition:all .15s;white-space:nowrap}
-.auto-btn:hover{border-color:var(--cyan);color:var(--cyan)}
-.auto-btn.on{background:rgba(0,255,231,.1);border-color:var(--cyan);color:var(--cyan);box-shadow:inset 0 0 12px rgba(0,255,231,.1);animation:ap .8s ease infinite alternate}
-@keyframes ap{from{box-shadow:0 0 6px rgba(0,255,231,.2)}to{box-shadow:0 0 16px rgba(0,255,231,.5)}}
-.loss-streak-bar{height:3px;border-radius:1px;background:var(--border);overflow:hidden;margin-top:4px}
-.loss-streak-fill{height:100%;border-radius:1px;transition:width .4s ease}
-
-/* ══ BOT SETTINGS DROPDOWN ══ */
-.m-settings-bar{display:flex;align-items:center;justify-content:space-between;padding:4px 9px;gap:6px}
-.m-bet-display{font-family:'Oswald',sans-serif;font-size:12px;color:var(--gold);font-weight:700;flex-shrink:0}
-.m-bet-display span{font-size:8px;color:var(--dim);font-family:'Share Tech Mono',monospace;margin-left:3px}
-.m-gear-btn{width:24px;height:24px;border:1px solid var(--border);border-radius:4px;background:var(--chrome);color:var(--dim);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
-.m-gear-btn:hover{border-color:var(--gold2);color:var(--gold2)}
-.m-gear-btn.open{border-color:var(--cyan);color:var(--cyan);background:rgba(0,255,231,.07)}
-.m-dropdown{display:none;padding:8px 9px 10px;background:rgba(6,3,10,.97);border-top:1px solid var(--border)}
-.m-dropdown.open{display:block}
-.m-dd-section{margin-bottom:8px}
-.m-dd-label{font-size:7px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
-.m-dd-bets{display:flex;flex-wrap:wrap;gap:3px}
-.m-dd-bet{padding:4px 7px;font-family:'Bungee',display;font-size:8px;background:var(--panel);border:1px solid var(--border);border-radius:3px;color:var(--dim);cursor:pointer;transition:all .12s;white-space:nowrap}
-.m-dd-bet:hover{border-color:var(--gold2);color:var(--gold2)}
-.m-dd-bet.on{background:linear-gradient(180deg,#2a1a00,#160e00);border-color:var(--gold);color:var(--gold);box-shadow:0 0 6px rgba(255,215,0,.2)}
-.m-dd-custom{display:flex;gap:4px;margin-top:4px}
-.m-dd-custom input{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--gold);padding:4px 7px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:10px;min-width:0}
-.m-dd-custom input:focus{outline:none;border-color:var(--gold2)}
-.m-dd-custom button{padding:4px 9px;font-family:'Bungee',display;font-size:8px;background:var(--chrome);border:1px solid var(--border);border-radius:3px;color:var(--dim);cursor:pointer;white-space:nowrap}
-.m-dd-custom button:hover{border-color:var(--gold2);color:var(--gold2)}
-.m-dd-select{width:100%;background:var(--bg);border:1px solid var(--border);color:#ccc;padding:5px 7px;border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer}
-.m-dd-select:focus{outline:none;border-color:var(--cyan)}
-.m-dd-row{display:flex;gap:6px}
-.m-dd-row .m-dd-section{flex:1}
-.cooldown-countdown{font-size:18px;font-family:'Bungee',display;color:var(--hot);margin-bottom:4px}
-.override-btn{padding:4px 12px;font-family:'Bungee',display;font-size:9px;background:none;border:1px solid var(--hot);color:var(--hot);border-radius:4px;cursor:pointer;letter-spacing:1px;opacity:.6}
-.override-btn:hover{opacity:1}
-
-/* ══ AGENT ENSEMBLE UI ══ */
-.agent-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:4px 9px}
-@media(max-width:500px){.agent-grid{grid-template-columns:repeat(3,1fr)}}
-.agent-card{background:var(--chrome);border:1px solid var(--border);border-radius:5px;padding:4px 3px;text-align:center;transition:all .3s}
-.agent-card.thinking{border-color:var(--cyan);animation:ath .6s ease infinite alternate}
-.agent-card.voted-long{border-color:var(--green);background:rgba(57,255,20,.06)}
-.agent-card.voted-short{border-color:var(--hot);background:rgba(255,45,120,.06)}
-.agent-card.voted-hold{border-color:var(--amber);background:rgba(255,179,0,.06)}
-.agent-card.voted-veto{border-color:#ff0000;background:rgba(255,0,0,.1)}
-@keyframes ath{from{box-shadow:none}to{box-shadow:0 0 8px var(--cyan)}}
-.ac-icon{font-size:12px;line-height:1}
-.ac-name{font-size:6px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-top:1px}
-.ac-vote{font-family:'Oswald',sans-serif;font-size:8px;font-weight:700;margin-top:1px}
-.ac-conv{font-size:6px;color:var(--dim)}
-/* Consensus bar */
-.consensus-bar-wrap{margin:3px 9px 5px;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
-.consensus-bar-fill{height:100%;border-radius:2px;transition:width .4s ease}
-.consensus-label{margin:0 9px 4px;display:flex;justify-content:space-between;font-size:7px;color:var(--dim)}
-/* Ensemble panel in quant report */
-.ensemble-panel{background:var(--chrome);border:1px solid var(--border);border-radius:7px;padding:8px 10px;margin-bottom:6px}
-.ep-title{font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
-.ep-agent-row{display:flex;align-items:center;gap:8px;margin-bottom:3px;font-size:9px}
-.ep-agent-icon{font-size:11px;min-width:18px}
-.ep-agent-name{min-width:80px;color:var(--dim)}
-.ep-agent-bar-wrap{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
-.ep-agent-bar{height:100%;border-radius:2px}
-.ep-agent-stat{min-width:60px;text-align:right;font-size:8px}
-/* Politician signal */
-.pol-signal{font-size:8px;padding:3px 8px;border-radius:4px;margin-top:3px;line-height:1.5;display:none}
-.pol-signal.show{display:block}
-.pol-signal.bullish{background:rgba(57,255,20,.07);border:1px solid rgba(57,255,20,.2);color:var(--green)}
-.pol-signal.bearish{background:rgba(255,45,120,.07);border:1px solid rgba(255,45,120,.2);color:var(--hot)}
-.pol-signal.neutral{background:rgba(100,100,100,.06);border:1px solid var(--border);color:var(--dim)}
-/* Regime badge */
-.regime-badge{font-size:7px;padding:1px 6px;border-radius:8px;font-family:'Oswald',sans-serif;font-weight:700;letter-spacing:.5px}
-.regime-trend{background:rgba(57,255,20,.1);border:1px solid rgba(57,255,20,.3);color:var(--green)}
-.regime-chop{background:rgba(255,179,0,.1);border:1px solid rgba(255,179,0,.3);color:var(--amber)}
-.regime-thin{background:rgba(100,100,100,.1);border:1px solid var(--border);color:var(--dim)}
-/* Databricks config */
-.db-config{background:rgba(255,45,120,.04);border:1px solid rgba(255,45,120,.15);border-radius:7px;padding:8px 10px;margin-bottom:6px}
-.db-config-title{font-size:8px;color:var(--hot);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;display:flex;align-items:center;gap:6px}
-.db-config input{width:100%;background:var(--bg);border:1px solid var(--border);color:#ccc;padding:4px 7px;border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px;margin-bottom:4px}
-.db-config input::placeholder{color:var(--dim)}
-.db-status{font-size:8px;color:var(--dim);margin-top:3px}
-
-/* ══ SELF-LEARNING UI ══ */
-.learn-panel{background:linear-gradient(135deg,rgba(191,95,255,.05),rgba(68,136,255,.05));border:1px solid rgba(191,95,255,.2);border-radius:10px;margin-bottom:8px;overflow:hidden}
-.learn-hd{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;cursor:pointer;user-select:none;border-bottom:1px solid transparent}
-.learn-hd.open{border-bottom-color:rgba(191,95,255,.2)}
-.learn-title{font-family:'Bungee',display;font-size:11px;letter-spacing:2px;color:var(--purple)}
-.learn-gen{font-size:9px;padding:2px 8px;border-radius:10px;background:rgba(191,95,255,.12);border:1px solid rgba(191,95,255,.3);color:var(--purple)}
-.learn-body{padding:12px;display:none}
-.learn-body.open{display:block}
-.weight-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:10px}
-@media(max-width:540px){.weight-grid{grid-template-columns:repeat(3,1fr)}}
-.wcard{background:var(--chrome);border:2px solid var(--border);border-radius:8px;padding:6px 4px;text-align:center;transition:all .5s}
-.wcard.rising{border-color:var(--green);box-shadow:0 0 10px rgba(57,255,20,.2)}
-.wcard.falling{border-color:var(--hot);box-shadow:0 0 6px rgba(255,45,120,.1)}
-.wcard.dominant{border-color:var(--purple);box-shadow:0 0 14px rgba(191,95,255,.35);animation:dom-pulse .8s ease infinite alternate}
-@keyframes dom-pulse{from{box-shadow:0 0 8px rgba(191,95,255,.2)}to{box-shadow:0 0 20px rgba(191,95,255,.5)}}
-.wc-icon{font-size:14px}
-.wc-name{font-size:6px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-top:1px}
-.wc-weight{font-family:'Oswald',sans-serif;font-size:16px;font-weight:700;color:var(--gold);line-height:1;transition:color .4s}
-.wc-wr{font-size:7px;color:var(--dim);margin-top:1px}
-.wc-delta{font-size:9px}
-.regime-weight-table{width:100%;border-collapse:collapse;font-size:8px;margin-bottom:10px}
-.regime-weight-table th{padding:4px 7px;background:rgba(191,95,255,.07);color:var(--purple);font-family:'Oswald',sans-serif;letter-spacing:1px;text-align:left;border-bottom:1px solid var(--border)}
-.regime-weight-table td{padding:4px 7px;border-bottom:1px solid rgba(255,255,255,.04);color:#bbb}
-.regime-weight-table td.best{color:var(--green);font-weight:bold}
-.regime-weight-table td.worst{color:var(--hot)}
-.learn-log-wrap{max-height:110px;overflow-y:auto;font-size:8px;border:1px solid var(--border);border-radius:5px;padding:5px 7px}
-.ll-entry{padding:2px 0;border-bottom:1px solid rgba(255,255,255,.03);line-height:1.4}
-.ll-entry.good{color:var(--green)}
-.ll-entry.bad{color:var(--hot)}
-.ll-entry.info{color:var(--blue)}
-.ll-entry.warn{color:var(--amber)}
-.mutation-badge{position:absolute;top:4px;right:32px;font-size:7px;padding:1px 5px;border-radius:8px;background:rgba(191,95,255,.15);border:1px solid rgba(191,95,255,.3);color:var(--purple);z-index:26;display:none}
-.mutation-badge.show{display:block;animation:mut-flash .3s ease 3}
-@keyframes mut-flash{0%,100%{opacity:1}50%{opacity:.3}}
-.gen-badge{font-size:9px;padding:2px 8px;border-radius:10px;background:rgba(191,95,255,.1);border:1px solid rgba(191,95,255,.25);color:var(--purple);white-space:nowrap}
-
-/* ══ AGENT AUDIT SYSTEM ══ */
-/* Status overlays on weight cards */
-.wcard{position:relative}
-.wcard-status{position:absolute;top:2px;right:2px;font-size:6px;padding:1px 4px;border-radius:6px;font-family:'Oswald',sans-serif;letter-spacing:.5px;font-weight:700}
-.ws-active{background:rgba(57,255,20,.15);color:var(--green);border:1px solid rgba(57,255,20,.3)}
-.ws-notice{background:rgba(255,179,0,.2);color:var(--amber);border:1px solid rgba(255,179,0,.4);animation:notice-flash .6s ease infinite alternate}
-@keyframes notice-flash{from{opacity:.6}to{opacity:1}}
-.ws-suspended{background:rgba(255,45,120,.2);color:var(--hot);border:1px solid rgba(255,45,120,.4)}
-.ws-reinstated{background:rgba(68,136,255,.2);color:var(--blue);border:1px solid rgba(68,136,255,.4)}
-.wcard.suspended{opacity:.45;filter:grayscale(.6)}
-.wcard.on-notice{box-shadow:0 0 12px rgba(255,179,0,.35)!important;border-color:var(--amber)!important}
-/* Audit panel */
-.audit-panel{background:linear-gradient(135deg,rgba(255,45,120,.04),rgba(255,179,0,.03));border:1px solid rgba(255,45,120,.2);border-radius:10px;margin-bottom:8px;overflow:hidden}
-.audit-hd{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;cursor:pointer;user-select:none;border-bottom:1px solid transparent}
-.audit-hd.open{border-bottom-color:rgba(255,45,120,.15)}
-.audit-title{font-family:'Bungee',display;font-size:11px;letter-spacing:2px;color:var(--hot)}
-.audit-summary{font-size:9px;padding:2px 8px;border-radius:10px;background:rgba(255,45,120,.1);border:1px solid rgba(255,45,120,.25);color:var(--hot)}
-.audit-body{padding:12px;display:none}
-.audit-body.open{display:block}
-/* Agent review cards */
-.audit-agent-row{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--chrome);border:1px solid var(--border);border-radius:7px;margin-bottom:5px;transition:all .3s}
-.audit-agent-row.on-notice{border-color:var(--amber);background:rgba(255,179,0,.05)}
-.audit-agent-row.suspended{border-color:var(--hot);background:rgba(255,45,120,.05);opacity:.7}
-.audit-agent-row.reinstated{border-color:var(--blue);background:rgba(68,136,255,.05)}
-.aa-icon{font-size:16px;min-width:20px}
-.aa-name{font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;min-width:70px}
-.aa-stats{flex:1;font-size:8px;color:var(--dim);line-height:1.6}
-.aa-status-badge{font-size:8px;padding:2px 8px;border-radius:10px;font-family:'Bungee',display;letter-spacing:1px;white-space:nowrap}
-.aas-active{background:rgba(57,255,20,.12);color:var(--green);border:1px solid rgba(57,255,20,.3)}
-.aas-notice{background:rgba(255,179,0,.15);color:var(--amber);border:1px solid rgba(255,179,0,.4)}
-.aas-suspended{background:rgba(255,45,120,.15);color:var(--hot);border:1px solid rgba(255,45,120,.4)}
-.aas-reinstated{background:rgba(68,136,255,.15);color:var(--blue);border:1px solid rgba(68,136,255,.3)}
-.aa-action-btn{padding:3px 9px;font-family:'Bungee',display;font-size:8px;letter-spacing:.5px;border:none;border-radius:4px;cursor:pointer;margin-left:4px}
-.aa-btn-reinstate{background:rgba(57,255,20,.15);color:var(--green);border:1px solid rgba(57,255,20,.3)}
-.aa-btn-reinstate:hover{background:rgba(57,255,20,.25)}
-.aa-btn-suspend{background:rgba(255,45,120,.12);color:var(--hot);border:1px solid rgba(255,45,120,.3)}
-.aa-btn-suspend:hover{background:rgba(255,45,120,.22)}
-.aa-btn-clear{background:rgba(100,100,100,.1);color:var(--dim);border:1px solid var(--border)}
-.aa-btn-clear:hover{color:#fff}
-/* Probation progress bar */
-.probation-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:3px}
-.probation-fill{height:100%;border-radius:2px;transition:width .4s ease}
-/* Audit history log */
-.audit-log-wrap{max-height:160px;overflow-y:auto;font-size:8px;border:1px solid var(--border);border-radius:5px;padding:5px 8px;margin-top:8px}
-.al-entry{padding:3px 0;border-bottom:1px solid rgba(255,255,255,.03);line-height:1.5;display:flex;gap:6px}
-.al-ts{color:#333;min-width:36px;flex-shrink:0}
-.al-icon{min-width:12px}
-.al-msg{flex:1}
-.al-entry.notice{color:var(--amber)}
-.al-entry.suspend{color:var(--hot)}
-.al-entry.reinstate{color:var(--blue)}
-.al-entry.clear{color:var(--green)}
-.al-entry.audit{color:var(--dim)}
-/* On-notice overlay on machine reel */
-.agent-on-notice-bar{position:absolute;bottom:0;left:0;right:0;height:14px;background:rgba(255,179,0,.85);z-index:16;display:none;align-items:center;justify-content:center;font-size:7px;font-family:'Bungee',display;color:#1a0800;letter-spacing:1px}
-.agent-on-notice-bar.show{display:flex}
-
-.global-log{padding:10px 0 0}
-.log-title{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:3px;color:var(--dim);margin-bottom:5px;padding:0 2px;display:flex;align-items:center;justify-content:space-between}
-.log-list{display:flex;flex-direction:column;gap:2px}
-.log-row{background:var(--panel);border:1px solid var(--border);border-radius:4px;padding:5px 9px;display:flex;align-items:center;gap:5px;font-size:8px;transition:background .15s}.log-row:hover{background:var(--chrome)}
-.log-bot{color:var(--dim);min-width:22px}
-.log-coin{font-family:'Oswald',sans-serif;font-size:10px;font-weight:700;min-width:40px}
-.log-method{color:var(--dim);flex:1;min-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.log-entry{color:#555;min-width:52px;text-align:center}
-.log-exit{color:#666;min-width:52px;text-align:center}
-.log-pnl{font-weight:bold;min-width:52px;text-align:right}
-.log-pnl.p{color:var(--green)}
-.log-pnl.n{color:var(--hot)}
-.log-pnl.h{color:var(--amber)}
-.log-pnl.open{color:var(--blue);animation:blink .8s ease infinite alternate}
-@keyframes blink{from{opacity:.5}to{opacity:1}}
-.log-cost{font-size:7px;color:#444;min-width:40px;text-align:right}
-.log-t{color:#333;font-size:7px;min-width:26px;text-align:right}
-.empty-log{font-size:10px;color:var(--dim);text-align:center;padding:14px;border:1px dashed var(--border);border-radius:6px}
-.ptc{position:fixed;pointer-events:none;z-index:8999;animation:pf 1.3s ease forwards}
-@keyframes pf{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(160px) rotate(720deg);opacity:0}}
-/* Toast animations used by showToast() */
-@keyframes toastFadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-@keyframes toastFadeOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-20px)}}
-@keyframes pulse{0%{opacity:1;transform:scale(1)}50%{opacity:0.6;transform:scale(1.05)}100%{opacity:1;transform:scale(1)}}
-@keyframes highlight-pulse {
-  0% { box-shadow: 0 0 0 0 rgba(0, 255, 231, 0.7); border-color: var(--cyan); }
-  70% { box-shadow: 0 0 0 15px rgba(0, 255, 231, 0); border-color: var(--cyan); }
-  100% { box-shadow: 0 0 0 0 rgba(0, 255, 231, 0); }
-}
-.highlight-pulse {
-  animation: highlight-pulse 1.5s ease-out 2;
-}
-@media(max-width:640px){.bot-grid{grid-template-columns:1fr}}
-@media(min-width:641px) and (max-width:900px){.bot-grid{grid-template-columns:1fr 1fr}}
-@media(min-width:901px){.bot-grid{grid-template-columns:repeat(3,1fr)}}
-
-/* FLEET VIEW MODE */
-.bot-grid.fleet-view {
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 6px;
-}
-.fleet-view .machine {
-  border-width: 1px;
-  border-radius: 8px;
-}
-.fleet-view .m-reels,
-.fleet-view .m-strats,
-.fleet-view .agent-grid,
-.fleet-view .consensus-label,
-.fleet-view .consensus-bar-wrap,
-.fleet-view .m-controls,
-.fleet-view .loss-streak-bar,
-.fleet-view .m-ticker {
-  display: none;
-}
-.fleet-view .m-head {
-  padding: 4px 6px;
-}
-.fleet-view .m-id {
-  font-size: 8px;
-}
-.fleet-view .m-pnl {
-  font-size: 7px;
-}
-.fleet-view .open-pos-overlay {
-  display: flex;
-  position: relative;
-  height: 60px;
-  background: none;
-}
-.fleet-view .op-token { font-size: 12px; }
-.fleet-view .op-method, .fleet-view .op-entry-price, .fleet-view .op-timer, .fleet-view .op-exit-label { display: none; }
-.fleet-view .op-live-pnl { font-size: 14px; margin-top: 0; }
-.fleet-view .m-thinking { padding: 2px; }
-.fleet-view .think-spinner { width: 12px; height: 12px; }
-.fleet-view .think-label, .fleet-view .think-step { display: none; }
-.fleet-view .m-result { padding: 4px; }
-.fleet-view .m-r-title { font-size: 14px; }
-.fleet-view .m-r-amt { font-size: 12px; }
-.fleet-view .m-r-detail, .fleet-view .m-r-baseline { display: none; }
-
-/* VOICE AGENT MODAL */
-#voiceAgentModal {
-  display: none;
-  position: fixed;
-  bottom: 80px;
-  right: 20px;
-  width: 300px;
-  background: var(--panel);
-  border: 1px solid var(--cyan);
-  border-radius: 12px;
-  z-index: 10001;
-  flex-direction: column;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.8), 0 0 16px rgba(0,255,231,0.1);
-  overflow: hidden;
-}
-#voiceAgentModal.open { display: flex; }
-.va-header { padding: 10px; background: rgba(0,255,231,0.05); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-.va-title { font-family: 'Bungee', display; font-size: 10px; color: var(--cyan); letter-spacing: 1px; }
-.va-body { padding: 15px; flex: 1; display: flex; flex-direction: column; gap: 10px; }
-.va-status { font-size: 9px; color: var(--dim); text-align: center; }
-.va-visualizer { height: 40px; display: flex; align-items: center; justify-content: center; gap: 3px; }
-.va-bar { width: 4px; height: 10px; background: var(--cyan); border-radius: 2px; }
-.va-input-area { padding: 10px; border-top: 1px solid var(--border); display: flex; gap: 8px; }
-.va-input { flex: 1; background: var(--bg); border: 1px solid var(--border); color: #fff; padding: 6px 10px; border-radius: 6px; font-family: inherit; font-size: 11px; }
-.va-send { background: var(--cyan); color: #000; border: none; border-radius: 6px; padding: 0 12px; font-weight: bold; cursor: pointer; }
-
-/* ══ STICKY HEADER ══ */
-.global-header{position:sticky;top:4px;z-index:9998}
-</style>
-
-<!-- ╔════════════════════════════════════════════════════════════╗ -->
-<!-- ║ PWA CONFIGURATION - Progressive Web App                  ║ -->
-<!-- ╝════════════════════════════════════════════════════════════╝ -->
-
-<!-- PWA Manifest -->
-<link rel="manifest" href="./manifest.json">
-
-<!-- iOS Meta Tags -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Trade Arena">
-<link rel="apple-touch-icon" href="icon-192.png">
-
-<!-- Theme Color -->
-<meta name="theme-color" content="#00f5ff">
-
-<!-- Service Worker Registration -->
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW registration failed:', err));
-  }
-</script>
-
-</head>
-<body>
-<div class="edge"></div>
-
-<!-- ══ CONNECT ══ -->
-<div id="connectScreen">
-  <div class="marquee-wrap">
-    <div class="marquee-inner">
-      <span>⚡ 5-AGENT ENSEMBLE</span><span>🏛️ POLITICIAN FILINGS</span><span>🧬 SELF-LEARNING MODEL</span><span>📊 REAL EXIT PRICES</span>
-      <span>🔍 AUTO AUDIT</span><span>🎯 CRUCIBLE MODE</span><span>🛡️ CIRCUIT BREAKERS</span><span>🔥 LIVE P&L</span>
-      <span>⚡ 5-AGENT ENSEMBLE</span><span>🏛️ POLITICIAN FILINGS</span><span>🧬 SELF-LEARNING MODEL</span><span>📊 REAL EXIT PRICES</span>
-    </div>
-  </div>
-  <div><div class="logo flk">TRADE<br>ARENA</div><div class="sub" style="margin-top:4px">AI TRADING FLOOR</div></div>
-  <div style="display:flex;gap:8px;font-size:10px;color:var(--dim);justify-content:center;flex-wrap:wrap;text-align:center">
-    <span>5 AI agents · Real prices · Self-learning · Politician filings</span>
-  </div>
-<div class="login-card">
-    <div class="login-card-hd">SIGN IN TO THE FLOOR</div>
-    <div class="login-card-bd">
-      <!-- Privy Embedded Wallet Login -->
-      <button class="g-btn" onclick="if(typeof privyInit==='function') privyInit(); privyLoginGoogle()">
-        <svg class="g-icon" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-        SIGN IN WITH GOOGLE
-      </button>
-      <button class="g-btn" onclick="if(typeof privyInit==='function') privyInit(); privyLoginApple()" style="background:#000;color:#fff;margin-top:4px">
-        <svg class="g-icon" viewBox="0 0 384 512" style="width:20px;height:20px"><path fill="#fff" d="M318.7 268.7c-.2-1.2-.4-2.4-.4-3.6 0-23.6-19.1-42.8-42.7-42.8-12.5 0-23.6 5.4-32 14-8.4-8.6-19.6-14.1-32.1-14.1-23.5 0-42.6 19.2-42.6 42.8 0 1.2-.1 2.4-.1 3.6C106.5 282.3 173 350 256 350s149.5-67.7 149.5-151.3c0-1.2.1-2.4.1-3.6-12.4 0-23.8 5.3-32.3 14.3-8.5-9-19.9-14.3-32.4-14.3zM192 342.7c20.9-2.3 39.2-14.1 52.3-35.3-20-20.9-52.3-34.3-92.3-34.3-40.1 0-72.3 13.4-92.4 34.3 13 21.2 31.4 33 52.2 35.3 20.9 2.3 41.7-2.3 60.2-1.1z"/></svg>
-        SIGN IN WITH APPLE
-      </button>
-      <div class="divider">— or —</div>
-
-      <button class="payid-btn" onclick="loginPayID()">
-        <span style="font-size:16px">⚡</span> PAYID NO-KYC ONBOARDING (AUD)
-      </button>
-      <div class="divider" style="margin:12px 0">— or —</div>
-<button class="mm-btn" onclick="loginMetaMask()">
-        <svg width="20" height="20" viewBox="0 0 318 318"><path d="M274 35L174 109l19-44z" fill="#E17726"/><path d="M44 35l99 75-18-44z" fill="#E27625"/><path d="M234 218l-27 41 58 16 17-56z" fill="#E27625"/><path d="M36 219l17 56 57-16-26-41z" fill="#E27625"/><path d="M107 143l-17 25 60 3-2-64z" fill="#E27625"/><path d="M211 143l-42-37-2 64 60-3z" fill="#E27625"/></svg>
-        METAMASK
-      </button>
-      <button class="cb-btn" onclick="loginCoinbase()">
-        <svg width="20" height="20" viewBox="0 0 48 48"><circle cx="24" cy="24" r="24" fill="#0052FF"/><path d="M24 12c-1.5 0-2.7.9-3.3 2.2l-4.3-2.6c.8-1.9 2.6-3.1 4.7-3.1 2.9 0 5.2 2.3 5.2 5.2s-2.3 5.2-5.2 5.2c-1.5 0-2.8-.6-3.8-1.6l-4.1 2.5c1.7 1.8 4.1 2.9 6.8 2.9 4.4 0 8-3.6 8-8s-3.6-8-8-8zm-1.1 10c2.5 0 4.5-2 4.5-4.5s-2-4.5-4.5-4.5-4.5 2-4.5 4.5 2 4.5 4.5 4.5z" fill="#fff"/></svg>
-        COINBASE
-      </button>
-      <div class="divider">— or —</div>
-      <button class="demo-btn" onclick="loginDemo()">🎮 ENTER DEMO MODE — NO SETUP NEEDED</button>
-      <button class="advanced-toggle" onclick="document.getElementById('advancedSettings').style.display = 'block'; this.style.display = 'none';" aria-expanded="false" aria-controls="advancedSettings">
-        ⚙️ Advanced Settings
-      </button>
-      <div class="fiat-ramp-row">
-        <button class="onramp-btn" onclick="window.openMoonpay && window.openMoonpay()">💳 DEPOSIT USDC</button>
-        <button class="offramp-btn" onclick="openOskoRamp('offramp')">💵 WITHDRAW</button>
-      </div>
-    </div>
-    <!-- Advanced Settings (hidden by default) -->
-    <div id="advancedSettings" style="display:none;margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
-      <div class="divider">— Advanced Settings —</div>
-      <button class="mm-btn" onclick="loginMetaMask()" style="width:100%;">
-        <svg width="20" height="20" viewBox="0 0 318 318"><path d="M274 35L174 109l19-44z" fill="#E17726"/><path d="M44 35l99 75-18-44z" fill="#E27625"/><path d="M234 218l-27 41 58 16 17-56z" fill="#E27625"/><path d="M36 219l17 56 57-16-26-41z" fill="#E27625"/><path d="M107 143l-17 25 60 3-2-64z" fill="#E27625"/><path d="M211 143l-42-37-2 64 60-3z" fill="#E27625"/></svg>
-        METAMASK
-      </button>
-    </div>
-  </div>
-  <p id="cStatus" aria-live="polite" style="min-height:16px;font-size:11px;color:var(--cyan);text-align:center;transition:all .3s"></p>
-  <div class="setup-note">
-    <label for="apiKeyInput"><strong>Optional: Anthropic API Key</strong></label> — enables full Claude AI agents. Get one free at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>
-    <div style="display:flex;gap:4px;margin-top:5px">
-      <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-..." style="flex:1;padding:5px 8px;background:var(--bg);border:1px solid var(--border);color:var(--cyan);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px;" oninput="if(this.value.trim().startsWith('sk-'))window._userApiKey=this.value.trim()">
-      <button onclick="toggleVisibility('apiKeyInput', this)" style="padding:4px 8px;background:var(--chrome);border:1px solid var(--border);color:var(--dim);border-radius:4px;font-family:'Bungee',display;font-size:8px;cursor:pointer">SHOW</button>
-      <button onclick="copyToClipboard('apiKeyInput', this)" style="padding:4px 8px;background:var(--chrome);border:1px solid var(--border);color:var(--dim);border-radius:4px;font-family:'Bungee',display;font-size:8px;cursor:pointer">COPY</button>
-    </div>
-    <span style="color:var(--dim);font-size:8px">Without a key the app uses rule-based signals and still trades. Demo Mode requires no wallet or key.</span>
-  </div>
-  
-  <!-- Fiat Deposit Section -->
-  <div id="depositSection" style="margin-top:16px;padding:12px;border-top:1px solid var(--border);">
-    <div class="divider">💰 Fiat Deposit (USDC on Base)</div>
-    
-    <!-- Deposit Buttons -->
-    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-      <button class="onramp-btn" onclick="openDepositFlow(50)" style="flex:1;min-width:120px;">
-        Deposit $50
-      </button>
-      <button class="onramp-btn" onclick="openDepositFlow(100)" style="flex:1;min-width:120px;">
-        Deposit $100
-      </button>
-    </div>
-    
-    <!-- Fee Breakdown Display -->
-    <div id="feeBreakdown" style="background:rgba(255,170,0,.07);border:1px solid rgba(255,170,0,.2);border-radius:8px;padding:10px;margin-bottom:12px;display:none;">
-      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--dim);margin-bottom:4px;">
-        <span>Deposit Amount:</span>
-        <span id="depositAmountDisplay">$50.00</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--dim);margin-bottom:4px;">
-        <span>MoonPay Fee (3.5%):</span>
-        <span id="moonpayFeeDisplay">$1.75</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--dim);margin-bottom:4px;">
-        <span>Network Fee:</span>
-        <span id="networkFeeDisplay">$1.50</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--dim);font-weight:bold;">
-        <span>Total:</span>
-        <span id="totalAmountDisplay">$53.25</span>
-      </div>
-    </div>
-    
-    <!-- Error State -->
-    <div id="depositError" style="background:rgba(255,45,120,.07);border:1px solid rgba(255,45,120,.2);border-radius:8px;padding:10px;color:var(--hot);display:none;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="currentColor"/>
-        </svg>
-        <span id="errorMessage">Deposit failed. Please try again.</span>
-      </div>
-      <button class="demo-btn" onclick="retryDeposit()" style="width:100%;">
-        Retry Deposit
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- ══ MAIN APP ══ -->
-<div id="mainApp">
-
-  <!-- Header -->
-  <div class="global-header">
-    <div class="gh-avatar" id="ghAvatar">👤</div>
-    <div style="flex:1;overflow:hidden;min-width:60px">
-      <div class="gh-name" id="ghName">—</div>
-<span style="font-size:9px;padding:1px 6px;border-radius:10px;background:var(--chrome);border:1px solid var(--border);color:var(--dim)" id="ghBadge">DEMO</span>
-      <span style="font-size:8px;padding:1px 5px;border-radius:8px;background:rgba(0,255,231,.08);border:1px solid rgba(0,255,231,.2);color:var(--cyan);display:none" id="ghNetwork">BASE</span>
-    </div>
-    <div style="margin-right:4px;text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end">
-      <div style="display:flex;align-items:center;gap:6px">
-        <button id="ghClaimBtn" onclick="claimPayout()" style="display:none;padding:2px 6px;font-size:8px;background:var(--green);color:#000;border:none;border-radius:4px;font-family:Bungee;cursor:pointer;line-height:1">CLAIM</button>
-        <div class="gh-balance" id="ghBalance" style="transition:color .3s">$10,000.00</div>
-      </div>
-      <div class="gh-pnl pnl-pos" id="ghPnl">+$0.00 today</div>
-    </div>
-    <!-- countdown + open trade tally -->
-    <div class="gh-ticker" id="ghTicker" style="display:none">
-      <span class="gh-ticker-cd" id="ghCountdown">--:--</span>
-      <span class="gh-ticker-lbl">next exit</span>
-    </div>
-    <div class="gh-queue" id="ghQueueWrap" style="display:none">
-      <span class="gh-queue-num" id="ghQueueNum">0</span>
-      <span class="gh-queue-lbl">open</span>
-    </div>
-     <!-- bot controls -->
-     <div class="gh-controls">
-       <button class="gh-bus-btn" id="ghStaffBtn" onclick="togglePanel('staff')" title="Application Maintenance & Support" aria-expanded="false">👷 STAFF</button>
-       <button class="gh-bus-btn" id="ghTaskBtn" onclick="togglePanel('task')" title="Earn Trade Credits" aria-expanded="false">💰 EARN</button>
-       <button class="gh-bus-btn" id="ghEloBtn" onclick="togglePanel('elo')" title="ELO Arena - Recursive Improvement" aria-expanded="false">🏆 ARENA</button>
-       <button class="gh-bus-btn" id="voiceAgentBtn" onclick="toggleVoiceAgent()" title="AI Floor Manager (Voice Chat)" aria-expanded="false">🎙️ AGENT</button>
-       <button class="gh-bus-btn" id="fleetViewBtn" onclick="toggleFleetView()" title="Toggle Fleet View (Compact Grid)" aria-pressed="false">📊 FLEET</button>
-       <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots" aria-expanded="false">⚙ BUS</button>
-       <button class="gh-auto-btn" id="liveToggleBtn" onclick="toggleLiveMode()" title="Toggle Live/Demo Mode" style="border-color:var(--gold2);color:var(--gold2)">DEMO</button>
-       <button class="gh-auto-btn" id="ghAutoBtn" onclick="globalAutoToggle()" title="Toggle auto-trading on all bots" aria-pressed="false">AUTO</button>
-       <button class="gh-bot-btn" id="ghRemoveBtn" onclick="removeLastBot()" title="Remove last bot" aria-label="Remove last bot" disabled>−</button>
-       <button class="gh-bot-btn" id="ghAddTraderBtn" onclick="addBot('TRADER')" title="Add Trading Bot" aria-label="Add new trading bot">🤖</button><button class="gh-bot-btn" id="ghAddWorkerBtn" onclick="addBot('WORKER')" title="Add Worker Bot" aria-label="Add new worker bot">👷</button>
-       <button class="gh-bot-btn" id="musicToggleBtn" onclick="toggleBackgroundMusic()" title="Toggle background music" aria-label="Toggle background music">🎵</button>
-     </div>
-    <span class="gen-badge" id="genBadge">GEN 0</span>
-    <span id="apiBreakerBadge" style="display:none"></span>
-  </div>
-
-  <!-- ══ BUS SETTINGS PANEL ══ -->
-  <div class="bus-panel" id="busPanel">
-    <div class="bus-grid">
-
-      <!-- Trade Amount -->
-      <div class="bus-section">
-        <div class="bus-section-title"><span>💰</span> TRADE AMOUNT — ALL BOTS</div>
-        <div class="bus-presets" id="busAmtPresets">
-          <button class="bus-preset" onclick="busSetAmount(0.10)">$0.10</button>
-          <button class="bus-preset" onclick="busSetAmount(0.25)">$0.25</button>
-          <button class="bus-preset" onclick="busSetAmount(0.50)">$0.50</button>
-          <button class="bus-preset" onclick="busSetAmount(1)">$1</button>
-          <button class="bus-preset" onclick="busSetAmount(2)">$2</button>
-          <button class="bus-preset" onclick="busSetAmount(5)">$5</button>
-          <button class="bus-preset" onclick="busSetAmount(20)">$20</button>
-          <button class="bus-preset" onclick="busSetAmount(100)">$100</button>
-        </div>
-        <div class="bus-custom-row">
-          <input type="number" id="busCustomAmt" placeholder="Custom $" min="0.01" step="0.01">
-          <button onclick="busSetCustomAmount()">SET ALL</button>
-        </div>
-      </div>
-
-      <!-- Personality -->
-      <div class="bus-section">
-        <div class="bus-section-title"><span>🧠</span> PERSONALITY — ALL BOTS</div>
-        <div class="bus-presets" id="busPersonalityPresets">
-          <button class="bus-preset" onclick="busSetPersonality('AGGRESSIVE')">🔥 Aggressive</button>
-          <button class="bus-preset" onclick="busSetPersonality('CONSERVATIVE')">🛡️ Conservative</button>
-          <button class="bus-preset" onclick="busSetPersonality('MOMENTUM')">📈 Momentum</button>
-          <button class="bus-preset" onclick="busSetPersonality('CONTRARIAN')">🔄 Contrarian</button>
-          <button class="bus-preset" onclick="busSetPersonality('BALANCED')">⚖️ Balanced</button>
-          <button class="bus-preset" onclick="busSetPersonality('RANDOM')">🎲 Random Spread</button>
-          <button class="bus-preset" onclick="busSetPersonality('OPTIMIZED')">⚡ Optimized Spread</button>
-        </div>
-      </div>
-
-      <!-- Auto Delay -->
-      <div class="bus-section">
-        <div class="bus-section-title"><span>⏱️</span> AUTO DELAY — ALL BOTS</div>
-        <div class="bus-presets" id="busDelayPresets">
-          <button class="bus-preset" onclick="busSetDelay(2000)">Fast 2s</button>
-          <button class="bus-preset" onclick="busSetDelay(5000)">Normal 5s</button>
-          <button class="bus-preset" onclick="busSetDelay(15000)">Slow 15s</button>
-          <button class="bus-preset" onclick="busSetDelay(60000)">Patient 1m</button>
-        </div>
-      </div>
-
-      <!-- Risk Controls -->
-      <div class="bus-section">
-        <div class="bus-section-title"><span>🛡️</span> RISK — ALL BOTS</div>
-        <div style="display:flex;gap:8px">
-          <div style="flex:1">
-            <div style="font-size:7px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Stop Loss</div>
-            <div class="bus-presets" id="busSLPresets" style="flex-direction:column">
-              <button class="bus-preset" onclick="busSetSL(0)">None</button>
-              <button class="bus-preset" onclick="busSetSL(10)">−10%</button>
-              <button class="bus-preset" onclick="busSetSL(20)">−20%</button>
-              <button class="bus-preset" onclick="busSetSL(50)">−50%</button>
-            </div>
-          </div>
-          <div style="flex:1">
-            <div style="font-size:7px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Take Profit</div>
-            <div class="bus-presets" id="busTPPresets" style="flex-direction:column">
-              <button class="bus-preset" onclick="busSetTP(0)">None</button>
-              <button class="bus-preset" onclick="busSetTP(20)">+20%</button>
-              <button class="bus-preset" onclick="busSetTP(50)">+50%</button>
-              <button class="bus-preset" onclick="busSetTP(100)">+100%</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- Quick presets row -->
-    <div class="bus-apply-row">
-      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('conservative')" title="Small bets, high consensus, stop loss on">🛡️ SAFE MODE</button>
-      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('balanced')"    title="Medium bets, mixed personalities">⚖️ BALANCED</button>
-      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('aggressive')"  title="Large bets, aggressive personalities, no SL">🔥 DEGEN MODE</button>
-      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('optimized')"   title="Optimized spread based on learning model">⚡ OPTIMIZED</button>
-      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('reset')"       title="Reset all bots to defaults">↺ RESET ALL</button>
-    </div>
-    <div class="bus-status" id="busStatus"></div>
-  </div>
-
-  <!-- ★ AGENT AUDIT PANEL ★ -->
-  <div class="audit-panel" id="auditPanel">
-    <div class="audit-hd" id="auditHd" onclick="toggleAudit()" role="button" tabindex="0">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:14px">🔍</span>
-        <span class="audit-title">AGENT AUDIT</span>
-        <span class="audit-summary" id="auditSummary">ALL CLEAR</span>
-      </div>
-      <span style="font-size:10px;color:var(--dim)" id="auditToggle">▼ EXPAND</span>
-    </div>
-    <div class="audit-body" id="auditBody">
-      <!-- Per-agent review rows, built dynamically -->
-      <div id="auditAgentRows"></div>
-
-      <!-- Audit settings -->
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
-        <div style="font-size:8px;color:var(--dim)">
-          Audit every <input type="number" id="auditInterval" value="10" min="5" max="50" style="width:36px;background:var(--bg);border:1px solid var(--border);color:var(--gold);padding:2px 4px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:9px;text-align:center"> trades ·
-          On notice if WR &lt; <input type="number" id="noticeThreshold" value="40" min="20" max="60" style="width:36px;background:var(--bg);border:1px solid var(--border);color:var(--amber);padding:2px 4px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:9px;text-align:center">% ·
-          Suspend after <input type="number" id="suspendWindow" value="10" min="5" max="30" style="width:36px;background:var(--bg);border:1px solid var(--border);color:var(--hot);padding:2px 4px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:9px;text-align:center"> probation trades
-        </div>
-        <button onclick="runManualAudit()" style="padding:4px 10px;font-family:'Bungee',display;font-size:9px;background:none;border:1px solid var(--hot);color:var(--hot);border-radius:4px;cursor:pointer;letter-spacing:1px;margin-left:auto">RUN AUDIT NOW</button>
-      </div>
-
-      <!-- Audit log -->
-      <div style="font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-top:10px;margin-bottom:4px">Audit History</div>
-      <div class="audit-log-wrap" id="auditLog">
-        <div class="al-entry audit"><span class="al-ts">—</span><span class="al-icon">🔍</span><span class="al-msg">No audits run yet. First audit fires after 10 closed trades.</span></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ★ SELF-LEARNING PANEL ★ -->
-  <div class="learn-panel" id="learnPanel">
-    <div class="learn-hd" id="learnHd" onclick="toggleLearn()" role="button" tabindex="0">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:14px">🧬</span>
-        <span class="learn-title">SELF-LEARNING MODEL</span>
-        <span class="learn-gen" id="learnGenLabel">GENERATION 0</span>
-      </div>
-      <span style="font-size:10px;color:var(--dim)" id="learnToggle">▼ EXPAND</span>
-    </div>
-    <div class="learn-body" id="learnBody">
-      <!-- Agent weight cards -->
-      <div style="font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">
-        Live Agent Weights — updated every 5 trades
-      </div>
-      <div class="weight-grid">
-        <div class="wcard" id="wc-mom"><div class="wcard-status ws-active" id="ws-mom">ACTIVE</div><div class="wc-icon">🔥</div><div class="wc-name">Momentum</div><div class="wc-weight" id="ww-mom">1.00</div><div class="wc-wr" id="wwr-mom">—</div><div class="wc-delta" id="wd-mom"></div></div>
-        <div class="wcard" id="wc-vol"><div class="wcard-status ws-active" id="ws-vol">ACTIVE</div><div class="wc-icon">🌀</div><div class="wc-name">Volatility</div><div class="wc-weight" id="ww-vol">1.00</div><div class="wc-wr" id="wwr-vol">—</div><div class="wc-delta" id="wd-vol"></div></div>
-        <div class="wcard" id="wc-pol"><div class="wcard-status ws-active" id="ws-pol">ACTIVE</div><div class="wc-icon">🏛️</div><div class="wc-name">Politician</div><div class="wc-weight" id="ww-pol">1.00</div><div class="wc-wr" id="wwr-pol">—</div><div class="wc-delta" id="wd-pol"></div></div>
-        <div class="wcard" id="wc-sen"><div class="wcard-status ws-active" id="ws-sen">ACTIVE</div><div class="wc-icon">📊</div><div class="wc-name">Sentiment</div><div class="wc-weight" id="ww-sen">1.00</div><div class="wc-wr" id="wwr-sen">—</div><div class="wc-delta" id="wd-sen"></div></div>
-        <div class="wcard" id="wc-risk"><div class="wcard-status ws-active" id="ws-risk">ACTIVE</div><div class="wc-icon">🛡️</div><div class="wc-name">Risk</div><div class="wc-weight" id="ww-risk">1.00</div><div class="wc-wr" id="wwr-risk">—</div><div class="wc-delta" id="wd-risk"></div></div>
-      </div>
-
-      <!-- Strategy performance by regime -->
-      <div style="font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">
-        Strategy Win Rate by Market Regime
-      </div>
-      <table class="regime-weight-table" id="regimeTable">
-        <tr><th>Strategy</th><th>TREND</th><th>CHOP</th><th>THIN</th><th>Best Regime</th></tr>
-      </table>
-
-      <!-- Mutation log -->
-      <div style="font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">
-        Learning Log
-      </div>
-      <div class="learn-log-wrap" id="learnLog">
-        <div class="ll-entry info">Model initialised. Weights start at 1.0. Learning begins after 5 trades.</div>
-      </div>
-
-      <!-- Controls -->
-      <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
-        <button onclick="resetLearning()" style="padding:5px 12px;font-family:'Bungee',display;font-size:9px;background:none;border:1px solid var(--border);color:var(--dim);border-radius:4px;cursor:pointer;letter-spacing:1px">RESET WEIGHTS</button>
-        <button onclick="exportLearning()" style="padding:5px 12px;font-family:'Bungee',display;font-size:9px;background:none;border:1px solid var(--purple);color:var(--purple);border-radius:4px;cursor:pointer;letter-spacing:1px">EXPORT MODEL</button>
-        <span style="font-size:8px;color:var(--dim);align-self:center">Weights auto-persist in browser storage</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- ★ QUANT REPORT PANEL ★ -->
-  <div class="cpanel" id="quantPanel">
-    <div class="cpanel-hd" id="quantHd" onclick="togglePanel('quant')" style="background:linear-gradient(90deg,rgba(68,136,255,.06),transparent)" role="button" tabindex="0">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:14px">🧪</span>
-        <span class="cpanel-title" style="color:var(--blue)">QUANT REPORT</span>
-        <span style="font-size:9px;color:var(--dim)" id="qTradeCount">0 closed trades</span>
-      </div>
-      <span class="cpanel-toggle" id="quantToggle">▼ EXPAND</span>
-    </div>
-    <div class="cpanel-body" id="quantBody">
-      <!-- Crucible mode -->
-      <div class="crucible-bar">
-        <span class="crucible-label">🔬 CRUCIBLE</span>
-        <div class="crucible-progress"><div class="crucible-fill" id="crucibleFill" style="width:0%"></div></div>
-        <span class="crucible-count" id="crucibleCount">0 / 100</span>
-        <button class="crucible-toggle" id="crucibleBtn" onclick="toggleCrucible()">OFF</button>
-      </div>
-
-       <!-- Crucible Controls -->
-       <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
-         <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
-           <label style="color:var(--dim);font-size:10px">Regime:</label>
-           <div style="display:flex;gap:2px">
-             <button id="regimeBull" class="regime-btn active" onclick="selectRegime('BULL')" aria-pressed="true">BULL</button>
-             <button id="regimeBear" class="regime-btn" onclick="selectRegime('BEAR')" aria-pressed="false">BEAR</button>
-             <button id="regimeChop" class="regime-btn" onclick="selectRegime('CHOP')" aria-pressed="false">CHOP</button>
-             <button id="regimeHighVol" class="regime-btn" onclick="selectRegime('HIGH_VOL')" aria-pressed="false">HIGH_VOL</button>
-           </div>
-         </div>
-         
-         <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
-           <label style="color:var(--dim);font-size:10px">Cost Model:</label>
-           <select id="costModelSelect" style="padding:4px 8px;background:var(--chrome);color:#fff;border:1px solid var(--border);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px">
-             <option value="REALISTIC_1X">REALISTIC_1X (0.1% fees)</option>
-             <option value="STRESS_1_5X">STRESS_1_5X (1.5x real costs)</option>
-           </select>
-         </div>
-         
-         <label for="crucibleTradeCount" style="color:var(--dim);font-size:10px">Trades:</label>
-         <input type="number" id="crucibleTradeCount" value="50" min="1" max="1000" style="width:60px;padding:4px 6px;background:var(--chrome);color:#fff;border:1px solid var(--border);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px">
-         
-          <button class="crucible-run-btn" onclick="runCrucibleV2Batch()" style="padding:6px 14px;background:linear-gradient(90deg,var(--purple),var(--cyan));border:none;border-radius:4px;color:#fff;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all 0.2s">▶ RUN CRUCIBLE V2</button>
-          <button class="crucible-pause-btn" onclick="pauseCrucible()" style="padding:6px 14px;background:linear-gradient(90deg,var(--amber),var(--hot));border:none;border-radius:4px;color:#fff;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all 0.2s">⏸ PAUSE</button>
-          <button class="crucible-cancel-btn" onclick="cancelCrucible()" style="padding:6px 14px;background:linear-gradient(90deg,var(--hot),var(--purple));border:none;border-radius:4px;color:#fff;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all 0.2s">⏹ CANCEL</button>
-       </div>
-
-      <!-- Databricks Genie Config -->
-      <div class="db-config" id="dbConfig">
-        <div class="db-config-title">🧱 DATABRICKS GENIE <span style="color:var(--dim);font-size:7px;font-family:'Share Tech Mono',monospace" id="dbStatus">NOT CONFIGURED</span></div>
-        <input type="text" id="dbWorkspace" placeholder="Workspace URL: https://your-workspace.azuredatabricks.net" oninput="updateDbStatus()">
-        <input type="text" id="dbSpaceId" placeholder="Genie Space ID (from Databricks UI)" oninput="updateDbStatus()">
-        <input type="password" id="dbToken" placeholder="Personal Access Token (Settings → Developer)" oninput="updateDbStatus()">
-        <div class="db-status">When configured, the Genie agent queries your warehouse for historical trade context and pattern data before each decision.</div>
-      </div>
-
-      <!-- Ensemble Performance -->
-      <div class="ensemble-panel" id="ensemblePanel">
-        <div class="ep-title">Agent Performance (across all closed trades)</div>
-        <div id="agentPerfRows"><div style="font-size:9px;color:var(--dim)">No closed trades yet.</div></div>
-      </div>
-
-      <!-- Politician Signal Feed -->
-      <div style="margin-bottom:6px">
-        <div class="qr-section-title">🏛️ Recent Politician Filings (STOCK Act)</div>
-        <div id="polFeed" style="font-size:8px;color:var(--dim)">Loads on first trade…</div>
-      </div>
-
-      <!-- Statistical significance ladder -->
-      <div style="padding:8px 0 4px">
-        <div class="qr-section-title">Statistical Significance Ladder</div>
-        <div class="sig-ladder">
-          <div class="sig-step" id="sig-20">✗ 20 trades</div>
-          <div class="sig-step" id="sig-50">✗ 50 trades</div>
-          <div class="sig-step" id="sig-100">✗ 100 trades</div>
-          <div class="sig-step" id="sig-200">✗ 200 trades</div>
-          <div class="sig-step" id="sig-300">✗ 300 trades</div>
-        </div>
-
-        <!-- Core metrics -->
-        <div class="qr-section-title">Core Metrics (after costs)</div>
-        <div class="metrics-grid">
-          <div class="mcard neu" id="mc-wr"><div class="mv" id="mv-wr">—</div><div class="ml">Win Rate</div><div class="ms" id="ms-wr">—</div></div>
-          <div class="mcard neu" id="mc-pf"><div class="mv" id="mv-pf">—</div><div class="ml">Profit Factor</div><div class="ms">gross W / gross L</div></div>
-          <div class="mcard neu" id="mc-exp"><div class="mv" id="mv-exp">—</div><div class="ml">Expectancy/trade</div><div class="ms" id="ms-exp">—</div></div>
-          <div class="mcard neu" id="mc-dd"><div class="mv" id="mv-dd">—</div><div class="ml">Max Drawdown</div><div class="ms">peak-to-trough</div></div>
-        </div>
-        <div class="metrics-grid-6" style="margin-top:6px">
-          <div class="mcard info"><div class="mv" id="mv-open">0</div><div class="ml">Open Positions</div></div>
-          <div class="mcard neu"><div class="mv" id="mv-avgW">—</div><div class="ml">Avg Win</div></div>
-          <div class="mcard neu"><div class="mv" id="mv-avgL">—</div><div class="ml">Avg Loss</div></div>
-        </div>
-
-        <!-- Equity curve -->
-        <div class="qr-section-title" style="margin-top:10px">Equity Curve</div>
-        <div class="eq-chart"><svg class="eq-svg" id="eqSvg" preserveAspectRatio="none">
-          <polyline id="eqFill" fill="rgba(0,255,231,.04)" stroke="none" points=""/>
-          <polyline id="eqLine" fill="none" stroke="var(--cyan)" stroke-width="1.5" points=""/>
-          <line id="eqBaseline" x1="0" y1="60" x2="100%" y2="60" stroke="rgba(255,255,255,.1)" stroke-width="1" stroke-dasharray="4,4"/>
-        </svg></div>
-
-        <!-- Shadow baselines -->
-        <div class="qr-section-title" style="margin-top:10px">Claude vs Shadow Baselines</div>
-        <table class="baseline-table" id="baselineTable">
-          <tr><th>Strategy</th><th>Total P&L</th><th>Win Rate</th><th>Avg/trade</th><th>vs Claude</th></tr>
-          <tr class="highlight-row"><td>🤖 Claude AI</td><td id="bl-claude-pnl">—</td><td id="bl-claude-wr">—</td><td id="bl-claude-avg">—</td><td id="bl-claude-vs">—</td></tr>
-          <tr><td>🎲 Random</td><td id="bl-random-pnl">—</td><td id="bl-random-wr">—</td><td id="bl-random-avg">—</td><td id="bl-random-vs">—</td></tr>
-          <tr><td>📈 Always Long</td><td id="bl-long-pnl">—</td><td id="bl-long-wr">—</td><td id="bl-long-avg">—</td><td id="bl-long-vs">—</td></tr>
-          <tr><td>🌊 Momentum</td><td id="bl-mom-pnl">—</td><td id="bl-mom-wr">—</td><td id="bl-mom-avg">—</td><td id="bl-mom-vs">—</td></tr>
-          <tr><td>💵 Cash (0%)</td><td>$0.00</td><td>—</td><td>$0.00</td><td>benchmark</td></tr>
-        </table>
-
-        <!-- Strategy breakdown -->
-        <div class="qr-section-title" style="margin-top:8px">Strategy Attribution</div>
-        <div id="stratBreakdown"><div style="font-size:9px;color:var(--dim)">No closed trades yet.</div></div>
-
-        <!-- Return distribution -->
-        <div class="qr-section-title" style="margin-top:10px">Return Distribution</div>
-        <div class="dist-bars" id="distBars"><div style="font-size:9px;color:var(--dim)">Need trades to populate.</div></div>
-        <div class="dist-label"><span id="distMin">—</span><span>returns</span><span id="distMax">—</span></div>
-
-        <!-- Cost sensitivity -->
-        <div class="qr-section-title" style="margin-top:10px">Cost Sensitivity (if costs were higher)</div>
-        <div class="cost-sens-grid">
-          <div class="cs-card"><div class="csv" id="cs-1x" style="color:var(--green)">—</div><div class="csl">1× costs (actual)</div></div>
-          <div class="cs-card"><div class="csv" id="cs-15x" style="color:var(--amber)">—</div><div class="csl">1.5× costs</div></div>
-          <div class="cs-card"><div class="csv" id="cs-2x" style="color:var(--hot)">—</div><div class="csl">2× costs</div></div>
-        </div>
-
-        <!-- Verdict -->
-        <div class="verdict waiting" id="verdictBox">Run more trades. Need 20+ closed to assess edge.</div>
-
-        <!-- Export -->
-        <div class="export-row">
-          <button class="export-btn export-csv" onclick="exportCSV()">📤 EXPORT CSV</button>
-          <button class="export-btn export-json" onclick="exportJSON()">📋 EXPORT JSON</button>
-          <button class="export-btn" id="pitchReportBtn" onclick="generatePitchReport()" style="background:linear-gradient(90deg,var(--purple),var(--blue));color:#fff;box-shadow:0 0 10px rgba(191,95,255,.2)">📊 PITCH REPORT</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ★ CONNECTION STATUS PANEL ★ -->
-  <div class="cpanel" id="connPanel">
-    <div class="cpanel-hd" id="connHd" onclick="togglePanel('conn')" style="background:linear-gradient(90deg,rgba(0,255,231,.06),transparent)" role="button" tabindex="0">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:14px">🔌</span>
-        <span class="cpanel-title" style="color:var(--cyan)">CONNECTION DASHBOARD</span>
-        <span style="font-size:9px;color:var(--dim)">System Connectivity & Requirements</span>
-      </div>
-      <span class="cpanel-toggle" id="connToggle">▼ EXPAND</span>
-    </div>
-    <div class="cpanel-body" id="connBody">
-      <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap:15px; margin-bottom:15px;">
-        <!-- Dynamic Connection List -->
-        <div id="connStatusList" style="display:contents">
-           <div style="grid-column: 1 / -1; text-align:center; padding:20px; color:var(--dim)">⏳ Loading connection status...</div>
-        </div>
-      </div>
-
-      <!-- Onchain Requirements Section -->
-      <div style="border-top: 1px solid var(--border); padding-top:15px; margin-top:10px;">
-        <div style="font-family:'Bungee'; font-size:11px; color:var(--gold2); margin-bottom:10px;">🛡️ LIVE MAINNET REQUIREMENTS</div>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; font-size:11px;">
-          <div>
-            <div style="color:var(--cyan); margin-bottom:4px;">Network Configuration</div>
-            <ul style="list-style:none; color:var(--dim); line-height:1.6">
-              <li>• Network: <span style="color:#fff">Base Mainnet</span></li>
-              <li>• Chain ID: <span style="color:#fff">8453</span></li>
-              <li>• RPC URL: <span style="color:#fff">https://mainnet.base.org</span></li>
-              <li>• Currency: <span style="color:#fff">ETH</span></li>
-            </ul>
-          </div>
-          <div>
-            <div style="color:var(--cyan); margin-bottom:4px;">Minimum Assets</div>
-            <ul style="list-style:none; color:var(--dim); line-height:1.6">
-              <li>• Gas Reserve: <span style="color:#fff">0.005 ETH</span></li>
-              <li>• Min Trade: <span style="color:#fff">1.00 USDC</span></li>
-              <li>• Recommended: <span style="color:#fff">0.02 ETH + 50 USDC</span></li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ★ STAFF OPERATIONS PANEL ★ -->
-  <div class="cpanel" id="staffPanel">
-    <div class="cpanel-hd" id="staffHd" onclick="togglePanel('staff')" style="background:linear-gradient(90deg,rgba(0,255,231,.06),transparent)" role="button" tabindex="0">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:14px">👷</span>
-        <span class="cpanel-title" style="color:var(--cyan)">STAFF OPERATIONS</span>
-        <span style="font-size:9px;color:var(--dim)">Maintenance & Customer Service</span>
-      </div>
-      <span class="cpanel-toggle" id="staffToggle">▼ EXPAND</span>
-    </div>
-    <div class="cpanel-body" id="staffBody">
-      <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:10px; margin-bottom:15px;">
-        <!-- Agent Status Cards -->
-        <div style="background:var(--chrome); border:1px solid var(--border); border-radius:8px; padding:10px;">
-          <div style="font-size:10px; color:var(--cyan); font-family:'Bungee'; margin-bottom:5px;">🛡️ SENTINEL</div>
-          <div id="sentinelStatus" style="font-size:9px; color:var(--dim);">Security scan active...</div>
-        </div>
-        <div style="background:var(--chrome); border:1px solid var(--border); border-radius:8px; padding:10px;">
-          <div style="font-size:10px; color:var(--gold); font-family:'Bungee'; margin-bottom:5px;">🏛️ ARCHITECT</div>
-          <div id="architectStatus" style="font-size:9px; color:var(--dim);">RPC Health: 42ms</div>
-        </div>
-        <div style="background:var(--chrome); border:1px solid var(--border); border-radius:8px; padding:10px;">
-          <div style="font-size:10px; color:var(--green); font-family:'Bungee'; margin-bottom:5px;">🧹 JANITOR</div>
-          <div id="janitorStatus" style="font-size:9px; color:var(--dim);">Cache optimized</div>
-        </div>
-        <div style="background:var(--chrome); border:1px solid var(--border); border-radius:8px; padding:10px;">
-          <div style="font-size:10px; color:var(--purple); font-family:'Bungee'; margin-bottom:5px;">👨‍💻 DEVELOPER</div>
-          <div id="developerStatus" style="font-size:9px; color:var(--dim);">Self-healing ready</div>
-        </div>
-      </div>
-
-      <!-- Staff Logs -->
-      <div style="font-size:9px; color:var(--dim); font-family:'Bungee'; margin-bottom:5px; letter-spacing:1px;">SESSION LOGS</div>
-      <div id="staffLogList" style="max-height:150px; overflow-y:auto; border:1px solid var(--border); border-radius:8px; background:rgba(0,0,0,0.2); padding:5px; display:flex; flex-direction:column; gap:3px;">
-        <div style="font-size:8px; color:var(--dim); text-align:center; padding:10px;">No operational logs yet.</div>
-      </div>
-
-      <!-- Customer Service Entry -->
-      <div style="margin-top:15px; padding-top:15px; border-top:1px solid var(--border);">
-        <label for="staffInput" style="display:block; font-size:9px; color:var(--cyan); font-family:'Bungee'; margin-bottom:8px; letter-spacing:1px;">TALK TO STAFF (CONCIERGE)</label>
-        <div style="display:flex; gap:8px;">
-          <input type="text" id="staffInput" aria-label="Ask staff a question" placeholder="I lost money on that last trade, why?" onkeydown="if(event.key==='Enter') sendStaffQuery()" style="flex:1; background:var(--bg); border:1px solid var(--border); color:#fff; padding:8px; border-radius:6px; font-family:inherit; font-size:10px;">
-          <button onclick="sendStaffQuery()" style="background:var(--cyan); color:#000; border:none; border-radius:6px; padding:0 15px; font-family:'Bungee'; font-size:10px; cursor:pointer;">ASK</button>
-        </div>
-        <div id="staffResponse" aria-live="polite" style="margin-top:10px; padding:10px; background:rgba(0,255,231,0.05); border-radius:6px; font-size:10px; color:#ccc; display:none; border-left:2px solid var(--cyan);"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ★ ELO ARENA ★ -->
-  <div class="cpanel" id="eloPanel">
-    <div class="cpanel-hd" id="eloHd" onclick="togglePanel('elo')" style="background:linear-gradient(90deg,rgba(0,255,231,.06),transparent)" role="button" tabindex="0">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:14px">🏆</span>
-        <span class="cpanel-title" style="color:var(--cyan)">ELO ARENA</span>
-        <span style="font-size:9px;color:var(--dim)">Recursive Self-Improvement</span>
-      </div>
-      <span class="cpanel-toggle" id="eloToggle">▼ EXPAND</span>
-    </div>
-    <div class="cpanel-body" id="eloBody">
-      <div id="eloArenaRows"></div>
-      <div style="font-size:8px; color:var(--dim); margin-top:10px; text-align:center">
-        High ELO agents gain more voting weight. Performance below 1000 ELO triggers a PIP.
-      </div>
-    </div>
-  </div>
-
-  <!-- ★ TASK CENTER ★ -->
-  <div class="cpanel" id="taskPanel">
-    <div class="cpanel-hd" id="taskHd" onclick="togglePanel('task')" style="background:linear-gradient(90deg,rgba(57,255,20,.06),transparent)" role="button" tabindex="0">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:14px">📡</span>
-        <span class="cpanel-title" style="color:var(--green)">TASK CENTER & MARKETPLACE</span>
-        <span style="font-size:9px;color:var(--dim)" id="marketplaceEarning">Total Earned: 0 USDC</span>
-      </div>
-      <span class="cpanel-toggle" id="taskToggle">▼ EXPAND</span>
-    </div>
-    <div class="cpanel-body" id="taskBody">
-      <!-- Task Center Tabs -->
-      <div role="tablist" style="display:flex; gap:4px; margin-bottom:12px; border-bottom:1px solid var(--border); padding-bottom:8px;">
-          <button role="tab" class="bus-preset active" id="tab-internal" onclick="switchTaskTab('internal')" aria-selected="true" aria-controls="task-tab-internal">INTERNAL</button>
-          <button role="tab" class="bus-preset" id="tab-identities" onclick="switchTaskTab('identities')" aria-selected="false" aria-controls="task-tab-identities">AGENT IDENTITIES</button>
-          <button role="tab" class="bus-preset" id="tab-market" onclick="switchTaskTab('market')" aria-selected="false" aria-controls="task-tab-market">MARKETPLACE</button>
-      </div>
-
-      <!-- Tab: Internal Monitor -->
-      <div id="task-tab-internal" role="tabpanel" aria-labelledby="tab-internal">
-          <div id="cStatus" style="font-size:10px;color:var(--dim);margin-bottom:8px">Loading deployment queue…</div>
-          <div id="taskQuestList" style="margin-bottom:15px"></div><div id="taskCenterRows"></div>
-      </div>
-
-      <!-- Tab: Agent Identities -->
-      <div id="task-tab-identities" style="display:none" role="tabpanel" aria-labelledby="tab-identities">
-          <div style="font-size:9px; color:var(--dim); margin-bottom:10px;">Register your autonomous agents to earn USDC from external platforms.</div>
-          <div id="agentIdentityRows"></div>
-      </div>
-
-      <!-- Tab: Marketplace -->
-      <div id="task-tab-market" style="display:none" role="tabpanel" aria-labelledby="tab-market">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-              <div style="font-size:9px; color:var(--dim);">External tasks available for registered agents.</div>
-              <button onclick="window.MARKETPLACE && window.MARKETPLACE.refreshTasks()" style="padding:2px 8px; background:var(--chrome); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-size:8px; cursor:pointer;">REFRESH</button>
-          </div>
-          <div id="marketplaceTaskRows"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ★ CIRCUIT BREAKERS ★ -->
-  <div class="cpanel" id="breakerPanel">
-    <div class="cpanel-hd" id="breakerHd" onclick="togglePanel('breaker')" style="background:linear-gradient(90deg,rgba(255,179,0,.06),transparent)" role="button" tabindex="0">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:14px">🛡️</span>
-        <span class="cpanel-title" style="color:var(--amber)">CIRCUIT BREAKERS</span>
-        <span class="breaker-status bs-ok" id="breakerStatus">ALL CLEAR</span>
-      </div>
-      <span class="cpanel-toggle" id="breakerToggle">▼ CONFIGURE</span>
-    </div>
-    <div class="cpanel-body" id="breakerBody">
-      <div class="breaker-grid">
-        <div class="b-control"><label for="gasHard">⛽ Gas Hard Ceiling (gwei)</label><input type="number" id="gasHard" value="50" min="1" max="500" onchange="updateBreakers()"><div class="b-val" id="gasHardVal">Hard stop at 50 gwei</div></div>
-        <div class="b-control"><label for="drawdownPct">📊 Daily Drawdown Kill (%)</label><input type="number" id="drawdownPct" value="10" min="1" max="50" onchange="updateBreakers()"><div class="b-val" id="drawdownVal">Stop if -$1,000.00 today</div></div>
-        <div class="b-control" style="grid-column:1/-1">
-          <label for="aggrSlider">🎯 Aggression Level — how hard the agents chase trades</label>
-          <input type="range" id="aggrSlider" min="1" max="10" value="8" oninput="updateAggrDisplay()">
-          <div class="b-val" id="aggrVal" style="color:var(--hot)">Level 8 / 10 — AGGRESSIVE</div>
-        </div>
-        <div class="b-control" style="grid-column:1/-1">
-          <label for="consensusSlider">⚡ Consensus Threshold — agents needed to trigger a trade</label>
-          <input type="range" id="consensusSlider" min="1" max="4" value="2" oninput="updateConsensusDisplay()">
-          <div class="b-val" id="consensusVal" style="color:var(--amber)">2 / 4 agents must agree</div>
-        </div>
-        <div class="b-control" style="grid-column:1/-1"><label>⛽ Simulated Gas (gwei) — drag to test</label><input type="range" id="gasSlider" min="1" max="200" value="18" oninput="updateGasDisplay()"><div class="b-val" id="gasCurrentVal" style="color:var(--green)">18 gwei ✓ OK</div></div>
-      </div>
-      <table class="cooldown-table" id="cooldownTable">
-        <tr><th>Trigger</th><th>Cooldown</th><th>Rationale</th></tr>
-        <tr id="cd-row-0"><td>3 consecutive losses</td><td>15 minutes</td><td>Choppy — let it breathe</td></tr>
-        <tr id="cd-row-1"><td>3 more after resume</td><td>60 minutes</td><td>Strategy mismatched</td></tr>
-        <tr id="cd-row-2"><td>Another streak</td><td>24 hrs — manual reset</td><td>Something is wrong</td></tr>
-      </table>
-      <button class="global-kill-btn" id="killBtn" onclick="globalKill()">🔴 EMERGENCY STOP ALL BOTS</button>
-    </div>
-  </div>
-
-<!-- AGENT/MACHINE MATRIX - Pad Grid -->
-  <div class="matrix-section">
-    <div class="matrix-header">
-      <span>AGENT/MACHINE MATRIX</span>
-      <span class="matrix-count" id="matrixCount">0 ACTIVE</span>
-    </div>
-    <div class="pad-grid" id="padGrid">
-      <!-- Pads render dynamically when bots are added -->
-    </div>
-  </div>
-
-  <!-- Bots -->
-
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:8px;background:var(--chrome);border-radius:6px;border:1px solid var(--border);">
-      <div style="font-family:'Bungee';font-size:10px;color:var(--dim)">TRADING MODE</div>
-      <div style="display:flex;gap:4px">
-        <button id="simModeBtn" class="mode-btn active" onclick="switchTradingMode('sim')" aria-pressed="true">SIMULATED</button>
-        <button id="liveModeBtn" class="mode-btn" onclick="switchTradingMode('live')" aria-pressed="false">LIVE (BASE)</button>
-      </div>
-    </div>
-    <div id="crucibleProgress" style="display:none;margin-top:10px;margin-bottom:10px;padding:10px;background:rgba(0,0,0,0.3);border-radius:6px;border:1px solid var(--border);">
-      <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
-        <span style="font-family:'Bungee';font-size:10px;color:var(--cyan)">CRUCIBLE PROGRESS</span>
-        <span id="crucibleProgressText" style="font-family:'Share Tech Mono';font-size:10px;color:var(--dim)">0/20</span>
-      </div>
-      <div style="width:100%;height:4px;background:var(--bg);border-radius:2px;overflow:hidden;margin-bottom:8px;">
-        <div id="crucibleProgressBar" style="width:0%;height:100%;background:var(--cyan);transition:width 0.3s;"></div>
-      </div>
-      <div style="display:flex;gap:5px;">
-        <button onclick="toggleCruciblePause()" class="mode-btn" style="flex:1">PAUSE</button>
-        <button onclick="stopCrucible()" class="mode-btn" style="flex:1;border-color:#ff4444;color:#ff4444">STOP</button>
-      </div>
-    </div>
-    <style>
-      .mode-btn { padding:4px 8px; background:var(--bg); border:1px solid var(--border); color:var(--dim); font-family:'Bungee'; font-size:9px; cursor:pointer; border-radius:4px; transition: all 0.2s; }
-      .mode-btn.active { border-color:var(--cyan); color:var(--cyan); background:rgba(0,255,231,0.1); }
-      .mode-btn:hover { border-color: var(--cyan); color: #fff; }
-    </style>
-    <script>
-      function showToast(msg, type='info') {
-        const container = document.getElementById('toastContainer');
-        if (!container) {
-          const c = document.createElement('div');
-          c.id = 'toastContainer';
-          c.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;';
-          document.body.appendChild(c);
-        }
-        const t = document.createElement('div');
-        t.style.cssText = `background:rgba(0,0,0,0.9);color:${type==='error'?'var(--hot)':'var(--cyan)'};padding:8px 16px;border:1px solid ${type==='error'?'var(--hot)':'var(--cyan)'};border-radius:4px;font-family:monospace;font-size:12px;box-shadow:0 0 10px rgba(0,0,0,0.5);animation:toastFadeIn 0.3s ease;`;
-        t.textContent = `[${type.toUpperCase()}] ${msg}`;
-        document.getElementById('toastContainer').appendChild(t);
-        setTimeout(() => {
-          t.style.animation = 'toastFadeOut 0.3s ease';
-          setTimeout(() => t.remove(), 300);
-        }, 3000);
-      }
-
-      function switchTradingMode(mode) {
-        const isLive = mode === 'live';
-        if (isLive && (!window.walletState || !window.walletState.isConnected)) {
-           showToast('Connect real wallet first!', 'error');
-           return;
-        }
-        const simBtn = document.getElementById('simModeBtn');
-        const liveBtn = document.getElementById('liveModeBtn');
-
-        simBtn.classList.toggle('active', !isLive);
-        simBtn.setAttribute('aria-pressed', (!isLive).toString());
-
-        liveBtn.classList.toggle('active', isLive);
-        liveBtn.setAttribute('aria-pressed', isLive.toString());
-
-        if (typeof CrucibleRealTrading !== 'undefined') {
-          CrucibleRealTrading.config.liveMode = isLive;
-          showToast(`Mode switched to ${isLive ? 'LIVE' : 'SIMULATED'}`, 'info');
-        }
-      }
-      function updateCrucibleProgress(current, total, equity) {
-        const prog = document.getElementById('crucibleProgress');
-        const bar = document.getElementById('crucibleProgressBar');
-        const text = document.getElementById('crucibleProgressText');
-        if (prog) prog.style.display = 'block';
-        if (bar) bar.style.width = (current / total * 100) + '%';
-        if (text) text.textContent = `${current}/${total} | $${equity.toFixed(2)}`;
-      }
-      function toggleCruciblePause() {
-        if (typeof CrucibleRealTrading !== 'undefined') {
-          const paused = CrucibleRealTrading.togglePause();
-          event.target.textContent = paused ? 'RESUME' : 'PAUSE';
-          event.target.classList.toggle('active', paused);
-        }
-      }
-      function stopCrucible() {
-        if (typeof CrucibleRealTrading !== 'undefined') {
-          CrucibleRealTrading.stop();
-          document.getElementById('crucibleProgress').style.display = 'none';
-          showToast('Trading session stopped', 'info');
-        }
-      }
-    </script>
-<div class="bot-grid" id="botGrid"></div>
-
-  <!-- Log -->
-  <div class="global-log">
-    <div class="log-title" id="logTitle">
-      <span>TRADE LEDGER — REAL PRICES</span>
-      <span style="font-size:9px;color:var(--dim)" id="logCount">0 trades</span>
-    </div>
-    <div class="log-list" id="globalLog"><div class="empty-log">No trades yet.</div></div>
-  </div>
-</div>
-
-<script>
 /**
  * Helper to escape HTML and prevent XSS
  */
@@ -1796,10 +307,10 @@ const gasBase = 0.00025; // $0.00025 for $1 bet (optimized DEX)
   // Funding rate proxy for perps (tiny for micro trades)
   const fundingCost = method.includes('PERP') ? bet * 0.00001 : 0;
   const totalRaw = gasBase + slippageCost + spreadCost + fundingCost;
-  
+
   // SAFETY: Cap costs at 50% of bet to prevent guaranteed losses
   const totalCost = Math.min(totalRaw, bet * 0.5) * multiplier;
-  
+
   return {
     gas: gasBase * multiplier,
     slippagePct,
@@ -1846,7 +357,7 @@ async function openPosition(bot, decision, entryPrice, bet, volumeUsd, priceChan
     if(spinEl){spinEl.disabled=false;spinEl.classList.remove('going');spinEl.textContent='🎰 SPIN';}
     return null;
   }
-  
+
   const costs = computeCosts(decision.method, bet, volumeUsd);
   const isShort = decision.method.includes('SHORT');
 
@@ -1868,10 +379,10 @@ async function openPosition(bot, decision, entryPrice, bet, volumeUsd, priceChan
     openedAt: Date.now()
   };
   openPositions.push(pos);
-  
+
   // Track trade in bot's lastTrade for ticker display
   const methodEmoji = {
-    'SPOT LONG':'📈', 'SPOT SHORT':'📉', 
+    'SPOT LONG':'📈', 'SPOT SHORT':'📉',
     'PERP LONG':'🚀', 'PERP SHORT':'💥',
     'YIELD FARM':'🌾'
   }[decision.method] || '📊';
@@ -1887,25 +398,25 @@ async function openPosition(bot, decision, entryPrice, bet, volumeUsd, priceChan
   };
   bot.tradeHistory.push(bot.lastTrade);
   if(bot.tradeHistory.length > 10) bot.tradeHistory.shift();
-  
+
   const card=document.getElementById('bot-'+bot.id);
   if(card) card.classList.add('has-open');
-  
+
   // Show position overlay immediately with instant visual feedback
   showOpenOverlay(bot.id, pos);
-  
+
   // Flash the position card for instant visual confirmation
   if(card){
     card.style.boxShadow='0 0 20px rgba(57,255,20,0.6)';
     setTimeout(()=>{card.style.boxShadow='';}, 600);
   }
-  
+
   // Deduct bet amount from balance immediately when trade opens
   // bet already deducted as part of costs
 
   updateLiveBalance();
   updateGlobalBalance();
-  
+
   updateOpenCount();
   setTimeout(()=>checkExit(pos,bot), EXIT_TIMES[decision.method]);
   startLivePnlTicker(pos, bot);
@@ -1931,7 +442,7 @@ function startLivePnlTicker(pos, bot) {
     if(p){
       const delta=pos.direction==='long'?(p-pos.entryPrice)/pos.entryPrice:(pos.entryPrice-p)/pos.entryPrice;
       const net=pos.bet*delta-pos.costs.total;
-      if(pnlEl){ 
+      if(pnlEl){
         const pnlStr = (net>=0?'+':'')+'$'+net.toFixed(2);
         // Optimization: Dirty-check P&L value to avoid redundant DOM writes and animation restarts
         if (pnlStr !== pos._lastPnlStr) {
@@ -2042,7 +553,7 @@ async function checkExit(pos, bot) {
 
   // Return the bet amount plus the net profit/loss
   balance += pos.bet + pos.netPnl;
-  totalPnl += pos.netPnl; 
+  totalPnl += pos.netPnl;
   bot.pnl += pos.netPnl;
   equityHistory.push(parseFloat(balance.toFixed(2)));
   openPositions=openPositions.filter(p=>p.id!==pos.id);
@@ -2440,24 +951,24 @@ function updateCrucible() {
 async function runCrucibleBatch() {
   const runBtn = document.querySelector('.crucible-run-btn');
   if(runBtn) runBtn.disabled = true;
-  
+
   try {
     const mode = document.getElementById('crucibleModeSelect')?.value || 'TEST';
     const tradeCount = parseInt(document.getElementById('crucibleTradeCount')?.value || '50');
-    
+
     if(tradeCount < 1 || tradeCount > 1000) {
       alert('Trade count must be between 1 and 1000');
       return;
     }
-    
+
     // Reset counters
     crucibleCount = 0;
     updateCrucible();
-    
+
      // Run batch of trades
       const startBalance = balance;
       let tradesRun = 0;
-      
+
       for(let i = 0; i < tradeCount && balance > 0; i++) {
         // Check if paused or cancelled
         if (window.cruciblePaused) {
@@ -2468,35 +979,35 @@ async function runCrucibleBatch() {
           if (window.crucibleCancelled) break;
         }
         if (window.crucibleCancelled) break;
-        
+
         // Pick a random bot that can trade
         const availableBots = bots.filter(b => !b.spinning && !b.cooling && balance >= 0.10);
         if(availableBots.length === 0) {
           console.log(`Crucible: Stopped at ${tradesRun} trades (no available bots)`);
           break;
         }
-        
+
         const bot = availableBots[Math.floor(Math.random() * availableBots.length)];
-        
+
         // Use a default bet if none selected
         if(!bot.bet || bot.bet < 0.10) bot.bet = 1.00;
-        
+
         // Run the trade
         await spinBot(bot.id);
         tradesRun++;
-        
+
         // Update live progress
         crucibleCount = tradesRun;
         updateCrucible();
-        
+
         // Wait for trade to settle
         await new Promise(r => setTimeout(r, 500 + Math.random() * 1000));
       }
-    
+
     const endBalance = balance;
     const pnl = endBalance - startBalance;
     const pnlPct = ((pnl / startBalance) * 100).toFixed(2);
-    
+
      showCrucibleResults({
         mode,
         tradesRun,
@@ -2524,27 +1035,27 @@ function selectRegime(regime) {
 async function runCrucibleV2Batch() {
    const runBtn = document.querySelector('.crucible-run-btn');
    if(runBtn) runBtn.disabled = true;
-   
+
    try {
      const regime = document.querySelector('.regime-btn.active')?.id?.replace('regime', '') || 'BULL';
      const costModel = document.getElementById('costModelSelect')?.value || 'REALISTIC_1X';
      const tradeCount = parseInt(document.getElementById('crucibleTradeCount')?.value || '50');
-     
+
      if(tradeCount < 1 || tradeCount > 1000) {
        alert('Trade count must be between 1 and 1000');
        return;
      }
-     
+
      // Show running status
      alert(`Running Crucible V2:\nRegime: ${regime}\nCost Model: ${costModel}\nTrades: ${tradeCount}\n\nThis will simulate trading in the selected regime with realistic cost modeling.`);
-     
+
      // In a real implementation, this would call the external crucible-test.js functions
      // For now, we'll simulate the results
      const simulatedResults = simulateCrucibleV2Results(regime, costModel, tradeCount);
-     
+
      // Display results
      alert(`Crucible V2 Results:\n\nRegime: ${regime}\nCost Model: ${costModel}\nTrades: ${simulatedResults.trades}\nWin Rate: ${simulatedResults.winRate.toFixed(1)}%\nP&L: $${simulatedResults.pnl >= 0 ? '+' : ''}${simulatedResults.pnl.toFixed(2)}\nReturn: ${simulatedResults.returnPct >= 0 ? '+' : ''}${simulatedResults.returnPct.toFixed(2)}%\n\nBaseline Comparison:\n- Strategy: ${simulatedResults.strategy.pnl >= 0 ? '+' : ''}$${simulatedResults.strategy.pnl.toFixed(2)} (${simulatedResults.strategy.winRate.toFixed(1)}% WR)\n- Always Long: ${simulatedResults.baselines.alwaysLong.pnl >= 0 ? '+' : ''}$${simulatedResults.baselines.alwaysLong.pnl.toFixed(2)} (${simulatedResults.baselines.alwaysLong.winRate.toFixed(1)}% WR)\n- Momentum: ${simulatedResults.baselines.momentum.pnl >= 0 ? '+' : ''}$${simulatedResults.baselines.momentum.pnl.toFixed(2)} (${simulatedResults.baselines.momentum.winRate.toFixed(1)}% WR)\n- Random: ${simulatedResults.baselines.random.pnl >= 0 ? '+' : ''}$${simulatedResults.baselines.random.pnl.toFixed(2)} (${simulatedResults.baselines.random.winRate.toFixed(1)}% WR)\n\n${simulatedResults.strategy.pnl > simulatedResults.baselines.alwaysLong.pnl && regime !== 'BULL' ? '✅ STRATEGY BEATS ALWAYS LONG IN NON-BULL REGIME' : '⚠️ Strategy did not beat Always Long in non-bull regime'}`);
-     
+
      // Update crucible counter for UI
      crucibleCount += tradeCount;
      updateCrucible();
@@ -2584,7 +1095,7 @@ function showCrucibleResults(results) {
       align-items: center;
       z-index: 10000;
    `;
-   
+
    const modalContent = document.createElement('div');
    modalContent.style.cssText = `
       background: var(--panel);
@@ -2596,7 +1107,7 @@ function showCrucibleResults(results) {
       color: white;
       font-family: 'Share Tech Mono', monospace;
    `;
-   
+
    modalContent.innerHTML = `
       <h2 style="color: var(--cyan); text-align: center; margin-bottom: 20px;">CRUCIBLE BATCH RESULTS</h2>
       <div style="margin-bottom: 15px;">
@@ -2608,13 +1119,13 @@ function showCrucibleResults(results) {
          <strong>Win Rate:</strong> ${results.winRate.toFixed(1)}%
       </div>
       <div style="margin-top: 20px; text-align: center;">
-         <button onclick="this.parentElement.parentElement.remove()" 
+         <button onclick="this.parentElement.parentElement.remove()"
                  style="background: var(--purple); color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
             CLOSE
          </button>
       </div>
    `;
-   
+
    modalOverlay.appendChild(modalContent);
    document.body.appendChild(modalOverlay);
 }
@@ -2628,20 +1139,20 @@ function simulateCrucibleV2Results(regime, costModel, tradeCount) {
     CHOP: { winRate: 0.50, pnlPerTrade: 2 },
     HIGH_VOL: { winRate: 0.40, pnlPerTrade: 8 }
   };
-  
+
   const stats = baseStats[regime] || baseStats.BULL;
   let winRate = stats.winRate;
   let pnlPerTrade = stats.pnlPerTrade;
-  
+
   // Adjust for cost model
   if (costModel === 'STRESS_1_5X') {
     pnlPerTrade *= 0.5; // Reduce profitability under stress costs
     winRate -= 0.05; // Slightly lower win rate due to costs
   }
-  
+
   // Ensure win rate stays in reasonable bounds
   winRate = Math.max(0.2, Math.min(0.8, winRate));
-  
+
   // Calculate results
   const wins = Math.floor(tradeCount * winRate);
   const losses = tradeCount - wins;
@@ -2649,7 +1160,7 @@ function simulateCrucibleV2Results(regime, costModel, tradeCount) {
   const avgLoss = Math.abs(pnlPerTrade);
   const totalPnl = (wins * avgWin) - (losses * avgLoss);
   const returnPct = (totalPnl / 10000) * 100; // Assuming $10k starting balance
-  
+
   // Generate baseline comparisons
   const baselines = {
     alwaysLong: {
@@ -2665,7 +1176,7 @@ function simulateCrucibleV2Results(regime, costModel, tradeCount) {
       winRate: 0.5
     }
   };
-  
+
   return {
     trades: tradeCount,
     winRate: winRate * 100,
@@ -3132,29 +1643,29 @@ function startOverride(bot,btn){
 // ══════════════════════════════════════════════════════
 function loginGoogle(){
   const s=document.getElementById('cStatus'); if(!s) return;
-  
+
   // Check if Google Client ID is configured
-  if(GOOGLE_CLIENT_ID.includes('YOUR_')){ 
-    s.innerHTML='ℹ️ Google Client ID not configured. <a href="https://console.cloud.google.com" target="_blank" style="color:var(--cyan);cursor:pointer">Set up OAuth →</a> or use Demo/MetaMask'; 
-    return; 
+  if(GOOGLE_CLIENT_ID.includes('YOUR_')){
+    s.innerHTML='ℹ️ Google Client ID not configured. <a href="https://console.cloud.google.com" target="_blank" style="color:var(--cyan);cursor:pointer">Set up OAuth →</a> or use Demo/MetaMask';
+    return;
   }
-  
+
   // Wait for Google SDK to load
-  if(typeof google==='undefined'){ 
-    s.textContent='⏳ Loading Google SDK…'; 
-    setTimeout(loginGoogle, 1000); 
-    return; 
+  if(typeof google==='undefined'){
+    s.textContent='⏳ Loading Google SDK…';
+    setTimeout(loginGoogle, 1000);
+    return;
   }
-  
+
   try{
     s.textContent='⏳ Opening Google Sign-In…';
-    
-    google.accounts.id.initialize({ 
-      client_id: GOOGLE_CLIENT_ID, 
+
+    google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
       callback: handleGoogleLoginResponse,
       hosted_domain: 'gmail.com'
     });
-    
+
     // Show the One Tap popup
     google.accounts.id.prompt((notification) => {
       if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
@@ -3165,31 +1676,31 @@ function loginGoogle(){
         );
       }
     });
-  }catch(e){ 
-    s.textContent='❌ Google Error: '+e.message; 
+  }catch(e){
+    s.textContent='❌ Google Error: '+e.message;
     console.error('Google login error:', e);
   }
 }
 
 function handleGoogleLoginResponse(response){
   const s=document.getElementById('cStatus'); if(!s) return;
-  
+
   try{
     if(!response.credential){
       s.textContent='❌ Google: No credential received';
       return;
     }
-    
+
     // Decode JWT token
     const tokenParts = response.credential.split('.');
     if(tokenParts.length !== 3){
       throw new Error('Invalid token format');
     }
-    
+
     const decodedPayload = JSON.parse(
       atob(tokenParts[1].replace(/-/g, '+').replace(/_/g, '/'))
     );
-    
+
     const userData = {
       name: decodedPayload.name || decodedPayload.email || 'Google User',
       email: decodedPayload.email,
@@ -3197,7 +1708,7 @@ function handleGoogleLoginResponse(response){
       badge: '🔵 GOOGLE',
       provider: 'google'
     };
-    
+
     s.textContent='✅ Verifying account…';
 
     // Persist user to backend
@@ -3225,8 +1736,8 @@ function handleGoogleLoginResponse(response){
       s.textContent='✅ Signed in (Local Only)';
       setupApp(userData);
     });
-  }catch(e){ 
-    s.textContent='❌ Google Sign-In Error: '+e.message; 
+  }catch(e){
+    s.textContent='❌ Google Sign-In Error: '+e.message;
     console.error('Google response handling error:', e);
   }
 }
@@ -3296,28 +1807,28 @@ async function claimPayout() {
 
 async function loginMetaMask(isAuto = false){
   const s=document.getElementById('cStatus'); if(!s) return;
-  
+
   try{
-    if(!window.ethereum){ 
+    if(!window.ethereum){
       if(!isAuto) s.innerHTML='<span style="color:var(--hot)">❌ MetaMask not detected</span><br><small style="color:var(--dim);margin-top:8px;display:block">Install MetaMask: <a href="https://metamask.io" target="_blank" style="color:var(--cyan)">metamask.io →</a></small>';
-      return; 
+      return;
     }
-    
+
     if(!isAuto) s.textContent='⏳ Connecting MetaMask wallet…';
 
     // Request or get accounts
     const accounts = await window.ethereum.request({
       method: isAuto ? 'eth_accounts' : 'eth_requestAccounts'
     });
-    
+
     if (!accounts || accounts.length === 0) {
       if(!isAuto) s.textContent='❌ No accounts selected in MetaMask';
       return;
     }
-    
+
     const address = accounts[0];
     localStorage.setItem('ta_logged_in', 'metamask');
-    
+
     // Create provider
     let provider;
     if (window.ethers.BrowserProvider) {
@@ -3327,13 +1838,13 @@ async function loginMetaMask(isAuto = false){
     } else {
         provider = new window.ethers.BrowserProvider(window.ethereum);
     }
-    
+
     if(!isAuto) s.textContent='⏳ Verifying network…';
-    try { 
+    try {
       await window.ethereum.request({
         method: 'wallet_switchEthereumChain',
         params: [{ chainId: '0x2105' }]
-      }); 
+      });
     } catch(switchError) {
       if(switchError.code === 4902) {
         try {
@@ -3350,11 +1861,11 @@ async function loginMetaMask(isAuto = false){
         } catch(addError) { console.warn('Chain error:', addError); }
       }
     }
-    
+
     if(!isAuto) s.textContent='⏳ Fetching balance…';
     let balanceUSD = 0;
-    
-    try { 
+
+    try {
       let balanceWei;
       if (provider.getBalance) {
           balanceWei = await provider.getBalance(address);
@@ -3366,19 +1877,19 @@ async function loginMetaMask(isAuto = false){
       }
 
       const balanceETH = parseFloat(window.ethers.formatEther ? window.ethers.formatEther(balanceWei) : window.ethers.utils.formatEther(balanceWei));
-      
+
       const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
       const priceData = await priceResponse.json();
       const ethPrice = priceData?.ethereum?.usd || 3200;
-      
+
       balanceUSD = balanceETH * ethPrice;
     } catch(balanceError) {
       console.warn('Balance error:', balanceError);
     }
-    
+
     balance = balanceUSD;
     startBalance = balanceUSD;
-    
+
     const userData = {
       name: address.slice(0, 6) + '···' + address.slice(-4),
       address: address,
@@ -3386,7 +1897,7 @@ async function loginMetaMask(isAuto = false){
       badge: '🦊 METAMASK',
       provider: 'metamask'
     };
-    
+
     if(!isAuto) s.textContent='✅ Verifying account…';
 
     fetch('/api/user/login', {
@@ -3421,8 +1932,8 @@ async function loginMetaMask(isAuto = false){
       const claimBtn = document.getElementById('ghClaimBtn');
       if(claimBtn) claimBtn.style.display = 'block';
     });
-    
-  }catch(error) { 
+
+  }catch(error) {
     console.error('MetaMask error:', error);
     if(!isAuto) {
       if(error.code === 4001) s.textContent='❌ Connection rejected';
@@ -3496,7 +2007,7 @@ async function loginPayID() {
 function openOskoRamp(type) {
   const s = document.getElementById('cStatus');
   if(!s) return;
-  
+
   // Determine URL based on ramp type
   let url;
   if(type === 'onramp') {
@@ -3513,7 +2024,7 @@ function openOskoRamp(type) {
     url = `https://sell.ramp.network/?ref=tradearena&cryptoAsset=ETH&walletAddress=${window.ethereum.selectedAddress}`;
     s.innerHTML = '💵 Opening OSKO Off-Ramp...<br><span style="font-size:9px;color:var(--dim)">Sell ETH, receive USD to bank</span>';
   }
-  
+
   // Open in new tab
   window.open(url, '_blank');
 }
@@ -3860,10 +2371,10 @@ function buildReels(id){
   fill(`mt0-${id}`,SLOT_TOKENS); fill(`mt1-${id}`,METHODS_V1); fill(`mt2-${id}`,SLOT_TOKENS.slice(0,6));
 }
 function startTicker(bot){
-  function tick(){ 
-    const el=document.getElementById('mtick-'+bot.id); 
+  function tick(){
+    const el=document.getElementById('mtick-'+bot.id);
     if(!el) return;
-    
+
     // Show actual trade info instead of generic tickers
     if(bot.lastTrade) {
       const trade = bot.lastTrade;
@@ -3882,7 +2393,7 @@ function startTicker(bot){
       ];
       el.textContent = genericTickers[bot.tickerIdx++ % genericTickers.length];
     }
-    bot.tickerTimer=setTimeout(tick,2400+Math.random()*1000); 
+    bot.tickerTimer=setTimeout(tick,2400+Math.random()*1000);
   }
   tick();
 }
@@ -3972,7 +2483,7 @@ function scheduleAuto(bot){
 async function spinBot(id){
   const bot=bots.find(b=>b.id===id);
   if(!bot||bot.spinning||bot.cooling) return;
-  
+
   // CRITICAL: Prevent spinning if balance is insufficient for minimum bet
   if(balance < 0.10) {
     if (bot.auto && window.taskState) {
@@ -4044,7 +2555,7 @@ async function spinBot(id){
       }
       return;
   }
-  
+
   const block=isGlobalBlocked();
   if(block.blocked){const t=document.getElementById('mtick-'+id);if(t)t.textContent='🚫 '+block.reason;return;}
   bot.spinning=true;
@@ -4079,7 +2590,7 @@ async function spinBot(id){
   if (typeof ACOUSTIC !== 'undefined') {
     ACOUSTIC.onTradeOpen(bot.id, decision.token, decision.method);
   }
-  
+
   // Start reel animation immediately and fetch instant result in parallel
   const reelPromise = animateReels(id,decision);
   const resultPromise = (async()=>{
@@ -4087,7 +2598,7 @@ async function spinBot(id){
     await new Promise(r=>setTimeout(r,200));
     return {decision, entryPrice};
   })();
-  
+
   await Promise.all([reelPromise, resultPromise]);
 
   setVal('mpv0-'+id,decision.token);
@@ -4258,8 +2769,8 @@ function renderPolFeed(filings){
 // ══════════════════════════════════════════════════════
 async function queryDatabricksGenie(token, marketSummary){
   const cfg=getDbConfig(); if(!isDbConfigured()) return null;
-  const query=`What patterns exist for ${token} in our historical trade data? 
-    Current market: ${marketSummary}. 
+  const query=`What patterns exist for ${token} in our historical trade data?
+    Current market: ${marketSummary}.
     Summarize in 2 sentences: signal direction and confidence.`;
   try{
     // Start conversation
@@ -4319,9 +2830,9 @@ ${marketSummary}
 TARGET: ${token} | BET: $${bet}
 ${extraContext}
 
-Is there real momentum RIGHT NOW? 
+Is there real momentum RIGHT NOW?
 - Strong 24h move? (>2%)
-- High volume confirming? 
+- High volume confirming?
 - Conviction >0.7? If NO → vote HOLD and save capital.
 
 Respond ONLY with JSON:
@@ -4448,34 +2959,34 @@ async function runEnsemble(marketData, bet, botId, politicianData, bot){
     // Bot personality affects token selection diversity
     const top = marketData.slice(0,5);
     summary=top.map(c=>`${c.symbol.toUpperCase()}: $${c.current_price} | 24h: ${(c.price_change_percentage_24h||0).toFixed(1)}% | Vol: $${(c.total_volume/1e6).toFixed(0)}M | MCap: $${(c.market_cap/1e9).toFixed(1)}B`).join('\n');
-    
+
     // Select token based on bot personality
     let selectedCoin;
     if(bot?.personality === 'AGGRESSIVE') {
       // AGGRESSIVE: picks highest volatility
-      selectedCoin = marketData.slice(0, 10).reduce((a, b) => 
+      selectedCoin = marketData.slice(0, 10).reduce((a, b) =>
         Math.abs(b.price_change_percentage_24h||0) > Math.abs(a.price_change_percentage_24h||0) ? b : a
       );
     } else if(bot?.personality === 'CONSERVATIVE') {
       // CONSERVATIVE: picks lowest volatility with decent volume
-      selectedCoin = marketData.filter(c => c.total_volume > 1e8).slice(0, 20).reduce((a, b) => 
+      selectedCoin = marketData.filter(c => c.total_volume > 1e8).slice(0, 20).reduce((a, b) =>
         Math.abs(b.price_change_percentage_24h||0) < Math.abs(a.price_change_percentage_24h||0) ? b : a
       );
     } else if(bot?.personality === 'MOMENTUM') {
       // MOMENTUM: strongest directional move (either way)
-      selectedCoin = top.reduce((a, b) => 
+      selectedCoin = top.reduce((a, b) =>
         Math.abs(b.price_change_percentage_24h||0) > Math.abs(a.price_change_percentage_24h||0) ? b : a
       );
     } else if(bot?.personality === 'CONTRARIAN') {
       // CONTRARIAN: picks against sentiment (worst performer or biggest loser)
-      selectedCoin = marketData.slice(0, 15).reduce((a, b) => 
+      selectedCoin = marketData.slice(0, 15).reduce((a, b) =>
         (b.price_change_percentage_24h||0) < (a.price_change_percentage_24h||0) ? b : a
       );
     } else {
       // BALANCED: default top performer
       selectedCoin = top[0];
     }
-    
+
     targetToken=(selectedCoin?.symbol||'eth').toUpperCase();
   }
 
@@ -4505,10 +3016,10 @@ async function runEnsemble(marketData, bet, botId, politicianData, bot){
   // If market moved UP 2%, voting LONG has edge. Voting SHORT = fading → requires much stronger signal
   const marketMove24h = targetCoin ? (targetCoin.price_change_percentage_24h || 0) : 0;
   const marketMoveAbs = Math.abs(marketMove24h);
-  
+
   // If market barely moved, need very high conviction to trade (not enough money to be made)
   // If market moved strong, can trade with moderate conviction aligned with direction
-  const edgeContext = marketMoveAbs > 3 
+  const edgeContext = marketMoveAbs > 3
     ? `EDGE: Market moved ${marketMove24h.toFixed(1)}% (STRONG direction). Trading WITH trend has edge.`
     : marketMoveAbs > 1.5
     ? `EDGE: Market moved ${marketMove24h.toFixed(1)}%. Need >0.70 conviction to overcome costs.`
@@ -4568,7 +3079,7 @@ async function runEnsemble(marketData, bet, botId, politicianData, bot){
   } else if(bot?.personality === 'CONTRARIAN') {
     personalityThreshold = Math.min(4, personalityThreshold + 1);  // Waits for stronger consensus
   }
-  
+
   // Hard veto check first
   if(riskResult.vote==='VETO'){
     updateConsensusBar(botId,0,'🛡️ RISK VETO — switching to SPOT LONG (safe fallback)','var(--hot)');
@@ -4589,10 +3100,10 @@ async function runEnsemble(marketData, bet, botId, politicianData, bot){
   const avgConviction = votingAgents
     .filter(r => r.vote === direction)
     .reduce((s, r) => s + (r.conviction || 0.55), 0) / Math.max(maxVotes, 1);
-  
-  // Pass if: 
+
+  // Pass if:
   // - 3+ votes, OR
-  // - 2 votes + high conviction (>0.75), OR  
+  // - 2 votes + high conviction (>0.75), OR
   // - Weighted signal is VERY dominant (>0.85)
   const anyStrongSignal = votingAgents.some(r => r.conviction >= 0.75 && (r.vote === 'LONG' || r.vote === 'SHORT'));
   const weightedDominant = weighted.diff > 0.85; // STRICTER threshold for profit
@@ -4610,13 +3121,13 @@ async function runEnsemble(marketData, bet, botId, politicianData, bot){
   if (!passThreshold) {
     // Instead of HOLD, always trade but use personality-appropriate method
     const fallbackDirection = direction || (Math.random() > 0.5 ? 'LONG' : 'SHORT');
-    const fallbackMethods_long = crucibleMode ? ['SPOT LONG'] : 
+    const fallbackMethods_long = crucibleMode ? ['SPOT LONG'] :
       bot?.personality === 'CONSERVATIVE' ? ['SPOT LONG'] : ['SPOT LONG','YIELD FARM'];
     const fallbackMethods_short = crucibleMode ? ['SPOT SHORT'] : ['SPOT SHORT'];
-    const fallbackMethod = fallbackDirection === 'LONG' 
+    const fallbackMethod = fallbackDirection === 'LONG'
       ? fallbackMethods_long[Math.floor(Math.random() * fallbackMethods_long.length)]
       : fallbackMethods_short[Math.floor(Math.random() * fallbackMethods_short.length)];
-    
+
     return { token: targetToken, method: fallbackMethod, reasoning: `${maxVotes}/4 agree, trading cautiously`, strategy_detail: 'Weak consensus fallback.', ensemble: allResults, regime: volResult.regime || earlyRegime };
   }
 
@@ -4627,11 +3138,11 @@ async function runEnsemble(marketData, bet, botId, politicianData, bot){
   // AGAINST trend → need conviction >0.80 (fading market is risky)
   const trendAlignment = (marketMove24h > 0 && direction === 'LONG') || (marketMove24h < 0 && direction === 'SHORT');
   const requiresExtraConfidence = !trendAlignment && Math.abs(marketMove24h) > 1;
-  
+
   if (requiresExtraConfidence && avgConviction < 0.80) {
     // Trying to fade the trend but not confident enough - use SPOT method instead of shorting
     const conservativeMethod = direction === 'LONG' ? 'SPOT LONG' : 'SPOT SHORT';
-    updateConsensusBar(botId, consensusPct, 
+    updateConsensusBar(botId, consensusPct,
       `Low conviction trend fade (${(avgConviction*100).toFixed(0)}%) → ${conservativeMethod}`,
       'var(--hot)'
     );
@@ -4664,14 +3175,14 @@ Respond ONLY with JSON:
 
   // Circuit breaker: if API is in cooldown, skip synthesis and use deterministic fallback
   if(API_CB.isOpen() || !getApiKey()){
-    const methods_long = crucibleMode ? ['SPOT LONG'] : 
+    const methods_long = crucibleMode ? ['SPOT LONG'] :
       bot?.personality === 'AGGRESSIVE' ? ['PERP LONG','PERP LONG','SPOT LONG'] :
       bot?.personality === 'CONSERVATIVE' ? ['SPOT LONG','YIELD FARM'] :
       bot?.personality === 'MOMENTUM' ? ['PERP LONG','SPOT LONG'] :
       bot?.personality === 'CONTRARIAN' ? ['SPOT SHORT','SPOT LONG'] :
       ['SPOT LONG','PERP LONG','YIELD FARM'];
     const methods_short = crucibleMode ? ['SPOT SHORT'] : ['SPOT SHORT','PERP SHORT'];
-    const method = direction === 'LONG' 
+    const method = direction === 'LONG'
       ? methods_long[Math.floor(Math.random()*methods_long.length)]
       : methods_short[Math.floor(Math.random()*methods_short.length)];
     return{token:targetToken,method,reasoning:`${maxVotes}/4 agents agree (${bot?.personality||'BALANCED'})`,strategy_detail:'Rule-based execution.',ensemble:allResults,regime:volResult.regime||earlyRegime,polSignal};
@@ -4692,14 +3203,14 @@ Respond ONLY with JSON:
     if(data.error){ API_CB.recordFailure(); throw new Error(data.error.message); }
     const parsed=JSON.parse((data.content?.[0]?.text||'{}').replace(/```json|```/g,'').trim());
     API_CB.recordSuccess();
-    
+
     // CRITICAL: Enforce valid trading method - never allow HOLD
     let method = parsed.method || (direction==='LONG'?'SPOT LONG':'SPOT SHORT');
     const validMethods = crucibleMode ? ['SPOT LONG','SPOT SHORT'] : ['SPOT LONG','SPOT SHORT','YIELD FARM','PERP LONG','PERP SHORT'];
     if(!validMethods.includes(method) || method === 'HOLD') {
       method = direction==='LONG'?'SPOT LONG':'SPOT SHORT';
     }
-    
+
     return{
       token:parsed.token||targetToken,
       method:method,
@@ -6047,179 +4558,3 @@ document.addEventListener('keydown', function(e) {
     }
   }
 });
-
-</script>
-<!-- ACOUSTIC Audio-Visual Engines -->
-<script src="acoustic-bundle.js" defer></script>
-<script src="trading-bundle.js" defer></script>
-<script src="management-bundle.js" defer></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  checkAutoLogin();
-  // privyInit(); // Lazy loaded on interaction now
-});
-</script>
-<!-- VOICE AGENT MODAL -->
-<div id="voiceAgentModal">
-  <div class="va-header">
-    <span class="va-title">🎙️ AI FLOOR MANAGER</span>
-    <button class="m-close" onclick="toggleVoiceAgent()" aria-label="Close Voice Agent">✕</button>
-  </div>
-  <div class="va-body">
-    <div class="va-status" id="vaStatus">Connected & Ready</div>
-    <div class="va-visualizer" id="vaVisualizer">
-      <div class="va-bar" style="height:15px"></div>
-      <div class="va-bar" style="height:25px"></div>
-      <div class="va-bar" style="height:10px"></div>
-      <div class="va-bar" style="height:30px"></div>
-      <div class="va-bar" style="height:15px"></div>
-    </div>
-    <div id="vaChat" style="font-size:10px; color:#ccc; max-height:100px; overflow-y:auto; border:1px solid var(--border); padding:5px; border-radius:4px;">
-      Welcome to the Trade Arena. I am your Floor Manager. How can I assist with your fleet today?
-    </div>
-  </div>
-  <div class="va-input-area" style="flex-direction:column; gap:5px;">
-    <button id="vaListenBtn" onclick="window.GEMINI_VOICE.toggleListening()" style="width:100%; padding:10px; background:var(--cyan); border:none; border-radius:6px; font-family:'Bungee'; font-size:10px; cursor:pointer;">🎤 PUSH TO TALK</button>
-    <div style="display:flex; gap:8px; width:100%">
-      <input type="text" class="va-input" id="vaInput" aria-label="Command the fleet" placeholder="Command the fleet..." onkeydown="if(event.key==='Enter') sendVoiceCommand()">
-      <button class="va-send" onclick="sendVoiceCommand()">SEND</button>
-    </div>
-  </div>
-</div>
-
-<script>
-function toggleVoiceAgent() {
-  if(typeof SFX !== "undefined") SFX.tick();
-  if(typeof SFX !== 'undefined') SFX.tick();
-  const modal = document.getElementById('voiceAgentModal');
-  const btn = document.getElementById('voiceAgentBtn');
-  if (!modal) return;
-  const isOpen = modal.classList.toggle('open');
-  if (btn) {
-    btn.classList.toggle('open', isOpen);
-    btn.setAttribute('aria-expanded', isOpen);
-  }
-}
-
-async function sendVoiceCommand() {
-  const input = document.getElementById('vaInput');
-  const chat = document.getElementById('vaChat');
-  const status = document.getElementById('vaStatus');
-  const btn = input?.nextElementSibling;
-  if (!input || !input.value.trim()) return;
-
-  const cmd = input.value.trim();
-
-  try {
-    input.disabled = true;
-    if (btn) btn.disabled = true;
-
-    const userMsg = document.createElement('div');
-    const userLabel = document.createElement('span');
-    userLabel.style.color = 'var(--cyan)';
-    userLabel.textContent = 'You: ';
-    userMsg.appendChild(userLabel);
-    userMsg.appendChild(document.createTextNode(cmd));
-    chat.appendChild(userMsg);
-    input.value = '';
-    chat.scrollTop = chat.scrollHeight;
-
-    status.textContent = 'Agent Thinking...';
-
-    // Real LLM AI Floor Manager
-    const apiKey = getApiKey();
-  const systemPrompt = `You are the AI Floor Manager for Trade Arena. You have FULL AGENCY over the trading floor.
-Your goal is to assist the user in managing their fleet of ${bots.length} trading bots.
-
-CURRENT STATE:
-- Balance: $${balance.toFixed(2)}
-- Total P&L: $${totalPnl.toFixed(2)}
-- Open Positions: ${openPositions.length}
-- Market Regime: ${closedTrades.length > 0 ? closedTrades[closedTrades.length-1].regime : 'Scanning...'}
-- ELO Standings: ${typeof getEloStandings === 'function' ? JSON.stringify(getEloStandings()) : 'N/A'}
-
-AVAILABLE ACTIONS:
-- SHOW_FLEET: Toggles compact fleet view.
-- EMERGENCY_STOP: Stops all trading bots immediately.
-- GENERATE_REPORT: Creates a performance pitch report.
-- OPEN_ARENA: Displays the ELO ranking and tournament panel.
-- OPEN_TASKS: Displays the earning tasks center.
-- OPEN_STAFF: Opens the Staff Operations panel for maintenance and customer service.
-- CLAIM_FAUCET: Requests $50 starting capital if eligible.
-- EXECUTE_TRADE: Triggers a new trade on an available bot.
-
-Respond in JSON format:
-{
-  "reply": "Your natural language response to the user",
-  "action": "SHOW_FLEET | EMERGENCY_STOP | GENERATE_REPORT | OPEN_ARENA | OPEN_TASKS | OPEN_STAFF | CLAIM_FAUCET | EXECUTE_TRADE | NONE",
-  "reasoning": "Internal reasoning for your choice"
-}`;
-
-  let aiResponse;
-
-  if (!apiKey) {
-    // Fallback if no API key
-    aiResponse = {
-      reply: "I'm operating in rule-based fallback mode (no API key). " + (cmd.toLowerCase().includes('balance') ? `Your balance is $${balance.toFixed(2)}.` : "How can I help with the fleet?"),
-      action: cmd.toLowerCase().includes('stop') ? 'EMERGENCY_STOP' : 'NONE'
-    };
-  } else {
-    try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true'
-        },
-        body: JSON.stringify({
-          model: 'claude-3-haiku-20240307',
-          max_tokens: 300,
-          messages: [{ role: 'user', content: `USER COMMAND: ${cmd}\n\n${systemPrompt}` }]
-        })
-      });
-      const data = await res.json();
-      aiResponse = JSON.parse((data.content?.[0]?.text || '{}').replace(/```json|```/g, '').trim());
-    } catch (e) {
-      console.error('Floor Manager LLM Error:', e);
-      aiResponse = { reply: "I'm having trouble connecting to my cognitive core, but I'm still monitoring the telemetry.", action: 'NONE' };
-    }
-  }
-
-  // Handle Actions
-  switch (aiResponse.action) {
-    case 'SHOW_FLEET': toggleFleetView(); break;
-    case 'EMERGENCY_STOP': globalKill(); break;
-    case 'GENERATE_REPORT': generatePitchReport(); break;
-    case 'OPEN_ARENA': togglePanel('elo'); break;
-    case 'OPEN_TASKS': togglePanel('task'); break;
-    case 'OPEN_STAFF': togglePanel('staff'); break;
-    case 'CLAIM_FAUCET': if (typeof claimFaucet === 'function') claimFaucet(); break;
-    case 'EXECUTE_TRADE':
-      const b = bots.find(bot => !bot.spinning && !bot.cooling);
-      if (b) spinBot(b.id);
-      break;
-  }
-
-    const agentMsg = document.createElement('div');
-    const agentLabel = document.createElement('span');
-    agentLabel.style.color = 'var(--purple)';
-    agentLabel.textContent = 'Agent: ';
-    agentMsg.appendChild(agentLabel);
-    agentMsg.appendChild(document.createTextNode(aiResponse.reply));
-    chat.appendChild(agentMsg);
-    chat.scrollTop = chat.scrollHeight;
-    status.textContent = 'Connected & Ready';
-
-    if (typeof VOICE !== 'undefined' && VOICE.enabled) {
-      VOICE.speak(aiResponse.reply);
-    }
-  } finally {
-    input.disabled = false;
-    if (btn) btn.disabled = false;
-  }
-}
-</script>
-</body>
-</html>
