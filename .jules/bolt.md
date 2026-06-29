@@ -17,3 +17,6 @@ Action: Implemented dual-mode trading system with real on-chain execution, batch
 ## 2026-06-25 - Efficient SVG String Building and Loop Optimization
 **Learning:** For high-frequency dashboard updates, even O(N) operations like `.map().join()` for SVG paths or `Math.max(...array)` can become bottlenecks as N grows, due to intermediate array allocations and spread operator overhead. Replacing these with manual loops and string accumulation provides a smoother UI experience.
 **Action:** Optimized Quant Report drawing functions to use single-pass traversals and manual string accumulation for SVG rendering.
+## 2026-06-29 - O(1) Space Volatility and Parallelized Strategy Detection
+**Learning:** Monolithic loops that traverse datasets multiple times (e.g., once for returns, once for mean, once for variance) incur unnecessary CPU overhead and intermediate allocations. Furthermore, network-bound strategy detection logic (like arbitrage checks) that executes sequentially creates a waterfall latency bottleneck proportional to the number of trading pairs.
+**Action:** Implemented single-pass O(N) variance calculation using the identity $Var(X) = E[X^2] - (E[X])^2$ to achieve O(1) space complexity. Parallelized exchange price fetching and mempool simulations using `Promise.all` to convert O(N) sequential waterfalls into O(1) concurrent batches.
