@@ -303,19 +303,9 @@ class BalanceUpdater {
     }, this.updateInterval);
   }
 
-  async updateBalance() {
+  updateBalance() {
     const balEl = document.getElementById("ghBalance");
     if (!balEl) return;
-
-    // Fetch real balance if in LIVE mode
-    if (window.isLiveMode && window.walletState && window.walletState.isConnected) {
-        if (typeof window.getWalletBalanceUSD === 'function') {
-            const realBal = await window.getWalletBalanceUSD();
-            if (realBal > 0) {
-                window.balance = realBal;
-            }
-        }
-    }
 
     // Calculate unrealised P&L from open positions
     let unrealisedPnl = 0;
@@ -1823,10 +1813,7 @@ async function getWalletBalanceUSD() {
     if (!walletState.address) return 0;
 
     try {
-        // Use browser provider if available for lower latency
-        const provider = window.ethereum ?
-            new ethers.providers.Web3Provider(window.ethereum) :
-            new ethers.providers.JsonRpcProvider(REAL_WALLET_CONFIG.network.rpcUrl);
+        const provider = new ethers.providers.JsonRpcProvider(REAL_WALLET_CONFIG.network.rpcUrl);
         const ethBalance = await provider.getBalance(walletState.address);
         // Fallback price if getLivePrice fails
         let ethPrice = 2500;

@@ -598,6 +598,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 .empty-log{font-size:10px;color:var(--dim);text-align:center;padding:14px;border:1px dashed var(--border);border-radius:6px}
 .ptc{position:fixed;pointer-events:none;z-index:8999;animation:pf 1.3s ease forwards}
 @keyframes pf{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(160px) rotate(720deg);opacity:0}}
+/* Toast animations used by showToast() */
+@keyframes toastFadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes toastFadeOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-20px)}}
 @keyframes pulse{0%{opacity:1;transform:scale(1)}50%{opacity:0.6;transform:scale(1.05)}100%{opacity:1;transform:scale(1)}}
 @keyframes highlight-pulse {
   0% { box-shadow: 0 0 0 0 rgba(0, 255, 231, 0.7); border-color: var(--cyan); }
@@ -1181,6 +1184,50 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     </div>
   </div>
 
+  <!-- ★ CONNECTION STATUS PANEL ★ -->
+  <div class="cpanel" id="connPanel">
+    <div class="cpanel-hd" id="connHd" onclick="togglePanel('conn')" style="background:linear-gradient(90deg,rgba(0,255,231,.06),transparent)" role="button" tabindex="0">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:14px">🔌</span>
+        <span class="cpanel-title" style="color:var(--cyan)">CONNECTION DASHBOARD</span>
+        <span style="font-size:9px;color:var(--dim)">System Connectivity & Requirements</span>
+      </div>
+      <span class="cpanel-toggle" id="connToggle">▼ EXPAND</span>
+    </div>
+    <div class="cpanel-body" id="connBody">
+      <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap:15px; margin-bottom:15px;">
+        <!-- Dynamic Connection List -->
+        <div id="connStatusList" style="display:contents">
+           <div style="grid-column: 1 / -1; text-align:center; padding:20px; color:var(--dim)">⏳ Loading connection status...</div>
+        </div>
+      </div>
+
+      <!-- Onchain Requirements Section -->
+      <div style="border-top: 1px solid var(--border); padding-top:15px; margin-top:10px;">
+        <div style="font-family:'Bungee'; font-size:11px; color:var(--gold2); margin-bottom:10px;">🛡️ LIVE MAINNET REQUIREMENTS</div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; font-size:11px;">
+          <div>
+            <div style="color:var(--cyan); margin-bottom:4px;">Network Configuration</div>
+            <ul style="list-style:none; color:var(--dim); line-height:1.6">
+              <li>• Network: <span style="color:#fff">Base Mainnet</span></li>
+              <li>• Chain ID: <span style="color:#fff">8453</span></li>
+              <li>• RPC URL: <span style="color:#fff">https://mainnet.base.org</span></li>
+              <li>• Currency: <span style="color:#fff">ETH</span></li>
+            </ul>
+          </div>
+          <div>
+            <div style="color:var(--cyan); margin-bottom:4px;">Minimum Assets</div>
+            <ul style="list-style:none; color:var(--dim); line-height:1.6">
+              <li>• Gas Reserve: <span style="color:#fff">0.005 ETH</span></li>
+              <li>• Min Trade: <span style="color:#fff">1.00 USDC</span></li>
+              <li>• Recommended: <span style="color:#fff">0.02 ETH + 50 USDC</span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ★ STAFF OPERATIONS PANEL ★ -->
   <div class="cpanel" id="staffPanel">
     <div class="cpanel-hd" id="staffHd" onclick="togglePanel('staff')" style="background:linear-gradient(90deg,rgba(0,255,231,.06),transparent)" role="button" tabindex="0">
@@ -1260,26 +1307,26 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     </div>
     <div class="cpanel-body" id="taskBody">
       <!-- Task Center Tabs -->
-      <div style="display:flex; gap:4px; margin-bottom:12px; border-bottom:1px solid var(--border); padding-bottom:8px;">
-          <button class="bus-preset active" id="tab-internal" onclick="switchTaskTab('internal')">INTERNAL</button>
-          <button class="bus-preset" id="tab-identities" onclick="switchTaskTab('identities')">AGENT IDENTITIES</button>
-          <button class="bus-preset" id="tab-market" onclick="switchTaskTab('market')">MARKETPLACE</button>
+      <div role="tablist" style="display:flex; gap:4px; margin-bottom:12px; border-bottom:1px solid var(--border); padding-bottom:8px;">
+          <button role="tab" class="bus-preset active" id="tab-internal" onclick="switchTaskTab('internal')" aria-selected="true" aria-controls="task-tab-internal">INTERNAL</button>
+          <button role="tab" class="bus-preset" id="tab-identities" onclick="switchTaskTab('identities')" aria-selected="false" aria-controls="task-tab-identities">AGENT IDENTITIES</button>
+          <button role="tab" class="bus-preset" id="tab-market" onclick="switchTaskTab('market')" aria-selected="false" aria-controls="task-tab-market">MARKETPLACE</button>
       </div>
 
       <!-- Tab: Internal Monitor -->
-      <div id="task-tab-internal">
+      <div id="task-tab-internal" role="tabpanel" aria-labelledby="tab-internal">
           <div id="cStatus" style="font-size:10px;color:var(--dim);margin-bottom:8px">Loading deployment queue…</div>
           <div id="taskCenterRows"></div>
       </div>
 
       <!-- Tab: Agent Identities -->
-      <div id="task-tab-identities" style="display:none">
+      <div id="task-tab-identities" style="display:none" role="tabpanel" aria-labelledby="tab-identities">
           <div style="font-size:9px; color:var(--dim); margin-bottom:10px;">Register your autonomous agents to earn USDC from external platforms.</div>
           <div id="agentIdentityRows"></div>
       </div>
 
       <!-- Tab: Marketplace -->
-      <div id="task-tab-market" style="display:none">
+      <div id="task-tab-market" style="display:none" role="tabpanel" aria-labelledby="tab-market">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
               <div style="font-size:9px; color:var(--dim);">External tasks available for registered agents.</div>
               <button onclick="window.MARKETPLACE && window.MARKETPLACE.refreshTasks()" style="padding:2px 8px; background:var(--chrome); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-size:8px; cursor:pointer;">REFRESH</button>
@@ -1373,11 +1420,11 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
           document.body.appendChild(c);
         }
         const t = document.createElement('div');
-        t.style.cssText = `background:rgba(0,0,0,0.9);color:${type==='error'?'var(--hot)':'var(--cyan)'};padding:8px 16px;border:1px solid ${type==='error'?'var(--hot)':'var(--cyan)'};border-radius:4px;font-family:monospace;font-size:12px;box-shadow:0 0 10px rgba(0,0,0,0.5);animation:fadeIn 0.3s ease;`;
+        t.style.cssText = `background:rgba(0,0,0,0.9);color:${type==='error'?'var(--hot)':'var(--cyan)'};padding:8px 16px;border:1px solid ${type==='error'?'var(--hot)':'var(--cyan)'};border-radius:4px;font-family:monospace;font-size:12px;box-shadow:0 0 10px rgba(0,0,0,0.5);animation:toastFadeIn 0.3s ease;`;
         t.textContent = `[${type.toUpperCase()}] ${msg}`;
         document.getElementById('toastContainer').appendChild(t);
         setTimeout(() => {
-          t.style.animation = 'fadeOut 0.3s ease';
+          t.style.animation = 'toastFadeOut 0.3s ease';
           setTimeout(() => t.remove(), 300);
         }, 3000);
       }
@@ -1608,6 +1655,8 @@ const CRUCIBLE_METHODS = ['SPOT LONG','SPOT SHORT','HOLD'];
 var balance=50, startBalance=50, totalPnl=0;
 var closedTrades=[], openPositions=[], equityHistory=[10000];
 var _lastClosedCount = -1;
+var _lastLogRenderCount = -1;
+var _lastLogTradeCount = -1;
 let agentHistory=[]; // per-agent vote accuracy for quant report
 let globalLog=[];
 var bots=[], botCounter=0;
@@ -2753,6 +2802,44 @@ function togglePanel(name) {
   if(name==='elo'&&isOpen){ if(typeof renderEloArena === 'function') renderEloArena(); }
   if(name==='task'&&isOpen){ if(typeof renderDeploymentMonitor === 'function') renderDeploymentMonitor(); if(typeof startDeploymentPolling === 'function') startDeploymentPolling(); }
   if(name==='staff'&&isOpen){ if(typeof renderStaffPanel === 'function') renderStaffPanel(); }
+  if(name==='conn'&&isOpen){ updateConnectionDashboard(); }
+}
+
+function updateConnectionDashboard() {
+  const list = document.getElementById('connStatusList');
+  if(!list) return;
+
+  fetch('/api/status/connections')
+    .then(res => res.json())
+    .then(data => {
+      list.innerHTML = '';
+      data.connections.forEach(conn => {
+        const card = document.createElement('div');
+        card.style.cssText = 'background:var(--chrome); border:1px solid var(--border); border-radius:8px; padding:12px; display:flex; flex-direction:column; gap:6px;';
+
+        const statusColor = conn.status === 'CONNECTED' || conn.status === 'CONFIGURED' || conn.status === 'ACTIVE' ? 'var(--green)' : 'var(--hot)';
+        const statusIcon = conn.status === 'CONNECTED' || conn.status === 'CONFIGURED' || conn.status === 'ACTIVE' ? '🟢' : '🔴';
+
+        card.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div style="font-size:10px; color:var(--cyan); font-family:'Bungee';">${conn.name}</div>
+            <div style="font-size:9px; color:${statusColor}; font-weight:bold;">${statusIcon} ${conn.status}</div>
+          </div>
+          <div style="font-size:11px; color:#fff; word-break:break-all; font-family:monospace; background:rgba(0,0,0,0.2); padding:4px; border-radius:4px;">
+            ${conn.value || 'N/A'}
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:9px; color:var(--dim);">
+            <span>TYPE: ${conn.type}</span>
+            ${conn.balance ? `<span style="color:var(--gold)">BAL: ${conn.balance}</span>` : ''}
+          </div>
+          ${conn.address ? `<div style="font-size:8px; color:var(--dim); font-family:monospace;">ADDR: ${conn.address}</div>` : ''}
+        `;
+        list.appendChild(card);
+      });
+    })
+    .catch(err => {
+      list.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; padding:20px; color:var(--hot)">❌ Failed to fetch connection status: ${err.message}</div>`;
+    });
 }
 
 /**
@@ -2763,7 +2850,10 @@ function switchTaskTab(tab) {
         const content = document.getElementById(`task-tab-${t}`);
         const btn = document.getElementById(`tab-${t}`);
         if (content) content.style.display = (t === tab) ? 'block' : 'none';
-        if (btn) btn.classList.toggle('active', t === tab);
+        if (btn) {
+          btn.classList.toggle('active', t === tab);
+          btn.setAttribute('aria-selected', (t === tab).toString());
+        }
     });
 
     if (tab === 'identities') renderAgentIdentities();
@@ -3104,8 +3194,33 @@ function handleGoogleLoginResponse(response){
       provider: 'google'
     };
     
-    s.textContent='✅ Signed in with Google!';
-    setupApp(userData);
+    s.textContent='✅ Verifying account…';
+
+    // Persist user to backend
+    fetch('/api/user/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData)
+    })
+    .then(res => res.json())
+    .then(data => {
+      if(data.success) {
+        s.textContent='✅ Welcome back, ' + (data.user.name || 'User') + '!';
+        // Initialize app with server data
+        if(typeof balance !== 'undefined') balance = data.user.balance || 10000;
+        setupApp({
+          ...userData,
+          ...data.user
+        });
+      } else {
+        s.textContent='❌ Login failed: ' + (data.error || 'Unknown error');
+      }
+    })
+    .catch(err => {
+      console.error('Persistence error:', err);
+      s.textContent='✅ Signed in (Local Only)';
+      setupApp(userData);
+    });
   }catch(e){ 
     s.textContent='❌ Google Sign-In Error: '+e.message; 
     console.error('Google response handling error:', e);
@@ -3202,8 +3317,33 @@ async function loginMetaMask(){
       provider: 'metamask'
     };
     
-    s.textContent='✅ Connected to MetaMask!';
-    setupApp(userData);
+    s.textContent='✅ Verifying account…';
+
+    // Persist user to backend
+    fetch('/api/user/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData)
+    })
+    .then(res => res.json())
+    .then(data => {
+      if(data.success) {
+        s.textContent='✅ Welcome back, ' + (data.user.name || 'User') + '!';
+        // Initialize app with server data (use higher balance between wallet and db if available)
+        if(typeof balance !== 'undefined') balance = Math.max(balanceUSD, data.user.balance || 0);
+        setupApp({
+          ...userData,
+          ...data.user
+        });
+      } else {
+        s.textContent='❌ Login failed: ' + (data.error || 'Unknown error');
+      }
+    })
+    .catch(err => {
+      console.error('Persistence error:', err);
+      s.textContent='✅ Connected (Local Only)';
+      setupApp(userData);
+    });
     
   }catch(error) { 
     console.error('MetaMask connection error:', error);
@@ -5332,13 +5472,26 @@ function addToLog(pos){
   renderLog();
 }
 function renderLog(){
+  // ⚡ Bolt Optimization: Early return if data hasn't changed to skip expensive DOM manipulation
+  if (globalLog.length === _lastLogRenderCount && closedTrades.length === _lastLogTradeCount) return;
+  _lastLogRenderCount = globalLog.length;
+  _lastLogTradeCount = closedTrades.length;
+
+  // ⚡ Bolt Optimization: Consolidate O(N) passes into a single loop
+  let nonHoldCount = 0;
+  let winCount = 0;
+  for (const t of closedTrades) {
+    if (t.method !== 'HOLD') {
+      nonHoldCount++;
+      if (t.isWin) winCount++;
+    }
+  }
+
   // Update log title with live stats
-  const closed=closedTrades.filter(t=>t.method!=='HOLD');
-  if(closed.length>0){
-    const wins=closed.filter(t=>t.isWin).length;
-    const wr=(wins/closed.length*100).toFixed(0);
+  if(nonHoldCount > 0){
+    const wr=(winCount/nonHoldCount*100).toFixed(0);
     const titleEl=document.getElementById('logTitle');
-    if(titleEl) titleEl.innerHTML=`<span>TRADE LEDGER</span><span style="font-size:8px;color:${parseFloat(wr)>=50?'var(--green)':'var(--hot)'}">WIN RATE ${wr}% · ${closed.length} TRADES</span>`;
+    if(titleEl) titleEl.innerHTML=`<span>TRADE LEDGER</span><span style="font-size:8px;color:${parseFloat(wr)>=50?'var(--green)':'var(--hot)'}">WIN RATE ${wr}% · ${nonHoldCount} TRADES</span>`;
   }
   const el=document.getElementById('globalLog'); if(!el) return;
   setVal('logCount',globalLog.length+' trades');

@@ -55,68 +55,32 @@ function stopDeploymentPolling() {
 }
 
 async function claimFaucet() {
-    const statusEl = document.getElementById('cStatus');
-    const userAddr = (window.walletState && window.walletState.address) || window.ethereum?.selectedAddress || 'demo';
-
-    if (statusEl) statusEl.textContent = '⏳ Processing faucet claim...';
-
     try {
-        const res = await fetch(`${API_BASE}/api/faucet/claim`, {
+        await fetch(`${API_BASE}/api/faucet/claim`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userAddress: userAddr })
+            body: JSON.stringify({ userAddress: window.ethereum?.selectedAddress || 'demo' })
         });
-        const data = await res.json();
-
-        if (data.success) {
-            let msg = '✅ Faucet claim successful! Payout initiated.';
-            if (data.payout && data.payout.txHash) {
-                const txUrl = `https://basescan.org/tx/${data.payout.txHash}`;
-                msg += ` <a href="${txUrl}" target="_blank" style="color:var(--cyan);text-decoration:underline">View TX</a>`;
-            }
-            if (statusEl) statusEl.innerHTML = msg;
-        } else {
-            if (statusEl) statusEl.textContent = '❌ Claim failed: ' + (data.error || 'Unknown error');
-        }
         fetchDeployments();
     } catch (e) {
         console.error('[Monitor] Faucet claim failed:', e);
-        if (statusEl) statusEl.textContent = '❌ Network error during claim';
     }
 }
 
-async function completeTask(taskId, reward = 10) {
-    const statusEl = document.getElementById('cStatus');
-    const userAddr = (window.walletState && window.walletState.address) || window.ethereum?.selectedAddress || 'demo';
-
-    if (statusEl) statusEl.textContent = '⏳ Submitting task completion...';
-
+async function completeTask(taskId) {
     try {
-        const res = await fetch(`${API_BASE}/api/tasks/claim`, {
+        await fetch(`${API_BASE}/api/tasks/claim`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 taskId,
-                reward: reward,
-                userAddress: userAddr
+                reward: 0,
+                userAddress: window.ethereum?.selectedAddress || 'demo'
             })
         });
-        const data = await res.json();
-
-        if (data.success) {
-            let msg = '✅ Task completed! Payout of ' + reward + ' units initiated.';
-            if (data.payout && data.payout.txHash) {
-                const txUrl = `https://basescan.org/tx/${data.payout.txHash}`;
-                msg += ` <a href="${txUrl}" target="_blank" style="color:var(--cyan);text-decoration:underline">View TX</a>`;
-            }
-            if (statusEl) statusEl.innerHTML = msg;
-        } else {
-            if (statusEl) statusEl.textContent = '❌ Task failed: ' + (data.error || 'Unknown error');
-        }
         fetchDeployments();
     } catch (e) {
         console.error('[Monitor] Task claim failed:', e);
-        if (statusEl) statusEl.textContent = '❌ Network error during task submission';
     }
 }
 
