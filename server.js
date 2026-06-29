@@ -16,6 +16,7 @@ const WebSocket = require('websocket').w3cwebsocket;
 
 const app = express();
 const payoutRoutes = require("./routes/payoutRoutes");
+const { loadUsers, saveUsers } = require('./user_persistence');
 const PORT = process.env.PORT || 3001;
 
 /**
@@ -356,6 +357,130 @@ async function sendPayout(userAddress, amount, currency = 'ETH') {
     }
 }
 
+app.post('/api/user/login', (req, res) => {
+    try {
+        const { email, address, name, provider, avatar } = req.body;
+        const userId = email || address;
+
+        if (!userId) {
+            return res.status(400).json({ success: false, error: 'Missing userId (email or address)' });
+        }
+
+        const users = loadUsers();
+        if (!users[userId]) {
+            users[userId] = {
+                id: userId,
+                name: name || 'New User',
+                email: email || null,
+                address: address || null,
+                provider: provider || 'unknown',
+                avatar: avatar || null,
+                balance: 10000,
+                bots: [],
+                trades: [],
+                created: Date.now()
+            };
+            saveUsers(users);
+        }
+
+        res.json({ success: true, user: users[userId] });
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+app.get('/api/status/connections', async (req, res) => {
+    const results = {
+        timestamp: Date.now(),
+        connections: []
+    };
+
+    const mask = (key) => {
+        if (!key) return null;
+        if (key.length <= 8) return '********';
+        return key.substring(0, 4) + '****' + key.substring(key.length - 4);
+    };
+
+    const aiKeys = [
+        { name: 'ANTHROPIC_API_KEY', key: process.env.ANTHROPIC_API_KEY, type: 'AI' },
+        { name: 'OPENAI_API_KEY', key: process.env.OPENAI_API_KEY, type: 'AI' },
+        { name: 'GEMINI_API_KEY', key: process.env.GEMINI_API_KEY, type: 'AI' }
+    ];
+
+    for (const item of aiKeys) {
+        results.connections.push({
+            name: item.name,
+            type: item.type,
+            status: item.key ? 'CONFIGURED' : 'MISSING',
+            value: mask(item.key)
+        });
+    }
+
+    const rpcs = [
+        { name: 'RPC_URL (Base Mainnet)', url: process.env.RPC_URL || 'https://mainnet.base.org' },
+        { name: 'BASE_SEPOLIA_RPC_URL', url: process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org' }
+    ];
+
+    for (const rpc of rpcs) {
+        let status = 'ERROR';
+        try {
+            const provider = new ethers.JsonRpcProvider(rpc.url);
+            await provider.getBlockNumber();
+            status = 'CONNECTED';
+        } catch (e) {
+            status = 'DISCONNECTED';
+        }
+        results.connections.push({
+            name: rpc.name,
+            type: 'RPC',
+            status,
+            value: rpc.url
+        });
+    }
+
+    results.connections.push({
+        name: 'PAYOUT_PRIVATE_KEY',
+        type: 'WALLET',
+        status: payoutWallet ? 'ACTIVE' : 'MISSING',
+        value: mask(process.env.PAYOUT_PRIVATE_KEY),
+        address: payoutWallet ? payoutWallet.address : null
+    });
+
+    if (payoutWallet) {
+        try {
+            const balance = await payoutProvider.getBalance(payoutWallet.address);
+            results.connections.find(c => c.name === 'PAYOUT_PRIVATE_KEY').balance = ethers.formatEther(balance) + ' ETH';
+        } catch (e) {}
+    }
+
+    results.connections.push({
+        name: 'MOONPAY_WEBHOOK_SECRET',
+        type: 'WEBHOOK',
+        status: process.env.MOONPAY_WEBHOOK_SECRET ? 'CONFIGURED' : 'MISSING',
+        value: mask(process.env.MOONPAY_WEBHOOK_SECRET)
+    });
+
+    // Contract Deployments
+    const contracts = [
+        { name: 'USDC_CONTRACT', address: process.env.USDC_CONTRACT || '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' },
+        { name: 'PAYOUT_MANAGER_ADDRESS', address: process.env.PAYOUT_MANAGER_ADDRESS },
+        { name: 'REWARD_TOKEN_ADDRESS', address: process.env.REWARD_TOKEN_ADDRESS }
+    ];
+
+    for (const contract of contracts) {
+        if (contract.address) {
+            results.connections.push({
+                name: contract.name,
+                type: 'CONTRACT',
+                status: 'DEPLOYED',
+                value: contract.address
+            });
+        }
+    }
+
+    res.json(results);
+});
 app.get('/api/payout/status', (req, res) => {
     res.json({
         configured: !!payoutWallet,
