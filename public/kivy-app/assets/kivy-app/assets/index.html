@@ -1018,6 +1018,7 @@ async function handleGoogleCred(resp) {
     document.getElementById('cStatus').textContent = '❌ ' + e.message; 
   }
 }
+if(typeof setupWalletListeners === "function") setupWalletListeners();
 async function loginMetaMask() {
   const s = document.getElementById('cStatus');
   try {

@@ -730,11 +730,11 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     <div class="login-card-hd">SIGN IN TO THE FLOOR</div>
     <div class="login-card-bd">
       <!-- Privy Embedded Wallet Login -->
-      <button class="g-btn" onclick="privyLoginGoogle()">
+      <button class="g-btn" onclick="if(typeof privyInit==='function') privyInit(); privyLoginGoogle()">
         <svg class="g-icon" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
         SIGN IN WITH GOOGLE
       </button>
-      <button class="g-btn" onclick="privyLoginApple()" style="background:#000;color:#fff;margin-top:4px">
+      <button class="g-btn" onclick="if(typeof privyInit==='function') privyInit(); privyLoginApple()" style="background:#000;color:#fff;margin-top:4px">
         <svg class="g-icon" viewBox="0 0 384 512" style="width:20px;height:20px"><path fill="#fff" d="M318.7 268.7c-.2-1.2-.4-2.4-.4-3.6 0-23.6-19.1-42.8-42.7-42.8-12.5 0-23.6 5.4-32 14-8.4-8.6-19.6-14.1-32.1-14.1-23.5 0-42.6 19.2-42.6 42.8 0 1.2-.1 2.4-.1 3.6C106.5 282.3 173 350 256 350s149.5-67.7 149.5-151.3c0-1.2.1-2.4.1-3.6-12.4 0-23.8 5.3-32.3 14.3-8.5-9-19.9-14.3-32.4-14.3zM192 342.7c20.9-2.3 39.2-14.1 52.3-35.3-20-20.9-52.3-34.3-92.3-34.3-40.1 0-72.3 13.4-92.4 34.3 13 21.2 31.4 33 52.2 35.3 20.9 2.3 41.7-2.3 60.2-1.1z"/></svg>
         SIGN IN WITH APPLE
       </button>
@@ -866,7 +866,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
        <button class="gh-auto-btn" id="liveToggleBtn" onclick="toggleLiveMode()" title="Toggle Live/Demo Mode" style="border-color:var(--gold2);color:var(--gold2)">DEMO</button>
        <button class="gh-auto-btn" id="ghAutoBtn" onclick="globalAutoToggle()" title="Toggle auto-trading on all bots" aria-pressed="false">AUTO</button>
        <button class="gh-bot-btn" id="ghRemoveBtn" onclick="removeLastBot()" title="Remove last bot" aria-label="Remove last bot" disabled>−</button>
-       <button class="gh-bot-btn" id="ghAddBtn" onclick="addBot()" title="Add bot" aria-label="Add new bot">+</button>
+       <button class="gh-bot-btn" id="ghAddTraderBtn" onclick="addBot('TRADER')" title="Add Trading Bot" aria-label="Add new trading bot">🤖</button><button class="gh-bot-btn" id="ghAddWorkerBtn" onclick="addBot('WORKER')" title="Add Worker Bot" aria-label="Add new worker bot">👷</button>
        <button class="gh-bot-btn" id="musicToggleBtn" onclick="toggleBackgroundMusic()" title="Toggle background music" aria-label="Toggle background music">🎵</button>
      </div>
     <span class="gen-badge" id="genBadge">GEN 0</span>
@@ -3112,6 +3112,8 @@ function handleGoogleLoginResponse(response){
   }
 }
 
+// Call lazy listener setup
+if(typeof setupWalletListeners === "function") setupWalletListeners();
 async function loginMetaMask(){
   const s=document.getElementById('cStatus'); if(!s) return;
   
@@ -3329,7 +3331,7 @@ function setupApp({name,avatar,badge,address}){
       try{ if(typeof startDeploymentPolling === 'function') startDeploymentPolling(); }catch(e){}
       try{ if(typeof initMarketplaceUI === 'function') initMarketplaceUI(); }catch(e){}
       try{ updateAuditSummaryBadge(); }catch(e){}
-      try{ addBot(); }catch(e){ console.error('addBot:',e); }
+      try{ addBot('TRADER'); addBot('WORKER'); }catch(e){ console.error('addBot:',e); }
       try{ updateMatrix(); }catch(e){}
       _startHeaderTicker();
       _syncHeaderBotBtns();
@@ -3370,21 +3372,35 @@ function updateBotPnl(bot){
 // ══════════════════════════════════════════════════════
 // BOT MANAGEMENT
 // ══════════════════════════════════════════════════════
-function addBot(){
+function addBot(type = 'TRADER'){
   if(bots.length>=MAX_BOTS) return;
   botCounter++;
-  // Each bot gets unique personality for trade diversity
-  const personality = ['AGGRESSIVE', 'CONSERVATIVE', 'MOMENTUM', 'CONTRARIAN', 'BALANCED'][botCounter % 5];
+
+  // Worker bots focus on tasks, Traders focus on markets
+  const personality = type === 'WORKER' ? 'DILIGENT' : ['AGGRESSIVE', 'CONSERVATIVE', 'MOMENTUM', 'CONTRARIAN', 'BALANCED'][botCounter % 5];
+
   const bot={
-    id:botCounter,spinning:false,auto:false,bet:10,pnl:0,
-    consecutiveLosses:0,cooldownLevel:0,coolingUntil:0,cooling:false,
-    autoTimer:null,tickerTimer:null,tickerIdx:0,
+    id:botCounter,
+    type: type,
+    spinning:false,
+    auto:false,
+    bet: type === 'WORKER' ? 0 : 10,
+    pnl:0,
+    consecutiveLosses:0,
+    cooldownLevel:0,
+    coolingUntil:0,
+    cooling:false,
+    autoTimer:null,
+    tickerTimer:null,
+    tickerIdx:0,
     personality,
     lastTrade:null,
     tradeHistory:[],
     lastTradeTime:0
   };
-  bots.push(bot); renderBot(bot);
+
+  bots.push(bot);
+  renderBot(bot);
   _syncHeaderBotBtns();
   updateMatrix();
 }
@@ -3497,7 +3513,7 @@ function renderBot(bot){
     <div class="m-status-badge" id="mstatus-${bot.id}"></div>
     <div class="mutation-badge" id="mbadge-${bot.id}">🧬 ADAPTED</div>
     <div class="m-head">
-      <div style="display:flex;align-items:center;gap:5px"><span class="m-id">BOT #${bot.id}</span><span class="m-pnl" id="mpnl-${bot.id}">$0.00</span></div>
+      <div style="display:flex;align-items:center;gap:5px"><span class="m-id" style="display:flex;align-items:center;gap:4px">${bot.type === "WORKER" ? "👷" : "🤖"} BOT #${bot.id} <small style="font-size:8px;padding:1px 4px;background:rgba(255,255,255,0.1);border-radius:3px">${bot.type}</small></span><span class="m-pnl" id="mpnl-${bot.id}">$0.00</span></div>
       <div style="display:flex;align-items:center;gap:4px"><div class="m-ticker" id="mtick-${bot.id}">READY</div><button class="m-close" onclick="removeBot(${bot.id})" aria-label="Remove bot ${bot.id}">✕</button></div>
     </div>
     <div style="position:relative">
@@ -3760,6 +3776,55 @@ async function spinBot(id){
         if(t) t.textContent='🚫 Insufficient balance to trade';
         return;
     }
+  }
+
+  // WORKER BOT LOGIC: If this is a worker bot, skip trading and do tasks
+  if (bot.type === 'WORKER') {
+      bot.spinning = true;
+      const statusEl = document.getElementById('mtick-' + id);
+      const stepEl = document.getElementById('mstep-' + id);
+      const thinkEl = document.getElementById('mthink-' + id);
+      const spinEl = document.getElementById('mspin-' + id);
+
+      if (spinEl) { spinEl.disabled = true; spinEl.textContent = '⏳'; }
+      if (thinkEl) thinkEl.classList.add('show');
+      if (statusEl) statusEl.textContent = '👷 WORKING';
+      if (stepEl) stepEl.textContent = '📂 Scanning for tasks...';
+
+      try {
+          if (typeof SFX !== 'undefined') SFX.tick();
+          await new Promise(r => setTimeout(r, 2000));
+
+          if (window.taskState) {
+              const nextTask = window.taskState.tasks.find(t => !t.completed);
+              if (nextTask) {
+                  if (stepEl) stepEl.textContent = `🛠️ Executing: ${nextTask.label}`;
+                  await new Promise(r => setTimeout(r, 3000));
+                  if (window.completeTask) await window.completeTask(nextTask.id);
+                  if (stepEl) stepEl.textContent = '✅ Task Done';
+              } else {
+                  // Check marketplace tasks
+                  if (window.MARKETPLACE && window.MARKETPLACE.availableTasks.length > 0) {
+                      const mTask = window.MARKETPLACE.availableTasks[0];
+                      if (stepEl) stepEl.textContent = `🌎 Marketplace: ${mTask.title}`;
+                      await new Promise(r => setTimeout(r, 4000));
+                      await window.MARKETPLACE.processTask('bot-' + id, mTask.id);
+                  } else {
+                      if (stepEl) stepEl.textContent = '💤 No tasks available';
+                      await new Promise(r => setTimeout(r, 2000));
+                  }
+              }
+          }
+      } catch (e) {
+          console.error('[Worker Bot] Failed task:', e);
+      } finally {
+          bot.spinning = false;
+          if (spinEl) { spinEl.disabled = false; spinEl.textContent = '🎰 SPIN'; }
+          if (thinkEl) thinkEl.classList.remove('show');
+          if (statusEl) statusEl.textContent = 'READY';
+          if (bot.auto) scheduleAuto(bot);
+      }
+      return;
   }
   
   const block=isGlobalBlocked();
@@ -5332,7 +5397,7 @@ function updateMatrix() {
            onclick="scrollToBot(${bot.id})"
            onkeydown="if(event.key==='Enter'||event.key===' ') scrollToBot(${bot.id})"
            aria-label="Agent ${agentId}, P&L: $${pnl.toFixed(2)}">
-        <span class="pad-agent-id">AG-${agentId}</span>
+        <span class="pad-agent-id">${bot.type === "WORKER" ? "👷" : "🤖"} AG-${agentId}</span>
         <span class="pad-pnl ${pnlClass}" id="pad-pnl-${bot.id}">${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}</span>
       </div>`;
   }).join('');
@@ -5749,28 +5814,13 @@ document.addEventListener('keydown', function(e) {
 });
 
 </script>
-<script src="app-rebuild.js" defer></script>
 <!-- ACOUSTIC Audio-Visual Engines -->
-<script src="sfx-engine.js" defer></script>
-<script src="fx-engine.js" defer></script>
-<script src="voice-engine.js" defer></script>
-<script src="audio-engine.js" defer></script>
-<script src="ACOUSTIC_CORE.js" defer></script>
-<script src="contract-helpers.js" defer></script>
-<script src="real-wallet.js" defer></script>
-<script src="crucible-real-trading.js" defer></script>
-<script src="execution-engine.js" defer></script>
-<script src="elo-tournament-engine.js" defer></script>
-<script src="task-center.js" defer></script>
-<script src="marketplaces.js" defer></script>
-<script src="privy-client.js" defer></script>
-<script src="staff-engine.js" defer></script>
-<script src="gemini-voice-engine.js" defer></script>
+<script src="acoustic-bundle.js" defer></script>
+<script src="trading-bundle.js" defer></script>
+<script src="management-bundle.js" defer></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  if (typeof privyInit === 'function') {
-    privyInit();
-  }
+  // privyInit(); // Lazy loaded on interaction now
 });
 </script>
 <!-- VOICE AGENT MODAL -->

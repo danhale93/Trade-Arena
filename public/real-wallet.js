@@ -86,8 +86,14 @@ let walletState = {
 // METAMASK EVENT LISTENERS & SETUP
 // ═══════════════════════════════════════════════════════════
 
-if (typeof window !== 'undefined' && window.ethereum) {
-  try {
+
+let _listenersSetup = false;
+function setupWalletListeners() {
+    if (_listenersSetup || !window.ethereum) return;
+    _listenersSetup = true;
+    console.log('🦊 Setting up wallet event listeners...');
+    try {
+        try {
     // Listen for account changes
     window.ethereum.on('accountsChanged', (accounts) => {
       try {
@@ -139,7 +145,11 @@ if (typeof window !== 'undefined' && window.ethereum) {
   } catch (e) {
     console.warn('⚠️ Could not set up MetaMask event listeners:', e.message);
   }
+    } catch (e) {
+        console.error('Failed to setup wallet listeners:', e);
+    }
 }
+
 
 // ═══════════════════════════════════════════════════════════
 // NETWORK VALIDATION
@@ -600,6 +610,7 @@ if (typeof window !== 'undefined') {
   window.walletState = walletState;
   window.REAL_WALLET_CONFIG = REAL_WALLET_CONFIG;
   window.getWalletBalanceUSD = getWalletBalanceUSD;
+  window.setupWalletListeners = setupWalletListeners;
   
   console.log('✅ Real Wallet Integration loaded. Available commands:');
   console.log('  → diagnoseMetaMask()');
