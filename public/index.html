@@ -1608,6 +1608,8 @@ const CRUCIBLE_METHODS = ['SPOT LONG','SPOT SHORT','HOLD'];
 var balance=50, startBalance=50, totalPnl=0;
 var closedTrades=[], openPositions=[], equityHistory=[10000];
 var _lastClosedCount = -1;
+var _lastLogRenderCount = -1;
+var _lastLogTradeCount = -1;
 let agentHistory=[]; // per-agent vote accuracy for quant report
 let globalLog=[];
 var bots=[], botCounter=0;
@@ -5267,13 +5269,26 @@ function addToLog(pos){
   renderLog();
 }
 function renderLog(){
+  // ⚡ Bolt Optimization: Early return if data hasn't changed to skip expensive DOM manipulation
+  if (globalLog.length === _lastLogRenderCount && closedTrades.length === _lastLogTradeCount) return;
+  _lastLogRenderCount = globalLog.length;
+  _lastLogTradeCount = closedTrades.length;
+
+  // ⚡ Bolt Optimization: Consolidate O(N) passes into a single loop
+  let nonHoldCount = 0;
+  let winCount = 0;
+  for (const t of closedTrades) {
+    if (t.method !== 'HOLD') {
+      nonHoldCount++;
+      if (t.isWin) winCount++;
+    }
+  }
+
   // Update log title with live stats
-  const closed=closedTrades.filter(t=>t.method!=='HOLD');
-  if(closed.length>0){
-    const wins=closed.filter(t=>t.isWin).length;
-    const wr=(wins/closed.length*100).toFixed(0);
+  if(nonHoldCount > 0){
+    const wr=(winCount/nonHoldCount*100).toFixed(0);
     const titleEl=document.getElementById('logTitle');
-    if(titleEl) titleEl.innerHTML=`<span>TRADE LEDGER</span><span style="font-size:8px;color:${parseFloat(wr)>=50?'var(--green)':'var(--hot)'}">WIN RATE ${wr}% · ${closed.length} TRADES</span>`;
+    if(titleEl) titleEl.innerHTML=`<span>TRADE LEDGER</span><span style="font-size:8px;color:${parseFloat(wr)>=50?'var(--green)':'var(--hot)'}">WIN RATE ${wr}% · ${nonHoldCount} TRADES</span>`;
   }
   const el=document.getElementById('globalLog'); if(!el) return;
   setVal('logCount',globalLog.length+' trades');
