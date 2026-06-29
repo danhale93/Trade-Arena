@@ -52,3 +52,8 @@ Running security audit across localStorage and active config...
 
 ## 2026-06-29T08:49:13.354Z - [INFO] SENTINEL
 Running security audit across localStorage and active config...
+
+## 2026-06-29 - [HIGH] CORS Policy Bypass via Partial Origin Matching
+**Vulnerability:** The CORS policy in `server.js` used `.includes('localhost')` and `.includes('127.0.0.1')` to allow local development origins. This allowed any origin containing these strings (e.g., `http://localhost.attacker.com`) to bypass CORS protections and access the API.
+**Learning:** Overly permissive string matching for origin validation is a common security pitfall. Attackers can register subdomains or create paths that satisfy the `.includes()` check.
+**Prevention:** Always use strict equality checks or precise prefix matching that includes the port separator (`:`) when validating origins. Avoid `.includes()` or broad regex patterns that don't anchor the domain name. Updated `server.js` to use explicit equality and port-aware prefix checks for local origins.
