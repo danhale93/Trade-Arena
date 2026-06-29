@@ -1686,7 +1686,7 @@ let agentProbationStart = {};
 let auditHistory = [];
 let lastAuditAt = 0;
 
-const TOKENS=[
+const SLOT_TOKENS=[
   {e:'🐸',l:'PEPE'},{e:'🐕',l:'DOGE'},{e:'💎',l:'ETH'},{e:'🌕',l:'BTC'},
   {e:'🔥',l:'WIF'},{e:'💀',l:'BONK'},{e:'🦊',l:'FLOKI'},{e:'🚀',l:'ARB'},
   {e:'⚡',l:'SOL'},{e:'🌊',l:'MATIC'},
@@ -3488,6 +3488,7 @@ function setupApp({name,avatar,badge,address}){
       try{ updateAuditSummaryBadge(); }catch(e){}
       try{ addBot('TRADER'); addBot('WORKER'); }catch(e){ console.error('addBot:',e); }
       try{ updateMatrix(); }catch(e){}
+      try{ addBot(); }catch(e){ console.error('addBot:',e); }
       _startHeaderTicker();
       _syncHeaderBotBtns();
       _injectAVControls();
@@ -3796,7 +3797,7 @@ function buildReels(id){
     });
     t.style.transform=`translateY(-${Math.floor(Math.random()*6)*36}px)`;
   }
-  fill(`mt0-${id}`,TOKENS); fill(`mt1-${id}`,METHODS_V1); fill(`mt2-${id}`,TOKENS.slice(0,6));
+  fill(`mt0-${id}`,SLOT_TOKENS); fill(`mt1-${id}`,METHODS_V1); fill(`mt2-${id}`,SLOT_TOKENS.slice(0,6));
 }
 function startTicker(bot){
   function tick(){ 
@@ -5440,7 +5441,7 @@ async function callAI(marketData, bet, botId, bot){
 // ══════════════════════════════════════════════════════
 async function animateReels(id,decision){
   const IH=36;
-  const ti=Math.max(0,TOKENS.findIndex(t=>t.l===decision.token)%10);
+  const ti=Math.max(0,SLOT_TOKENS.findIndex(t=>t.l===decision.token)%10);
   const mi={'SPOT LONG':0,'SPOT SHORT':1,'YIELD FARM':2,'PERP LONG':3,'PERP SHORT':4,'HOLD':5}[decision.method]??0;
   // Speed up animation: shorter delays between reels for snappier feel
   await Promise.all([
