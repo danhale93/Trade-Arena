@@ -14,14 +14,6 @@
 Learning: Real-money trading requires explicit state visibility (Live vs Sim) and high-fidelity feedback (Progress bars, Tx links) to ensure user confidence during execution.
 Action: Implemented dual-mode trading system with real on-chain execution, batch progress monitoring, and AUD-optimized PayID onboarding.
 
-## 2026-06-26 - High-Frequency UI Data Processing
-**Learning:** In high-frequency drawing functions like those used for the Quant Report, patterns that allocate intermediate arrays (e.g., `Object.values().map()`) or use spread operators for mathematical reductions (`Math.max(...arr)`) create unnecessary memory pressure and garbage collection churn. Replacing these with single-pass manual loops significantly stabilizes scripting performance during active trading bursts.
-**Action:** Prefer manual `for` or `for...in` loops for finding extrema or aggregating data within periodic UI update functions, especially when processing objects or large telemetry arrays.
-
-## 2026-06-27 - Single-Pass Variance Calculation
-**Learning:** Calculating volatility (standard deviation) often follows an O(3N) pattern: calculating returns (O(N) with array allocation), calculating mean (O(N)), then calculating squared differences (O(N)). This can be reduced to a single O(N) pass with O(1) space using the identity $Var(X) = E[X^2] - (E[X])^2$, which avoids both intermediate array allocation and redundant iterations.
-**Action:** Replace multi-pass statistics calculations with single-pass loops that accumulate both sum and sum of squares. Use `Math.max(0, ...)` for variance to guard against precision-loss-induced negative values before square rooting.
-
-## 2026-06-28 - Redundant Traversals in Log Rendering
-**Learning:** High-frequency UI components like the trade ledger can become bottlenecks if they perform multiple O(N) traversals (filtering for stats) followed by complete DOM re-writes on every update, regardless of whether data has actually changed. Consolidating these passes and adding change-detection guards is critical as the session history grows.
-**Action:** Replace multiple `filter()` calls with a single manual loop and implement length-based dirty-checking to skip expensive DOM manipulation when no new data is present.
+## 2026-06-25 - Efficient SVG String Building and Loop Optimization
+**Learning:** For high-frequency dashboard updates, even O(N) operations like `.map().join()` for SVG paths or `Math.max(...array)` can become bottlenecks as N grows, due to intermediate array allocations and spread operator overhead. Replacing these with manual loops and string accumulation provides a smoother UI experience.
+**Action:** Optimized Quant Report drawing functions to use single-pass traversals and manual string accumulation for SVG rendering.
