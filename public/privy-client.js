@@ -114,7 +114,7 @@ async function privyLoginGoogle() {
         });
         
         // Listen for login completion
-        window.Privy.on('login', (user) => {
+        window.Privy.once('login', (user) => {
             privyUser = user;
             privyWalletAddress = user.wallet?.address;
             privyConnected = true;
@@ -161,7 +161,7 @@ async function privyLoginApple() {
     
     try {
         window.Privy.loginWithApple();
-        window.Privy.on('login', (user) => {
+        window.Privy.once('login', (user) => {
             privyUser = user;
             privyWalletAddress = user.wallet?.address;
             privyConnected = true;
