@@ -13,7 +13,7 @@
   "dependencies": {
     "@biconomy/abstractjs": "^1.2.4",
     "@biconomy/account": "^4.5.7",
-    "axios": "^1.16.0",
+    "axios": "^1.18.1",
     "ccxt": "^4.2.77",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
