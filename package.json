@@ -24,6 +24,6 @@
     "websocket": "^1.0.35"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^10.0.3"
   }
 }
