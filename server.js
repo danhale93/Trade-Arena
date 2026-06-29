@@ -23,7 +23,7 @@ const PORT = process.env.PORT || 3001;
  */
 const rateLimitMap = new Map();
 const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
-const RATE_LIMIT_MAX = 100;
+const RATE_LIMIT_MAX = 1000;
 
 function checkRateLimit(ip) {
     const now = Date.now();
@@ -45,8 +45,15 @@ setInterval(() => {
     }
 }, 5 * 60 * 1000);
 
-// Apply rate limiter to all requests
+// Security: Serve static files from public directory (Exempt from rate limit)
+const publicDir = path.join(__dirname, "public");
+app.use(express.static(publicDir));
+
+// Apply rate limiter to API requests and remaining routes
 app.use((req, res, next) => {
+    // Whitelist common non-API browser requests that might fall through
+    if (req.path === '/favicon.ico' || req.path === '/manifest.json') return next();
+
     const ip = req.ip || req.socket.remoteAddress || 'unknown';
     if (!checkRateLimit(ip)) {
         return res.status(429).json({ error: 'Too many requests, please try again later.' });
@@ -70,9 +77,7 @@ app.use(cors({
     }
 }));
 
-// Security: Serve static files from 'public' directory ONLY
-const publicDir = path.join(__dirname, 'public');
-app.use(express.static(publicDir));
+
 
 /** Deployment queue for confirmed MoonPay deposits */
 const deploymentEvents = [];

@@ -733,11 +733,11 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     <div class="login-card-hd">SIGN IN TO THE FLOOR</div>
     <div class="login-card-bd">
       <!-- Privy Embedded Wallet Login -->
-      <button class="g-btn" onclick="privyLoginGoogle()">
+      <button class="g-btn" onclick="if(typeof privyInit==='function') privyInit(); privyLoginGoogle()">
         <svg class="g-icon" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
         SIGN IN WITH GOOGLE
       </button>
-      <button class="g-btn" onclick="privyLoginApple()" style="background:#000;color:#fff;margin-top:4px">
+      <button class="g-btn" onclick="if(typeof privyInit==='function') privyInit(); privyLoginApple()" style="background:#000;color:#fff;margin-top:4px">
         <svg class="g-icon" viewBox="0 0 384 512" style="width:20px;height:20px"><path fill="#fff" d="M318.7 268.7c-.2-1.2-.4-2.4-.4-3.6 0-23.6-19.1-42.8-42.7-42.8-12.5 0-23.6 5.4-32 14-8.4-8.6-19.6-14.1-32.1-14.1-23.5 0-42.6 19.2-42.6 42.8 0 1.2-.1 2.4-.1 3.6C106.5 282.3 173 350 256 350s149.5-67.7 149.5-151.3c0-1.2.1-2.4.1-3.6-12.4 0-23.8 5.3-32.3 14.3-8.5-9-19.9-14.3-32.4-14.3zM192 342.7c20.9-2.3 39.2-14.1 52.3-35.3-20-20.9-52.3-34.3-92.3-34.3-40.1 0-72.3 13.4-92.4 34.3 13 21.2 31.4 33 52.2 35.3 20.9 2.3 41.7-2.3 60.2-1.1z"/></svg>
         SIGN IN WITH APPLE
       </button>
@@ -3120,6 +3120,8 @@ function handleGoogleLoginResponse(response){
   }
 }
 
+// Call lazy listener setup
+if(typeof setupWalletListeners === "function") setupWalletListeners();
 async function loginMetaMask(){
   const s=document.getElementById('cStatus'); if(!s) return;
   
@@ -5770,28 +5772,13 @@ document.addEventListener('keydown', function(e) {
 });
 
 </script>
-<script src="app-rebuild.js" defer></script>
 <!-- ACOUSTIC Audio-Visual Engines -->
-<script src="sfx-engine.js" defer></script>
-<script src="fx-engine.js" defer></script>
-<script src="voice-engine.js" defer></script>
-<script src="audio-engine.js" defer></script>
-<script src="ACOUSTIC_CORE.js" defer></script>
-<script src="contract-helpers.js" defer></script>
-<script src="real-wallet.js" defer></script>
-<script src="crucible-real-trading.js" defer></script>
-<script src="execution-engine.js" defer></script>
-<script src="elo-tournament-engine.js" defer></script>
-<script src="task-center.js" defer></script>
-<script src="marketplaces.js" defer></script>
-<script src="privy-client.js" defer></script>
-<script src="staff-engine.js" defer></script>
-<script src="gemini-voice-engine.js" defer></script>
+<script src="acoustic-bundle.js" defer></script>
+<script src="trading-bundle.js" defer></script>
+<script src="management-bundle.js" defer></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  if (typeof privyInit === 'function') {
-    privyInit();
-  }
+  // privyInit(); // Lazy loaded on interaction now
 });
 </script>
 <!-- VOICE AGENT MODAL -->

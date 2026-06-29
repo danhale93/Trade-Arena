@@ -427,6 +427,7 @@ function loginGoogle(){
   }catch(e){ s.textContent='❌ '+escapeHTML(e.message); }
 }
 
+if(typeof setupWalletListeners === "function") setupWalletListeners();
 async function loginMetaMask(){
   const s=document.getElementById('cStatus'); if(!s) return;
   try{
