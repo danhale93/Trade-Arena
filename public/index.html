@@ -2847,23 +2847,23 @@ function updateConnectionDashboard() {
 
         card.innerHTML = `
           <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-            <div style="font-size:10px; color:var(--cyan); font-family:'Bungee';">${conn.name}</div>
-            <div style="font-size:9px; color:${statusColor}; font-weight:bold;">${statusIcon} ${conn.status}</div>
+            <div style="font-size:10px; color:var(--cyan); font-family:'Bungee';">${escapeHTML(conn.name)}</div>
+            <div style="font-size:9px; color:${statusColor}; font-weight:bold;">${statusIcon} ${escapeHTML(conn.status)}</div>
           </div>
           <div style="font-size:11px; color:#fff; word-break:break-all; font-family:monospace; background:rgba(0,0,0,0.2); padding:4px; border-radius:4px;">
-            ${conn.value || 'N/A'}
+            ${escapeHTML(conn.value || 'N/A')}
           </div>
           <div style="display:flex; justify-content:space-between; font-size:9px; color:var(--dim);">
-            <span>TYPE: ${conn.type}</span>
-            ${conn.balance ? `<span style="color:var(--gold)">BAL: ${conn.balance}</span>` : ''}
+            <span>TYPE: ${escapeHTML(conn.type)}</span>
+            ${conn.balance ? `<span style="color:var(--gold)">BAL: ${escapeHTML(conn.balance)}</span>` : ''}
           </div>
-          ${conn.address ? `<div style="font-size:8px; color:var(--dim); font-family:monospace;">ADDR: ${conn.address}</div>` : ''}
+          ${conn.address ? `<div style="font-size:8px; color:var(--dim); font-family:monospace;">ADDR: ${escapeHTML(conn.address)}</div>` : ''}
         `;
         list.appendChild(card);
       });
     })
     .catch(err => {
-      list.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; padding:20px; color:var(--hot)">❌ Failed to fetch connection status: ${err.message}</div>`;
+      list.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; padding:20px; color:var(--hot)">❌ Failed to fetch connection status: ${escapeHTML(err.message)}</div>`;
     });
 }
 
