@@ -757,7 +757,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       </button>
       <div class="divider">— or —</div>
       <button class="demo-btn" onclick="loginDemo()">🎮 ENTER DEMO MODE — NO SETUP NEEDED</button>
-      <button class="advanced-toggle" onclick="document.getElementById('advancedSettings').style.display = 'block'; this.style.display = 'none';" aria-expanded="false" aria-controls="advancedSettings">
+      <button class="advanced-toggle" onclick="toggleAdvancedSettings(this)" aria-expanded="false" aria-controls="advancedSettings">
         ⚙️ Advanced Settings
       </button>
       <div class="fiat-ramp-row">
@@ -774,7 +774,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       </button>
     </div>
   </div>
-  <p id="cStatus" aria-live="polite" style="min-height:16px;font-size:11px;color:var(--cyan);text-align:center;transition:all .3s"></p>
+  <p id="loginStatus" aria-live="polite" style="min-height:16px;font-size:11px;color:var(--cyan);text-align:center;transition:all .3s"></p>
   <div class="setup-note">
     <label for="apiKeyInput"><strong>Optional: Anthropic API Key</strong></label> — enables full Claude AI agents. Get one free at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>
     <div style="display:flex;gap:4px;margin-top:5px">
@@ -1501,6 +1501,14 @@ function escapeHTML(str) {
 /**
  * Toggle visibility of a password/API key input field
  */
+function toggleAdvancedSettings(btn) {
+  const panel = document.getElementById('advancedSettings');
+  if (!panel) return;
+  const isHidden = panel.style.display === 'none' || panel.style.display === '';
+  panel.style.display = isHidden ? 'block' : 'none';
+  btn.setAttribute('aria-expanded', isHidden.toString());
+}
+
 function toggleVisibility(inputId, btn) {
   const input = document.getElementById(inputId);
   if (!input) return;
@@ -1519,6 +1527,15 @@ function copyToClipboard(inputId, btn) {
     const originalText = btn.textContent;
     btn.textContent = 'COPIED!';
     btn.style.color = 'var(--green)';
+
+    // Accessibility: Announce to screen readers via loginStatus live region
+    const status = document.getElementById('loginStatus');
+    if (status) {
+      const originalStatus = status.textContent;
+      status.textContent = 'Copied to clipboard!';
+      setTimeout(() => { status.textContent = originalStatus; }, 2000);
+    }
+
     setTimeout(() => {
       btn.textContent = originalText;
       btn.style.color = '';
@@ -2425,7 +2442,11 @@ function updateOpenCount() { setVal('mv-open',openPositions.length); }
 function toggleCrucible() {
   crucibleMode=!crucibleMode;
   const btn=document.getElementById('crucibleBtn');
-  if(btn){ btn.textContent=crucibleMode?'ON':'OFF'; btn.classList.toggle('active',crucibleMode); }
+  if(btn){
+    btn.textContent=crucibleMode?'ON':'OFF';
+    btn.classList.toggle('active',crucibleMode);
+    btn.setAttribute('aria-pressed', crucibleMode.toString());
+  }
   updateCrucible();
 }
 function updateCrucible() {
@@ -2514,7 +2535,7 @@ function selectRegime(regime) {
   document.querySelectorAll('.regime-btn').forEach(btn => {
     const isActive = btn.id === targetId;
     btn.classList.toggle('active', isActive);
-    btn.setAttribute('aria-pressed', isActive);
+    btn.setAttribute('aria-pressed', isActive.toString());
   });
 }
 
@@ -2788,14 +2809,14 @@ function togglePanel(name) {
   if(!body||!toggle) return;
   const isOpen=body.classList.toggle('open');
   hd?.classList.toggle('open',isOpen);
-  hd?.setAttribute('aria-expanded', isOpen);
+  hd?.setAttribute('aria-expanded', isOpen.toString());
 
   // Update header button affordance
   const ghMap = { staff: 'ghStaffBtn', task: 'ghTaskBtn', elo: 'ghEloBtn' };
   const ghBtn = document.getElementById(ghMap[name]);
   if (ghBtn) {
     ghBtn.classList.toggle('open', isOpen);
-    ghBtn.setAttribute('aria-expanded', isOpen);
+    ghBtn.setAttribute('aria-expanded', isOpen.toString());
   }
 
   toggle.textContent=isOpen?'▴ HIDE':'▼ '+(name==='breaker'?'CONFIGURE':'EXPAND');
@@ -3128,7 +3149,7 @@ function startOverride(bot,btn){
 // LOGIN
 // ══════════════════════════════════════════════════════
 function loginGoogle(){
-  const s=document.getElementById('cStatus'); if(!s) return;
+  const s=document.getElementById('loginStatus'); if(!s) return;
   
   // Check if Google Client ID is configured
   if(GOOGLE_CLIENT_ID.includes('YOUR_')){ 
@@ -3169,7 +3190,7 @@ function loginGoogle(){
 }
 
 function handleGoogleLoginResponse(response){
-  const s=document.getElementById('cStatus'); if(!s) return;
+  const s=document.getElementById('loginStatus'); if(!s) return;
   
   try{
     if(!response.credential){
@@ -3231,7 +3252,7 @@ function handleGoogleLoginResponse(response){
 // Call lazy listener setup
 if(typeof setupWalletListeners === "function") setupWalletListeners();
 async function loginMetaMask(){
-  const s=document.getElementById('cStatus'); if(!s) return;
+  const s=document.getElementById('loginStatus'); if(!s) return;
   
   try{
     // Check if MetaMask is installed
@@ -3375,12 +3396,12 @@ async function loginMetaMask(){
 
 function loginDemo(){
   try{ setupApp({name:'DEMO PLAYER', avatar:null, badge:'🎮 DEMO'}); }
-catch(e){ const s=document.getElementById('cStatus'); if(s) s.textContent='❌ '+e.message; console.error('Demo error:',e); }
+catch(e){ const s=document.getElementById('loginStatus'); if(s) s.textContent='❌ '+e.message; console.error('Demo error:',e); }
 }
 
 // Coinbase Wallet login - checks for window.coinbaseWalletExtension
 async function loginCoinbase(){
-  const s=document.getElementById('cStatus'); if(!s) return;
+  const s=document.getElementById('loginStatus'); if(!s) return;
   try{
     if(window.coinbaseWalletExtension){
       const a=await window.coinbaseWalletExtension.request({method:'eth_requestAccounts'});
@@ -3396,7 +3417,7 @@ async function loginCoinbase(){
 
 
 async function loginPayID() {
-  const s = document.getElementById('cStatus');
+  const s = document.getElementById('loginStatus');
   if(!s) return;
 
   if(!window.ethereum) {
@@ -3434,7 +3455,7 @@ async function loginPayID() {
 
 // OSKO Fiat On/Off Ramp Functions
 function openOskoRamp(type) {
-  const s = document.getElementById('cStatus');
+  const s = document.getElementById('loginStatus');
   if(!s) return;
   
   // Determine URL based on ramp type
@@ -3607,7 +3628,7 @@ function globalAutoToggle(){
   if(btn){
     btn.textContent=_ghAutoOn?'⏸ STOP':'AUTO';
     btn.classList.toggle('on',_ghAutoOn);
-    btn.setAttribute('aria-pressed', _ghAutoOn);
+    btn.setAttribute('aria-pressed', _ghAutoOn.toString());
   }
 }
 

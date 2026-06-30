@@ -177,7 +177,7 @@ function showPendingDeposit(walletAddress, amount) {
     showToast(`Deposit ${amount} USDC initiated. Wallet: ${walletAddress.slice(0, 6)}...`, 'info');
     
     // Update UI to show pending
-    const statusEl = document.getElementById('cStatus');
+    const statusEl = document.getElementById('loginStatus');
     if (statusEl) {
         statusEl.innerHTML = `💳 Deposit pending... <span style="font-size:9px;color:var(--dim)">Funds will arrive in 5-10 minutes</span>`;
     }
@@ -205,7 +205,7 @@ function handleDepositSuccess(walletAddress) {
     deployBotsAfterDeposit(amount);
     
     // Update status
-    const statusEl = document.getElementById('cStatus');
+    const statusEl = document.getElementById('loginStatus');
     if (statusEl) {
         statusEl.innerHTML = `✅ ${amount} USDC ready to trade!`;
     }

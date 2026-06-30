@@ -29,3 +29,7 @@
 ## 2026-06-28 - [WAI-ARIA Tab Pattern & Animation Isolation]
 **Learning:** For tabbed navigation within complex panels, the standard WAI-ARIA Tab pattern (`role="tablist"`, `role="tab"`, `aria-selected`, `aria-controls`) provides a more robust accessibility model than generic toggles by explicitly linking navigation to content panels. Additionally, when implementing global CSS animations, using specific names (e.g., `toastFadeIn`) prevents collisions with generic logic in existing scripts that may use identical names for different effects.
 **Action:** Prefer the full Tab pattern for sub-navigation and always namespace custom CSS keyframes to avoid project-wide naming conflicts.
+
+## 2026-06-29 - [Status Message Persistence & ID Isolation]
+**Learning:** In dashboards with background data polling, sharing a generic status element (like `#cStatus`) across multiple disparate systems (login, task monitoring, clipboard feedback) leads to race conditions where high-frequency polling overwrites critical user feedback. Isolating critical feedback channels into dedicated, semantically-named ARIA-live regions (e.g., `#loginStatus`) ensures message persistence and improved UX during complex multi-threaded frontend operations.
+**Action:** Always scope status elements to specific functional zones (onboarding vs. active monitoring) to prevent background updates from intercepting foreground user feedback.
