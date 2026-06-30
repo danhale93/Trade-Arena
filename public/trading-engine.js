@@ -111,8 +111,8 @@ class TradingEngine {
          };
 
          // Stablecoins to block from trading
-
-         this.stablecoins = ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'FRAX', 'USDP'];
+         // ⚡ Bolt Optimization: Use Set for O(1) lookups during filtering
+         this.stablecoins = new Set(['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'FRAX', 'USDP']);
 
      }
 
@@ -122,7 +122,7 @@ class TradingEngine {
 
      filterStablecoins(pairs) {
 
-         return pairs.filter(pair => !this.stablecoins.includes(pair.token));
+         return pairs.filter(pair => !this.stablecoins.has(pair.token));
 
      }
 
@@ -140,76 +140,43 @@ class TradingEngine {
 
         const filteredPairs = this.filterStablecoins(marketPairs);
 
-         const opportunities = [];
-
-         
-
-         for (let pair of filteredPairs) {
-
+        // ⚡ Bolt Optimization: Parallelize pair analysis to reduce network waterfall latency
+        const results = await Promise.all(filteredPairs.map(async (pair) => {
             try {
+                // ⚡ Bolt Optimization: Parallelize exchange price fetching
+                const [dex1Price, dex2Price, cexPrice] = await Promise.all([
+                    this.fetchPrice(pair.token, 'uniswap'),
+                    this.fetchPrice(pair.token, 'sushiswap'),
+                    this.fetchPrice(pair.token, 'binance')
+                ]);
 
-                // Fetch from multiple DEX APIs
-
-                const dex1Price = await this.fetchPrice(pair.token, 'uniswap');
-
-                const dex2Price = await this.fetchPrice(pair.token, 'sushiswap');
-
-                const cexPrice = await this.fetchPrice(pair.token, 'binance');
-
-
-
-                const priceDiff = Math.abs(dex1Price - dex2Price) / Math.min(dex1Price, dex2Price);
-
+                const minPrice = Math.min(dex1Price, dex2Price);
+                const priceDiff = Math.abs(dex1Price - dex2Price) / minPrice;
                 const profitMargin = priceDiff * 100 - 0.5; // Subtract 0.5% for fees
 
-
-
                 if (profitMargin > 0.3) { // >0.3% profit after fees
-
-                    opportunities.push({
-
+                    return {
                         id: this.generateId(),
-
                         type: 'ARBITRAGE',
-
                         token: pair.token,
-
                         buyExchange: dex1Price < dex2Price ? 'uniswap' : 'sushiswap',
-
                         sellExchange: dex1Price > dex2Price ? 'uniswap' : 'sushiswap',
-
-                        buyPrice: Math.min(dex1Price, dex2Price),
-
+                        buyPrice: minPrice,
                         sellPrice: Math.max(dex1Price, dex2Price),
-
-                        // store numeric profit margin (percentage), not a string
-
                         profitMargin: Number(profitMargin.toFixed(2)),
-
                         volume: pair.volume,
-
                         riskScore: this.calculateRiskScore(pair.volatility, profitMargin),
-
                         timestamp: Date.now(),
-
                         ttl: 45000 // 45 second window
-
-                    });
-
+                    };
                 }
-
             } catch (e) {
-
                 console.error(`Arbitrage check failed for ${pair.token}:`, e);
-
             }
+            return null;
+        }));
 
-        }
-
-
-
-        return opportunities.sort((a, b) => b.profitMargin - a.profitMargin);
-
+        return results.filter(Boolean).sort((a, b) => b.profitMargin - a.profitMargin);
     }
 
 
@@ -221,71 +188,39 @@ class TradingEngine {
      */
 
     async detectFlashLoanOpportunities() {
-
-        const opportunities = [];
-
-        
-
         // Check for MEV opportunities via Aave flash loans
-
         const flashLoanCost = 0.09; // 0.09% fee
-
         const loanAmount = 100; // ETH units
 
-
-
         try {
-
             // Simulate MEV sandwich detection
-
             const mempool = await this.scanMempool();
-
             
-
-            for (let tx of mempool) {
-
+            // ⚡ Bolt Optimization: Parallelize flash loan simulations
+            const results = await Promise.all(mempool.map(async (tx) => {
                 const roi = await this.simulateFlashLoanStrategy(tx, loanAmount);
-
                 
-
                 if (roi > flashLoanCost) {
-
-                    opportunities.push({
-
+                    return {
                         id: this.generateId(),
-
                         type: 'FLASH_LOAN',
-
                         contract: 'AAVE',
-
                         loanAmount: loanAmount,
-
                         expectedROI: roi.toFixed(2),
-
                         strategy: 'MEV Sandwich + Liquidation',
-
                         riskScore: 35,
-
                         timestamp: Date.now(),
-
                         ttl: 15000 // 15 second window
-
-                    });
-
+                    };
                 }
+                return null;
+            }));
 
-            }
-
+            return results.filter(Boolean);
         } catch (e) {
-
             console.error('Flash loan detection error:', e);
-
+            return [];
         }
-
-
-
-        return opportunities;
-
     }
 
 
@@ -297,47 +232,35 @@ class TradingEngine {
      */
 
     analyzeVolatility(priceHistory) {
+        // ⚡ Bolt Optimization: Single-pass O(N) volatility calculation with O(1) space complexity.
+        // Calculates sum and sum-of-squares of returns simultaneously to compute variance
+        // without intermediate array allocations or redundant iterations.
+        let sum = 0;
+        let sumSq = 0;
+        const n = priceHistory.length - 1;
 
-        const returns = [];
+        if (n <= 0) return { current: "0.00", forecast1h: "0.00", forecast24h: "0.00", trend: 'LOW', recommendation: 'NORMAL' };
 
         for (let i = 1; i < priceHistory.length; i++) {
-
-            returns.push((priceHistory[i] - priceHistory[i-1]) / priceHistory[i-1]);
-
+            const ret = (priceHistory[i] - priceHistory[i-1]) / priceHistory[i-1];
+            sum += ret;
+            sumSq += ret * ret;
         }
 
-
-
-        // Calculate standard deviation (volatility)
-
-        const mean = returns.reduce((a, b) => a + b) / returns.length;
-
-        const variance = returns.reduce((sq, n) => sq + Math.pow(n - mean, 2)) / returns.length;
-
-        const volatility = Math.sqrt(variance) * 100; // Convert to percentage
-
-
+        const mean = sum / n;
+        const variance = (sumSq / n) - (mean * mean);
+        const volatility = Math.sqrt(Math.max(0, variance)) * 100; // Convert to percentage
 
         // GARCH estimation for 1h forecast
-
         const garchForecast = volatility * (0.95 + Math.random() * 0.1);
 
-
-
         return {
-
             current: volatility.toFixed(2),
-
             forecast1h: garchForecast.toFixed(2),
-
             forecast24h: (garchForecast * 1.2).toFixed(2),
-
             trend: volatility > 5 ? 'HIGH' : volatility > 2 ? 'MEDIUM' : 'LOW',
-
             recommendation: volatility > 5 ? 'REDUCE_LEVERAGE' : 'NORMAL'
-
         };
-
     }
 
 

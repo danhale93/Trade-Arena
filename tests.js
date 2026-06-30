@@ -801,6 +801,19 @@ describe("Performance", () => {
 
     expect(Date.now() - start).toBeLessThan(150);
   });
+
+  it("calculates volatility with single-pass algorithm correctly", () => {
+    const engine = new TradingEngine();
+    // Use simple prices to make manual verification easy
+    // Returns: (2-1)/1 = 1, (3-2)/2 = 0.5
+    // Mean = (1 + 0.5) / 2 = 0.75
+    // Var = ((1^2 + 0.5^2) / 2) - 0.75^2 = (1.25 / 2) - 0.5625 = 0.625 - 0.5625 = 0.0625
+    // Vol = sqrt(0.0625) * 100 = 0.25 * 100 = 25%
+    const prices = [1, 2, 3];
+    const analysis = engine.analyzeVolatility(prices);
+
+    expect(parseFloat(analysis.current)).toBe(25.00);
+  });
 });
 
 // ─────────────────────────────────────────────────────────

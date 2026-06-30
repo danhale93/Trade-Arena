@@ -76,7 +76,15 @@ app.use("/api/v1/payouts", payoutRoutes);
 const allowedOrigin = process.env.ALLOWED_ORIGIN;
 app.use(cors({
     origin: (origin, cb) => {
-        if (!origin || origin.includes('localhost') || origin.includes('127.0.0.1') || allowedOrigin === '*' || origin === allowedOrigin) {
+        // Sentinel: Prevent CORS bypass via partial origin matches (e.g. localhost.attacker.com)
+        const isLocal = origin && (
+            origin === 'http://localhost' || origin.startsWith('http://localhost:') ||
+            origin === 'http://127.0.0.1' || origin.startsWith('http://127.0.0.1:') ||
+            origin === 'https://localhost' || origin.startsWith('https://localhost:') ||
+            origin === 'https://127.0.0.1' || origin.startsWith('https://127.0.0.1:')
+        );
+
+        if (!origin || isLocal || allowedOrigin === '*' || origin === allowedOrigin) {
             cb(null, true);
         } else {
             cb(null, false);
