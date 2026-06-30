@@ -687,6 +687,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
 /* ══ STICKY HEADER ══ */
 .global-header{position:sticky;top:4px;z-index:9998}
+  .no-animations * { transition: none !important; animation: none !important; }
 </style>
 
 <!-- ╔════════════════════════════════════════════════════════════╗ -->
@@ -868,7 +869,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
        <button class="gh-bus-btn" id="ghEloBtn" onclick="togglePanel('elo')" title="ELO Arena - Recursive Improvement" aria-expanded="false">🏆 ARENA</button>
        <button class="gh-bus-btn" id="voiceAgentBtn" onclick="toggleVoiceAgent()" title="AI Floor Manager (Voice Chat)" aria-expanded="false">🎙️ AGENT</button>
        <button class="gh-bus-btn" id="fleetViewBtn" onclick="toggleFleetView()" title="Toggle Fleet View (Compact Grid)" aria-pressed="false">📊 FLEET</button>
-       <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots" aria-expanded="false">⚙ BUS</button>
+       <button class="gh-bus-btn" id="ghSettingsBtn" onclick="togglePanel('settings')" title="System Settings & Environment" aria-expanded="false">⚙ SETTINGS</button>
        <button class="gh-auto-btn" id="liveToggleBtn" onclick="toggleLiveMode()" title="Toggle Live/Demo Mode" style="border-color:var(--gold2);color:var(--gold2)">DEMO</button>
        <button class="gh-auto-btn" id="ghAutoBtn" onclick="globalAutoToggle()" title="Toggle auto-trading on all bots" aria-pressed="false">AUTO</button>
        <button class="gh-bot-btn" id="ghRemoveBtn" onclick="removeLastBot()" title="Remove last bot" aria-label="Remove last bot" disabled>−</button>
@@ -880,8 +881,57 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
   </div>
 
   <!-- ══ BUS SETTINGS PANEL ══ -->
-  <div class="bus-panel" id="busPanel">
-    <div class="bus-grid">
+
+  <!-- ★ SETTINGS & SYSTEM PANEL ★ -->
+  <div class="cpanel" id="settingsPanel">
+    <div class="cpanel-hd" id="settingsHd" onclick="togglePanel('settings')" style="background:linear-gradient(90deg,rgba(0,255,231,.06),transparent)" role="button" tabindex="0">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:14px">⚙️</span>
+        <span class="cpanel-title" style="color:var(--cyan)">SYSTEM SETTINGS</span>
+        <span style="font-size:9px;color:var(--dim)">API, Wallet, Visuals & Global Controls</span>
+      </div>
+      <span class="cpanel-toggle" id="settingsToggle">▼ EXPAND</span>
+    </div>
+    <div class="cpanel-body" id="settingsBody">
+
+      <!-- Tab Navigation -->
+      <div style="display:flex;gap:4px;margin-bottom:15px;background:rgba(0,0,0,0.2);padding:4px;border-radius:6px;overflow-x:auto;">
+          <button role="tab" class="bus-preset active" id="tab-sys-api" onclick="switchSettingsTab('api')" style="font-size:9px">📡 API & ENV</button>
+          <button role="tab" class="bus-preset" id="tab-sys-wallet" onclick="switchSettingsTab('wallet')" style="font-size:9px">👛 WALLET</button>
+          <button role="tab" class="bus-preset" id="tab-sys-bus" onclick="switchSettingsTab('bus')" style="font-size:9px">🚌 BUS (GLOBAL)</button>
+          <button role="tab" class="bus-preset" id="tab-sys-visual" onclick="switchSettingsTab('visual')" style="font-size:9px">🎨 VISUAL</button>
+          <button role="tab" class="bus-preset" id="tab-sys-audio" onclick="switchSettingsTab('audio')" style="font-size:9px">🔊 AUDIO</button>
+      </div>
+
+      <!-- API & ENV TAB -->
+      <div id="settings-tab-api" role="tabpanel">
+        <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:10px; margin-bottom:15px;" id="settingsConnList">
+           <div style="grid-column: 1 / -1; text-align:center; padding:10px; color:var(--dim)">⏳ Loading system status...</div>
+        </div>
+        <div style="font-size:9px;color:var(--dim);background:var(--chrome);padding:8px;border-radius:4px;border:1px dashed var(--border)">
+            💡 ENV keys are managed server-side. Check your .env file to update keys.
+        </div>
+      </div>
+
+      <!-- WALLET TAB -->
+      <div id="settings-tab-wallet" style="display:none" role="tabpanel">
+        <div style="background:var(--chrome);padding:15px;border-radius:8px;border:1px solid var(--border)">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                <span style="font-family:'Bungee';font-size:11px;color:var(--cyan)">ACTIVE WALLET</span>
+                <span id="settingsWalletStatus" style="font-size:9px;color:var(--green)">● CONNECTED</span>
+            </div>
+            <div id="settingsWalletAddr" style="font-family:monospace;font-size:12px;color:#fff;background:rgba(0,0,0,0.3);padding:8px;border-radius:4px;margin-bottom:10px;word-break:break-all">0x000...0000</div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:15px">
+                <span style="font-size:10px;color:var(--dim)">BALANCE:</span>
+                <span id="settingsWalletBal" style="font-family:'Share Tech Mono';font-size:12px;color:var(--gold)">0.00 ETH</span>
+            </div>
+            <button class="mm-btn" onclick="loginMetaMask()" style="width:100%;font-size:10px">🔄 RECONNECT / SWITCH WALLET</button>
+        </div>
+      </div>
+
+      <!-- BUS TAB (Bot Global Controls) -->
+      <div id="settings-tab-bus" style="display:none" role="tabpanel">
+         <div id="busContentInSettings"><div class="bus-grid">
 
       <!-- Trade Amount -->
       <div class="bus-section">
@@ -962,8 +1012,47 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('optimized')"   title="Optimized spread based on learning model">⚡ OPTIMIZED</button>
       <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('reset')"       title="Reset all bots to defaults">↺ RESET ALL</button>
     </div>
-    <div class="bus-status" id="busStatus"></div>
+    <div class="bus-status" id="busStatus"></div></div>
+      </div>
+
+      <!-- VISUAL TAB -->
+      <div id="settings-tab-visual" style="display:none" role="tabpanel">
+        <div class="bus-section">
+            <div class="bus-section-title"><span>🎨</span> COLOUR THEME</div>
+            <div class="bus-presets">
+                <button class="bus-preset active" onclick="setTheme('dark')">NEON DARK</button>
+                <button class="bus-preset" onclick="setTheme('ridges')">RIDGES RETRO</button>
+                <button class="bus-preset" onclick="setTheme('high-contrast')">HI-CONTRAST</button>
+                <button class="bus-preset" onclick="setTheme('cyber')">CYBERPUNK</button>
+            </div>
+        </div>
+        <div class="bus-section">
+            <div class="bus-section-title"><span>✨</span> UI EFFECTS</div>
+            <div style="display:flex;gap:10px">
+                <button class="bus-preset active" id="particlesToggle" onclick="toggleParticles()">PARTICLES: ON</button>
+                <button class="bus-preset active" id="animationsToggle" onclick="toggleAnimations()">ANIMATIONS: ON</button>
+            </div>
+        </div>
+      </div>
+
+      <!-- AUDIO TAB -->
+      <div id="settings-tab-audio" style="display:none" role="tabpanel">
+        <div class="bus-section">
+            <div class="bus-section-title"><span>🔊</span> SOUND PREFERENCES</div>
+            <div style="margin-bottom:15px">
+                <div style="font-size:9px;color:var(--dim);margin-bottom:5px">SFX VOLUME</div>
+                <input type="range" min="0" max="100" value="50" style="width:100%" onchange="setSfxVolume(this.value)">
+            </div>
+            <div style="display:flex;gap:10px">
+                <button class="bus-preset" onclick="toggleBackgroundMusic()">🎵 BG MUSIC</button>
+                <button class="bus-preset active" id="sfxToggle" onclick="toggleSFX()">🔊 SFX: ON</button>
+            </div>
+        </div>
+      </div>
+
+    </div>
   </div>
+
 
   <!-- ★ AGENT AUDIT PANEL ★ -->
   <div class="audit-panel" id="auditPanel">
@@ -1388,13 +1477,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
   <!-- Bots -->
 
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:8px;background:var(--chrome);border-radius:6px;border:1px solid var(--border);">
-      <div style="font-family:'Bungee';font-size:10px;color:var(--dim)">TRADING MODE</div>
-      <div style="display:flex;gap:4px">
-        <button id="simModeBtn" class="mode-btn active" onclick="switchTradingMode('sim')" aria-pressed="true">SIMULATED</button>
-        <button id="liveModeBtn" class="mode-btn" onclick="switchTradingMode('live')" aria-pressed="false">LIVE (BASE)</button>
-      </div>
-    </div>
+<!-- TRADING MODE toggle consolidated to header -->
     <div id="crucibleProgress" style="display:none;margin-top:10px;margin-bottom:10px;padding:10px;background:rgba(0,0,0,0.3);border-radius:6px;border:1px solid var(--border);">
       <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
         <span style="font-family:'Bungee';font-size:10px;color:var(--cyan)">CRUCIBLE PROGRESS</span>
@@ -1412,7 +1495,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       .mode-btn { padding:4px 8px; background:var(--bg); border:1px solid var(--border); color:var(--dim); font-family:'Bungee'; font-size:9px; cursor:pointer; border-radius:4px; transition: all 0.2s; }
       .mode-btn.active { border-color:var(--cyan); color:var(--cyan); background:rgba(0,255,231,0.1); }
       .mode-btn:hover { border-color: var(--cyan); color: #fff; }
-    </style>
+      .no-animations * { transition: none !important; animation: none !important; }
+</style>
     <script>
       function showToast(msg, type='info') {
         const container = document.getElementById('toastContainer');
@@ -1432,24 +1516,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         }, 3000);
       }
 
+      // switchTradingMode is now handled by toggleLiveMode in header
       function switchTradingMode(mode) {
-        const isLive = mode === 'live';
-        if (isLive && (!window.walletState || !window.walletState.isConnected)) {
-           showToast('Connect real wallet first!', 'error');
-           return;
-        }
-        const simBtn = document.getElementById('simModeBtn');
-        const liveBtn = document.getElementById('liveModeBtn');
-
-        simBtn.classList.toggle('active', !isLive);
-        simBtn.setAttribute('aria-pressed', (!isLive).toString());
-
-        liveBtn.classList.toggle('active', isLive);
-        liveBtn.setAttribute('aria-pressed', isLive.toString());
-
-        if (typeof CrucibleRealTrading !== 'undefined') {
-          CrucibleRealTrading.config.liveMode = isLive;
-          showToast(`Mode switched to ${isLive ? 'LIVE' : 'SIMULATED'}`, 'info');
+        if (typeof toggleLiveMode === 'function') {
+            toggleLiveMode();
         }
       }
       function updateCrucibleProgress(current, total, equity) {
@@ -1656,7 +1726,7 @@ const CRUCIBLE_METHODS = ['SPOT LONG','SPOT SHORT','HOLD'];
 // This allows the AutoRecovery engine in app-rebuild.js to correctly detect them,
 // preventing redundant O(N) localStorage parsing and state assignments every 10 seconds.
 var balance=50, startBalance=50, totalPnl=0;
-var closedTrades=[], openPositions=[], equityHistory=[10000];
+var closedTrades=[], openPositions=[], equityHistory=[50];
 var _lastClosedCount = -1;
 var _lastLogRenderCount = -1;
 var _lastLogTradeCount = -1;
@@ -2648,7 +2718,7 @@ function simulateCrucibleV2Results(regime, costModel, tradeCount) {
   const avgWin = Math.abs(pnlPerTrade) * 1.5; // Assuming 1.5:1 reward:risk
   const avgLoss = Math.abs(pnlPerTrade);
   const totalPnl = (wins * avgWin) - (losses * avgLoss);
-  const returnPct = (totalPnl / 10000) * 100; // Assuming $10k starting balance
+  const returnPct = (totalPnl / 50) * 100; // Assuming $10k starting balance
   
   // Generate baseline comparisons
   const baselines = {
@@ -2743,7 +2813,8 @@ function generatePitchReport() {
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { text-align: left; padding: 12px; border-bottom: 1px solid #241830; font-size: 14px; }
         th { color: #4488ff; }
-      </style>
+        .no-animations * { transition: none !important; animation: none !important; }
+</style>
     </head>
     <body>
       <div class="container">
@@ -2784,8 +2855,7 @@ function downloadFile(content, filename, type) {
 // CIRCUIT BREAKERS
 // ══════════════════════════════════════════════════════
 function togglePanel(name) {
-  if(typeof SFX !== "undefined") SFX.tick();
-  if(typeof SFX !== 'undefined') SFX.tick();
+  if(typeof SFX !== 'undefined' && typeof SFX.tick === 'function') SFX.tick();
   const bodyId=name+'Body', hdId=name+'Hd', toggleId=name+'Toggle';
   const body=document.getElementById(bodyId), toggle=document.getElementById(toggleId), hd=document.getElementById(hdId);
   if(!body||!toggle) return;
@@ -2794,7 +2864,7 @@ function togglePanel(name) {
   hd?.setAttribute('aria-expanded', isOpen);
 
   // Update header button affordance
-  const ghMap = { staff: 'ghStaffBtn', task: 'ghTaskBtn', elo: 'ghEloBtn' };
+  const ghMap = { staff: 'ghStaffBtn', task: 'ghTaskBtn', elo: 'ghEloBtn', settings: 'ghSettingsBtn' };
   const ghBtn = document.getElementById(ghMap[name]);
   if (ghBtn) {
     ghBtn.classList.toggle('open', isOpen);
@@ -2807,6 +2877,7 @@ function togglePanel(name) {
   if(name==='task'&&isOpen){ if(typeof renderDeploymentMonitor === 'function') renderDeploymentMonitor(); if(typeof startDeploymentPolling === 'function') startDeploymentPolling(); }
   if(name==='staff'&&isOpen){ if(typeof renderStaffPanel === 'function') renderStaffPanel(); }
   if(name==='conn'&&isOpen){ updateConnectionDashboard(); }
+   if(name==='settings'&&isOpen){ switchSettingsTab('api'); }
 }
 
 function updateConnectionDashboard() {
@@ -3211,7 +3282,7 @@ function handleGoogleLoginResponse(response){
       if(data.success) {
         s.textContent='✅ Welcome back, ' + (data.user.name || 'User') + '!';
         // Initialize app with server data
-        if(typeof balance !== 'undefined') balance = data.user.balance || 10000;
+        if(typeof balance !== 'undefined') balance = data.user.balance || 50;
         setupApp({
           ...userData,
           ...data.user
@@ -3316,7 +3387,7 @@ async function loginMetaMask(isAuto = false){
     }
     
     const address = accounts[0];
-    localStorage.setItem('ta_logged_in', 'metamask');
+    localStorage.setItem('ta_logged_in', 'metamask'); if(window.walletState) window.walletState.isConnected = true;
     
     // Create provider
     let provider;
@@ -3400,6 +3471,10 @@ async function loginMetaMask(isAuto = false){
         if(!isAuto) s.textContent='✅ Welcome back, ' + (data.user.name || 'User') + '!';
         if(typeof balance !== 'undefined') balance = Math.max(balanceUSD, data.user.balance || 0);
         setupApp({ ...userData, ...data.user });
+        // Enable real trading mode if connected via MetaMask
+        if (!window.isLiveMode && typeof toggleLiveMode === "function") {
+           toggleLiveMode();
+        }
 
         // Show claim button
         const claimBtn = document.getElementById('ghClaimBtn');
@@ -5704,16 +5779,8 @@ function toggleFleetView() {
 }
 
 function toggleBusPanel() {
-  if(typeof SFX !== "undefined") SFX.tick();
-  if(typeof SFX !== 'undefined') SFX.tick();
-  const panel = document.getElementById('busPanel');
-  const btn   = document.getElementById('ghBusBtn');
-  if (!panel) return;
-  const open = panel.classList.toggle('open');
-  if (btn) {
-    btn.classList.toggle('open', open);
-    btn.setAttribute('aria-expanded', open);
-  }
+  togglePanel('settings');
+  switchSettingsTab('bus');
 }
 
 function _busStatus(msg, ok=true) {
@@ -6219,6 +6286,90 @@ Respond in JSON format:
     input.disabled = false;
     if (btn) btn.disabled = false;
   }
+}
+
+function switchSettingsTab(tab) {
+  const tabs = ['api', 'wallet', 'bus', 'visual', 'audio'];
+  tabs.forEach(t => {
+    const btn = document.getElementById(`tab-sys-${t}`);
+    const content = document.getElementById(`settings-tab-${t}`);
+    if (btn) btn.classList.toggle('active', t === tab);
+    if (content) content.style.display = t === tab ? 'block' : 'none';
+  });
+  if (tab === 'api') updateSettingsConnList();
+  if (tab === 'wallet') updateSettingsWalletInfo();
+}
+
+function updateSettingsConnList() {
+  const list = document.getElementById('settingsConnList');
+  if(!list) return;
+  fetch('/api/status/connections')
+    .then(res => res.json())
+    .then(data => {
+      list.innerHTML = '';
+      data.connections.forEach(conn => {
+        const item = document.createElement('div');
+        item.style.cssText = 'background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:6px; padding:8px;';
+        const color = (conn.status === 'CONNECTED' || conn.status === 'CONFIGURED' || conn.status === 'ACTIVE') ? 'var(--green)' : 'var(--hot)';
+        item.innerHTML = `
+          <div style="display:flex;justify-content:space-between;font-size:9px;margin-bottom:4px">
+            <span style="color:var(--cyan);font-family:Bungee">${conn.name}</span>
+            <span style="color:${color}">${conn.status}</span>
+          </div>
+          <div style="font-size:10px;font-family:monospace;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${conn.value || '---'}</div>
+        `;
+        list.appendChild(item);
+      });
+    });
+}
+
+function updateSettingsWalletInfo() {
+  const addrEl = document.getElementById('settingsWalletAddr');
+  const balEl = document.getElementById('settingsWalletBal');
+  const statEl = document.getElementById('settingsWalletStatus');
+
+  if (window.walletState && window.walletState.isConnected) {
+    addrEl.textContent = window.walletState.address;
+    balEl.textContent = `${(window.walletState.balanceETH || 0).toFixed(4)} ETH (~$${(window.walletState.balanceUSD || 0).toFixed(2)})`;
+    statEl.textContent = '● CONNECTED';
+    statEl.style.color = 'var(--green)';
+  } else {
+    addrEl.textContent = 'NOT CONNECTED';
+    balEl.textContent = '0.00 ETH';
+    statEl.textContent = '● DISCONNECTED';
+    statEl.style.color = 'var(--hot)';
+  }
+}
+
+function setTheme(theme) {
+    document.body.className = 'theme-' + theme;
+    localStorage.setItem('ta_theme', theme);
+    if (typeof showToast === 'function') showToast('Theme updated: ' + theme.toUpperCase(), 'success');
+}
+
+function toggleParticles() {
+    const btn = document.getElementById('particlesToggle');
+    const active = btn.classList.toggle('active');
+    btn.textContent = 'PARTICLES: ' + (active ? 'ON' : 'OFF');
+    if (window.Particles) active ? window.Particles.start() : window.Particles.stop();
+}
+
+function toggleAnimations() {
+    const btn = document.getElementById('animationsToggle');
+    const active = btn.classList.toggle('active');
+    btn.textContent = 'ANIMATIONS: ' + (active ? 'ON' : 'OFF');
+    document.body.classList.toggle('no-animations', !active);
+}
+
+function setSfxVolume(val) {
+    if (window.SFX && typeof window.SFX.setVolume === 'function') window.SFX.setVolume(val / 100);
+}
+
+function toggleSFX() {
+    const btn = document.getElementById('sfxToggle');
+    const active = btn.classList.toggle('active');
+    btn.textContent = 'SFX: ' + (active ? 'ON' : 'OFF');
+    if (window.SFX && typeof window.SFX.setEnabled === 'function') window.SFX.setEnabled(active);
 }
 </script>
 </body>

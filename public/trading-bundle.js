@@ -771,6 +771,16 @@ window.isLiveMode = false;
 function toggleLiveMode() {
     window.isLiveMode = !window.isLiveMode;
     const btn = document.getElementById('liveToggleBtn');
+
+    if (window.isLiveMode) {
+        // Switching to LIVE: Trigger wallet connection
+        if (typeof loginMetaMask === 'function') {
+            loginMetaMask();
+        } else if (window.loginMetaMask) {
+            window.loginMetaMask();
+        }
+    }
+
     if (btn) {
         btn.textContent = window.isLiveMode ? 'LIVE' : 'DEMO';
         btn.style.borderColor = window.isLiveMode ? 'var(--green)' : 'var(--gold2)';
@@ -782,6 +792,11 @@ function toggleLiveMode() {
     if (badge) {
         badge.textContent = window.isLiveMode ? 'LIVE' : 'DEMO';
         badge.style.color = window.isLiveMode ? 'var(--green)' : 'var(--dim)';
+    }
+
+    // Sync with Crucible Trading Engine if exists
+    if (typeof CrucibleRealTrading !== 'undefined') {
+        CrucibleRealTrading.config.liveMode = window.isLiveMode;
     }
 
     console.log('[App] Mode changed to:', window.isLiveMode ? 'LIVE' : 'DEMO');
