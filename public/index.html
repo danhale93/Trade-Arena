@@ -1448,7 +1448,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         liveBtn.setAttribute('aria-pressed', isLive.toString());
 
         if (typeof CrucibleRealTrading !== 'undefined') {
-          CrucibleRealTrading.config.liveMode = isLive;
+          CrucibleRealTrading.config.liveMode = isLive; window.isLiveMode = isLive;
           showToast(`Mode switched to ${isLive ? 'LIVE' : 'SIMULATED'}`, 'info');
         }
       }
@@ -1673,7 +1673,7 @@ const CRUCIBLE_METHODS = ['SPOT LONG','SPOT SHORT','HOLD'];
 // This allows the AutoRecovery engine in app-rebuild.js to correctly detect them,
 // preventing redundant O(N) localStorage parsing and state assignments every 10 seconds.
 var balance=50, startBalance=50, totalPnl=0;
-var closedTrades=[], openPositions=[], equityHistory=[10000];
+var closedTrades=[], openPositions=[], equityHistory=[50];
 var _lastClosedCount = -1;
 var _lastLogRenderCount = -1;
 var _lastLogTradeCount = -1;
@@ -2669,7 +2669,7 @@ function simulateCrucibleV2Results(regime, costModel, tradeCount) {
   const avgWin = Math.abs(pnlPerTrade) * 1.5; // Assuming 1.5:1 reward:risk
   const avgLoss = Math.abs(pnlPerTrade);
   const totalPnl = (wins * avgWin) - (losses * avgLoss);
-  const returnPct = (totalPnl / 10000) * 100; // Assuming $10k starting balance
+  const returnPct = (totalPnl / 50) * 100; // Assuming $10k starting balance
   
   // Generate baseline comparisons
   const baselines = {
@@ -3232,7 +3232,7 @@ function handleGoogleLoginResponse(response){
       if(data.success) {
         s.textContent='✅ Welcome back, ' + (data.user.name || 'User') + '!';
         // Initialize app with server data
-        if(typeof balance !== 'undefined') balance = data.user.balance || 10000;
+        if(typeof balance !== 'undefined') balance = data.user.balance || 50;
         setupApp({
           ...userData,
           ...data.user
@@ -3337,7 +3337,7 @@ async function loginMetaMask(isAuto = false){
     }
     
     const address = accounts[0];
-    localStorage.setItem('ta_logged_in', 'metamask');
+    localStorage.setItem('ta_logged_in', 'metamask'); if(window.walletState) window.walletState.isConnected = true;
     
     // Create provider
     let provider;
@@ -3421,6 +3421,10 @@ async function loginMetaMask(isAuto = false){
         if(!isAuto) s.textContent='✅ Welcome back, ' + (data.user.name || 'User') + '!';
         if(typeof balance !== 'undefined') balance = Math.max(balanceUSD, data.user.balance || 0);
         setupApp({ ...userData, ...data.user });
+        // Enable real trading mode if connected via MetaMask
+        if (typeof switchTradingMode === "function") {
+           switchTradingMode("live");
+        }
 
         // Show claim button
         const claimBtn = document.getElementById('ghClaimBtn');
