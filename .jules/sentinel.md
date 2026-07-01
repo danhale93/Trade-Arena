@@ -38,21 +38,12 @@
 **Learning:** Proxies that facilitate AI requests must act as gateways that enforce specific usage policies. Relying on clients to provide "safe" models is a security and financial risk.
 **Prevention:** Implement strict model whitelisting on the server-side. Explicitly define allowed models and restrict the forwarded payload to a whitelist of known, safe parameters (e.g., `messages`, `system`, `temperature`) to prevent parameter injection and maintain cost control.
 
-## 2026-06-23T00:09:08.077Z - [INFO] SENTINEL
-security fix verified
-
-## 2026-06-23T00:27:13.940Z - [INFO] SENTINEL
-Running security audit across localStorage and active config...
-
-## 2026-06-26T22:51:25.064Z - [INFO] SENTINEL
-Running security audit across localStorage and active config...
-
-## 2026-06-29T08:03:02.074Z - [INFO] SENTINEL
-Running security audit across localStorage and active config...
-
-## 2026-06-29T08:49:13.354Z - [INFO] SENTINEL
-Running security audit across localStorage and active config...
 ## 2026-06-29 - MetaMask Event Leak and Logic Fixes
-Vulnerability: MaxListenersExceededWarning due to repeated event listener registration on window.ethereum.
-Learning: Ensure wallet listeners are only attached once using global flags (e.g., window._listenersInitialized).
-Prevention: Implement idempotent initialization functions for third-party event emitters.
+**Vulnerability:** MaxListenersExceededWarning due to repeated event listener registration on window.ethereum.
+**Learning:** Ensure wallet listeners are only attached once using global flags (e.g., window._listenersInitialized).
+**Prevention:** Implement idempotent initialization functions for third-party event emitters.
+
+## 2026-06-30 - [HIGH] XSS Vulnerability in Connection Dashboard
+**Vulnerability:** The `updateConnectionDashboard` function in `index.html` rendered connection metadata (name, status, value) and error messages directly into an `innerHTML` sink without sanitization.
+**Learning:** Data from internal API endpoints (like `/api/status/connections`) can still be a source of XSS if the underlying data (e.g., RPC URLs or provider names) can be influenced by users or malicious actors.
+**Prevention:** Always sanitize any dynamic data rendered into `innerHTML` templates using a helper like `escapeHTML`.
