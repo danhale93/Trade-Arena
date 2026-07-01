@@ -582,7 +582,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 .log-title{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:3px;color:var(--dim);margin-bottom:5px;padding:0 2px;display:flex;align-items:center;justify-content:space-between}
 .log-list{display:flex;flex-direction:column;gap:2px}
 .log-row{background:var(--panel);border:1px solid var(--border);border-radius:4px;padding:5px 9px;display:flex;align-items:center;gap:5px;font-size:8px;transition:background .15s}.log-row:hover{background:var(--chrome)}
-.log-bot{color:var(--dim);min-width:22px}
+.log-bot{color:var(--dim);min-width:22px;cursor:pointer}
 .log-coin{font-family:'Oswald',sans-serif;font-size:10px;font-weight:700;min-width:40px}
 .log-method{color:var(--dim);flex:1;min-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .log-entry{color:#555;min-width:52px;text-align:center}
@@ -1900,6 +1900,7 @@ async function openPosition(bot, decision, entryPrice, bet, volumeUsd, priceChan
   
   // Show position overlay immediately with instant visual feedback
   showOpenOverlay(bot.id, pos);
+  addToLog(pos);
   
   // Flash the position card for instant visual confirmation
   if(card){
@@ -2795,7 +2796,6 @@ function downloadFile(content, filename, type) {
 // CIRCUIT BREAKERS
 // ══════════════════════════════════════════════════════
 function togglePanel(name) {
-  if(typeof SFX !== "undefined") SFX.tick();
   if(typeof SFX !== 'undefined') SFX.tick();
   const bodyId=name+'Body', hdId=name+'Hd', toggleId=name+'Toggle';
   const body=document.getElementById(bodyId), toggle=document.getElementById(toggleId), hd=document.getElementById(hdId);
@@ -3650,18 +3650,24 @@ function removeLastBot(){
 }
 function _syncHeaderBotBtns(){
   const add=document.getElementById('ghAddBtn');
+  const addTrader=document.getElementById('ghAddTraderBtn');
+  const addWorker=document.getElementById('ghAddWorkerBtn');
   const rem=document.getElementById('ghRemoveBtn');
-  if(add) add.disabled=bots.length>=MAX_BOTS;
+
+  const isFull = bots.length>=MAX_BOTS;
+  if(add) add.disabled=isFull;
+  if(addTrader) addTrader.disabled=isFull;
+  if(addWorker) addWorker.disabled=isFull;
   if(rem) rem.disabled=bots.length===0;
+
   // keep legacy button in sync if still present
   const legacy=document.getElementById('addBotBtn');
-  if(legacy) legacy.disabled=bots.length>=MAX_BOTS;
+  if(legacy) legacy.disabled=isFull;
 }
 
 // ── Global auto toggle ──
 let _ghAutoOn=false;
 function globalAutoToggle(){
-  if(typeof SFX !== "undefined") SFX.tick();
   if(typeof SFX !== 'undefined') SFX.tick();
   _ghAutoOn=!_ghAutoOn;
   bots.forEach(b=>{
@@ -3931,7 +3937,7 @@ function toggleBotSettings(id){
   const open=drop.classList.toggle('open');
   if(gear){
     gear.classList.toggle('open',open);
-    gear.setAttribute('aria-expanded', open);
+    gear.setAttribute('aria-expanded', open.toString());
   }
 }
 function setBotPersonality(id,val){
@@ -5138,7 +5144,6 @@ function renderRegimeTable() {
 
 // ── UI toggles ──
 function toggleLearn() {
-  if(typeof SFX !== "undefined") SFX.tick();
   if(typeof SFX !== 'undefined') SFX.tick();
   const body = document.getElementById('learnBody');
   const hd = document.getElementById('learnHd');
@@ -5457,7 +5462,6 @@ function renderAuditLog() {
 }
 
 function toggleAudit() {
-  if(typeof SFX !== "undefined") SFX.tick();
   if(typeof SFX !== 'undefined') SFX.tick();
   const body = document.getElementById('auditBody');
   const hd = document.getElementById('auditHd');
@@ -5600,7 +5604,7 @@ function renderLog(){
     const txLink = t.txHash ? `<a href="${escapeHTML(REAL_WALLET_CONFIG.network.explorerUrl)}/tx/${escapeHTML(t.txHash)}" target="_blank" style="text-decoration:none;color:var(--cyan);font-size:8px;margin-left:4px">🔗</a>` : "";
     const cost=t.costs?.total?'-\$'+t.costs.total.toFixed(2):'';
     return`<div class="log-row">
-      <div class="log-bot">#${t.botId}</div>
+      <div class="log-bot" onclick="scrollToBot(${t.botId})" title="Scroll to Bot #${t.botId}">#${t.botId}</div>
       <div class="log-coin" style="color:${isOpen?'var(--blue)':isHold?'var(--amber)':t.isWin?'var(--green)':'var(--hot)'}">${t.token}</div>
       <div class="log-method">${t.method}</div>
       <div class="log-entry">${ep}</div>
@@ -5706,7 +5710,6 @@ setInterval(function(){
 const PERSONALITIES = ['AGGRESSIVE','CONSERVATIVE','MOMENTUM','CONTRARIAN','BALANCED'];
 
 function toggleFleetView() {
-  if(typeof SFX !== "undefined") SFX.tick();
   if(typeof SFX !== 'undefined') SFX.tick();
   const grid = document.getElementById('botGrid');
   const btn = document.getElementById('fleetViewBtn');
@@ -5714,12 +5717,11 @@ function toggleFleetView() {
   const isFleet = grid.classList.toggle('fleet-view');
   if (btn) {
     btn.classList.toggle('open', isFleet);
-    btn.setAttribute('aria-pressed', isFleet);
+    btn.setAttribute('aria-pressed', isFleet.toString());
   }
 }
 
 function toggleBusPanel() {
-  if(typeof SFX !== "undefined") SFX.tick();
   if(typeof SFX !== 'undefined') SFX.tick();
   const panel = document.getElementById('busPanel');
   const btn   = document.getElementById('ghBusBtn');
@@ -6104,7 +6106,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script>
 function toggleVoiceAgent() {
-  if(typeof SFX !== "undefined") SFX.tick();
   if(typeof SFX !== 'undefined') SFX.tick();
   const modal = document.getElementById('voiceAgentModal');
   const btn = document.getElementById('voiceAgentBtn');
@@ -6112,7 +6113,7 @@ function toggleVoiceAgent() {
   const isOpen = modal.classList.toggle('open');
   if (btn) {
     btn.classList.toggle('open', isOpen);
-    btn.setAttribute('aria-expanded', isOpen);
+    btn.setAttribute('aria-expanded', isOpen.toString());
   }
 }
 

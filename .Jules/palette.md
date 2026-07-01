@@ -33,3 +33,7 @@
 ## 2026-06-29 - [Status Message Persistence & ID Isolation]
 **Learning:** In dashboards with background data polling, sharing a generic status element (like `#cStatus`) across multiple disparate systems (login, task monitoring, clipboard feedback) leads to race conditions where high-frequency polling overwrites critical user feedback. Isolating critical feedback channels into dedicated, semantically-named ARIA-live regions (e.g., `#loginStatus`) ensures message persistence and improved UX during complex multi-threaded frontend operations.
 **Action:** Always scope status elements to specific functional zones (onboarding vs. active monitoring) to prevent background updates from intercepting foreground user feedback.
+
+## 2026-06-30 - [ARIA State Type Safety & Cross-Component Navigation]
+**Learning:** WAI-ARIA attributes like 'aria-pressed' and 'aria-expanded' must be explicitly set as strings ("true"/"false") to ensure consistent behavior across all screen readers. Additionally, in data-heavy dashboards, bridging functional zones (e.g., linking Trade Ledger entries to active Bot Cards) via smooth-scroll navigation significantly improves situational awareness and reduces cognitive load during high-frequency operations.
+**Action:** Always use .toString() when updating ARIA boolean attributes and implement directional navigation between related UI entities to maintain user orientation.
