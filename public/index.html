@@ -685,6 +685,22 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 .va-input { flex: 1; background: var(--bg); border: 1px solid var(--border); color: #fff; padding: 6px 10px; border-radius: 6px; font-family: inherit; font-size: 11px; }
 .va-send { background: var(--cyan); color: #000; border: none; border-radius: 6px; padding: 0 12px; font-weight: bold; cursor: pointer; }
 
+/* ══ SETTINGS MODAL ══ */
+#settingsModal{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:9500;display:none;align-items:center;justify-content:center;padding:16px}
+.settings-panel{max-width:560px;width:100%;background:linear-gradient(180deg,#110b18,var(--panel));border:1px solid var(--border);border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.9);overflow:hidden;display:flex;flex-direction:column;max-height:85vh}
+.settings-hd{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.settings-title{font-family:'Bungee',display;font-size:12px;letter-spacing:2px;color:var(--gold)}
+.settings-bd{padding:14px;overflow-y:auto;flex:1}
+.settings-section{margin-bottom:16px}
+.settings-section:last-child{margin-bottom:0}
+.settings-section-title{font-family:'Bungee',display;font-size:10px;letter-spacing:1px;color:var(--cyan);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.theme-preset{padding:5px 10px;background:var(--chrome);border:1px solid var(--border);border-radius:4px;color:var(--dim);font-family:'Bungee',display;font-size:9px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.theme-preset:hover{border-color:var(--gold2);color:var(--gold2)}
+.theme-preset.active{background:rgba(0,255,231,.1);border-color:var(--cyan);color:var(--cyan)}
+.sound-toggle{padding:4px 10px;background:var(--chrome);border:1px solid var(--border);border-radius:4px;color:var(--dim);font-family:'Bungee',display;font-size:9px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.sound-toggle:hover{border-color:var(--cyan);color:var(--cyan)}
+.sound-toggle.active{background:rgba(0,255,231,.1);border-color:var(--cyan);color:var(--cyan)}
+
 /* ══ STICKY HEADER ══ */
 .global-header{position:sticky;top:4px;z-index:9998}
 </style>
@@ -867,9 +883,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
        <button class="gh-bus-btn" id="ghTaskBtn" onclick="togglePanel('task')" title="Earn Trade Credits" aria-expanded="false">💰 EARN</button>
        <button class="gh-bus-btn" id="ghEloBtn" onclick="togglePanel('elo')" title="ELO Arena - Recursive Improvement" aria-expanded="false">🏆 ARENA</button>
        <button class="gh-bus-btn" id="voiceAgentBtn" onclick="toggleVoiceAgent()" title="AI Floor Manager (Voice Chat)" aria-expanded="false">🎙️ AGENT</button>
-       <button class="gh-bus-btn" id="fleetViewBtn" onclick="toggleFleetView()" title="Toggle Fleet View (Compact Grid)" aria-pressed="false">📊 FLEET</button>
-       <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots" aria-expanded="false">⚙ BUS</button>
-       <button class="gh-auto-btn" id="liveToggleBtn" onclick="toggleLiveMode()" title="Toggle Live/Demo Mode" style="border-color:var(--gold2);color:var(--gold2)">DEMO</button>
+       <button class="gh-bus-btn" id="fleetViewBtn" onclick="toggleFleetView()" title="Toggle Fleet View (Compact Grid)">📊 FLEET</button>
+        <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots" aria-expanded="false">⚙ BUS</button>
+        <button class="gh-bus-btn" id="ghSettingsBtn" onclick="toggleSettingsModal()" title="Settings" aria-expanded="false">⚙ SETTINGS</button>
+        <button class="gh-auto-btn" id="liveToggleBtn" onclick="toggleLiveMode()" title="Toggle Live/Demo Mode" style="border-color:var(--gold2);color:var(--gold2)">DEMO</button>
        <button class="gh-auto-btn" id="ghAutoBtn" onclick="globalAutoToggle()" title="Toggle auto-trading on all bots" aria-pressed="false">AUTO</button>
        <button class="gh-bot-btn" id="ghRemoveBtn" onclick="removeLastBot()" title="Remove last bot" aria-label="Remove last bot" disabled>−</button>
        <button class="gh-bot-btn" id="ghAddTraderBtn" onclick="addBot('TRADER')" title="Add Trading Bot" aria-label="Add new trading bot">🤖</button><button class="gh-bot-btn" id="ghAddWorkerBtn" onclick="addBot('WORKER')" title="Add Worker Bot" aria-label="Add new worker bot">👷</button>
@@ -1388,13 +1405,6 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
   <!-- Bots -->
 
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:8px;background:var(--chrome);border-radius:6px;border:1px solid var(--border);">
-      <div style="font-family:'Bungee';font-size:10px;color:var(--dim)">TRADING MODE</div>
-      <div style="display:flex;gap:4px">
-        <button id="simModeBtn" class="mode-btn active" onclick="switchTradingMode('sim')" aria-pressed="true">SIMULATED</button>
-        <button id="liveModeBtn" class="mode-btn" onclick="switchTradingMode('live')" aria-pressed="false">LIVE (BASE)</button>
-      </div>
-    </div>
     <div id="crucibleProgress" style="display:none;margin-top:10px;margin-bottom:10px;padding:10px;background:rgba(0,0,0,0.3);border-radius:6px;border:1px solid var(--border);">
       <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
         <span style="font-family:'Bungee';font-size:10px;color:var(--cyan)">CRUCIBLE PROGRESS</span>
@@ -1432,26 +1442,6 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         }, 3000);
       }
 
-      function switchTradingMode(mode) {
-        const isLive = mode === 'live';
-        if (isLive && (!window.walletState || !window.walletState.isConnected)) {
-           showToast('Connect real wallet first!', 'error');
-           return;
-        }
-        const simBtn = document.getElementById('simModeBtn');
-        const liveBtn = document.getElementById('liveModeBtn');
-
-        simBtn.classList.toggle('active', !isLive);
-        simBtn.setAttribute('aria-pressed', (!isLive).toString());
-
-        liveBtn.classList.toggle('active', isLive);
-        liveBtn.setAttribute('aria-pressed', isLive.toString());
-
-        if (typeof CrucibleRealTrading !== 'undefined') {
-          CrucibleRealTrading.config.liveMode = isLive; window.isLiveMode = isLive;
-          showToast(`Mode switched to ${isLive ? 'LIVE' : 'SIMULATED'}`, 'info');
-        }
-      }
       function updateCrucibleProgress(current, total, equity) {
         const prog = document.getElementById('crucibleProgress');
         const bar = document.getElementById('crucibleProgressBar');
@@ -2847,23 +2837,23 @@ function updateConnectionDashboard() {
 
         card.innerHTML = `
           <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-            <div style="font-size:10px; color:var(--cyan); font-family:'Bungee';">${conn.name}</div>
-            <div style="font-size:9px; color:${statusColor}; font-weight:bold;">${statusIcon} ${conn.status}</div>
+            <div style="font-size:10px; color:var(--cyan); font-family:'Bungee';">${escapeHTML(conn.name)}</div>
+            <div style="font-size:9px; color:${statusColor}; font-weight:bold;">${statusIcon} ${escapeHTML(conn.status)}</div>
           </div>
           <div style="font-size:11px; color:#fff; word-break:break-all; font-family:monospace; background:rgba(0,0,0,0.2); padding:4px; border-radius:4px;">
-            ${conn.value || 'N/A'}
+            ${escapeHTML(conn.value || 'N/A')}
           </div>
           <div style="display:flex; justify-content:space-between; font-size:9px; color:var(--dim);">
-            <span>TYPE: ${conn.type}</span>
-            ${conn.balance ? `<span style="color:var(--gold)">BAL: ${conn.balance}</span>` : ''}
+            <span>TYPE: ${escapeHTML(conn.type)}</span>
+            ${conn.balance ? `<span style="color:var(--gold)">BAL: ${escapeHTML(conn.balance)}</span>` : ''}
           </div>
-          ${conn.address ? `<div style="font-size:8px; color:var(--dim); font-family:monospace;">ADDR: ${conn.address}</div>` : ''}
+          ${conn.address ? `<div style="font-size:8px; color:var(--dim); font-family:monospace;">ADDR: ${escapeHTML(conn.address)}</div>` : ''}
         `;
         list.appendChild(card);
       });
     })
     .catch(err => {
-      list.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; padding:20px; color:var(--hot)">❌ Failed to fetch connection status: ${err.message}</div>`;
+      list.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; padding:20px; color:var(--hot)">❌ Failed to fetch connection status: ${escapeHTML(err.message)}</div>`;
     });
 }
 
@@ -6246,6 +6236,170 @@ Respond in JSON format:
     if (btn) btn.disabled = false;
   }
 }
-</script>
+
+// ═══ SETTINGS MODAL FUNCTIONS ═══
+function toggleSettingsModal() {
+    const modal = document.getElementById('settingsModal');
+    if (!modal) return;
+    modal.style.display = modal.style.display === 'none' ? 'flex' : 'none';
+    if (modal.style.display !== 'none') refreshSettingsUI();
+}
+function refreshSettingsUI() {
+    const ws = document.getElementById('settingsWalletStatus');
+    if (ws) {
+        ws.innerHTML = (window.walletState && window.walletState.isConnected)
+            ? `🟢 Connected: <span style="color:var(--cyan)">${(window.walletState.address||'').slice(0,6)}...${(window.walletState.address||'').slice(-4)}</span>`
+            : '<span style="color:var(--dim)">🔴 Not connected</span>';
+    }
+    const apiKeyInput = document.getElementById('settingsApiKey');
+    if (apiKeyInput) apiKeyInput.value = window._userApiKey || '';
+    const breakerStatus = document.getElementById('settingsBreakerStatus');
+    const breakerFailures = document.getElementById('settingsBreakerFailures');
+    if (breakerStatus && breakerFailures && typeof API_CB !== 'undefined') {
+        breakerStatus.textContent = API_CB.isOpen() ? 'COOLDOWN' : 'OK';
+        breakerStatus.style.color = API_CB.isOpen() ? 'var(--amber)' : 'var(--green)';
+        breakerFailures.textContent = API_CB.failures;
+    }
+    const savedTheme = localStorage.getItem('ta_theme') || 'default';
+    document.querySelectorAll('.theme-preset').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.theme === savedTheme);
+    });
+    const vol = document.getElementById('settingsVolume');
+    const volLabel = document.getElementById('settingsVolumeLabel');
+    if (vol) {
+        const cfg = (typeof ACOUSTIC !== 'undefined') ? ACOUSTIC.getConfig() : null;
+        const sfxVol = cfg ? Math.round(cfg.sfx.volume * 100) : 50;
+        vol.value = sfxVol;
+        if (volLabel) volLabel.textContent = sfxVol + '%';
+    }
+    const cfg = (typeof ACOUSTIC !== 'undefined') ? ACOUSTIC.getConfig() : null;
+    const sfxOn = cfg ? cfg.sfx.enabled : true;
+    const voiceOn = cfg ? cfg.voice.enabled : false;
+    const audioOn = cfg ? cfg.audio.enabled : false;
+    const b1 = document.getElementById('settingsSfxBtn');
+    const b2 = document.getElementById('settingsVoiceBtn');
+    const b3 = document.getElementById('settingsMusicBtn');
+    if (b1) b1.classList.toggle('active', sfxOn);
+    if (b2) b2.classList.toggle('active', voiceOn);
+    if (b3) b3.classList.toggle('active', audioOn);
+}
+function applyTheme(theme) {
+    const root = document.documentElement;
+    const themes = {
+        default: {'--bg':'#06030a','--panel':'#0e0914','--chrome':'#160f1e','--border':'#241830','--dim':'#6a5878','--gold':'#ffd700','--gold2':'#ffaa00','--hot':'#ff2d78','--cyan':'#00ffe7','--green':'#39ff14','--amber':'#ffb300','--blue':'#4488ff','--purple':'#bf5fff'},
+        matrix:  {'--bg':'#000a00','--panel':'#001a00','--chrome':'#002200','--border':'#003300','--dim':'#00aa44','--gold':'#00ff41','--gold2':'#00cc33','--hot':'#ff3333','--cyan':'#00ff41','--green':'#00ff41','--amber':'#ffaa00','--blue':'#0088ff','--purple':'#00ff41'},
+        sunset:  {'--bg':'#0a0010','--panel':'#1a0510','--chrome':'#2a0a18','--border':'#3a1020','--dim':'#aa5577','--gold':'#ff6b35','--gold2':'#ff8c42','--hot':'#ff2d78','--cyan':'#ff6b9d','--green':'#7bc67e','--amber':'#ffb300','--blue':'#6ec6ff','--purple':'#c77dff'},
+        ocean:   {'--bg':'#020a10','--panel':'#061420','--chrome':'#0a1e30','--border':'#102840','--dim':'#5588aa','--gold':'#4dd0e1','--gold2':'#26c6da','--hot':'#ff5252','--cyan':'#00e5ff','--green':'#69f0ae','--amber':'#ffd740','--blue':'#448aff','--purple':'#82b1ff'}
+    };
+    const t = themes[theme] || themes.default;
+    for (const [k,v] of Object.entries(t)) root.style.setProperty(k, v);
+    localStorage.setItem('ta_theme', theme);
+    document.querySelectorAll('.theme-preset').forEach(btn => btn.classList.toggle('active', btn.dataset.theme === theme));
+}
+function saveSettingsApiKey() {
+    const input = document.getElementById('settingsApiKey');
+    if (!input) return;
+    const val = input.value.trim();
+    window._userApiKey = val;
+    localStorage.setItem('ta_api_key', val);
+    const el = document.getElementById('apiTestResult');
+    if (el) { el.textContent = val ? '✅ API key saved' : 'API key cleared'; el.style.color = val ? 'var(--green)' : 'var(--dim)'; }
+}
+function testSettingsApiKey() {
+    const apiKey = document.getElementById('settingsApiKey')?.value.trim() || window._userApiKey || '';
+    const el = document.getElementById('apiTestResult');
+    if (!el) return;
+    if (!apiKey) { el.textContent = '❌ No API key to test'; el.style.color = 'var(--hot)'; return; }
+    el.textContent = '⏳ Testing API key...'; el.style.color = 'var(--cyan)';
+    fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+        body: JSON.stringify({ model: 'claude-3-haiku-20240307', max_tokens: 10, messages: [{role:'user', content:'Say API_OK'}] })
+    }).then(res => {
+        if (res.ok) { el.textContent = '✅ API key valid — connection OK'; el.style.color = 'var(--green)'; }
+        else { el.textContent = `❌ API error: ${res.status} ${res.statusText}`; el.style.color = 'var(--hot)'; }
+    }).catch(err => { el.textContent = `❌ Connection failed: ${err.message}`; el.style.color = 'var(--hot)'; });
+}
+function toggleSettingsSfx() {
+    if (typeof ACOUSTIC === 'undefined') return;
+    ACOUSTIC.toggleSFX();
+    const btn = document.getElementById('settingsSfxBtn');
+    if (btn) btn.classList.toggle('active', ACOUSTIC.getConfig().sfx.enabled);
+}
+function toggleSettingsVoice() {
+    if (typeof ACOUSTIC === 'undefined') return;
+    ACOUSTIC.toggleVOICE();
+    const btn = document.getElementById('settingsVoiceBtn');
+    if (btn) btn.classList.toggle('active', ACOUSTIC.getConfig().voice.enabled);
+}
+function toggleSettingsMusic() {
+    if (typeof ACOUSTIC === 'undefined') return;
+    ACOUSTIC.toggleAudio();
+    const btn = document.getElementById('settingsMusicBtn');
+    if (btn) btn.classList.toggle('active', ACOUSTIC.getConfig().audio.enabled);
+}
+function updateSettingsVolume(val) {
+    const vol = parseInt(val, 10);
+    if (typeof ACOUSTIC !== 'undefined') {
+        ACOUSTIC.getConfig().sfx.volume = vol / 100;
+        if (window.SFX && window.SFX.setVolume) window.SFX.setVolume(vol / 100);
+        if (window.VOICE && window.VOICE.setVolume) window.VOICE.setVolume(vol / 100);
+    }
+}
+
+<!-- ══ SETTINGS MODAL ══ -->
+<div id="settingsModal">
+  <div class="settings-panel">
+    <div class="settings-hd">
+      <span class="settings-title">⚙ SETTINGS</span>
+      <button class="m-close" onclick="toggleSettingsModal()" aria-label="Close Settings">✕</button>
+    </div>
+    <div class="settings-bd">
+      <div class="settings-section">
+        <div class="settings-section-title">💳 Wallet Connection</div>
+        <div id="settingsWalletStatus" style="font-size:10px;color:var(--dim);margin-bottom:8px">🔴 Not connected</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="mm-btn" onclick="loginMetaMask()" style="flex:1;min-width:120px;padding:8px;font-size:10px">Connect MetaMask</button>
+          <button class="cb-btn" onclick="loginCoinbase()" style="flex:1;min-width:120px;padding:8px;font-size:10px">Connect Coinbase</button>
+        </div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-title">🔑 API Configuration</div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <input type="password" id="settingsApiKey" placeholder="sk-ant-api03-..." style="flex:1;min-width:180px;padding:6px 8px;background:var(--bg);border:1px solid var(--border);color:var(--cyan);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px">
+          <button onclick="saveSettingsApiKey()" style="padding:6px 10px;background:var(--chrome);border:1px solid var(--border);color:var(--dim);border-radius:4px;font-family:'Bungee',display;font-size:8px;cursor:pointer">SAVE</button>
+          <button onclick="testSettingsApiKey()" style="padding:6px 10px;background:var(--chrome);border:1px solid var(--border);color:var(--cyan);border-radius:4px;font-family:'Bungee',display;font-size:8px;cursor:pointer">TEST</button>
+        </div>
+        <div id="apiTestResult" style="font-size:9px;color:var(--dim);margin-top:6px"></div>
+        <div style="margin-top:8px;font-size:9px;color:var(--dim);display:flex;gap:8px;flex-wrap:wrap">
+          <span>Circuit Breaker: <span id="settingsBreakerStatus" style="color:var(--green)">OK</span></span>
+          <span>Failures: <span id="settingsBreakerFailures">0</span>/3</span>
+        </div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-title">🎨 Colour Theme</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="theme-preset active" onclick="applyTheme('default')" data-theme="default">Cyberpunk</button>
+          <button class="theme-preset" onclick="applyTheme('matrix')" data-theme="matrix">Matrix</button>
+          <button class="theme-preset" onclick="applyTheme('sunset')" data-theme="sunset">Sunset</button>
+          <button class="theme-preset" onclick="applyTheme('ocean')" data-theme="ocean">Ocean</button>
+        </div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-title">🔊 Sound Preferences</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span style="font-size:9px;color:var(--dim);min-width:48px">Volume</span>
+          <input type="range" id="settingsVolume" min="0" max="100" value="50" style="flex:1" oninput="document.getElementById('settingsVolumeLabel').textContent=this.value+'%';updateSettingsVolume(this.value)">
+          <span id="settingsVolumeLabel" style="font-size:9px;color:var(--dim);min-width:32px;text-align:right">50%</span>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button id="settingsSfxBtn" class="sound-toggle active" onclick="toggleSettingsSfx()">🔊 SFX</button>
+          <button id="settingsVoiceBtn" class="sound-toggle" onclick="toggleSettingsVoice()">🗣️ Voice</button>
+          <button id="settingsMusicBtn" class="sound-toggle" onclick="toggleSettingsMusic()">🎹 Music</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>

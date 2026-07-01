@@ -13,267 +13,6 @@
 
 // MasterSwitch removed — global AUTO is now in the header (globalAutoToggle)
 
-if (false) {
-  class MasterSwitch {
-    constructor() {
-      this.isEnabled = localStorage.getItem("ta_master_enabled") !== "false";
-      this.lastToggleTime = 0;
-      this.debounceMs = 50; // Ultra-responsive
-      this.updateInterval = null;
-      this.init();
-    }
-
-    init() {
-      if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", () => this.setup());
-      } else {
-        setTimeout(() => this.setup(), 100);
-      }
-    }
-
-    setup() {
-      this.createUI();
-      this.attachListeners();
-      this.syncWithBots();
-      // Sync every 500ms for instant responsiveness
-      this.updateInterval = setInterval(() => this.syncWithBots(), 500);
-      console.log(
-        "[MasterSwitch] ✓ ONLINE - Status: " + (this.isEnabled ? "ON" : "OFF"),
-      );
-    }
-
-    createUI() {
-      const existing = document.getElementById("masterSwitchContainer");
-      if (existing) return;
-
-      const container = document.createElement("div");
-      container.id = "masterSwitchContainer";
-      container.style.cssText = `
-      position: fixed;
-      top: 70px;
-      right: 12px;
-      z-index: 9500;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 10px 14px;
-      background: linear-gradient(135deg, var(--panel), rgba(22,15,30,0.8));
-      border: 2px solid var(--border);
-      border-radius: 10px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.6);
-      font-family: 'Bungee', display;
-      transition: all 0.2s ease;
-    `;
-
-      const label = document.createElement("div");
-      label.textContent = "MASTER";
-      label.style.cssText = `
-      font-size: 11px;
-      letter-spacing: 1px;
-      color: var(--dim);
-      text-transform: uppercase;
-    `;
-
-      const toggle = document.createElement("button");
-      toggle.id = "masterToggle";
-      toggle.style.cssText = `
-      width: 56px;
-      height: 28px;
-      border: 2px solid var(--border);
-      border-radius: 14px;
-      background: ${this.isEnabled ? "linear-gradient(90deg, #39ff14, #2a9d0b)" : "rgba(100,100,100,0.3)"};
-      cursor: pointer;
-      position: relative;
-      transition: all 0.15s ease;
-      padding: 0;
-      margin: 0;
-      display: flex;
-      align-items: center;
-      justify-content: ${this.isEnabled ? "flex-end" : "flex-start"};
-      padding-right: ${this.isEnabled ? "4px" : "0"};
-      padding-left: ${this.isEnabled ? "0" : "4px"};
-      box-shadow: ${this.isEnabled ? "0 0 12px rgba(57,255,20,0.4)" : "none"};
-    `;
-
-      const dot = document.createElement("div");
-      dot.style.cssText = `
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: ${this.isEnabled ? "var(--green)" : "var(--dim)"};
-      transition: all 0.15s ease;
-      flex-shrink: 0;
-    `;
-
-      toggle.appendChild(dot);
-
-      const status = document.createElement("div");
-      status.id = "masterStatus";
-      status.style.cssText = `
-      font-size: 10px;
-      color: ${this.isEnabled ? "var(--green)" : "var(--hot)"};
-      min-width: 60px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      font-weight: 700;
-    `;
-      status.textContent = this.isEnabled ? "✓ ON" : "✗ OFF";
-
-      container.appendChild(label);
-      container.appendChild(toggle);
-      container.appendChild(status);
-
-      const headerEl = document.querySelector(".global-header");
-      if (headerEl && headerEl.parentNode) {
-        headerEl.parentNode.insertBefore(container, headerEl.nextSibling);
-      } else {
-        document.body.appendChild(container);
-      }
-    }
-
-    attachListeners() {
-      const toggle = document.getElementById("masterToggle");
-      if (!toggle) return;
-
-      toggle.addEventListener("click", (e) => {
-        e.preventDefault();
-        this.toggle();
-      });
-
-      // Keyboard shortcut: Ctrl+Space
-      document.addEventListener("keydown", (e) => {
-        if (e.ctrlKey && e.code === "Space") {
-          e.preventDefault();
-          this.toggle();
-        }
-      });
-    }
-
-    toggle() {
-      const now = Date.now();
-      if (now - this.lastToggleTime < this.debounceMs) return;
-      this.lastToggleTime = now;
-
-      this.isEnabled = !this.isEnabled;
-      localStorage.setItem(
-        "ta_master_enabled",
-        this.isEnabled ? "true" : "false",
-      );
-
-      if (this.isEnabled) {
-        this.enableAllBots();
-      } else {
-        this.disableAllBots();
-      }
-
-      this.updateUI();
-      console.log(
-        "[MasterSwitch] Toggled → " + (this.isEnabled ? "ON" : "OFF"),
-      );
-    }
-
-    enableAllBots() {
-      if (
-        typeof globalKilled !== "undefined" &&
-        globalKilled &&
-        typeof resetKill === "function"
-      ) {
-        resetKill();
-      }
-
-      if (typeof bots === "undefined" || !Array.isArray(bots)) return;
-
-      bots.forEach((bot) => {
-        if (!bot.spinning && !bot.cooling) {
-          bot.auto = true;
-
-          const btn = document.getElementById(`mauto-${bot.id}`);
-          const card = document.getElementById(`bot-${bot.id}`);
-
-          if (btn) {
-            btn.textContent = "⏸ STOP";
-            btn.classList.add("on");
-          }
-          if (card) card.classList.add("auto-on");
-
-          if (typeof scheduleAuto === "function") {
-            scheduleAuto(bot);
-          }
-        }
-      });
-    }
-
-    disableAllBots() {
-      if (typeof bots === "undefined" || !Array.isArray(bots)) return;
-
-      bots.forEach((bot) => {
-        bot.auto = false;
-        if (bot.autoTimer) clearTimeout(bot.autoTimer);
-
-        const btn = document.getElementById(`mauto-${bot.id}`);
-        const card = document.getElementById(`bot-${bot.id}`);
-
-        if (btn) {
-          btn.textContent = "AUTO";
-          btn.classList.remove("on");
-        }
-        if (card) card.classList.remove("auto-on");
-      });
-    }
-
-    syncWithBots() {
-      if (typeof bots === "undefined" || !Array.isArray(bots)) return;
-
-      bots.forEach((bot) => {
-        const shouldBeAuto = this.isEnabled && !bot.cooling && !bot.spinning;
-
-        if (bot.auto !== shouldBeAuto) {
-          bot.auto = shouldBeAuto;
-
-          const btn = document.getElementById(`mauto-${bot.id}`);
-          if (btn) {
-            btn.textContent = shouldBeAuto ? "⏸ STOP" : "AUTO";
-            btn.classList.toggle("on", shouldBeAuto);
-          }
-
-          if (shouldBeAuto && typeof scheduleAuto === "function") {
-            scheduleAuto(bot);
-          } else if (!shouldBeAuto && bot.autoTimer) {
-            clearTimeout(bot.autoTimer);
-          }
-        }
-      });
-    }
-
-    updateUI() {
-      const toggle = document.getElementById("masterToggle");
-      const status = document.getElementById("masterStatus");
-
-      if (toggle) {
-        toggle.style.background = this.isEnabled
-          ? "linear-gradient(90deg, #39ff14, #2a9d0b)"
-          : "rgba(100,100,100,0.3)";
-        toggle.style.justifyContent = this.isEnabled
-          ? "flex-end"
-          : "flex-start";
-        toggle.style.boxShadow = this.isEnabled
-          ? "0 0 12px rgba(57,255,20,0.4)"
-          : "none";
-
-        const dot = toggle.querySelector("div");
-        if (dot) {
-          dot.style.background = this.isEnabled ? "var(--green)" : "var(--dim)";
-        }
-      }
-
-      if (status) {
-        status.textContent = this.isEnabled ? "✓ ON" : "✗ OFF";
-        status.style.color = this.isEnabled ? "var(--green)" : "var(--hot)";
-      }
-    }
-  }
-} // end dead MasterSwitch block
-
 // ══════════════════════════════════════════════════════
 // REAL-TIME BALANCE UPDATER (500MS)
 // ══════════════════════════════════════════════════════
@@ -284,6 +23,8 @@ class BalanceUpdater {
     this.lastDisplayBalance = 0;
     this.balanceHistory = [];
     this.maxHistory = 120;
+    this.displayCurrency = localStorage.getItem("ta_display_currency") || "USD";
+    this.ethPrice = 0; // To be updated by RealMarketPricing
     this.init();
   }
 
@@ -291,6 +32,7 @@ class BalanceUpdater {
     this.startMonitoring();
     console.log("[BalanceUpdater] ✓ ONLINE - Real-time updates (500ms)");
   }
+
 
   startMonitoring() {
     setInterval(() => {
@@ -302,6 +44,39 @@ class BalanceUpdater {
       }
     }, this.updateInterval);
   }
+
+  formatCurrency(value, currency) {
+    const sign = value < 0 ? "-" : "";
+    const absValue = Math.abs(value);
+
+    switch (currency) {
+      case "ETH":
+        return `${sign}Ξ${absValue.toFixed(5)}`;
+      case "AUD":
+        // TODO: Implement real-time currency conversion API
+        // Using a static conversion rate for display purposes.
+        // For real-time rates, an API call would be needed.
+        return `${sign}A$${(absValue * 1.5).toFixed(2)}`;
+      case "USD":
+      default:
+        return `${sign}$${absValue.toFixed(2)}`;
+    }
+  }
+
+  convertValue(value, toCurrency) {
+    switch (toCurrency) {
+      case "ETH":
+        return this.ethPrice > 0 ? value / this.ethPrice : 0;
+      case "AUD":
+        // Using a static conversion rate for simplicity.
+        // For real-time rates, an API call would be needed.
+        return value * 1.5;
+      case "USD":
+      default:
+        return value;
+    }
+  }
+
 
   updateBalance() {
     const balEl = document.getElementById("ghBalance");
@@ -334,13 +109,15 @@ class BalanceUpdater {
       this.balanceHistory.shift();
     }
 
+    const convertedBalance = this.convertValue(displayBalance, this.displayCurrency);
+
     // Determine color based on profit/loss
     const color = this.getBalanceColor(displayBalance, startingBalance);
 
     // Update balance display with smooth transition
     balEl.style.transition = "color 0.2s ease, text-shadow 0.2s ease";
     balEl.style.color = color;
-    balEl.textContent = "$" + displayBalance.toFixed(2);
+    balEl.textContent = this.formatCurrency(convertedBalance, this.displayCurrency).replace("-", "");
 
     // Add glow effect when unrealised P&L exists
     if (unrealisedPnl !== 0) {
@@ -358,12 +135,11 @@ class BalanceUpdater {
     const pnlEl = document.getElementById("ghPnl");
     if (pnlEl) {
       const totalPnlValue = typeof totalPnl !== "undefined" ? totalPnl : 0;
-      const displayPnL = totalPnlValue + unrealisedPnl;
-      pnlEl.textContent =
-        (displayPnL >= 0 ? "+" : "") +
-        "$" +
-        displayPnL.toFixed(2) +
-        (unrealisedPnl !== 0 ? " (live)" : " today");
+      const displayPnL = this.convertValue(totalPnlValue + unrealisedPnl, this.displayCurrency);
+      const pnlString = this.formatCurrency(displayPnL, this.displayCurrency);
+
+      pnlEl.textContent = (displayPnL >= 0 ? `+${pnlString}` : pnlString) +
+                          (unrealisedPnl !== 0 ? " (live)" : " today");
       pnlEl.className = "gh-pnl " + (displayPnL >= 0 ? "pnl-pos" : "pnl-neg");
       pnlEl.style.color = displayPnL >= 0 ? "var(--green)" : "var(--hot)";
       pnlEl.style.transition = "color 0.2s ease";
@@ -386,10 +162,11 @@ class BalanceUpdater {
 
       if (openPos && openPos.livePnl !== undefined) {
         const pnl = openPos.livePnl;
+        const convertedPnl = this.convertValue(pnl, this.displayCurrency);
         const direction = openPos.direction === "long" ? "📈" : "📉";
         const color = pnl > 0 ? "🟢" : pnl < 0 ? "🔴" : "🟡";
 
-        tickEl.textContent = `${direction}${color} ${openPos.token} ${pnl >= 0 ? "+" : ""}$${pnl.toFixed(2)}`;
+        tickEl.textContent = `${direction}${color} ${openPos.token} ${pnl >= 0 ? "+" : ""}${this.formatCurrency(convertedPnl, this.displayCurrency)}`;
         tickEl.style.color =
           pnl > 0 ? "var(--green)" : pnl < 0 ? "var(--hot)" : "var(--gold)";
         tickEl.style.transition = "color 0.2s ease";
@@ -543,6 +320,11 @@ class RealMarketPricing {
         this.priceCache = data;
         this.lastFetchTime = Date.now();
 
+        // Update ETH price for currency conversion
+        if (this.priceCache.ethereum?.usd && balanceUpdater) {
+            balanceUpdater.ethPrice = this.priceCache.ethereum.usd;
+        }
+
         // Update live P&L for all open positions
         this.updateOpenPositions();
       }
@@ -558,12 +340,12 @@ class RealMarketPricing {
     openPositions.forEach((pos) => {
       const price = this.getPrice(pos.token);
       if (price) {
-        const priceDelta = (price - pos.entryPrice) / pos.entryPrice;
+        const priceChange = price - pos.entryPrice;
         const direction = pos.direction === "long" ? 1 : -1;
 
         // Calculate unrealised P&L
-        const unrealisedPnl =
-          pos.bet * priceDelta * direction - (pos.costs?.total || 0);
+        const pnlMultiplier = (pos.bet / pos.entryPrice); // How many tokens were notionally bought
+        const unrealisedPnl = priceChange * pnlMultiplier * direction - (pos.costs?.total || 0);
         pos.livePnl = unrealisedPnl;
         pos.currentPrice = price;
       }
@@ -638,23 +420,8 @@ let realMarketPricing = null;
 
 function initAppRebuildV42() {
   // Wait for DOM and game state
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => {
-      setTimeout(initAppRebuildV42, 300);
-    });
-    return;
-  }
-
-  // Check if main game elements exist
-  const mainApp = document.getElementById("mainApp");
-  if (!mainApp) {
-    setTimeout(initAppRebuildV42, 500);
-    return;
-  }
-
-  // Check if globals are loaded
-  if (typeof balance === "undefined" || typeof bots === "undefined") {
-    setTimeout(initAppRebuildV42, 500);
+  if (document.readyState === "loading" || !document.getElementById("mainApp") || typeof window.balance === "undefined" || typeof window.bots === "undefined") {
+    setTimeout(initAppRebuildV42, 100); // Check again shortly
     return;
   }
 
@@ -669,6 +436,30 @@ function initAppRebuildV42() {
   realMarketPricing = new RealMarketPricing();
 
   // ACOUSTIC Audio-Visual System
+  // Currency Toggle UI
+  const currencyToggleContainer = document.createElement('div');
+  currencyToggleContainer.style.cssText = `
+    position: fixed;
+    top: 70px;
+    right: 250px; /* Adjust based on master switch position */
+    z-index: 9500;
+    display: flex;
+    gap: 4px;
+    background: rgba(22,15,30,0.8);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 4px;
+  `;
+  ['USD', 'ETH', 'AUD'].forEach(currency => {
+      const btn = document.createElement('button');
+      btn.textContent = currency;
+      btn.className = 'currency-toggle-btn';
+      btn.dataset.currency = currency;
+      currencyToggleContainer.appendChild(btn);
+  });
+  document.body.appendChild(currencyToggleContainer);
+  updateCurrencyToggleUI(balanceUpdater.displayCurrency);
+
   if (typeof ACOUSTICCore !== "undefined") {
     window.ACOUSTIC = new ACOUSTICCore();
     window.ACOUSTIC.init();
@@ -698,12 +489,28 @@ function initAppRebuildV42() {
   console.log("%c→ Real market prices (CoinGecko)", "color: #00ffff;");
 }
 
-// Auto-init
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initAppRebuildV42);
-} else {
-  setTimeout(initAppRebuildV42, 500);
+function updateCurrencyToggleUI(activeCurrency) {
+    document.querySelectorAll('.currency-toggle-btn').forEach(btn => {
+        if (btn.dataset.currency === activeCurrency) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
 }
+
+document.addEventListener('click', function(e) {
+    if (e.target.matches('.currency-toggle-btn')) {
+        const currency = e.target.dataset.currency;
+        if (balanceUpdater) {
+            balanceUpdater.displayCurrency = currency;
+            localStorage.setItem("ta_display_currency", currency);
+            updateCurrencyToggleUI(currency);
+        }
+    }
+});
+// Auto-init
+initAppRebuildV42();
 
 // ══════════════════════════════════════════════════════
 // PUBLIC API - EXTERNAL CONTROL
@@ -768,8 +575,22 @@ window.TradeArenaApp = {
  */
 window.isLiveMode = false;
 
-function toggleLiveMode() {
-    window.isLiveMode = !window.isLiveMode;
+async function toggleLiveMode() {
+    const goingLive = !window.isLiveMode;
+    if (goingLive) {
+        if (!window.walletState || !window.walletState.isConnected) {
+            if (typeof loginMetaMask === 'function') {
+                await loginMetaMask();
+            }
+            if (!window.walletState || !window.walletState.isConnected) {
+                if (typeof showToast === 'function') {
+                    showToast('Connect real wallet first!', 'error');
+                }
+                return;
+            }
+        }
+    }
+    window.isLiveMode = goingLive;
     const btn = document.getElementById('liveToggleBtn');
     if (btn) {
         btn.textContent = window.isLiveMode ? 'LIVE' : 'DEMO';
@@ -800,3 +621,10 @@ window.onPrivyReady = (user, address) => {
         window.toggleLiveMode();
     }
 };
+
+module.exports = {
+    BalanceUpdater,
+    AutoRecovery,
+    RealMarketPricing
+};
+
