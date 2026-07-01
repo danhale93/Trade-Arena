@@ -436,7 +436,8 @@ app.get('/api/status/connections', async (req, res) => {
         { name: 'BASE_SEPOLIA_RPC_URL', url: process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org' }
     ];
 
-    for (const rpc of rpcs) {
+    // ⚡ Bolt Optimization: Parallelize connection health checks to reduce latency waterfall
+    const rpcPromises = rpcs.map(async (rpc) => {
         let status = 'ERROR';
         try {
             const provider = new ethers.JsonRpcProvider(rpc.url);
@@ -445,28 +446,38 @@ app.get('/api/status/connections', async (req, res) => {
         } catch (e) {
             status = 'DISCONNECTED';
         }
-        results.connections.push({
+        return {
             name: rpc.name,
             type: 'RPC',
             status,
             value: rpc.url
-        });
-    }
+        };
+    });
 
-    results.connections.push({
+    const walletInfo = {
         name: 'PAYOUT_PRIVATE_KEY',
         type: 'WALLET',
         status: payoutWallet ? 'ACTIVE' : 'MISSING',
         value: mask(process.env.PAYOUT_PRIVATE_KEY),
         address: payoutWallet ? payoutWallet.address : null
-    });
+    };
 
-    if (payoutWallet) {
-        try {
-            const balance = await payoutProvider.getBalance(payoutWallet.address);
-            results.connections.find(c => c.name === 'PAYOUT_PRIVATE_KEY').balance = ethers.formatEther(balance) + ' ETH';
-        } catch (e) {}
-    }
+    const walletBalancePromise = (async () => {
+        if (payoutWallet) {
+            try {
+                const balance = await payoutProvider.getBalance(payoutWallet.address);
+                walletInfo.balance = ethers.formatEther(balance) + ' ETH';
+            } catch (e) {}
+        }
+    })();
+
+    const [rpcResults] = await Promise.all([
+        Promise.all(rpcPromises),
+        walletBalancePromise
+    ]);
+
+    results.connections.push(...rpcResults);
+    results.connections.push(walletInfo);
 
     results.connections.push({
         name: 'MOONPAY_WEBHOOK_SECRET',
