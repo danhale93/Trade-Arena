@@ -66,7 +66,7 @@ function resolveAndValidatePaths({ diffText, scopes }) {
   for (const line of lines) {
     // Example: --- a/server.js
     // Example: +++ b/server.js
-    const m = /^(---|\+\+\+)\s+(a\/|b\/)?(.*)$/.exec(line);
+    const m = /^(---|\+\+\+)\s+(?:a\/|b\/)?([^\s\r\n]+)$/.exec(line);
     if (!m) continue;
     const raw = m[3];
     if (!raw) continue;
@@ -181,12 +181,12 @@ function writeAudit({ auditId, requestHash, diffHash, prompt, diffText, scopes, 
     promptPreview: String(prompt).slice(0, 4000),
     diffPreview: String(diffText).slice(0, 4000)
   };
-  fs.writeFileSync(path.join(AUDIT_DIR, `${auditId}.json`), JSON.stringify(rec, null, 2), 'utf8');
+  fs.writeFileSync(path.join(AUDIT_DIR, path.basename(`${auditId}.json`)), JSON.stringify(rec, null, 2), 'utf8');
   return rec;
 }
 
 function loadAudit(auditId) {
-  const p = path.join(AUDIT_DIR, `${auditId}.json`);
+  const p = path.join(AUDIT_DIR, path.basename(`${auditId}.json`));
   if (!fs.existsSync(p)) return null;
   return JSON.parse(fs.readFileSync(p, 'utf8'));
 }

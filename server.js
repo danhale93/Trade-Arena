@@ -75,6 +75,8 @@ app.post('/api/openai', async (req, res) => {
 app.post('/api/gemini', async (req, res) => {
   try {
     const model = req.body.model || 'gemini-1.5-flash';
+    const ALLOWED_MODELS = ['gemini-1.5-flash', 'gemini-1.5-pro'];
+    if (!ALLOWED_MODELS.includes(model)) return res.status(400).json({ error: 'Invalid model' });
     const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY || ''}`, {
       contents: req.body.contents,
       generationConfig: req.body.generationConfig
@@ -223,7 +225,7 @@ app.post('/api/analyze/arbitrage', async (req, res) => {
                     });
                 }
             } catch (e) {
-                console.error(`Error analyzing ${token}:`, e.message);
+            console.error("Error analyzing token:", e.message);
             }
         }
 
@@ -682,6 +684,7 @@ app.post('/api/bot/create', async (req, res) => {
             'Moderate': 1.0,
             'Aggressive': 2.0
         };
+        if (riskLevel === '__proto__') return res.status(400).json({ error: 'Invalid risk level' });
         config.riskMultiplier = riskMultipliers[riskLevel] || 1.0;
 
         const bot = {

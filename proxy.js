@@ -81,7 +81,8 @@ app.post('/api/maintenance/log', (req, res) => {
 app.post('/api/maintenance/patch', async (req, res) => {
   const { filepath, patch, description } = req.body;
   try {
-    const fullPath = path.join(__dirname, filepath);
+    const fullPath = path.resolve(__dirname, filepath);
+    if (!fullPath.startsWith(path.resolve(__dirname) + path.sep)) return res.status(403).json({ error: "Unauthorized" });
     if (!fs.existsSync(fullPath)) throw new Error('File not found');
 
     // In a real self-healing system, we would validate the patch
