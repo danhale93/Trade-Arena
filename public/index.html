@@ -1495,6 +1495,7 @@ function escapeHTML(str) {
  * Toggle visibility of a password/API key input field
  */
 function toggleAdvancedSettings(btn) {
+  if(typeof SFX !== 'undefined') SFX.tick();
   const panel = document.getElementById('advancedSettings');
   if (!panel) return;
   const isHidden = panel.style.display === 'none' || panel.style.display === '';
@@ -2861,6 +2862,7 @@ function updateConnectionDashboard() {
  * MARKETPLACE UI LOGIC
  */
 function switchTaskTab(tab) {
+    if(typeof SFX !== 'undefined') SFX.tick();
     ['internal', 'identities', 'market'].forEach(t => {
         const content = document.getElementById(`task-tab-${t}`);
         const btn = document.getElementById(`tab-${t}`);
@@ -3604,7 +3606,11 @@ function updateBotPnl(bot){
 // BOT MANAGEMENT
 // ══════════════════════════════════════════════════════
 function addBot(type = 'TRADER'){
-  if(bots.length>=MAX_BOTS) return;
+  if(typeof SFX !== 'undefined') SFX.tick();
+  if(bots.length>=MAX_BOTS) {
+    if(window.showToast) showToast(`Maximum bot limit reached (${MAX_BOTS})`, 'error');
+    return;
+  }
   botCounter++;
 
   // Worker bots focus on tasks, Traders focus on markets
@@ -3634,15 +3640,16 @@ function addBot(type = 'TRADER'){
   renderBot(bot);
   _syncHeaderBotBtns();
   updateMatrix();
+  if(window.showToast) showToast(`${type} Bot #${bot.id} commissioned and ready`, 'success');
 }
 function removeBot(id){
   const bot=bots.find(b=>b.id===id);
   if(bot){if(bot.autoTimer)clearTimeout(bot.autoTimer);if(bot.tickerTimer)clearTimeout(bot.tickerTimer);}
   bots=bots.filter(b=>b.id!==id);
   document.getElementById('bot-'+id)?.remove();
-  updateMatrix();
   _syncHeaderBotBtns();
   updateMatrix();
+  if(window.showToast) showToast(`Bot #${id} decommissioned`, 'info');
 }
 function removeLastBot(){
   if(bots.length===0) return;
