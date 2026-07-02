@@ -2053,12 +2053,17 @@ async function checkExit(pos, bot) {
   totalPnl += pos.netPnl; 
   bot.pnl += pos.netPnl;
   equityHistory.push(parseFloat(balance.toFixed(2)));
+  // ⚡ Bolt Optimization: Synchronized telemetry pruning.
+  // Cap historical arrays to maintain stable dashboard update performance during long sessions.
+  if (equityHistory.length > 500) equityHistory.shift();
+
   openPositions=openPositions.filter(p=>p.id!==pos.id);
   // Reset balance colour and recompute after position closes
   const balEl=document.getElementById('ghBalance');
   if(balEl) balEl.style.color='var(--gold)';
   updateLiveBalance();
   closedTrades.push(pos);
+  if (closedTrades.length > 500) closedTrades.shift();
 
   pos.isWin?recordWin(bot):recordLoss(bot);
 
