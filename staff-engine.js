@@ -4,19 +4,6 @@
  * Version 1.1.0 - Enhanced Maintenance Logic
  */
 
-/**
- * Helper to escape HTML and prevent XSS
- */
-function escapeHTML(str) {
-    if (!str) return '';
-    return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-}
-
 const STAFF_PROFILES = {
     // MAINTENANCE TEAM
     SENTINEL: {
@@ -140,7 +127,7 @@ class StaffEngine {
         // Persist critical logs to backend via Proxy
         if (type === 'warn' || type === 'error' || agentId === 'SENTINEL') {
             try {
-                await fetch('http://localhost:3001/api/maintenance/log', {
+                await fetch('/api/maintenance/log', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ agent: agentId, message, level: type.toUpperCase() })
@@ -341,10 +328,6 @@ class StaffEngine {
  * UI: Render Staff Operations Panel
  */
 function renderStaffPanel() {
-    // Optimization: Skip expensive DOM updates and mapping if panel is hidden
-    const body = document.getElementById('staffBody');
-    if (body && !body.classList.contains('open')) return;
-
     const list = document.getElementById('staffLogList');
     if (!list || !window.STAFF) return;
 
@@ -357,13 +340,13 @@ function renderStaffPanel() {
             const time = log.timestamp.split('T')[1].split('.')[0];
             return `
                 <div style="display:flex; gap:8px; padding:4px 8px; border-bottom:1px solid rgba(255,255,255,0.05); align-items:flex-start;">
-                    <div style="font-size:10px;">${escapeHTML(log.agentAvatar)}</div>
+                    <div style="font-size:10px;">${log.agentAvatar}</div>
                     <div style="flex:1;">
                         <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
-                            <span style="font-size:8px; color:${color}; font-weight:bold;">${escapeHTML(log.agentName)}</span>
+                            <span style="font-size:8px; color:${color}; font-weight:bold;">${log.agentName}</span>
                             <span style="font-size:7px; color:var(--dim);">${time}</span>
                         </div>
-                        <div style="font-size:9px; color:#ccc; line-height:1.2;">${escapeHTML(log.message)}</div>
+                        <div style="font-size:9px; color:#ccc; line-height:1.2;">${log.message}</div>
                     </div>
                 </div>
             `;
@@ -390,28 +373,19 @@ function renderStaffPanel() {
 async function sendStaffQuery() {
     const input = document.getElementById('staffInput');
     const responseBox = document.getElementById('staffResponse');
-    const btn = input?.nextElementSibling;
     if (!input || !input.value.trim() || !window.STAFF) return;
 
     const query = input.value.trim();
+    input.value = '';
 
-    try {
-        input.disabled = true;
-        if (btn) btn.disabled = true;
-        input.value = '';
+    responseBox.style.display = 'block';
+    responseBox.textContent = 'Thinking...';
 
-        responseBox.style.display = 'block';
-        responseBox.textContent = 'Thinking...';
+    const reply = await window.STAFF.handleSupportQuery(query);
+    responseBox.textContent = reply;
 
-        const reply = await window.STAFF.handleSupportQuery(query);
-        responseBox.textContent = reply;
-
-        // SFX
-        if (typeof window.SFX !== 'undefined') window.SFX.tick();
-    } finally {
-        input.disabled = false;
-        if (btn) btn.disabled = false;
-    }
+    // SFX
+    if (typeof window.SFX !== 'undefined') window.SFX.tick();
 }
 
 // Attach to window
