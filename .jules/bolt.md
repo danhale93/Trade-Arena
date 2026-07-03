@@ -23,3 +23,7 @@ Action: Implemented dual-mode trading system with real on-chain execution, batch
 ## 2026-06-30 - Backend Latency: Parallelized Connection Health Checks
 **Learning:** Performing sequential network-bound checks (RPC health, wallet balances) in a single API endpoint creates a latency waterfall. This cumulative delay is directly visible to the user as a "hanging" or slow-loading dashboard panel.
 **Action:** Use `Promise.all` to concurrently execute independent asynchronous checks, reducing total endpoint response time to the duration of the slowest single request.
+
+## 2026-07-03 - O(M+N) Agent Matrix Updates
+**Learning:** In dashboards with high bot counts (M) and active trades (N), nested loops in UI update functions (like `updateMatrix`) lead to O(M*N) complexity which causes noticeable lag. Using a `Set` for bot ID lookups reduces this to O(M+N).
+**Action:** Always pre-calculate lookup sets (e.g., `botsWithOpen`) before entering map/filter loops that iterate over the entire bot fleet.

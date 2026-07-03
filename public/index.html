@@ -2066,6 +2066,15 @@ async function checkExit(pos, bot) {
   closedTrades.push(pos);
   if (closedTrades.length > 500) closedTrades.shift();
 
+  // ⚡ Bolt Optimization: Synchronized Telemetry Pruning
+  // Prevents O(N) performance degradation in reporting/charting loops (e.g., Quant Report)
+  // as the session grows. 1000 items provides plenty of data for statistical significance.
+  if (closedTrades.length > 1000) {
+    closedTrades.shift();
+    // Keep equityHistory in sync to maintain chart alignment
+    if (equityHistory.length > 1000) equityHistory.shift();
+  }
+
   pos.isWin?recordWin(bot):recordLoss(bot);
 
   document.getElementById('opOverlay-'+pos.botId)?.classList.remove('show');
@@ -3568,9 +3577,12 @@ function setupApp({name,avatar,badge,address}){
       try{ if(typeof startDeploymentPolling === 'function') startDeploymentPolling(); }catch(e){}
       try{ if(typeof initMarketplaceUI === 'function') initMarketplaceUI(); }catch(e){}
       try{ updateAuditSummaryBadge(); }catch(e){}
-      try{ addBot('TRADER'); addBot('WORKER'); }catch(e){ console.error('addBot:',e); }
-      try{ updateMatrix(); }catch(e){}
-      try{ addBot(); }catch(e){ console.error('addBot:',e); }
+      // ⚡ Bolt Optimization: Batch initial bot additions and trigger a single UI update
+      try{
+        addBot('TRADER', true);
+        addBot('WORKER', true);
+        addBot('TRADER', false); // Last one triggers UI
+      }catch(e){ console.error('addBot:',e); }
       _startHeaderTicker();
       _syncHeaderBotBtns();
       _injectAVControls();
@@ -5640,13 +5652,17 @@ function updateMatrix() {
   const grid = document.getElementById('padGrid');
   if (!grid) return;
 
+  // ⚡ Bolt Optimization: Use Set for O(1) lookup of bots with open positions
+  // Reduces complexity from O(M * N) to O(M + N) where M=bots, N=positions
+  const botsWithOpen = new Set(openPositions.map(p => p.botId));
+
   grid.innerHTML = bots.map((bot, i) => {
     const agentId = String(bot.id).padStart(2, '0');
     const pnl = bot.pnl || 0;
     const pnlClass = pnl >= 0 ? 'pnl-pos' : 'pnl-neg';
 
     // Determine current pad state based on open positions and bot history
-    const hasOpen = openPositions.some(p => p.botId === bot.id);
+    const hasOpen = botsWithOpen.has(bot.id);
     const lastTrade = bot.tradeHistory && bot.tradeHistory.length > 0 ? bot.tradeHistory[bot.tradeHistory.length - 1] : null;
 
     let padState = '';
