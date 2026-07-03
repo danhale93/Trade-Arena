@@ -1495,6 +1495,7 @@ function escapeHTML(str) {
  * Toggle visibility of a password/API key input field
  */
 function toggleAdvancedSettings(btn) {
+  if(typeof SFX !== 'undefined') SFX.tick();
   const panel = document.getElementById('advancedSettings');
   if (!panel) return;
   const isHidden = panel.style.display === 'none' || panel.style.display === '';
@@ -2053,12 +2054,17 @@ async function checkExit(pos, bot) {
   totalPnl += pos.netPnl; 
   bot.pnl += pos.netPnl;
   equityHistory.push(parseFloat(balance.toFixed(2)));
+  // ⚡ Bolt Optimization: Synchronized telemetry pruning.
+  // Cap historical arrays to maintain stable dashboard update performance during long sessions.
+  if (equityHistory.length > 500) equityHistory.shift();
+
   openPositions=openPositions.filter(p=>p.id!==pos.id);
   // Reset balance colour and recompute after position closes
   const balEl=document.getElementById('ghBalance');
   if(balEl) balEl.style.color='var(--gold)';
   updateLiveBalance();
   closedTrades.push(pos);
+  if (closedTrades.length > 500) closedTrades.shift();
 
   // ⚡ Bolt Optimization: Synchronized Telemetry Pruning
   // Prevents O(N) performance degradation in reporting/charting loops (e.g., Quant Report)
@@ -2371,7 +2377,7 @@ function drawStratBreakdown(byStrat) {
     const isPos=d.pnl>=0;
     const barW=(Math.abs(d.pnl)/maxAbs*100).toFixed(0);
     return `<div class="strat-row">
-      <div class="strat-name">${name}</div>
+      <div class="strat-name">${escapeHTML(name)}</div>
       <div class="strat-bar-wrap"><div class="strat-bar ${isPos?'pos':'neg'}" style="width:${barW}%"></div></div>
       <div class="strat-stat" style="color:${isPos?'var(--green)':'var(--hot)'}">${isPos?'+':''}$${d.pnl.toFixed(2)} · ${wr}% WR</div>
     </div>`;
@@ -2870,6 +2876,7 @@ function updateConnectionDashboard() {
  * MARKETPLACE UI LOGIC
  */
 function switchTaskTab(tab) {
+    if(typeof SFX !== 'undefined') SFX.tick();
     ['internal', 'identities', 'market'].forEach(t => {
         const content = document.getElementById(`task-tab-${t}`);
         const btn = document.getElementById(`tab-${t}`);
@@ -2995,7 +3002,7 @@ function renderMarketplaceTasks() {
                         <span style="font-size:8px; color:var(--dim);">Complexity: ${escapeHTML(t.complexity)}</span>
                     </div>
                     <div style="font-size:10px; color:white; font-weight:bold; margin-bottom:2px;">${escapeHTML(t.title)}</div>
-                    <div style="font-size:9px; color:var(--green);">${t.reward} ${escapeHTML(t.currency)}</div>
+                    <div style="font-size:9px; color:var(--green);">${escapeHTML(t.reward)} ${escapeHTML(t.currency)}</div>
                 </div>
 
                 <div>
@@ -3615,8 +3622,12 @@ function updateBotPnl(bot){
 // ══════════════════════════════════════════════════════
 // BOT MANAGEMENT
 // ══════════════════════════════════════════════════════
-function addBot(type = 'TRADER', silent = false){
-  if(bots.length>=MAX_BOTS) return;
+function addBot(type = 'TRADER'){
+  if(typeof SFX !== 'undefined') SFX.tick();
+  if(bots.length>=MAX_BOTS) {
+    if(window.showToast) showToast(`Maximum bot limit reached (${MAX_BOTS})`, 'error');
+    return;
+  }
   botCounter++;
 
   // Worker bots focus on tasks, Traders focus on markets
@@ -3645,7 +3656,8 @@ function addBot(type = 'TRADER', silent = false){
   bots.push(bot);
   renderBot(bot);
   _syncHeaderBotBtns();
-  if (!silent) updateMatrix();
+  updateMatrix();
+  if(window.showToast) showToast(`${type} Bot #${bot.id} commissioned and ready`, 'success');
 }
 function removeBot(id){
   const bot=bots.find(b=>b.id===id);
@@ -3654,6 +3666,7 @@ function removeBot(id){
   document.getElementById('bot-'+id)?.remove();
   _syncHeaderBotBtns();
   updateMatrix();
+  if(window.showToast) showToast(`Bot #${id} decommissioned`, 'info');
 }
 function removeLastBot(){
   if(bots.length===0) return;
@@ -5615,12 +5628,12 @@ function renderLog(){
     const txLink = t.txHash ? `<a href="${escapeHTML(REAL_WALLET_CONFIG.network.explorerUrl)}/tx/${escapeHTML(t.txHash)}" target="_blank" style="text-decoration:none;color:var(--cyan);font-size:8px;margin-left:4px">🔗</a>` : "";
     const cost=t.costs?.total?'-\$'+t.costs.total.toFixed(2):'';
     return`<div class="log-row">
-      <div class="log-bot" onclick="scrollToBot(${t.botId})" title="Scroll to Bot #${t.botId}">#${t.botId}</div>
-      <div class="log-coin" style="color:${isOpen?'var(--blue)':isHold?'var(--amber)':t.isWin?'var(--green)':'var(--hot)'}">${t.token}</div>
-      <div class="log-method">${t.method}</div>
-      <div class="log-entry">${ep}</div>
-      <div class="log-exit">${xp}${txLink}</div>
-      <div class="log-pnl ${pnlCls}">${pnlStr}</div>
+      <div class="log-bot" onclick="scrollToBot(${escapeHTML(JSON.stringify(t.botId))})" title="Scroll to Bot #${escapeHTML(t.botId)}">#${escapeHTML(t.botId)}</div>
+      <div class="log-coin" style="color:${isOpen?'var(--blue)':isHold?'var(--amber)':t.isWin?'var(--green)':'var(--hot)'}">${escapeHTML(t.token)}</div>
+      <div class="log-method">${escapeHTML(t.method)}</div>
+      <div class="log-entry">${escapeHTML(ep)}</div>
+      <div class="log-exit">${escapeHTML(xp)}${txLink}</div>
+      <div class="log-pnl ${pnlCls}">${escapeHTML(pnlStr)}</div>
       <div class="log-cost">${cost}</div>
       <div class="log-t">${t.time}</div>
     </div>`;
@@ -5661,8 +5674,8 @@ function updateMatrix() {
     return `
       <div class="pad ${padState}" id="pad-${bot.id}"
            role="button" tabindex="0"
-           onclick="scrollToBot(${bot.id})"
-           onkeydown="if(event.key==='Enter'||event.key===' ') scrollToBot(${bot.id})"
+           onclick="scrollToBot(${escapeHTML(JSON.stringify(bot.id))})"
+           onkeydown="if(event.key==='Enter'||event.key===' ') scrollToBot(${escapeHTML(JSON.stringify(bot.id))})"
            aria-label="Agent ${agentId}, P&L: $${pnl.toFixed(2)}">
         <span class="pad-agent-id">${bot.type === "WORKER" ? "👷" : "🤖"} AG-${agentId}</span>
         <span class="pad-pnl ${pnlClass}" id="pad-pnl-${bot.id}">${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}</span>
