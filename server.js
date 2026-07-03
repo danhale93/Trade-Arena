@@ -15,6 +15,11 @@ const rateLimit = require('express-rate-limit');
 const WebSocket = require('websocket').w3cwebsocket;
 
 const app = express();
+const taskClaimLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // limit each IP to 5 claim requests per window
+    message: { error: 'Too many claim requests from this IP, please try again later.' }
+});
 const maintenanceLogLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 30,
@@ -347,6 +352,19 @@ async function sendPayout(userAddress, amount, currency = 'ETH') {
         return { simulated: true, txHash: null, message: 'No payout wallet configured' };
     }
 
+    // Sentinel: Implement safety caps on payout amounts to mitigate exploit impact
+    const MAX_ETH_PAYOUT = 0.1;
+    const MAX_USDC_PAYOUT = 100;
+
+    if (currency === 'ETH' && amount > MAX_ETH_PAYOUT) {
+        console.error(`[Sentinel] Blocked excessive ETH payout: ${amount} ETH to ${userAddress}`);
+        return { simulated: false, txHash: null, error: 'Payout amount exceeds safety limit' };
+    }
+    if (currency === 'USDC' && amount > MAX_USDC_PAYOUT) {
+        console.error(`[Sentinel] Blocked excessive USDC payout: ${amount} USDC to ${userAddress}`);
+        return { simulated: false, txHash: null, error: 'Payout amount exceeds safety limit' };
+    }
+
     try {
         const to = ethers.getAddress(userAddress);
         
@@ -543,9 +561,21 @@ app.post('/api/faucet/claim', async (req, res) => {
     }
 });
 
-app.post('/api/tasks/claim', async (req, res) => {
+app.post('/api/tasks/claim', taskClaimLimiter, async (req, res) => {
     try {
-        const { taskId, reward, userAddress } = req.body;
+        const { taskId, reward, userAddress, validationToken } = req.body;
+
+        // Sentinel: Ensure a validation token is provided and matches the server secret
+        const taskSecret = process.env.TASK_CLAIM_SECRET;
+        if (!taskSecret) {
+            console.error('[Sentinel] TASK_CLAIM_SECRET is not configured on the server');
+            return res.status(503).json({ success: false, error: 'Payout validation service unavailable' });
+        }
+
+        if (!validationToken || validationToken !== taskSecret) {
+            return res.status(401).json({ success: false, error: 'Invalid or missing validation token' });
+        }
+
         if (!taskId || typeof reward !== 'number') {
             return res.status(400).json({ success: false, error: 'Missing taskId or reward' });
         }
