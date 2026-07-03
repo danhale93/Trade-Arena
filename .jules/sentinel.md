@@ -57,3 +57,32 @@ Running security audit across localStorage and active config...
 
 ## 2026-06-30T23:11:19.008Z - [INFO] SENTINEL
 Running security audit across localStorage and active config...
+
+## 2026-07-02T23:09:40.528Z - [INFO] SENTINEL
+Running security audit across localStorage and active config...
+
+## 2026-07-02T23:09:44.514Z - [SUCCESS] SENTINEL
+Security audit complete. All encryption layers intact.
+
+## 2026-07-02T23:10:59.005Z - [INFO] SENTINEL
+Running security audit across localStorage and active config...
+
+## 2026-07-02T23:11:03.001Z - [SUCCESS] SENTINEL
+Security audit complete. All encryption layers intact.
+
+## 2026-07-02T23:11:40.014Z - [INFO] SENTINEL
+Running security audit across localStorage and active config...
+
+## 2026-07-02T23:11:44.012Z - [SUCCESS] SENTINEL
+Security audit complete. All encryption layers intact.
+
+## 2026-07-02T23:12:28.619Z - [INFO] SENTINEL
+Running security audit across localStorage and active config...
+
+## 2026-07-02T23:12:32.620Z - [SUCCESS] SENTINEL
+Security audit complete. All encryption layers intact.
+
+## 2026-07-02 - [HIGH] XSS and JS Injection in Bot Dashboards
+**Vulnerability:** Bot IDs and strategy metadata were being rendered into `innerHTML` and HTML attributes (`onclick`) without sanitization or proper quoting. String IDs containing quotes or script tags could break out of attributes or execute malicious JS.
+**Learning:** Even internal string IDs must be treated as untrusted if they can be influenced by external data or user input. Interpolating strings directly into JS event handlers in HTML is particularly dangerous.
+**Prevention:** Use `escapeHTML(JSON.stringify(id))` when inserting variables into HTML event attributes to ensure they are both valid JS strings and safe HTML. Consistently use `escapeHTML()` for all dynamic data in `innerHTML` templates.
