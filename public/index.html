@@ -1473,7 +1473,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <span>TRADE LEDGER — REAL PRICES</span>
       <span style="font-size:9px;color:var(--dim)" id="logCount">0 trades</span>
     </div>
-    <div class="log-list" id="globalLog"><div class="empty-log">No trades yet.</div></div>
+    <div class="log-list" id="globalLog"><div class="empty-log">No trades yet. Spin a bot to start trading! 🎰</div></div>
   </div>
 </div>
 
@@ -3772,12 +3772,13 @@ function _tickHeader(){
 }
 function renderBot(bot){
   const el=document.createElement('div'); el.className='machine'; el.id='bot-'+bot.id;
+  el.tabIndex = -1; // Allow programmatic focus
   el.innerHTML=`
     <div class="m-status-badge" id="mstatus-${bot.id}"></div>
     <div class="mutation-badge" id="mbadge-${bot.id}">🧬 ADAPTED</div>
     <div class="m-head">
       <div style="display:flex;align-items:center;gap:5px"><span class="m-id" style="display:flex;align-items:center;gap:4px">${bot.type === "WORKER" ? "👷" : "🤖"} BOT #${bot.id} <small style="font-size:8px;padding:1px 4px;background:rgba(255,255,255,0.1);border-radius:3px">${bot.type}</small></span><span class="m-pnl" id="mpnl-${bot.id}">$0.00</span></div>
-      <div style="display:flex;align-items:center;gap:4px"><div class="m-ticker" id="mtick-${bot.id}">READY</div><button class="m-close" onclick="removeBot(${bot.id})" aria-label="Remove bot ${bot.id}">✕</button></div>
+      <div style="display:flex;align-items:center;gap:4px"><div class="m-ticker" id="mtick-${bot.id}">READY</div><button class="m-close" onclick="removeBot(${bot.id})" aria-label="Remove bot ${bot.id}" title="Remove bot">✕</button></div>
     </div>
     <div style="position:relative">
       <div class="m-reels" id="mreels-${bot.id}">
@@ -5618,7 +5619,7 @@ function renderLog(){
   }
   const el=document.getElementById('globalLog'); if(!el) return;
   setVal('logCount',globalLog.length+' trades');
-  if(!globalLog.length){el.innerHTML='<div class="empty-log">No trades yet.</div>';return;}
+  if(!globalLog.length){el.innerHTML='<div class="empty-log">No trades yet. Spin a bot to start trading! 🎰</div>';return;}
   el.innerHTML=globalLog.map(t=>{
     const isOpen=t.status==='open', isHold=t.isHold||t.method==='HOLD';
     const pnlStr=isOpen?'OPEN':isHold?'HOLD':(t.isWin?'+':'')+'\$'+t.netPnl.toFixed(2);
@@ -5628,7 +5629,7 @@ function renderLog(){
     const txLink = t.txHash ? `<a href="${escapeHTML(REAL_WALLET_CONFIG.network.explorerUrl)}/tx/${escapeHTML(t.txHash)}" target="_blank" style="text-decoration:none;color:var(--cyan);font-size:8px;margin-left:4px">🔗</a>` : "";
     const cost=t.costs?.total?'-\$'+t.costs.total.toFixed(2):'';
     return`<div class="log-row">
-      <div class="log-bot" onclick="scrollToBot(${escapeHTML(JSON.stringify(t.botId))})" title="Scroll to Bot #${escapeHTML(t.botId)}">#${escapeHTML(t.botId)}</div>
+      <div class="log-bot" role="button" tabindex="0" onclick="scrollToBot(${escapeHTML(JSON.stringify(t.botId))})" onkeydown="if(event.key==='Enter'||event.key===' ') scrollToBot(${escapeHTML(JSON.stringify(t.botId))})" title="Scroll to Bot #${escapeHTML(t.botId)}">#${escapeHTML(t.botId)}</div>
       <div class="log-coin" style="color:${isOpen?'var(--blue)':isHold?'var(--amber)':t.isWin?'var(--green)':'var(--hot)'}">${escapeHTML(t.token)}</div>
       <div class="log-method">${escapeHTML(t.method)}</div>
       <div class="log-entry">${escapeHTML(ep)}</div>
@@ -5694,6 +5695,7 @@ function scrollToBot(id) {
   if (!el) return;
 
   el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  el.focus();
 
   // Apply highlight animation
   el.classList.remove('highlight-pulse');

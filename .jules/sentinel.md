@@ -86,3 +86,6 @@ Security audit complete. All encryption layers intact.
 **Vulnerability:** Bot IDs and strategy metadata were being rendered into `innerHTML` and HTML attributes (`onclick`) without sanitization or proper quoting. String IDs containing quotes or script tags could break out of attributes or execute malicious JS.
 **Learning:** Even internal string IDs must be treated as untrusted if they can be influenced by external data or user input. Interpolating strings directly into JS event handlers in HTML is particularly dangerous.
 **Prevention:** Use `escapeHTML(JSON.stringify(id))` when inserting variables into HTML event attributes to ensure they are both valid JS strings and safe HTML. Consistently use `escapeHTML()` for all dynamic data in `innerHTML` templates.
+
+## 2026-07-03T23:02:59.659Z - [INFO] SENTINEL
+Running security audit across localStorage and active config...
