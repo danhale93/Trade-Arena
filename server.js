@@ -656,16 +656,30 @@ app.post('/api/webhooks/moonpay/deposit', (req, res) => {
 app.get('/api/market/prices', async (req, res) => {
     try {
         const allowedSymbols = new Set(['WETH', 'USDC', 'ARB', 'OP']);
+        const coinMap = { 'WETH': 'ethereum', 'USDC': 'usd-coin', 'ARB': 'arbitrum', 'OP': 'optimism' };
+
         const symbols = (req.query.symbols?.split(',') || ['WETH', 'USDC', 'ARB'])
             .map(s => s.trim().toUpperCase())
             .filter(s => allowedSymbols.has(s));
-        const prices = {};
-        for (const symbol of symbols) {
-            const price = await fetchCoinGeckoPrice(symbol);
-            if (price) prices[symbol] = price;
+
+        if (symbols.length === 0) {
+            return res.json({ success: true, prices: {}, timestamp: Date.now() });
         }
+
+        // ⚡ Bolt Optimization: Batch price requests into a single CoinGecko API call to eliminate network waterfall
+        const ids = symbols.map(s => coinMap[s]).filter(Boolean);
+        const response = await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${ids.join(',')}&vs_currencies=usd`);
+        const data = response.data || {};
+
+        const prices = {};
+        symbols.forEach(s => {
+            const id = coinMap[s];
+            if (data[id]?.usd) prices[s] = data[id].usd;
+        });
+
         res.json({ success: true, prices, timestamp: Date.now() });
     } catch (error) {
+        console.error('[Market API] Failed to fetch prices:', error.message);
         res.status(500).json({ success: false, error: 'Failed to fetch market prices' });
     }
 });

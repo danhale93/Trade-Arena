@@ -3622,10 +3622,10 @@ function updateBotPnl(bot){
 // ══════════════════════════════════════════════════════
 // BOT MANAGEMENT
 // ══════════════════════════════════════════════════════
-function addBot(type = 'TRADER'){
-  if(typeof SFX !== 'undefined') SFX.tick();
+function addBot(type = 'TRADER', silent = false){
+  if(!silent && typeof SFX !== 'undefined') SFX.tick();
   if(bots.length>=MAX_BOTS) {
-    if(window.showToast) showToast(`Maximum bot limit reached (${MAX_BOTS})`, 'error');
+    if(!silent && window.showToast) showToast(`Maximum bot limit reached (${MAX_BOTS})`, 'error');
     return;
   }
   botCounter++;
@@ -3655,9 +3655,13 @@ function addBot(type = 'TRADER'){
 
   bots.push(bot);
   renderBot(bot);
-  _syncHeaderBotBtns();
-  updateMatrix();
-  if(window.showToast) showToast(`${type} Bot #${bot.id} commissioned and ready`, 'success');
+
+  // ⚡ Bolt Optimization: Skip redundant UI updates if 'silent' is true (used for batch additions)
+  if(!silent) {
+    _syncHeaderBotBtns();
+    updateMatrix();
+    if(window.showToast) showToast(`${type} Bot #${bot.id} commissioned and ready`, 'success');
+  }
 }
 function removeBot(id){
   const bot=bots.find(b=>b.id===id);

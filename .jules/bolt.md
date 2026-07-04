@@ -27,3 +27,7 @@ Action: Implemented dual-mode trading system with real on-chain execution, batch
 ## 2026-07-03 - O(M+N) Agent Matrix Updates
 **Learning:** In dashboards with high bot counts (M) and active trades (N), nested loops in UI update functions (like `updateMatrix`) lead to O(M*N) complexity which causes noticeable lag. Using a `Set` for bot ID lookups reduces this to O(M+N).
 **Action:** Always pre-calculate lookup sets (e.g., `botsWithOpen`) before entering map/filter loops that iterate over the entire bot fleet.
+
+## 2026-07-03 - Backend Network Batching and Frontend UI Throttling
+**Learning:** Sequential network requests in API endpoints (like fetching multiple asset prices) create a significant latency waterfall that scales linearly with the number of items. Furthermore, high-frequency bot management functions can cause redundant DOM updates if they trigger full UI re-renders (like Matrix updates) on every single addition.
+**Action:** Implemented batched CoinGecko requests in the `/api/market/prices` endpoint and added a `silent` parameter to `addBot` to allow throttling UI updates during mass bot commissioning.
