@@ -8,5 +8,5 @@ build/
 Thumbs.db
 node_modules
 .env
-.env
-.env
+public/arena-react-bundle.js
+public/arena-react-bundle.js.map

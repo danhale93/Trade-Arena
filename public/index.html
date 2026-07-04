@@ -857,7 +857,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
   <div class="global-header">
     <div class="gh-avatar" id="ghAvatar">👤</div>
     <div style="flex:1;overflow:hidden;min-width:60px">
-      <div class="gh-name" id="ghName">—</div>
+      <div id="react-header-root"></div>
+      <div class="gh-name" id="ghName" style="display:none">—</div>
 <span style="font-size:9px;padding:1px 6px;border-radius:10px;background:var(--chrome);border:1px solid var(--border);color:var(--dim)" id="ghBadge">DEMO</span>
       <span style="font-size:8px;padding:1px 5px;border-radius:8px;background:rgba(0,255,231,.08);border:1px solid rgba(0,255,231,.2);color:var(--cyan);display:none" id="ghNetwork">BASE</span>
     </div>
@@ -6100,6 +6101,9 @@ document.addEventListener('keydown', function(e) {
 });
 
 </script>
+<!-- Arena React Bundle -->
+<script src="arena-react-bundle.js" defer></script>
+
 <!-- ACOUSTIC Audio-Visual Engines -->
 <script src="acoustic-bundle.js" defer></script>
 <script src="trading-bundle.js" defer></script>
