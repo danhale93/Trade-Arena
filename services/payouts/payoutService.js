@@ -45,7 +45,17 @@ class PayoutService {
     }
 
     async authorizePayout(userAddress, taskId, proofOfWork) {
-        if (!proofOfWork) throw new Error('Invalid proof of work');
+        // Sentinel: Validate inputs to prevent signing malicious or malformed data
+        if (!userAddress || !ethers.isAddress(userAddress)) {
+            throw new Error('Invalid user address');
+        }
+        if (!taskId || typeof taskId !== 'string' || taskId.length > 100) {
+            throw new Error('Invalid taskId');
+        }
+        if (!proofOfWork) {
+            throw new Error('Invalid proof of work');
+        }
+
         const amount = ethers.parseUnits("10", 6);
         const nonce = Date.now();
         const signature = await this.generatePayoutSignature(userAddress, taskId, amount, nonce);
