@@ -8,11 +8,13 @@
     "dev": "node server.js",
     "test": "node tests.js",
     "proxy": "node proxy.js",
-    "serve": "npx serve ."
+    "serve": "npx serve .",
+    "build": "esbuild public/src/main.tsx --bundle --outfile=public/arena-react-bundle.js --minify --sourcemap --loader:.tsx=tsx --loader:.jsx=jsx"
   },
   "dependencies": {
     "@biconomy/abstractjs": "^1.2.4",
     "@biconomy/account": "^4.5.7",
+    "@privy-io/react-auth": "^3.33.1",
     "axios": "^1.16.0",
     "ccxt": "^4.5.61",
     "cors": "^2.8.5",
@@ -20,10 +22,13 @@
     "ethers": "^6.17.0",
     "express": "^5.2.1",
     "express-rate-limit": "^8.5.2",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
     "viem": "^2.53.1",
     "websocket": "^1.0.35"
   },
   "devDependencies": {
-    "concurrently": "^10.0.3"
+    "concurrently": "^10.0.3",
+    "esbuild": "^0.28.1"
   }
 }
