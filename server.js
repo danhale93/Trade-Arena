@@ -407,7 +407,7 @@ app.post('/api/user/login', (req, res) => {
                 address: address || null,
                 provider: provider || 'unknown',
                 avatar: avatar || null,
-                balance: 10000,
+                balance: 0,
                 bots: [],
                 trades: [],
                 created: Date.now()
