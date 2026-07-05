@@ -5402,9 +5402,16 @@ function manualClear(key) {
 // ── UI ──
 function updateAuditSummaryBadge() {
   const el = document.getElementById('auditSummary'); if (!el) return;
-  const notices   = AGENT_KEYS.filter(k => agentStatus[k] === 'ON_NOTICE').length;
-  const suspended = AGENT_KEYS.filter(k => agentStatus[k] === 'SUSPENDED').length;
-  const reinstated= AGENT_KEYS.filter(k => agentStatus[k] === 'REINSTATED').length;
+
+  // ⚡ Bolt Optimization: Consolidate O(N) passes into a single loop to reduce iterations and allocations
+  let notices = 0, suspended = 0, reinstated = 0;
+  for (const k of AGENT_KEYS) {
+    const status = agentStatus[k];
+    if (status === 'ON_NOTICE') notices++;
+    else if (status === 'SUSPENDED') suspended++;
+    else if (status === 'REINSTATED') reinstated++;
+  }
+
   if (suspended > 0) { el.textContent = `${suspended} SUSPENDED`; el.style.background='rgba(255,45,120,.15)'; el.style.color='var(--hot)'; }
   else if (notices > 0) { el.textContent = `${notices} ON NOTICE`; el.style.background='rgba(255,179,0,.15)'; el.style.color='var(--amber)'; }
   else if (reinstated > 0) { el.textContent = `${reinstated} REINSTATED`; el.style.background='rgba(68,136,255,.15)'; el.style.color='var(--blue)'; }
