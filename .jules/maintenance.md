@@ -25,3 +25,6 @@ Latency spike (89ms). Rerouting from Primary (Base) to Ankr.
 
 ## 2026-06-30T23:15:52.778Z - [WARN] ARCHITECT
 Latency spike (84ms). Rerouting from Primary (Base) to Infura.
+
+## 2026-07-05T05:22:19.380Z - [WARN] ARCHITECT
+Latency spike (76ms). Rerouting from Primary (Base) to Infura.
