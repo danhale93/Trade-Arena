@@ -1672,6 +1672,8 @@ var closedTrades=[], openPositions=[], equityHistory=[0];
 var _lastClosedCount = -1;
 var _lastLogRenderCount = -1;
 var _lastLogTradeCount = -1;
+var _quantPending = false;
+var _logPending = false;
 let agentHistory=[]; // per-agent vote accuracy for quant report
 let globalLog=[];
 var bots=[], botCounter=0;
@@ -2179,7 +2181,22 @@ function showExitResult(pos, bot) {
 // ══════════════════════════════════════════════════════
 // QUANT REPORT ENGINE
 // ══════════════════════════════════════════════════════
+/**
+ * ⚡ Bolt Optimization: UI Update Throttling
+ * Prevents O(N) calculations and DOM churn by batching high-frequency
+ * updates to the browser's refresh rate (max once per frame).
+ */
 function updateQuantReport() {
+  if (_quantPending) return;
+  _quantPending = true;
+
+  requestAnimationFrame(() => {
+    _quantPending = false;
+    _runUpdateQuantReport();
+  });
+}
+
+function _runUpdateQuantReport() {
   // Optimization: Skip expensive O(N) filtering and DOM updates if panel is hidden
   const body = document.getElementById('quantBody');
   if (body && !body.classList.contains('open')) return;
@@ -5623,7 +5640,22 @@ function addToLog(pos){
   if(globalLog.length>60) globalLog.pop();
   renderLog();
 }
+/**
+ * ⚡ Bolt Optimization: UI Update Throttling
+ * Prevents redundant DOM manipulation during rapid trade events by
+ * ensuring the log is only re-rendered at most once per display frame.
+ */
 function renderLog(){
+  if (_logPending) return;
+  _logPending = true;
+
+  requestAnimationFrame(() => {
+    _logPending = false;
+    _runRenderLog();
+  });
+}
+
+function _runRenderLog(){
   // ⚡ Bolt Optimization: Early return if data hasn't changed to skip expensive DOM manipulation
   if (globalLog.length === _lastLogRenderCount && closedTrades.length === _lastLogTradeCount) return;
   _lastLogRenderCount = globalLog.length;

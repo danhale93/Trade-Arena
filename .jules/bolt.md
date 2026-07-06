@@ -31,3 +31,7 @@ Action: Implemented dual-mode trading system with real on-chain execution, batch
 ## 2026-07-03 - Backend Network Batching and Frontend UI Throttling
 **Learning:** Sequential network requests in API endpoints (like fetching multiple asset prices) create a significant latency waterfall that scales linearly with the number of items. Furthermore, high-frequency bot management functions can cause redundant DOM updates if they trigger full UI re-renders (like Matrix updates) on every single addition.
 **Action:** Implemented batched CoinGecko requests in the `/api/market/prices` endpoint and added a `silent` parameter to `addBot` to allow throttling UI updates during mass bot commissioning.
+
+## 2026-07-06 - UI Event Throttling with requestAnimationFrame
+**Learning:** In dashboards driven by high-frequency asynchronous events (like rapid trade executions or multiple bot updates), synchronous UI update functions that perform O(N) calculations and DOM manipulation can stack up multiple calls within a single browser frame. This leads to redundant CPU work and potential "jank" as the main thread struggles to clear the task queue between frames.
+**Action:** Implement a throttling wrapper using `requestAnimationFrame` and a "pending" flag for expensive UI render functions. This ensures that regardless of event burst frequency, the application only performs one calculation and render pass per display frame, significantly smoothing the UX during periods of high activity.
