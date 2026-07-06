@@ -2934,7 +2934,7 @@ function renderAgentIdentities() {
                         ${s.superteam.registered ?
                             `<div style="color:var(--green); font-size:8px;">✅ REGISTERED</div>
                              <div style="font-size:7px; color:var(--dim); margin-top:2px;">Key: ${escapeHTML(s.superteam.apiKey.slice(0,10))}...</div>` :
-                            `<button onclick="registerAgentUI(event, '${escapeHTML(s.id)}', 'superteam')" style="width:100%; padding:4px; background:var(--bg); border:1px solid var(--purple); color:var(--purple); border-radius:4px; font-size:8px; cursor:pointer;">REGISTER</button>`
+                            `<button onclick="registerAgentUI(event, ${escapeHTML(JSON.stringify(s.id))}, 'superteam')" style="width:100%; padding:4px; background:var(--bg); border:1px solid var(--purple); color:var(--purple); border-radius:4px; font-size:8px; cursor:pointer;">REGISTER</button>`
                         }
                     </div>
 
@@ -2948,9 +2948,9 @@ function renderAgentIdentities() {
                              </div>
                              <div style="display:flex; gap:4px; margin-top:4px;">
                                 <input type="number" id="price-${escapeHTML(s.id)}" value="${s.g0.servicePrice}" step="1" style="width:30px; background:var(--bg); border:1px solid var(--border); color:white; font-size:7px; padding:2px;">
-                                <button onclick="updatePriceUI('${escapeHTML(s.id)}')" style="background:var(--chrome); border:1px solid var(--border); color:var(--dim); font-size:7px; padding:2px 4px; cursor:pointer;">SET</button>
+                                <button onclick="updatePriceUI(${escapeHTML(JSON.stringify(s.id))})" style="background:var(--chrome); border:1px solid var(--border); color:var(--dim); font-size:7px; padding:2px 4px; cursor:pointer;">SET</button>
                              </div>` :
-                            `<button onclick="registerAgentUI(event, '${escapeHTML(s.id)}', 'g0')" style="width:100%; padding:4px; background:var(--bg); border:1px solid var(--cyan); color:var(--cyan); border-radius:4px; font-size:8px; cursor:pointer;">REGISTER</button>`
+                            `<button onclick="registerAgentUI(event, ${escapeHTML(JSON.stringify(s.id))}, 'g0')" style="width:100%; padding:4px; background:var(--bg); border:1px solid var(--cyan); color:var(--cyan); border-radius:4px; font-size:8px; cursor:pointer;">REGISTER</button>`
                         }
                     </div>
                 </div>
@@ -3010,7 +3010,7 @@ function renderMarketplaceTasks() {
                     ${active ?
                         `<div style="font-size:8px; color:var(--amber); animation:gh-blink 1s infinite alternate;">PROCESSING...</div>` :
                         registered ?
-                            `<button onclick="acceptTaskUI('${escapeHTML(t.category)}', '${escapeHTML(t.id)}')" style="padding:6px 12px; background:var(--chrome); border:1px solid var(--green); color:var(--green); border-radius:4px; font-family:'Bungee'; font-size:9px; cursor:pointer;">ACCEPT</button>` :
+                            `<button onclick="acceptTaskUI(${escapeHTML(JSON.stringify(t.category))}, ${escapeHTML(JSON.stringify(t.id))})" style="padding:6px 12px; background:var(--chrome); border:1px solid var(--green); color:var(--green); border-radius:4px; font-family:'Bungee'; font-size:9px; cursor:pointer;">ACCEPT</button>` :
                             `<div style="font-size:7px; color:var(--dim); text-align:center; max-width:60px;">Register ${escapeHTML(t.category.toUpperCase())} first</div>`
                     }
                 </div>
@@ -5441,12 +5441,12 @@ function renderAuditPanel() {
     }[status] || '';
 
     const actions = status === 'SUSPENDED'
-      ? `<button class="aa-action-btn aa-btn-reinstate" onclick="manualReinstate('${key}')">REINSTATE</button>`
+      ? `<button class="aa-action-btn aa-btn-reinstate" onclick="manualReinstate(${escapeHTML(JSON.stringify(key))})">REINSTATE</button>`
       : status === 'ON_NOTICE'
-      ? `<button class="aa-action-btn aa-btn-clear" onclick="manualClear('${key}')">CLEAR</button><button class="aa-action-btn aa-btn-suspend" onclick="manualSuspend('${key}')">SUSPEND</button>`
+      ? `<button class="aa-action-btn aa-btn-clear" onclick="manualClear(${escapeHTML(JSON.stringify(key))})">CLEAR</button><button class="aa-action-btn aa-btn-suspend" onclick="manualSuspend(${escapeHTML(JSON.stringify(key))})">SUSPEND</button>`
       : status === 'REINSTATED'
-      ? `<button class="aa-action-btn aa-btn-clear" onclick="manualClear('${key}')">FULLY CLEAR</button><button class="aa-action-btn aa-btn-suspend" onclick="manualSuspend('${key}')">SUSPEND</button>`
-      : `<button class="aa-action-btn aa-btn-suspend" onclick="manualSuspend('${key}')">SUSPEND</button>`;
+      ? `<button class="aa-action-btn aa-btn-clear" onclick="manualClear(${escapeHTML(JSON.stringify(key))})">FULLY CLEAR</button><button class="aa-action-btn aa-btn-suspend" onclick="manualSuspend(${escapeHTML(JSON.stringify(key))})">SUSPEND</button>`
+      : `<button class="aa-action-btn aa-btn-suspend" onclick="manualSuspend(${escapeHTML(JSON.stringify(key))})">SUSPEND</button>`;
 
     const probBar = status === 'ON_NOTICE' ? `
       <div style="margin-top:3px;font-size:7px;color:var(--amber)">Probation: ${probUsed}/${probTotal} trades</div>
