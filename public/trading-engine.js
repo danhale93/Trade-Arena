@@ -10,7 +10,7 @@
 
 // ACOUSTIC CORE: UI Update Functions
 
-function updateVaultDisplay(balance, startBalance = 10000) {
+function updateVaultDisplay(balance, startBalance = 0) {
 
     if (typeof document === 'undefined') return;
 
@@ -78,7 +78,7 @@ if (typeof window !== 'undefined') {
 
         setTimeout(() => {
 
-            updateVaultDisplay(10000, 10000);
+            updateVaultDisplay(0, 0);
 
             renderPadGrid();
 
@@ -701,7 +701,7 @@ class TradingEngine {
 
                 if (typeof updateVaultDisplay === 'function') {
 
-                    updateVaultDisplay(10000 + totalProfit, 10000);
+                    updateVaultDisplay(totalProfit, 0);
 
                 }
 

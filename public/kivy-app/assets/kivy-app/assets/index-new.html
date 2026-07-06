@@ -226,7 +226,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <span style="font-size:9px;padding:1px 6px;border-radius:10px;background:var(--chrome);border:1px solid var(--border);color:var(--dim)" id="ghBadge">DEMO</span>
     </div>
     <div style="margin-right:6px;text-align:right">
-      <div class="gh-balance" id="ghBalance">$10,000.00</div>
+      <div class="gh-balance" id="ghBalance">$0.00</div>
       <div class="gh-pnl pnl-pos" id="ghPnl">+$0.00 today</div>
     </div>
     <button class="add-bot-btn" id="addBotBtn" onclick="addBot()">+ ADD BOT</button>
@@ -336,8 +336,8 @@ const COINGECKO_IDS = {
 // ══════════════════════════════
 // GLOBAL STATE
 // ══════════════════════════════
-let balance=10000, startBalance=10000, totalPnl=0;
-let closedTrades=[], openPositions=[], equityHistory=[10000];
+let balance=0, startBalance=0, totalPnl=0;
+let closedTrades=[], openPositions=[], equityHistory=[0];
 let globalLog=[];
 let bots=[], botCounter=0;
 let marketCache=null, marketCacheTime=0;
@@ -424,7 +424,7 @@ async function loginMetaMask(){
     s.textContent='⏳ Switching to Base…';
     try{ await window.ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x2105'}]}); }
     catch(sw){ if(sw.code===4902) await window.ethereum.request({method:'wallet_addEthereumChain',params:[{chainId:'0x2105',chainName:'Base Mainnet',rpcUrls:['https://mainnet.base.org'],nativeCurrency:{name:'ETH',symbol:'ETH',decimals:18},blockExplorerUrls:['https://basescan.org']}]}); }
-    let bal=10000;
+    let bal=0;
     try{ const b=await provider.getBalance(addr); const eth=parseFloat(ethers.utils.formatEther(b)); const d=await(await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd')).json(); bal=eth*(d?.ethereum?.usd||3200); }catch(e){}
     balance=bal; startBalance=bal;
     setupApp({name:addr.slice(0,6)+'···'+addr.slice(-4), avatar:null, badge:'🦊 METAMASK'});

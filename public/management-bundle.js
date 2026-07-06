@@ -75,7 +75,8 @@ async function completeTask(taskId) {
             body: JSON.stringify({
                 taskId,
                 reward: 0,
-                userAddress: window.ethereum?.selectedAddress || 'demo'
+                userAddress: window.ethereum?.selectedAddress || 'demo',
+                validationToken: localStorage.getItem('ta_task_secret') || ''
             })
         });
         fetchDeployments();

@@ -132,8 +132,8 @@ console.log('\n' + colors.bright + colors.blue + '🧪 PHASE 4: RUNNING MOCK CRU
 const mockTest = {
   sessionId: `test-${Date.now()}`,
   trades: [],
-  startBalance: 10000,
-  finalBalance: 10000,
+  startBalance: 0,
+  finalBalance: 0,
   
   run(numTrades = 20) {
     console.log(colors.cyan + `  Starting ${numTrades} mock trades...` + colors.reset);

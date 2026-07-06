@@ -397,7 +397,7 @@ body::after{
       <div class="gh-badge" id="ghBadge">DEMO</div>
     </div>
 <div style="margin-right:8px;text-align:right">
-      <div class="gh-balance" id="ghBalance" style="font-size:18px !important;font-weight:900 !important;">$10,000.00</div>
+      <div class="gh-balance" id="ghBalance" style="font-size:18px !important;font-weight:900 !important;">$0.00</div>
       <div style="display:flex;align-items:center;gap:8px;margin-top:2px;">
         <div class="gh-pnl pnl-pos" id="ghPnl">+$0.00 today</div>
         <div class="pnl-tabs" style="display:flex;gap:4px;font-size:10px;">
@@ -546,7 +546,7 @@ globalThis.ANTHROPIC_API_KEY = ANTHROPIC_API_KEY;
 // ════════════════════════════
 // GLOBAL STATE
 // ════════════════════════════
-let balance = 10000;
+let balance = 0;
 let totalPnl = 0;
 let globalLog = [];
 let bots = [];   // array of bot state objects
@@ -2777,7 +2777,7 @@ function getTradeLogSummary() {
     winningTrades: globalLog.filter(t => t.isWin).length,
     losingTrades: globalLog.filter(t => !t.isWin).length,
     totalPnL: globalLog.reduce((sum, t) => sum + (t.pnl || 0), 0),
-    initialBalance: 10000,
+    initialBalance: 0,
     finalBalance: balance,
     winRate: (globalLog.filter(t => t.isWin).length / (globalLog.length || 1) * 100).toFixed(2),
     avgPnL: (globalLog.reduce((sum, t) => sum + (t.pnl || 0), 0) / (globalLog.length || 1)).toFixed(2),
