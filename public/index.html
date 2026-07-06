@@ -2559,19 +2559,39 @@ async function runCrucibleV2Batch() {
      const tradeCount = parseInt(document.getElementById('crucibleTradeCount')?.value || '50');
      
      if(tradeCount < 1 || tradeCount > 1000) {
-       alert('Trade count must be between 1 and 1000');
+       showToast('Trade count must be between 1 and 1000', 'error');
        return;
      }
      
      // Show running status
-     alert(`Running Crucible V2:\nRegime: ${regime}\nCost Model: ${costModel}\nTrades: ${tradeCount}\n\nThis will simulate trading in the selected regime with realistic cost modeling.`);
+     showToast(`Running Crucible V2 Simulation (${tradeCount} trades)...`, 'info');
      
      // In a real implementation, this would call the external crucible-test.js functions
      // For now, we'll simulate the results
      const simulatedResults = simulateCrucibleV2Results(regime, costModel, tradeCount);
      
-     // Display results
-     alert(`Crucible V2 Results:\n\nRegime: ${regime}\nCost Model: ${costModel}\nTrades: ${simulatedResults.trades}\nWin Rate: ${simulatedResults.winRate.toFixed(1)}%\nP&L: $${simulatedResults.pnl >= 0 ? '+' : ''}${simulatedResults.pnl.toFixed(2)}\nReturn: ${simulatedResults.returnPct >= 0 ? '+' : ''}${simulatedResults.returnPct.toFixed(2)}%\n\nBaseline Comparison:\n- Strategy: ${simulatedResults.strategy.pnl >= 0 ? '+' : ''}$${simulatedResults.strategy.pnl.toFixed(2)} (${simulatedResults.strategy.winRate.toFixed(1)}% WR)\n- Always Long: ${simulatedResults.baselines.alwaysLong.pnl >= 0 ? '+' : ''}$${simulatedResults.baselines.alwaysLong.pnl.toFixed(2)} (${simulatedResults.baselines.alwaysLong.winRate.toFixed(1)}% WR)\n- Momentum: ${simulatedResults.baselines.momentum.pnl >= 0 ? '+' : ''}$${simulatedResults.baselines.momentum.pnl.toFixed(2)} (${simulatedResults.baselines.momentum.winRate.toFixed(1)}% WR)\n- Random: ${simulatedResults.baselines.random.pnl >= 0 ? '+' : ''}$${simulatedResults.baselines.random.pnl.toFixed(2)} (${simulatedResults.baselines.random.winRate.toFixed(1)}% WR)\n\n${simulatedResults.strategy.pnl > simulatedResults.baselines.alwaysLong.pnl && regime !== 'BULL' ? '✅ STRATEGY BEATS ALWAYS LONG IN NON-BULL REGIME' : '⚠️ Strategy did not beat Always Long in non-bull regime'}`);
+     // Display results via modal
+     showCrucibleResults({
+        mode: regime,
+        tradesRun: simulatedResults.trades,
+        startBalance: 1000,
+        endBalance: 1000 + simulatedResults.pnl,
+        pnl: simulatedResults.pnl,
+        pnlPct: simulatedResults.returnPct.toFixed(2),
+        winRate: simulatedResults.winRate,
+        extraHTML: `
+          <div style="border-top: 1px solid var(--border); margin-top: 10px; padding-top: 10px; font-size: 0.9em;">
+             <div style="color: var(--cyan); margin-bottom: 5px;">BASELINE COMPARISON:</div>
+             • Strategy: ${simulatedResults.strategy.pnl >= 0 ? '+' : ''}$${simulatedResults.strategy.pnl.toFixed(2)} (${simulatedResults.strategy.winRate.toFixed(1)}% WR)<br>
+             • Always Long: ${simulatedResults.baselines.alwaysLong.pnl >= 0 ? '+' : ''}$${simulatedResults.baselines.alwaysLong.pnl.toFixed(2)} (${simulatedResults.baselines.alwaysLong.winRate.toFixed(1)}% WR)<br>
+             • Momentum: ${simulatedResults.baselines.momentum.pnl >= 0 ? '+' : ''}$${simulatedResults.baselines.momentum.pnl.toFixed(2)} (${simulatedResults.baselines.momentum.winRate.toFixed(1)}% WR)<br>
+             • Random: ${simulatedResults.baselines.random.pnl >= 0 ? '+' : ''}$${simulatedResults.baselines.random.pnl.toFixed(2)} (${simulatedResults.baselines.random.winRate.toFixed(1)}% WR)
+          </div>
+          <div style="margin-top: 10px; font-size: 0.85em; color: ${simulatedResults.strategy.pnl > simulatedResults.baselines.alwaysLong.pnl && regime !== 'BULL' ? '#4ade80' : '#f87171'}">
+             ${simulatedResults.strategy.pnl > simulatedResults.baselines.alwaysLong.pnl && regime !== 'BULL' ? '✅ STRATEGY BEATS ALWAYS LONG IN NON-BULL REGIME' : '⚠️ Strategy did not beat Always Long in non-bull regime'}
+          </div>
+        `
+     });
      
      // Update crucible counter for UI
      crucibleCount += tradeCount;
@@ -2584,13 +2604,13 @@ async function runCrucibleV2Batch() {
 // Pause crucible batch execution
 function pauseCrucible() {
    // This would pause the execution in a real implementation
-   alert('Crucible batch paused');
+   showToast('Crucible batch paused', 'info');
 }
 
 // Cancel crucible batch execution
 function cancelCrucible() {
    // This would cancel the execution in a real implementation
-   alert('Crucible batch cancelled');
+   showToast('Crucible batch cancelled', 'info');
    // Reset counters
    crucibleCount = 0;
    updateCrucible();
@@ -2614,6 +2634,7 @@ function showCrucibleResults(results) {
    `;
    
    const modalContent = document.createElement('div');
+   modalContent.id = 'crucibleResultsModal';
    modalContent.style.cssText = `
       background: var(--panel);
       border: 2px solid var(--border);
@@ -2635,8 +2656,9 @@ function showCrucibleResults(results) {
          <strong>Profit/Loss:</strong> ${results.pnl >= 0 ? '+' : ''}$${results.pnl.toFixed(2)} (${results.pnlPct}%)<br>
          <strong>Win Rate:</strong> ${results.winRate.toFixed(1)}%
       </div>
+      ${results.extraHTML || ''}
       <div style="margin-top: 20px; text-align: center;">
-         <button onclick="this.parentElement.parentElement.remove()" 
+         <button class="modal-close-btn" onclick="this.parentElement.parentElement.remove()"
                  style="background: var(--purple); color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
             CLOSE
          </button>
@@ -2708,7 +2730,7 @@ function simulateCrucibleV2Results(regime, costModel, tradeCount) {
 // EXPORT
 // ══════════════════════════════════════════════════════
 function exportCSV() {
-  if(!closedTrades.length){ alert('No closed trades to export yet.'); return; }
+  if(!closedTrades.length){ showToast('No closed trades to export yet.', 'error'); return; }
   const headers=['timestamp','botId','token','method','direction','regime','bet','entryPrice','exitPrice','holdMs','rawPnl','netPnl','gas','slippagePct','slippage','spread','totalCosts','isWin','reasoning','pol_signal','mom_vote','vol_vote','pol_vote','sen_vote','risk_vote','baseline_random','baseline_long','baseline_momentum'];
   const rows=closedTrades.map(t=>{
     const e=t.ensemble||{};
@@ -2731,7 +2753,7 @@ function exportCSV() {
   downloadFile(csv,'trade-arena-ledger-'+Date.now()+'.csv','text/csv');
 }
 function exportJSON() {
-  if(!closedTrades.length){ alert('No closed trades to export yet.'); return; }
+  if(!closedTrades.length){ showToast('No closed trades to export yet.', 'error'); return; }
   const data={
     exportedAt:new Date().toISOString(),
     summary:{ totalTrades:closedTrades.length, netPnl:totalPnl, startBalance, endBalance:balance },
@@ -2743,7 +2765,7 @@ function exportJSON() {
 
 function generatePitchReport() {
   if (closedTrades.length < 5) {
-    alert('Run at least 5 trades to generate a credible Pitch Report.');
+        showToast('Run at least 5 trades to generate a credible Pitch Report.', 'error');
     return;
   }
 
@@ -5181,7 +5203,7 @@ function toggleLearn() {
   if (!body) return;
   const isOpen = body.classList.toggle('open');
   hd.classList.toggle('open', isOpen);
-  hd.setAttribute('aria-expanded', isOpen);
+  hd.setAttribute('aria-expanded', isOpen.toString());
   toggle.textContent = isOpen ? '▴ HIDE' : '▼ EXPAND';
   if (isOpen) renderLearnPanel();
 }
@@ -5499,7 +5521,7 @@ function toggleAudit() {
   if (!body) return;
   const isOpen = body.classList.toggle('open');
   hd.classList.toggle('open', isOpen);
-  hd.setAttribute('aria-expanded', isOpen);
+  hd.setAttribute('aria-expanded', isOpen.toString());
   toggle.textContent = isOpen ? '▴ HIDE' : '▼ EXPAND';
   if (isOpen) renderAuditPanel();
 }
@@ -5764,7 +5786,7 @@ function toggleBusPanel() {
   const open = panel.classList.toggle('open');
   if (btn) {
     btn.classList.toggle('open', open);
-    btn.setAttribute('aria-expanded', open);
+    btn.setAttribute('aria-expanded', open.toString());
   }
 }
 
@@ -6277,10 +6299,20 @@ Respond in JSON format:
 
 // ═══ SETTINGS MODAL FUNCTIONS ═══
 function toggleSettingsModal() {
+    if(typeof SFX !== 'undefined') SFX.tick();
     const modal = document.getElementById('settingsModal');
     if (!modal) return;
-    modal.style.display = modal.style.display === 'none' ? 'flex' : 'none';
-    if (modal.style.display !== 'none') refreshSettingsUI();
+    const isOpening = modal.style.display === 'none' || modal.style.display === '';
+    modal.style.display = isOpening ? 'flex' : 'none';
+
+    // Update button affordance
+    const btn = document.getElementById('ghSettingsBtn');
+    if (btn) {
+      btn.classList.toggle('open', isOpening);
+      btn.setAttribute('aria-expanded', isOpening.toString());
+    }
+
+    if (isOpening) refreshSettingsUI();
 }
 function refreshSettingsUI() {
     const ws = document.getElementById('settingsWalletStatus');
@@ -6386,7 +6418,7 @@ function updateSettingsVolume(val) {
 }
 
 <!-- ══ SETTINGS MODAL ══ -->
-<div id="settingsModal">
+<div id="settingsModal" style="display:none">
   <div class="settings-panel">
     <div class="settings-hd">
       <span class="settings-title">⚙ SETTINGS</span>
