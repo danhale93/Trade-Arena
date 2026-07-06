@@ -1,5 +1,15 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
+
+// Extend Window interface for TypeScript
+declare global {
+  interface Window {
+    privyUser: any;
+    privyWalletAddress: string | null;
+    privyConnected: boolean;
+    onPrivyLoginSuccess: () => void;
+  }
+}
 
 export const PrivyWalletHeader = () => {
   const { authenticated, user, login } = usePrivy();
@@ -7,6 +17,21 @@ export const PrivyWalletHeader = () => {
 
   // Isolate the embedded wallet (where walletClientType === 'privy')
   const embeddedWallet = wallets.find((wallet) => wallet.walletClientType === 'privy');
+
+  // Synchronize React state with legacy global state for Trade Arena integration
+  useEffect(() => {
+    if (authenticated && embeddedWallet) {
+      // Sync global variables used by the legacy vanilla JS engine
+      window.privyUser = user;
+      window.privyWalletAddress = embeddedWallet.address;
+      window.privyConnected = true;
+
+      // Trigger the legacy transition logic (hides connect screen, shows main app)
+      if (typeof window.onPrivyLoginSuccess === 'function') {
+        window.onPrivyLoginSuccess();
+      }
+    }
+  }, [authenticated, embeddedWallet, user]);
 
   if (!authenticated) {
     return (
