@@ -66,7 +66,7 @@ async function scanCrossDexFlashArb({
   quoteProvider,
   tokens = [],
   dexes = [],
-  borrowAmountsUSD = [10000],
+  borrowAmountsUSD = [100],
   riskState = null,
   config = {},
   now = Date.now(),

@@ -794,8 +794,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
   <div class="setup-note">
     <strong>AI API Keys</strong> — enables full AI agents. Get yours:
     <a href="https://console.anthropic.com" target="_blank">Anthropic</a> |
-    <a href="https://platform.openai.com" target="_blank">OpenAI</a> |
-    <a href="https://aistudio.google.com" target="_blank">Gemini</a>
+    <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI</a> |
+    <a href="https://aistudio.google.com/app/apikey" target="_blank">Gemini</a>
     <div style="display:flex;gap:4px;margin-top:5px">
       <input type="password" id="apiKeyInput" placeholder="Paste primary key (Anthropic) here..." style="flex:1;padding:5px 8px;background:var(--bg);border:1px solid var(--border);color:var(--cyan);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px;" oninput="window._userApiKey=this.value.trim(); localStorage.setItem('ta_api_key', this.value.trim())">
       <button onclick="toggleSettingsModal()" style="padding:4px 8px;background:var(--chrome);border:1px solid var(--border);color:var(--cyan);border-radius:4px;font-family:'Bungee',display;font-size:8px;cursor:pointer">ALL KEYS</button>
@@ -6524,7 +6524,7 @@ function updateSettingsVolume(val) {
         <div style="margin-bottom:8px">
           <div style="display:flex; justify-content:space-between; font-size:8px; color:var(--dim); margin-bottom:2px">
             <span>OPENAI (GPT-4)</span>
-            <a href="https://platform.openai.com" target="_blank" style="color:var(--cyan)">Get Key →</a>
+            <a href="https://platform.openai.com/api-keys" target="_blank" style="color:var(--cyan)">Get Key →</a>
           </div>
           <input type="password" id="settingsOpenAiKey" placeholder="sk-..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
         </div>
@@ -6532,7 +6532,7 @@ function updateSettingsVolume(val) {
         <div style="margin-bottom:12px">
           <div style="display:flex; justify-content:space-between; font-size:8px; color:var(--dim); margin-bottom:2px">
             <span>GOOGLE (GEMINI)</span>
-            <a href="https://aistudio.google.com" target="_blank" style="color:var(--cyan)">Get Key →</a>
+            <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--cyan)">Get Key →</a>
           </div>
           <input type="password" id="settingsGeminiKey" placeholder="AIza..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
         </div>

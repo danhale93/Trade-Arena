@@ -149,7 +149,8 @@ async function submitTaskToBackend(quest) {
             body: JSON.stringify({
                 taskId: quest.id,
                 reward: quest.reward,
-                userAddress: window.ethereum?.selectedAddress || 'demo'
+                userAddress: window.ethereum?.selectedAddress || 'demo',
+                validationToken: localStorage.getItem('ta_task_secret') || ''
             })
         });
         const data = await resp.json();

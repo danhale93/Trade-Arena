@@ -26,7 +26,7 @@ const CrucibleTest = {
 
   // Test configuration
   config: {
-    paperBalance: 10000, // Starting paper balance
+    paperBalance: 0, // Starting paper balance
     tradeCount: 10, // Number of trades to execute
     tradeInterval: 2000, // ms between trades
     verbose: true, // Detailed logging
