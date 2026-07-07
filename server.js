@@ -15,10 +15,28 @@ const rateLimit = require('express-rate-limit');
 const WebSocket = require('websocket').w3cwebsocket;
 
 const app = express();
+
+// Sentinel: Security hardening
+app.set('trust proxy', 1); // Trust first proxy (Render, Heroku, etc.)
+app.disable('x-powered-by'); // Mitigate information disclosure
+
+// Sentinel: Security headers middleware
+app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://accounts.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https:;");
+    next();
+});
+
 const taskClaimLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 5, // limit each IP to 5 claim requests per window
-    message: { error: 'Too many claim requests from this IP, please try again later.' }
+    message: { error: 'Too many claim requests from this IP, please try again later.' },
+    standardHeaders: true,
+    legacyHeaders: false
 });
 const maintenanceLogLimiter = rateLimit({
     windowMs: 60 * 1000,
@@ -407,7 +425,7 @@ app.post('/api/user/login', (req, res) => {
                 address: address || null,
                 provider: provider || 'unknown',
                 avatar: avatar || null,
-                balance: 10000,
+                balance: 0,
                 bots: [],
                 trades: [],
                 created: Date.now()

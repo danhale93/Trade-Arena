@@ -98,10 +98,11 @@ async function claimFaucet() {
 
     try {
         if (window.showToast) window.showToast('Requesting Faucet Payout...', 'info');
+        const userAddress = window.privyWalletAddress || window.ethereum?.selectedAddress || 'demo';
         const resp = await fetch(`${API_BASE}/api/faucet/claim`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userAddress: window.ethereum?.selectedAddress || 'demo' })
+            body: JSON.stringify({ userAddress })
         });
         const data = await resp.json();
 
@@ -143,13 +144,15 @@ async function completeTask(taskId) {
 async function submitTaskToBackend(quest) {
     try {
         if (window.showToast) window.showToast(`Submitting ${quest.label}...`, 'info');
+        const userAddress = window.privyWalletAddress || window.ethereum?.selectedAddress || 'demo';
         const resp = await fetch(`${API_BASE}/api/tasks/claim`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 taskId: quest.id,
                 reward: quest.reward,
-                userAddress: window.ethereum?.selectedAddress || 'demo'
+                userAddress: userAddress,
+                validationToken: localStorage.getItem('ta_task_secret') || ''
             })
         });
         const data = await resp.json();
@@ -225,15 +228,15 @@ function renderQuestRow(quest) {
     const rowColor = quest.completed ? 'var(--green)' : (isVerified ? 'var(--cyan)' : 'var(--border)');
     return \`
         <div class=\"task-row\" style=\"display:flex; align-items:center; gap:10px; padding:10px; background:rgba(0,0,0,0.2); border-radius:8px; margin-bottom:5px; border:1px solid \${rowColor}\">
-            <div style=\"font-size:20px\">\${quest.icon}</div>
+            <div style="font-size:20px">${escapeHTML(quest.icon)}</div>
             <div style=\"flex:1\">
                 <div style=\"display:flex; align-items:center; gap:5px\">
-                    <div style=\"font-size:11px; font-weight:bold; color:\${quest.completed ? 'var(--green)' : 'white'}\">\${quest.label}</div>
+                    <div style="font-size:11px; font-weight:bold; color:${quest.completed ? 'var(--green)' : 'white'}">${escapeHTML(quest.label)}</div>
                     \${isVerified ? '<span style=\"font-size:7px; padding:2px 4px; background:var(--cyan); color:black; border-radius:3px\">VERIFIED</span>' : ''}
                 </div>
-                <div style=\"font-size:8px; color:var(--dim)\">REWARD: $\${quest.reward} \${isVerified ? 'REAL CRYPTO' : 'CREDITS'}</div>
+                <div style="font-size:8px; color:var(--dim)">REWARD: $${escapeHTML(quest.reward)} ${isVerified ? 'REAL CRYPTO' : 'CREDITS'}</div>
             </div>
-            <button onclick=\"completeTask('\${quest.id}')\" \${quest.completed ? 'disabled' : ''}
+            <button onclick="completeTask(${escapeHTML(JSON.stringify(quest.id))})" ${quest.completed ? 'disabled' : ''}
                 style=\"padding:5px 10px; border-radius:4px; border:none; background:\${quest.completed ? 'var(--dim)' : 'var(--cyan)'}; color:black; font-family:'Bungee'; font-size:9px; cursor:pointer\">
                 \${quest.completed ? 'DONE' : 'GO'}
             </button>

@@ -21,8 +21,8 @@ importers:
         specifier: ^1.16.0
         version: 1.18.1
       ccxt:
-        specifier: ^4.5.61
-        version: 4.5.61(utf-8-validate@5.0.10)
+        specifier: ^4.5.64
+        version: 4.5.64(utf-8-validate@5.0.10)
       cors:
         specifier: ^2.8.5
         version: 2.8.6
@@ -57,6 +57,9 @@ importers:
       esbuild:
         specifier: ^0.28.1
         version: 0.28.1
+      playwright:
+        specifier: ^1.61.1
+        version: 1.61.1
 
 packages:
 
@@ -1542,8 +1545,8 @@ packages:
     resolution: {integrity: sha512-F705O3xrsUtgt98j7leetNhTWPe+5S72rlL5O4jA1pKqBVQ/dT1O1D6PFxmSXvc0SUOinWS57DKx0I3CHrXJHQ==}
     hasBin: true
 
-  ccxt@4.5.61:
-    resolution: {integrity: sha512-Hjsukhe8mm99k2tg+wcm6X1Xau/P2X3V0Rfmyre7dznc0DKghrSJuf2qEI7JWNlIiVqepISvIKoSuzsYuI0w0Q==}
+  ccxt@4.5.64:
+    resolution: {integrity: sha512-qd4Ub/KNkWxughLleXWbtZU3jKWYOVdP8BnBYWQ9syb3xx1SZ+lxzxoDLubO22Zwwds7lvOGkJ/6F8vz7+9rlw==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       protobufjs: ^7.5.3
@@ -1938,6 +1941,11 @@ packages:
   fresh@2.0.0:
     resolution: {integrity: sha512-Rx/WycZ60HOaqLKAi6cHRKKI7zxWbJ31MhntmtwMoaTeF7XFH9hhBp8vITaMidfljRQ6eYWCKkaTK+ykVJHP2A==}
     engines: {node: '>= 0.8'}
+
+  fsevents@2.3.2:
+    resolution: {integrity: sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==}
+    engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
+    os: [darwin]
 
   function-bind@1.1.2:
     resolution: {integrity: sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA==}
@@ -2382,6 +2390,16 @@ packages:
 
   pino@7.11.0:
     resolution: {integrity: sha512-dMACeu63HtRLmCG8VKdy4cShCPKaYDR4youZqoSWLxl5Gu99HUw8bw75thbPv9Nip+H+QYX8o3ZJbTdVZZ2TVg==}
+    hasBin: true
+
+  playwright-core@1.61.1:
+    resolution: {integrity: sha512-h7Qlt6m4REp25qvIdvbDtVmD4LqVXfpRxhORv9L0jzETM05p4fuPJ3dKyuSXQxDSbXnmS79HAgi9589lGSpLkg==}
+    engines: {node: '>=18'}
+    hasBin: true
+
+  playwright@1.61.1:
+    resolution: {integrity: sha512-DWnY5o3YbLWK4GovuAVwpqL+1VwGNdUGrRr++8j8PtQQzvAVZUIMjKQ90fY689sEJZJBbZVw1rXaOKSTitkzPQ==}
+    engines: {node: '>=18'}
     hasBin: true
 
   pngjs@5.0.0:
@@ -6301,7 +6319,7 @@ snapshots:
 
   canonicalize@2.1.0: {}
 
-  ccxt@4.5.61(utf-8-validate@5.0.10):
+  ccxt@4.5.64(utf-8-validate@5.0.10):
     dependencies:
       '@noble/curves': 2.2.0
       '@noble/hashes': 2.2.0
@@ -6747,6 +6765,9 @@ snapshots:
   forwarded@0.2.0: {}
 
   fresh@2.0.0: {}
+
+  fsevents@2.3.2:
+    optional: true
 
   function-bind@1.1.2: {}
 
@@ -7250,6 +7271,14 @@ snapshots:
       safe-stable-stringify: 2.5.0
       sonic-boom: 2.8.0
       thread-stream: 0.15.2
+
+  playwright-core@1.61.1: {}
+
+  playwright@1.61.1:
+    dependencies:
+      playwright-core: 1.61.1
+    optionalDependencies:
+      fsevents: 2.3.2
 
   pngjs@5.0.0: {}
 

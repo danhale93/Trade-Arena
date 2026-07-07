@@ -182,7 +182,7 @@ const CrucibleAITest = {
       riskRewardRatio: this.config.riskRewardRatio,
       
       // Price execution (simulated)
-      entryPrice: Math.random() * 50000 + 10000,
+      entryPrice: Math.random() * 50000 + 100,
       exitPrice: null,
       stopLossPrice: null,
       takeProfitPrice: null,

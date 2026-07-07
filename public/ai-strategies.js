@@ -430,7 +430,7 @@ async function getIntelligentAutoTradeRecommendation(marketData, bet, botState, 
   // Enhance with adaptive strategy
   const adaptiveMethod = selectAdaptiveMethod(strategy, marketConditions, botState);
   const adaptiveEdge = calculateAdaptiveEdge(strategy, marketConditions, botState, aiDecision.edge_pct, aiDecision.win_probability);
-  const adaptiveBet = calculateAdaptiveBetSize(strategy, marketConditions, botState, bet, 10000); // Assuming $10k available
+  const adaptiveBet = calculateAdaptiveBetSize(strategy, marketConditions, botState, bet, window.balance || 0); // Dynamic balance
   
   // Check if should pause
   const pauseCheck = shouldBotPauseTrading(strategy, marketConditions);

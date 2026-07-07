@@ -7,7 +7,9 @@ const router = express.Router();
 const payoutLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 5,
-    message: { error: "Too many payout requests. Please try again later." }
+    message: { error: "Too many payout requests. Please try again later." },
+    standardHeaders: true,
+    legacyHeaders: false
 });
 
 const payoutService = new PayoutService({

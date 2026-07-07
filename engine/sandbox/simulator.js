@@ -55,7 +55,8 @@ async function simulateStrategy(strategyCode, marketPair, timeframe, tradeCount 
 
     // Run simulation
     const trades = [];
-    let equity = 10000; // Starting equity in USD
+    const startingEquity = (typeof window !== 'undefined' && window.balance) ? window.balance : 10000;
+    let equity = startingEquity; // Starting equity in USD
     let peakEquity = equity;
     let maxDrawdown = 0;
     
@@ -143,7 +144,7 @@ async function simulateStrategy(strategyCode, marketPair, timeframe, tradeCount 
       metrics: {
         winRate: Number(winRate.toFixed(2)),
         totalPnl: Number(totalPnl.toFixed(2)),
-        returnPercent: Number(((equity - 10000) / 10000 * 100).toFixed(2)),
+        returnPercent: Number(((equity - startingEquity) / startingEquity * 100).toFixed(2)),
         maxDrawdown: Number((maxDrawdown * 100).toFixed(2)),
         profitFactor: Number(profitFactor.toFixed(2)),
         volatility: Number(volatility.toFixed(2)),
@@ -280,8 +281,8 @@ function generateMockMarketData(marketPair, timeframe, limit) {
  */
 function calculateVolatility(trades) {
   if (trades.length < 2) return 0;
-  
-  const returns = trades.map(t => t.pnl / 10000); // Normalize by starting equity
+  const startingEquity = (typeof window !== 'undefined' && window.balance) ? window.balance : 10000;
+  const returns = trades.map(t => t.pnl / startingEquity); // Normalize by starting equity
   const mean = returns.reduce((sum, r) => sum + r, 0) / returns.length;
   const variance = returns.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / returns.length;
   return Math.sqrt(variance) * 100 * Math.sqrt(252); // Annualized
@@ -294,8 +295,8 @@ function calculateVolatility(trades) {
  */
 function calculateSharpeRatio(trades) {
   if (trades.length < 2) return 0;
-  
-  const returns = trades.map(t => t.pnl / 10000); // Normalize by starting equity
+  const startingEquity = (typeof window !== 'undefined' && window.balance) ? window.balance : 10000;
+  const returns = trades.map(t => t.pnl / startingEquity); // Normalize by starting equity
   const mean = returns.reduce((sum, r) => sum + r, 0) / returns.length;
   if (mean === 0) return 0;
   
