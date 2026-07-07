@@ -8,6 +8,8 @@ declare global {
     privyWalletAddress: string | null;
     privyConnected: boolean;
     onPrivyLoginSuccess: () => void;
+    onPrivyReady: (user: any, address: string | null) => void;
+    updateWalletUI: () => void;
     privyLoginGoogle: () => void;
     privyLogout: () => void;
   }
@@ -17,6 +19,7 @@ export const PrivyWalletHeader = () => {
   const { authenticated, user, login, logout } = usePrivy();
   const { wallets } = useWallets();
   const hasTriggeredSuccess = useRef(false);
+  const lastKnownAddress = useRef<string | null>(null);
 
   // Isolate the embedded wallet (where walletClientType === 'privy')
   const embeddedWallet = wallets.find((wallet) => wallet.walletClientType === 'privy');
@@ -31,6 +34,7 @@ export const PrivyWalletHeader = () => {
   useEffect(() => {
     if (!authenticated) {
       hasTriggeredSuccess.current = false;
+      lastKnownAddress.current = null;
       window.privyUser = null;
       window.privyWalletAddress = null;
       window.privyConnected = false;
@@ -51,6 +55,19 @@ export const PrivyWalletHeader = () => {
       if (!hasTriggeredSuccess.current && typeof window.onPrivyLoginSuccess === 'function') {
         window.onPrivyLoginSuccess();
         hasTriggeredSuccess.current = true;
+      }
+
+      // If the wallet address becomes available or changes, notify the legacy environment
+      if (embeddedWallet?.address && embeddedWallet.address !== lastKnownAddress.current) {
+        lastKnownAddress.current = embeddedWallet.address;
+
+        if (typeof window.onPrivyReady === 'function') {
+          window.onPrivyReady(user, embeddedWallet.address);
+        }
+
+        if (typeof window.updateWalletUI === 'function') {
+          window.updateWalletUI();
+        }
       }
     }
   }, [authenticated, embeddedWallet, user]);

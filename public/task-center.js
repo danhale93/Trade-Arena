@@ -98,10 +98,11 @@ async function claimFaucet() {
 
     try {
         if (window.showToast) window.showToast('Requesting Faucet Payout...', 'info');
+        const userAddress = window.privyWalletAddress || window.ethereum?.selectedAddress || 'demo';
         const resp = await fetch(`${API_BASE}/api/faucet/claim`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userAddress: window.ethereum?.selectedAddress || 'demo' })
+            body: JSON.stringify({ userAddress })
         });
         const data = await resp.json();
 
@@ -143,13 +144,14 @@ async function completeTask(taskId) {
 async function submitTaskToBackend(quest) {
     try {
         if (window.showToast) window.showToast(`Submitting ${quest.label}...`, 'info');
+        const userAddress = window.privyWalletAddress || window.ethereum?.selectedAddress || 'demo';
         const resp = await fetch(`${API_BASE}/api/tasks/claim`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 taskId: quest.id,
                 reward: quest.reward,
-                userAddress: window.ethereum?.selectedAddress || 'demo',
+                userAddress: userAddress,
                 validationToken: localStorage.getItem('ta_task_secret') || ''
             })
         });

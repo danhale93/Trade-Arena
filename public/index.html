@@ -2895,6 +2895,36 @@ function updateConnectionDashboard() {
         const statusColor = conn.status === 'CONNECTED' || conn.status === 'CONFIGURED' || conn.status === 'ACTIVE' ? 'var(--green)' : 'var(--hot)';
         const statusIcon = conn.status === 'CONNECTED' || conn.status === 'CONFIGURED' || conn.status === 'ACTIVE' ? '🟢' : '🔴';
 
+        const isAiKey = conn.type === 'AI';
+        const isMissing = conn.status === 'MISSING';
+
+        let keyEntryHtml = '';
+        if (isAiKey && isMissing) {
+          const keyGenLinks = {
+            'ANTHROPIC_API_KEY': 'https://console.anthropic.com',
+            'OPENAI_API_KEY': 'https://platform.openai.com/api-keys',
+            'GEMINI_API_KEY': 'https://aistudio.google.com/app/apikey'
+          };
+          const genUrl = keyGenLinks[conn.name] || '#';
+
+          keyEntryHtml = `
+            <div style="margin-top:8px; border-top:1px solid var(--border); padding-top:8px;">
+              <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                <span style="font-size:8px; color:var(--dim);">FILL MISSING KEY</span>
+                <a href="${genUrl}" target="_blank" style="font-size:8px; color:var(--cyan); text-decoration:none;">GET KEY →</a>
+              </div>
+              <div style="display:flex; gap:4px;">
+                <input type="password" id="dash_key_${conn.name}" placeholder="Paste key here..."
+                  style="flex:1; padding:4px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px;">
+                <button onclick="saveApiKeyFromDashboard('${conn.name}')"
+                  style="padding:4px 8px; background:var(--green); color:black; border:none; border-radius:4px; font-family:'Bungee'; font-size:8px; cursor:pointer;">
+                  SAVE
+                </button>
+              </div>
+            </div>
+          `;
+        }
+
         card.innerHTML = `
           <div style="display:flex; justify-content:space-between; align-items:flex-start;">
             <div style="font-size:10px; color:var(--cyan); font-family:'Bungee';">${escapeHTML(conn.name)}</div>
@@ -2908,6 +2938,7 @@ function updateConnectionDashboard() {
             ${conn.balance ? `<span style="color:var(--gold)">BAL: ${escapeHTML(conn.balance)}</span>` : ''}
           </div>
           ${conn.address ? `<div style="font-size:8px; color:var(--dim); font-family:monospace;">ADDR: ${escapeHTML(conn.address)}</div>` : ''}
+          ${keyEntryHtml}
         `;
         list.appendChild(card);
       });
@@ -2915,6 +2946,26 @@ function updateConnectionDashboard() {
     .catch(err => {
       list.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; padding:20px; color:var(--hot)">❌ Failed to fetch connection status: ${escapeHTML(err.message)}</div>`;
     });
+}
+
+function saveApiKeyFromDashboard(keyName) {
+  const input = document.getElementById(`dash_key_${keyName}`);
+  if (!input) return;
+  const val = input.value.trim();
+  if (!val) return;
+
+  if (keyName === 'ANTHROPIC_API_KEY') {
+    window._userApiKey = val;
+    localStorage.setItem('ta_api_key', val);
+  } else if (keyName === 'OPENAI_API_KEY') {
+    localStorage.setItem('ta_openai_key', val);
+  } else if (keyName === 'GEMINI_API_KEY') {
+    localStorage.setItem('ta_gemini_key', val);
+  }
+
+  if (window.showToast) window.showToast(`${keyName} saved locally!`, 'success');
+  if (typeof SFX !== 'undefined') SFX.tick();
+  updateConnectionDashboard();
 }
 
 /**
@@ -3482,6 +3533,11 @@ async function loginMetaMask(isAuto = false){
            if (badge) {
                badge.textContent = 'LIVE';
                badge.style.color = 'var(--green)';
+           }
+           const netBadge = document.getElementById('ghNetwork');
+           if (netBadge) {
+               netBadge.textContent = 'BASE';
+               netBadge.style.display = 'block';
            }
         }
 
@@ -5788,7 +5844,7 @@ function scrollToBot(id) {
   if (typeof SFX !== 'undefined') SFX.tick();
 }
 
-function setVal(id,v){ const e=document.getElementById(id); if(e && e.textContent !== String(v)) e.textContent=v; }
+function setVal(id,v){ const e=document.getElementById(id); if(!e) return; if(e && e.textContent !== String(v)) e.textContent=v; }
 function spawnParticles(win,botId){
   const syms=win?['💰','🪙','✨','💎','🔥']:['💀','📉','💸','😤','❌'];
   const card=document.getElementById('bot-'+botId),rect=card?.getBoundingClientRect();

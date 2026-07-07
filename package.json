@@ -24,11 +24,12 @@
     "express-rate-limit": "^8.5.2",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "viem": "^2.53.1",
+    "viem": "^2.54.3",
     "websocket": "^1.0.35"
   },
   "devDependencies": {
     "concurrently": "^10.0.3",
-    "esbuild": "^0.28.1"
+    "esbuild": "^0.28.1",
+    "playwright": "^1.61.1"
   }
 }
