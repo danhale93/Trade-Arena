@@ -639,6 +639,18 @@ class TradingEngine {
 
         try {
 
+            if (typeof window !== "undefined" && window.executeOnChainTrade && window.privyConnected && !bot.isPaper) {
+                const result = await window.executeOnChainTrade({
+                    botId: bot.id,
+                    token: trade.token || "ETH",
+                    method: trade.method || "ARBITRAGE",
+                    amountUSD: trade.size
+                });
+                if (result.success) {
+                    trade.txHash = result.txHash;
+                    trade.receipt = result.receipt;
+                }
+            }
             // Simulate execution (in real app, would call smart contracts)
 
             trade.status = 'EXECUTED';

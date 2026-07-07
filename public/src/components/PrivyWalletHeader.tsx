@@ -6,7 +6,7 @@ declare global {
   interface Window {
     privyUser: any;
     privyWalletAddress: string | null;
-    privyConnected: boolean;
+    privyConnected: boolean; privyProvider: any;
     onPrivyLoginSuccess: () => void;
     onPrivyReady: (user: any, address: string | null) => void;
     updateWalletUI: () => void;
@@ -38,6 +38,7 @@ export const PrivyWalletHeader = () => {
       window.privyUser = null;
       window.privyWalletAddress = null;
       window.privyConnected = false;
+      window.privyProvider = null;
     }
   }, [authenticated]);
 
@@ -48,6 +49,7 @@ export const PrivyWalletHeader = () => {
       window.privyUser = user;
       window.privyWalletAddress = embeddedWallet?.address || null;
       window.privyConnected = true;
+      window.privyProvider = embeddedWallet;
 
       // Trigger the legacy transition logic (hides connect screen, shows main app)
       // We trigger this immediately upon authentication so the user enters the Arena
