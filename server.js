@@ -678,7 +678,10 @@ app.post('/api/bot/create', async (req, res) => {
             }
         };
 
-        const config = botConfigs[strategy] || botConfigs['Arbitrage Detection'];
+        const selectedStrategy = Object.prototype.hasOwnProperty.call(botConfigs, strategy)
+            ? strategy
+            : 'Arbitrage Detection';
+        const config = { ...botConfigs[selectedStrategy] };
         const riskMultipliers = {
             'Conservative': 0.5,
             'Moderate': 1.0,
