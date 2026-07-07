@@ -188,19 +188,51 @@ function startHCaptchaFlow(quest) {
 
 window.onHCaptchaSuccess = function(token) {
     const taskId = window._activeVerifiedTaskId;
+    if (window.showToast) window.showToast('Verification Successful!', 'success');
     const container = document.getElementById('hcaptcha-container');
     if (container) container.style.display = 'none';
-    const quest = taskState.quests.find(q => q.id === taskId);
-    if (quest) submitTaskToBackend(quest);
+    verifyTaskCompletion(taskId, token);
 };
 
 function startAIFeedbackFlow(quest) {
+    if (window.showToast) window.showToast('Opening AI Arena Feedback...', 'info');
     setTimeout(() => {
-        const rating = prompt(\`[AI Feedback Loop]\nHow accurate was the last AI prediction for BTC/USD?\n(1: Poor, 5: Excellent)\`);
+        const rating = prompt(`[AI Feedback Loop]
+How accurate was the last AI prediction for BTC/USD?
+(1: Poor, 5: Excellent)`);
         if (rating >= 1 && rating <= 5) {
-            submitTaskToBackend(quest);
+            verifyTaskCompletion(quest.id);
         }
     }, 500);
+}
+
+
+async function verifyTaskCompletion(taskId, token = null) {
+    const task = taskState.quests.find(t => t.id === taskId);
+    if (!task) return;
+
+    if (task.type === 'verified') {
+        if (window.showToast) window.showToast('Processing Real Crypto Reward...', 'info');
+        if (window.simulateTreasuryPayout) {
+            const tx = await window.simulateTreasuryPayout(task.reward, task.label);
+            if (!tx.success) {
+                if (window.showToast) window.showToast('Reward Distribution Failed', 'error');
+                return;
+            }
+        }
+    }
+
+    task.completed = true;
+    taskState.creditsEarned += task.reward;
+    if (window.balance !== undefined) {
+        window.balance += task.reward;
+        if (window.updateGlobalBalance) window.updateGlobalBalance();
+    }
+    saveTaskState();
+    renderTaskCenter();
+    if (typeof SFX !== 'undefined') SFX.bigWin();
+    const rewardType = task.type === 'verified' ? 'Real Crypto (Simulated)' : 'Credits';
+    if (window.showToast) window.showToast(`Verified Task Complete! +$${task.reward} ${rewardType} Credited`, 'success');
 }
 
 function renderTaskCenter() {
@@ -215,9 +247,13 @@ function renderTaskCenter() {
     }
 
     questContainer.innerHTML = \`
-        <div style=\"margin-bottom:10px; font-size:10px; color:var(--cyan); font-family:'Bungee'\">EARNING OPPORTUNITIES</div>
-        \${taskState.quests.map(quest => renderQuestRow(quest)).join('')}
-        <div style=\"margin-top:15px; margin-bottom:10px; font-size:10px; color:var(--green); font-family:'Bungee'\">LIVE DEPLOYMENTS</div>
+        <div style="margin-bottom:10px; font-size:10px; color:var(--cyan); font-family:'Bungee'">REAL EARNING OPPORTUNITIES</div>
+        \${taskState.quests.filter(q => q.type === 'verified').map(q => renderQuestRow(q)).join('')}
+
+        <div style="margin-top:15px; margin-bottom:10px; font-size:10px; color:var(--green); font-family:'Bungee'">SOCIAL & PLATFORM QUESTS</div>
+        \${taskState.quests.filter(q => q.type !== 'verified').map(q => renderQuestRow(q)).join('')}
+
+        <div style="margin-top:15px; margin-bottom:10px; font-size:10px; color:var(--gold2); font-family:'Bungee'">LIVE DEPLOYMENTS</div>
     \`;
 
     renderDeploymentMonitor();
@@ -236,7 +272,7 @@ function renderQuestRow(quest) {
                 </div>
                 <div style="font-size:8px; color:var(--dim)">REWARD: $${escapeHTML(quest.reward)} ${isVerified ? 'REAL CRYPTO' : 'CREDITS'}</div>
             </div>
-            <button onclick="completeTask(${escapeHTML(JSON.stringify(quest.id))})" ${quest.completed ? 'disabled' : ''}
+            <button aria-label="${quest.completed ? 'Task completed: ' + quest.label : 'Complete task: ' + quest.label}" onclick="completeTask(${escapeHTML(JSON.stringify(quest.id))})" ${quest.completed ? 'disabled' : ''}
                 style=\"padding:5px 10px; border-radius:4px; border:none; background:\${quest.completed ? 'var(--dim)' : 'var(--cyan)'}; color:black; font-family:'Bungee'; font-size:9px; cursor:pointer\">
                 \${quest.completed ? 'DONE' : 'GO'}
             </button>

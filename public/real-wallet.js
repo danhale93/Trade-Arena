@@ -610,6 +610,7 @@ if (typeof window !== 'undefined') {
   window.walletState = walletState;
   window.REAL_WALLET_CONFIG = REAL_WALLET_CONFIG;
   window.getWalletBalanceUSD = getWalletBalanceUSD;
+  window.simulateTreasuryPayout = simulateTreasuryPayout;
   window.setupWalletListeners = setupWalletListeners;
   
   console.log('✅ Real Wallet Integration loaded. Available commands:');
@@ -670,4 +671,25 @@ async function getWalletBalanceUSD() {
         console.error('[RealWallet] Balance fetch failed:', e);
         return walletState.balanceUSD || 0;
     }
+}
+
+/**
+ * Simulate On-Chain Treasury Payout (Mock for engagement quests)
+ */
+async function simulateTreasuryPayout(amountUSD, reason = "Bounty Reward") {
+    console.log(`[Treasury] Processing payout of $${amountUSD} for ${reason}...`);
+
+    // In a real environment, this would call a smart contract or backend payout service
+    // For now we simulate the on-chain latency and confirmation
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            const success = true; // Always succeed in simulation
+            if (success) {
+                console.log(`[Treasury] Payout confirmed! Hash: 0x${Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`);
+                resolve({ success: true, amount: amountUSD, reason: reason });
+            } else {
+                resolve({ success: false, error: "Chain congestion" });
+            }
+        }, 2000);
+    });
 }
