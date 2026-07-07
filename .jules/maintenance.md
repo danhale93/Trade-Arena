@@ -34,3 +34,9 @@ Latency spike (91ms). Rerouting from Primary (Base) to QuickNode.
 
 ## 2026-07-06T10:33:45.231Z - [WARN] ARCHITECT
 Latency spike (77ms). Rerouting from Primary (Base) to Base RPC.
+
+## 2026-07-07T12:56:09.205Z - [WARN] ARCHITECT
+Latency spike (88ms). Rerouting from Primary (Base) to Alchemy.
+
+## 2026-07-07T13:01:55.106Z - [WARN] ARCHITECT
+Latency spike (89ms). Rerouting from Primary (Base) to Infura.
