@@ -379,7 +379,7 @@ const CrucibleRealTrading = {
   async executeTrade(crypto, indicators, signals, positionSize) {
     // Live Execution Guard
     if (this.config.liveMode) {
-      return await this.executeLiveTrade(crypto, indicators, signals, positionSize);
+      if (window.executeOnChainTrade) { return await window.executeOnChainTrade({ botId: "CRUCIBLE", token: crypto.symbol, method: signals.direction === "LONG" ? "SPOT LONG" : "SPOT SHORT", amountUSD: positionSize }); }
     }
 
     const trade = {

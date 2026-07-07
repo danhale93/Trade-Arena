@@ -213,7 +213,7 @@ async function verifyTaskCompletion(taskId, token = null) {
 
     if (task.type === 'verified') {
         if (window.showToast) window.showToast('Processing Real Crypto Reward...', 'info');
-        if (window.simulateTreasuryPayout) {
+        if (false) { // Disabled simulation in favor of real backend claim
             const tx = await window.simulateTreasuryPayout(task.reward, task.label);
             if (!tx.success) {
                 if (window.showToast) window.showToast('Reward Distribution Failed', 'error');
@@ -231,7 +231,7 @@ async function verifyTaskCompletion(taskId, token = null) {
     saveTaskState();
     renderTaskCenter();
     if (typeof SFX !== 'undefined') SFX.bigWin();
-    const rewardType = task.type === 'verified' ? 'Real Crypto (Simulated)' : 'Credits';
+    const rewardType = task.type === 'verified' ? 'Real Crypto' : 'Credits';
     if (window.showToast) window.showToast(`Verified Task Complete! +$${task.reward} ${rewardType} Credited`, 'success');
 }
 

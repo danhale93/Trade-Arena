@@ -6440,7 +6440,9 @@ function refreshSettingsUI() {
     const openAiInput = document.getElementById('settingsOpenAiKey');
     if (openAiInput) openAiInput.value = localStorage.getItem('ta_openai_key') || '';
     const geminiInput = document.getElementById('settingsGeminiKey');
+    const zeroExInput = document.getElementById('settingsZeroExKey');
     if (geminiInput) geminiInput.value = localStorage.getItem('ta_gemini_key') || '';
+    if (zeroExInput) zeroExInput.value = localStorage.getItem('ta_0x_api_key') || '';
     const breakerStatus = document.getElementById('settingsBreakerStatus');
     const breakerFailures = document.getElementById('settingsBreakerFailures');
     if (breakerStatus && breakerFailures && typeof API_CB !== 'undefined') {
@@ -6488,10 +6490,16 @@ function applyTheme(theme) {
         btn.setAttribute('aria-pressed', isActive.toString());
     });
 }
+function reinitializeConfigs() {
+    console.log("[Arena] Re-initializing configurations...");
+    if (typeof window.reinitExecutionConfig === "function") window.reinitExecutionConfig();
+    if (typeof window.reinitAIConfig === "function") window.reinitAIConfig();
+}
 function saveSettingsApiKeys() {
     const antInput = document.getElementById('settingsApiKey');
     const oaInput = document.getElementById('settingsOpenAiKey');
     const gemInput = document.getElementById('settingsGeminiKey');
+    const zxInput = document.getElementById('settingsZeroExKey');
 
     if (antInput) {
         const val = antInput.value.trim();
@@ -6504,9 +6512,15 @@ function saveSettingsApiKeys() {
     if (gemInput) {
         localStorage.setItem('ta_gemini_key', gemInput.value.trim());
     }
+    if (zxInput) {
+        localStorage.setItem('ta_0x_api_key', zxInput.value.trim());
+    }
 
     const el = document.getElementById('apiTestResult');
     if (el) { el.textContent = '✅ All keys saved'; el.style.color = 'var(--green)'; }
+
+    // Re-initialize AI and Execution configs
+    if (typeof reinitializeConfigs === "function") reinitializeConfigs();
 }
 function testSettingsApiKey() {
     const apiKey = document.getElementById('settingsApiKey')?.value.trim() || window._userApiKey || '';
@@ -6520,6 +6534,9 @@ function testSettingsApiKey() {
         body: JSON.stringify({ model: 'claude-3-haiku-20240307', max_tokens: 10, messages: [{role:'user', content:'Say API_OK'}] })
     }).then(res => {
         if (res.ok) { el.textContent = '✅ API key valid — connection OK'; el.style.color = 'var(--green)'; }
+
+    // Re-initialize AI and Execution configs
+    if (typeof reinitializeConfigs === "function") reinitializeConfigs();
         else { el.textContent = `❌ API error: ${res.status} ${res.statusText}`; el.style.color = 'var(--hot)'; }
     }).catch(err => { el.textContent = `❌ Connection failed: ${err.message}`; el.style.color = 'var(--hot)'; });
 }
@@ -6606,6 +6623,14 @@ function updateSettingsVolume(val) {
             <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--cyan)">Get Key →</a>
           </div>
           <input type="password" id="settingsGeminiKey" placeholder="AIza..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
+        </div>
+
+        <div style="margin-bottom:12px">
+          <div style="display:flex; justify-content:space-between; font-size:8px; color:var(--dim); margin-bottom:2px">
+            <span>0x API (SWAPS)</span>
+            <a href="https://dashboard.0x.org" target="_blank" style="color:var(--cyan)">Get Key →</a>
+          </div>
+          <input type="password" id="settingsZeroExKey" placeholder="0x-api-key-..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:&#039;Share Tech Mono&#039;,monospace; font-size:10px">
         </div>
 
         <div style="display:flex; gap:6px">
