@@ -6198,7 +6198,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <div id="voiceAgentModal">
   <div class="va-header">
     <span class="va-title">🎙️ AI FLOOR MANAGER</span>
-    <button class="m-close" onclick="toggleVoiceAgent()" aria-label="Close Voice Agent">✕</button>
+    <button class="m-close" onclick="toggleVoiceAgent()" aria-label="Close Voice Agent" title="Close Voice Agent">✕</button>
   </div>
   <div class="va-body">
     <div class="va-status" id="vaStatus">Connected & Ready</div>
@@ -6471,19 +6471,31 @@ function toggleSettingsSfx() {
     if (typeof ACOUSTIC === 'undefined') return;
     ACOUSTIC.toggleSFX();
     const btn = document.getElementById('settingsSfxBtn');
-    if (btn) btn.classList.toggle('active', ACOUSTIC.getConfig().sfx.enabled);
+    if (btn) {
+        const isOn = ACOUSTIC.getConfig().sfx.enabled;
+        btn.classList.toggle('active', isOn);
+        btn.setAttribute('aria-pressed', isOn.toString());
+    }
 }
 function toggleSettingsVoice() {
     if (typeof ACOUSTIC === 'undefined') return;
     ACOUSTIC.toggleVOICE();
     const btn = document.getElementById('settingsVoiceBtn');
-    if (btn) btn.classList.toggle('active', ACOUSTIC.getConfig().voice.enabled);
+    if (btn) {
+        const isOn = ACOUSTIC.getConfig().voice.enabled;
+        btn.classList.toggle('active', isOn);
+        btn.setAttribute('aria-pressed', isOn.toString());
+    }
 }
 function toggleSettingsMusic() {
     if (typeof ACOUSTIC === 'undefined') return;
     ACOUSTIC.toggleAudio();
     const btn = document.getElementById('settingsMusicBtn');
-    if (btn) btn.classList.toggle('active', ACOUSTIC.getConfig().audio.enabled);
+    if (btn) {
+        const isOn = ACOUSTIC.getConfig().audio.enabled;
+        btn.classList.toggle('active', isOn);
+        btn.setAttribute('aria-pressed', isOn.toString());
+    }
 }
 function updateSettingsVolume(val) {
     const vol = parseInt(val, 10);
@@ -6499,7 +6511,7 @@ function updateSettingsVolume(val) {
   <div class="settings-panel">
     <div class="settings-hd">
       <span class="settings-title">⚙ SETTINGS</span>
-      <button class="m-close" onclick="toggleSettingsModal()" aria-label="Close Settings">✕</button>
+      <button class="m-close" onclick="toggleSettingsModal()" aria-label="Close Settings" title="Close Settings">✕</button>
     </div>
     <div class="settings-bd">
       <div class="settings-section">
@@ -6516,7 +6528,10 @@ function updateSettingsVolume(val) {
         <div style="margin-bottom:8px">
           <div style="display:flex; justify-content:space-between; font-size:8px; color:var(--dim); margin-bottom:2px">
             <span>ANTHROPIC (CLAUDE)</span>
-            <a href="https://console.anthropic.com" target="_blank" style="color:var(--cyan)">Get Key →</a>
+            <div style="display:flex;gap:8px">
+              <button onclick="toggleVisibility('settingsApiKey', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
+              <a href="https://console.anthropic.com" target="_blank" style="color:var(--cyan)">Get Key →</a>
+            </div>
           </div>
           <input type="password" id="settingsApiKey" placeholder="sk-ant-..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
         </div>
