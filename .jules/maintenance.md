@@ -28,3 +28,9 @@ Latency spike (84ms). Rerouting from Primary (Base) to Infura.
 
 ## 2026-07-05T05:22:19.380Z - [WARN] ARCHITECT
 Latency spike (76ms). Rerouting from Primary (Base) to Infura.
+
+## 2026-07-07T01:49:48.235Z - [WARN] ARCHITECT
+Latency spike (89ms). Rerouting from Primary (Base) to Infura.
+
+## 2026-07-07T01:54:45.455Z - [WARN] ARCHITECT
+Latency spike (90ms). Rerouting from Primary (Base) to Alchemy.
