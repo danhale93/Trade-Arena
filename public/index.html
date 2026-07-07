@@ -794,8 +794,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
   <div class="setup-note">
     <strong>AI API Keys</strong> — enables full AI agents. Get yours:
     <a href="https://console.anthropic.com" target="_blank">Anthropic</a> |
-    <a href="https://platform.openai.com" target="_blank">OpenAI</a> |
-    <a href="https://aistudio.google.com" target="_blank">Gemini</a>
+    <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI</a> |
+    <a href="https://aistudio.google.com/app/apikey" target="_blank">Gemini</a>
     <div style="display:flex;gap:4px;margin-top:5px">
       <input type="password" id="apiKeyInput" placeholder="Paste primary key (Anthropic) here..." style="flex:1;padding:5px 8px;background:var(--bg);border:1px solid var(--border);color:var(--cyan);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px;" oninput="window._userApiKey=this.value.trim(); localStorage.setItem('ta_api_key', this.value.trim())">
       <button onclick="toggleSettingsModal()" style="padding:4px 8px;background:var(--chrome);border:1px solid var(--border);color:var(--cyan);border-radius:4px;font-family:'Bungee',display;font-size:8px;cursor:pointer">ALL KEYS</button>
@@ -1672,6 +1672,8 @@ var closedTrades=[], openPositions=[], equityHistory=[0];
 var _lastClosedCount = -1;
 var _lastLogRenderCount = -1;
 var _lastLogTradeCount = -1;
+var _quantPending = false;
+var _logPending = false;
 let agentHistory=[]; // per-agent vote accuracy for quant report
 let globalLog=[];
 var bots=[], botCounter=0;
@@ -2179,7 +2181,22 @@ function showExitResult(pos, bot) {
 // ══════════════════════════════════════════════════════
 // QUANT REPORT ENGINE
 // ══════════════════════════════════════════════════════
+/**
+ * ⚡ Bolt Optimization: UI Update Throttling
+ * Prevents O(N) calculations and DOM churn by batching high-frequency
+ * updates to the browser's refresh rate (max once per frame).
+ */
 function updateQuantReport() {
+  if (_quantPending) return;
+  _quantPending = true;
+
+  requestAnimationFrame(() => {
+    _quantPending = false;
+    _runUpdateQuantReport();
+  });
+}
+
+function _runUpdateQuantReport() {
   // Optimization: Skip expensive O(N) filtering and DOM updates if panel is hidden
   const body = document.getElementById('quantBody');
   if (body && !body.classList.contains('open')) return;
@@ -2562,19 +2579,39 @@ async function runCrucibleV2Batch() {
      const tradeCount = parseInt(document.getElementById('crucibleTradeCount')?.value || '50');
      
      if(tradeCount < 1 || tradeCount > 1000) {
-       alert('Trade count must be between 1 and 1000');
+       showToast('Trade count must be between 1 and 1000', 'error');
        return;
      }
      
      // Show running status
-     alert(`Running Crucible V2:\nRegime: ${regime}\nCost Model: ${costModel}\nTrades: ${tradeCount}\n\nThis will simulate trading in the selected regime with realistic cost modeling.`);
+     showToast(`Running Crucible V2 Simulation (${tradeCount} trades)...`, 'info');
      
      // In a real implementation, this would call the external crucible-test.js functions
      // For now, we'll simulate the results
      const simulatedResults = simulateCrucibleV2Results(regime, costModel, tradeCount);
      
-     // Display results
-     alert(`Crucible V2 Results:\n\nRegime: ${regime}\nCost Model: ${costModel}\nTrades: ${simulatedResults.trades}\nWin Rate: ${simulatedResults.winRate.toFixed(1)}%\nP&L: $${simulatedResults.pnl >= 0 ? '+' : ''}${simulatedResults.pnl.toFixed(2)}\nReturn: ${simulatedResults.returnPct >= 0 ? '+' : ''}${simulatedResults.returnPct.toFixed(2)}%\n\nBaseline Comparison:\n- Strategy: ${simulatedResults.strategy.pnl >= 0 ? '+' : ''}$${simulatedResults.strategy.pnl.toFixed(2)} (${simulatedResults.strategy.winRate.toFixed(1)}% WR)\n- Always Long: ${simulatedResults.baselines.alwaysLong.pnl >= 0 ? '+' : ''}$${simulatedResults.baselines.alwaysLong.pnl.toFixed(2)} (${simulatedResults.baselines.alwaysLong.winRate.toFixed(1)}% WR)\n- Momentum: ${simulatedResults.baselines.momentum.pnl >= 0 ? '+' : ''}$${simulatedResults.baselines.momentum.pnl.toFixed(2)} (${simulatedResults.baselines.momentum.winRate.toFixed(1)}% WR)\n- Random: ${simulatedResults.baselines.random.pnl >= 0 ? '+' : ''}$${simulatedResults.baselines.random.pnl.toFixed(2)} (${simulatedResults.baselines.random.winRate.toFixed(1)}% WR)\n\n${simulatedResults.strategy.pnl > simulatedResults.baselines.alwaysLong.pnl && regime !== 'BULL' ? '✅ STRATEGY BEATS ALWAYS LONG IN NON-BULL REGIME' : '⚠️ Strategy did not beat Always Long in non-bull regime'}`);
+     // Display results via modal
+     showCrucibleResults({
+        mode: regime,
+        tradesRun: simulatedResults.trades,
+        startBalance: 1000,
+        endBalance: 1000 + simulatedResults.pnl,
+        pnl: simulatedResults.pnl,
+        pnlPct: simulatedResults.returnPct.toFixed(2),
+        winRate: simulatedResults.winRate,
+        extraHTML: `
+          <div style="border-top: 1px solid var(--border); margin-top: 10px; padding-top: 10px; font-size: 0.9em;">
+             <div style="color: var(--cyan); margin-bottom: 5px;">BASELINE COMPARISON:</div>
+             • Strategy: ${simulatedResults.strategy.pnl >= 0 ? '+' : ''}$${simulatedResults.strategy.pnl.toFixed(2)} (${simulatedResults.strategy.winRate.toFixed(1)}% WR)<br>
+             • Always Long: ${simulatedResults.baselines.alwaysLong.pnl >= 0 ? '+' : ''}$${simulatedResults.baselines.alwaysLong.pnl.toFixed(2)} (${simulatedResults.baselines.alwaysLong.winRate.toFixed(1)}% WR)<br>
+             • Momentum: ${simulatedResults.baselines.momentum.pnl >= 0 ? '+' : ''}$${simulatedResults.baselines.momentum.pnl.toFixed(2)} (${simulatedResults.baselines.momentum.winRate.toFixed(1)}% WR)<br>
+             • Random: ${simulatedResults.baselines.random.pnl >= 0 ? '+' : ''}$${simulatedResults.baselines.random.pnl.toFixed(2)} (${simulatedResults.baselines.random.winRate.toFixed(1)}% WR)
+          </div>
+          <div style="margin-top: 10px; font-size: 0.85em; color: ${simulatedResults.strategy.pnl > simulatedResults.baselines.alwaysLong.pnl && regime !== 'BULL' ? '#4ade80' : '#f87171'}">
+             ${simulatedResults.strategy.pnl > simulatedResults.baselines.alwaysLong.pnl && regime !== 'BULL' ? '✅ STRATEGY BEATS ALWAYS LONG IN NON-BULL REGIME' : '⚠️ Strategy did not beat Always Long in non-bull regime'}
+          </div>
+        `
+     });
      
      // Update crucible counter for UI
      crucibleCount += tradeCount;
@@ -2587,13 +2624,13 @@ async function runCrucibleV2Batch() {
 // Pause crucible batch execution
 function pauseCrucible() {
    // This would pause the execution in a real implementation
-   alert('Crucible batch paused');
+   showToast('Crucible batch paused', 'info');
 }
 
 // Cancel crucible batch execution
 function cancelCrucible() {
    // This would cancel the execution in a real implementation
-   alert('Crucible batch cancelled');
+   showToast('Crucible batch cancelled', 'info');
    // Reset counters
    crucibleCount = 0;
    updateCrucible();
@@ -2617,6 +2654,7 @@ function showCrucibleResults(results) {
    `;
    
    const modalContent = document.createElement('div');
+   modalContent.id = 'crucibleResultsModal';
    modalContent.style.cssText = `
       background: var(--panel);
       border: 2px solid var(--border);
@@ -2638,8 +2676,9 @@ function showCrucibleResults(results) {
          <strong>Profit/Loss:</strong> ${results.pnl >= 0 ? '+' : ''}$${results.pnl.toFixed(2)} (${results.pnlPct}%)<br>
          <strong>Win Rate:</strong> ${results.winRate.toFixed(1)}%
       </div>
+      ${results.extraHTML || ''}
       <div style="margin-top: 20px; text-align: center;">
-         <button onclick="this.parentElement.parentElement.remove()" 
+         <button class="modal-close-btn" onclick="this.parentElement.parentElement.remove()"
                  style="background: var(--purple); color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
             CLOSE
          </button>
@@ -2711,7 +2750,7 @@ function simulateCrucibleV2Results(regime, costModel, tradeCount) {
 // EXPORT
 // ══════════════════════════════════════════════════════
 function exportCSV() {
-  if(!closedTrades.length){ alert('No closed trades to export yet.'); return; }
+  if(!closedTrades.length){ showToast('No closed trades to export yet.', 'error'); return; }
   const headers=['timestamp','botId','token','method','direction','regime','bet','entryPrice','exitPrice','holdMs','rawPnl','netPnl','gas','slippagePct','slippage','spread','totalCosts','isWin','reasoning','pol_signal','mom_vote','vol_vote','pol_vote','sen_vote','risk_vote','baseline_random','baseline_long','baseline_momentum'];
   const rows=closedTrades.map(t=>{
     const e=t.ensemble||{};
@@ -2734,7 +2773,7 @@ function exportCSV() {
   downloadFile(csv,'trade-arena-ledger-'+Date.now()+'.csv','text/csv');
 }
 function exportJSON() {
-  if(!closedTrades.length){ alert('No closed trades to export yet.'); return; }
+  if(!closedTrades.length){ showToast('No closed trades to export yet.', 'error'); return; }
   const data={
     exportedAt:new Date().toISOString(),
     summary:{ totalTrades:closedTrades.length, netPnl:totalPnl, startBalance, endBalance:balance },
@@ -2746,7 +2785,7 @@ function exportJSON() {
 
 function generatePitchReport() {
   if (closedTrades.length < 5) {
-    alert('Run at least 5 trades to generate a credible Pitch Report.');
+        showToast('Run at least 5 trades to generate a credible Pitch Report.', 'error');
     return;
   }
 
@@ -5623,7 +5662,22 @@ function addToLog(pos){
   if(globalLog.length>60) globalLog.pop();
   renderLog();
 }
+/**
+ * ⚡ Bolt Optimization: UI Update Throttling
+ * Prevents redundant DOM manipulation during rapid trade events by
+ * ensuring the log is only re-rendered at most once per display frame.
+ */
 function renderLog(){
+  if (_logPending) return;
+  _logPending = true;
+
+  requestAnimationFrame(() => {
+    _logPending = false;
+    _runRenderLog();
+  });
+}
+
+function _runRenderLog(){
   // ⚡ Bolt Optimization: Early return if data hasn't changed to skip expensive DOM manipulation
   if (globalLog.length === _lastLogRenderCount && closedTrades.length === _lastLogTradeCount) return;
   _lastLogRenderCount = globalLog.length;
@@ -6303,19 +6357,20 @@ Respond in JSON format:
 
 // ═══ SETTINGS MODAL FUNCTIONS ═══
 function toggleSettingsModal() {
+    if(typeof SFX !== 'undefined') SFX.tick();
     const modal = document.getElementById('settingsModal');
     if (!modal) return;
-    const isOpen = modal.style.display === 'none';
-    modal.style.display = isOpen ? 'flex' : 'none';
+    const isOpening = modal.style.display === 'none' || modal.style.display === '';
+    modal.style.display = isOpening ? 'flex' : 'none';
 
-    // Update trigger button attributes
-    const triggers = ['ghSettingsBtn', 'settingsBtn'];
-    triggers.forEach(id => {
-        const btn = document.getElementById(id);
-        if (btn) btn.setAttribute('aria-expanded', isOpen.toString());
-    });
+    // Update button affordance
+    const btn = document.getElementById('ghSettingsBtn');
+    if (btn) {
+      btn.classList.toggle('open', isOpening);
+      btn.setAttribute('aria-expanded', isOpening.toString());
+    }
 
-    if (isOpen) refreshSettingsUI();
+    if (isOpening) refreshSettingsUI();
 }
 function refreshSettingsUI() {
     const ws = document.getElementById('settingsWalletStatus');
@@ -6452,7 +6507,7 @@ function updateSettingsVolume(val) {
 }
 
 <!-- ══ SETTINGS MODAL ══ -->
-<div id="settingsModal">
+<div id="settingsModal" style="display:none">
   <div class="settings-panel">
     <div class="settings-hd">
       <span class="settings-title">⚙ SETTINGS</span>
@@ -6484,10 +6539,7 @@ function updateSettingsVolume(val) {
         <div style="margin-bottom:8px">
           <div style="display:flex; justify-content:space-between; font-size:8px; color:var(--dim); margin-bottom:2px">
             <span>OPENAI (GPT-4)</span>
-            <div style="display:flex;gap:8px">
-              <button onclick="toggleVisibility('settingsOpenAiKey', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
-              <a href="https://platform.openai.com" target="_blank" style="color:var(--cyan)">Get Key →</a>
-            </div>
+            <a href="https://platform.openai.com/api-keys" target="_blank" style="color:var(--cyan)">Get Key →</a>
           </div>
           <input type="password" id="settingsOpenAiKey" placeholder="sk-..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
         </div>
@@ -6495,10 +6547,7 @@ function updateSettingsVolume(val) {
         <div style="margin-bottom:12px">
           <div style="display:flex; justify-content:space-between; font-size:8px; color:var(--dim); margin-bottom:2px">
             <span>GOOGLE (GEMINI)</span>
-            <div style="display:flex;gap:8px">
-              <button onclick="toggleVisibility('settingsGeminiKey', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
-              <a href="https://aistudio.google.com" target="_blank" style="color:var(--cyan)">Get Key →</a>
-            </div>
+            <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--cyan)">Get Key →</a>
           </div>
           <input type="password" id="settingsGeminiKey" placeholder="AIza..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
         </div>

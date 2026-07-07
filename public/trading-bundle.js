@@ -317,9 +317,9 @@ class BalanceUpdater {
     }
 
     // Get realised balance
-    const realisedBalance = typeof balance !== "undefined" ? balance : 10000;
+    const realisedBalance = typeof balance !== "undefined" ? balance : 0;
     const startingBalance =
-      typeof startBalance !== "undefined" ? startBalance : 10000;
+      typeof startBalance !== "undefined" ? startBalance : 0;
     const displayBalance = realisedBalance + unrealisedPnl;
 
     // Store history
@@ -679,7 +679,7 @@ function initAppRebuildV42() {
   setInterval(() => {
     try {
       const gameState = {
-        balance: typeof balance !== "undefined" ? balance : 10000,
+        balance: typeof balance !== "undefined" ? balance : 0,
         totalPnl: typeof totalPnl !== "undefined" ? totalPnl : 0,
       };
       localStorage.setItem("ta_game_state", JSON.stringify(gameState));
