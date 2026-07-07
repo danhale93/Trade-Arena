@@ -792,13 +792,15 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
   </div>
   <p id="loginStatus" aria-live="polite" style="min-height:16px;font-size:11px;color:var(--cyan);text-align:center;transition:all .3s"></p>
   <div class="setup-note">
-    <label for="apiKeyInput"><strong>Optional: Anthropic API Key</strong></label> — enables full Claude AI agents. Get one free at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>
+    <strong>AI API Keys</strong> — enables full AI agents. Get yours:
+    <a href="https://console.anthropic.com" target="_blank">Anthropic</a> |
+    <a href="https://platform.openai.com" target="_blank">OpenAI</a> |
+    <a href="https://aistudio.google.com" target="_blank">Gemini</a>
     <div style="display:flex;gap:4px;margin-top:5px">
-      <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-..." style="flex:1;padding:5px 8px;background:var(--bg);border:1px solid var(--border);color:var(--cyan);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px;" oninput="if(this.value.trim().startsWith('sk-'))window._userApiKey=this.value.trim()">
-      <button onclick="toggleVisibility('apiKeyInput', this)" style="padding:4px 8px;background:var(--chrome);border:1px solid var(--border);color:var(--dim);border-radius:4px;font-family:'Bungee',display;font-size:8px;cursor:pointer">SHOW</button>
-      <button onclick="copyToClipboard('apiKeyInput', this)" style="padding:4px 8px;background:var(--chrome);border:1px solid var(--border);color:var(--dim);border-radius:4px;font-family:'Bungee',display;font-size:8px;cursor:pointer">COPY</button>
+      <input type="password" id="apiKeyInput" placeholder="Paste primary key (Anthropic) here..." style="flex:1;padding:5px 8px;background:var(--bg);border:1px solid var(--border);color:var(--cyan);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px;" oninput="window._userApiKey=this.value.trim(); localStorage.setItem('ta_api_key', this.value.trim())">
+      <button onclick="toggleSettingsModal()" style="padding:4px 8px;background:var(--chrome);border:1px solid var(--border);color:var(--cyan);border-radius:4px;font-family:'Bungee',display;font-size:8px;cursor:pointer">ALL KEYS</button>
     </div>
-    <span style="color:var(--dim);font-size:8px">Without a key the app uses rule-based signals and still trades. Demo Mode requires no wallet or key.</span>
+    <span style="color:var(--dim);font-size:8px">Without keys the app uses rule-based signals. Demo Mode requires no wallet or key.</span>
   </div>
   
   <!-- Fiat Deposit Section -->
@@ -865,7 +867,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     <div style="margin-right:4px;text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end">
       <div style="display:flex;align-items:center;gap:6px">
         <button id="ghClaimBtn" onclick="claimPayout()" style="display:none;padding:2px 6px;font-size:8px;background:var(--green);color:#000;border:none;border-radius:4px;font-family:Bungee;cursor:pointer;line-height:1">CLAIM</button>
-        <div class="gh-balance" id="ghBalance" style="transition:color .3s">$10,000.00</div>
+        <div class="gh-balance" id="ghBalance" style="transition:color .3s">$0.00</div>
       </div>
       <div class="gh-pnl pnl-pos" id="ghPnl">+$0.00 today</div>
     </div>
@@ -905,14 +907,15 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <div class="bus-section">
         <div class="bus-section-title"><span>💰</span> TRADE AMOUNT — ALL BOTS</div>
         <div class="bus-presets" id="busAmtPresets">
-          <button class="bus-preset" onclick="busSetAmount(0.10)">$0.10</button>
-          <button class="bus-preset" onclick="busSetAmount(0.25)">$0.25</button>
-          <button class="bus-preset" onclick="busSetAmount(0.50)">$0.50</button>
-          <button class="bus-preset" onclick="busSetAmount(1)">$1</button>
-          <button class="bus-preset" onclick="busSetAmount(2)">$2</button>
-          <button class="bus-preset" onclick="busSetAmount(5)">$5</button>
-          <button class="bus-preset" onclick="busSetAmount(20)">$20</button>
-          <button class="bus-preset" onclick="busSetAmount(100)">$100</button>
+          <button class="bus-preset" onclick="busSetAmount(0.10)" aria-pressed="false" title="Set all bots to $0.10">$0.10</button>
+          <button class="bus-preset" onclick="busSetAmount(0.25)" aria-pressed="false" title="Set all bots to $0.25">$0.25</button>
+          <button class="bus-preset" onclick="busSetAmount(0.50)" aria-pressed="false" title="Set all bots to $0.50">$0.50</button>
+          <button class="bus-preset" onclick="busSetAmount(1)" aria-pressed="false" title="Set all bots to $1.00">$1</button>
+          <button class="bus-preset" onclick="busSetAmount(2)" aria-pressed="false" title="Set all bots to $2.00">$2</button>
+          <button class="bus-preset" onclick="busSetAmount(5)" aria-pressed="false" title="Set all bots to $5.00">$5</button>
+          <button class="bus-preset" onclick="busSetAmount(10)" aria-pressed="false" title="Set all bots to $10.00">$10</button>
+          <button class="bus-preset" onclick="busSetAmount(20)" aria-pressed="false" title="Set all bots to $20.00">$20</button>
+          <button class="bus-preset" onclick="busSetAmount(100)" aria-pressed="false" title="Set all bots to $100.00">$100</button>
         </div>
         <div class="bus-custom-row">
           <input type="number" id="busCustomAmt" placeholder="Custom $" min="0.01" step="0.01">
@@ -924,13 +927,13 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <div class="bus-section">
         <div class="bus-section-title"><span>🧠</span> PERSONALITY — ALL BOTS</div>
         <div class="bus-presets" id="busPersonalityPresets">
-          <button class="bus-preset" onclick="busSetPersonality('AGGRESSIVE')">🔥 Aggressive</button>
-          <button class="bus-preset" onclick="busSetPersonality('CONSERVATIVE')">🛡️ Conservative</button>
-          <button class="bus-preset" onclick="busSetPersonality('MOMENTUM')">📈 Momentum</button>
-          <button class="bus-preset" onclick="busSetPersonality('CONTRARIAN')">🔄 Contrarian</button>
-          <button class="bus-preset" onclick="busSetPersonality('BALANCED')">⚖️ Balanced</button>
-          <button class="bus-preset" onclick="busSetPersonality('RANDOM')">🎲 Random Spread</button>
-          <button class="bus-preset" onclick="busSetPersonality('OPTIMIZED')">⚡ Optimized Spread</button>
+          <button class="bus-preset" onclick="busSetPersonality('AGGRESSIVE')" aria-pressed="false" title="Set all bots to Aggressive">🔥 Aggressive</button>
+          <button class="bus-preset" onclick="busSetPersonality('CONSERVATIVE')" aria-pressed="false" title="Set all bots to Conservative">🛡️ Conservative</button>
+          <button class="bus-preset" onclick="busSetPersonality('MOMENTUM')" aria-pressed="false" title="Set all bots to Momentum">📈 Momentum</button>
+          <button class="bus-preset" onclick="busSetPersonality('CONTRARIAN')" aria-pressed="false" title="Set all bots to Contrarian">🔄 Contrarian</button>
+          <button class="bus-preset" onclick="busSetPersonality('BALANCED')" aria-pressed="false" title="Set all bots to Balanced">⚖️ Balanced</button>
+          <button class="bus-preset" onclick="busSetPersonality('RANDOM')" aria-pressed="false" title="Apply a random personality spread to all bots">🎲 Random Spread</button>
+          <button class="bus-preset" onclick="busSetPersonality('OPTIMIZED')" aria-pressed="false" title="Apply an optimized personality spread based on learning model">⚡ Optimized Spread</button>
         </div>
       </div>
 
@@ -938,10 +941,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <div class="bus-section">
         <div class="bus-section-title"><span>⏱️</span> AUTO DELAY — ALL BOTS</div>
         <div class="bus-presets" id="busDelayPresets">
-          <button class="bus-preset" onclick="busSetDelay(2000)">Fast 2s</button>
-          <button class="bus-preset" onclick="busSetDelay(5000)">Normal 5s</button>
-          <button class="bus-preset" onclick="busSetDelay(15000)">Slow 15s</button>
-          <button class="bus-preset" onclick="busSetDelay(60000)">Patient 1m</button>
+          <button class="bus-preset" onclick="busSetDelay(2000)" aria-pressed="false" title="Set all bots to 2s auto-delay">Fast 2s</button>
+          <button class="bus-preset" onclick="busSetDelay(5000)" aria-pressed="false" title="Set all bots to 5s auto-delay">Normal 5s</button>
+          <button class="bus-preset" onclick="busSetDelay(15000)" aria-pressed="false" title="Set all bots to 15s auto-delay">Slow 15s</button>
+          <button class="bus-preset" onclick="busSetDelay(60000)" aria-pressed="false" title="Set all bots to 1m auto-delay">Patient 1m</button>
         </div>
       </div>
 
@@ -952,19 +955,19 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
           <div style="flex:1">
             <div style="font-size:7px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Stop Loss</div>
             <div class="bus-presets" id="busSLPresets" style="flex-direction:column">
-              <button class="bus-preset" onclick="busSetSL(0)">None</button>
-              <button class="bus-preset" onclick="busSetSL(10)">−10%</button>
-              <button class="bus-preset" onclick="busSetSL(20)">−20%</button>
-              <button class="bus-preset" onclick="busSetSL(50)">−50%</button>
+              <button class="bus-preset" onclick="busSetSL(0)" aria-pressed="false" title="Disable stop-loss on all bots">None</button>
+              <button class="bus-preset" onclick="busSetSL(10)" aria-pressed="false" title="Set all bots to -10% stop-loss">−10%</button>
+              <button class="bus-preset" onclick="busSetSL(20)" aria-pressed="false" title="Set all bots to -20% stop-loss">−20%</button>
+              <button class="bus-preset" onclick="busSetSL(50)" aria-pressed="false" title="Set all bots to -50% stop-loss">−50%</button>
             </div>
           </div>
           <div style="flex:1">
             <div style="font-size:7px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Take Profit</div>
             <div class="bus-presets" id="busTPPresets" style="flex-direction:column">
-              <button class="bus-preset" onclick="busSetTP(0)">None</button>
-              <button class="bus-preset" onclick="busSetTP(20)">+20%</button>
-              <button class="bus-preset" onclick="busSetTP(50)">+50%</button>
-              <button class="bus-preset" onclick="busSetTP(100)">+100%</button>
+              <button class="bus-preset" onclick="busSetTP(0)" aria-pressed="false" title="Disable take-profit on all bots">None</button>
+              <button class="bus-preset" onclick="busSetTP(20)" aria-pressed="false" title="Set all bots to +20% take-profit">+20%</button>
+              <button class="bus-preset" onclick="busSetTP(50)" aria-pressed="false" title="Set all bots to +50% take-profit">+50%</button>
+              <button class="bus-preset" onclick="busSetTP(100)" aria-pressed="false" title="Set all bots to +100% take-profit">+100%</button>
             </div>
           </div>
         </div>
@@ -1664,11 +1667,13 @@ const CRUCIBLE_METHODS = ['SPOT LONG','SPOT SHORT','HOLD'];
 // ⚡ Bolt Optimization: Use var for critical globals so they are attached to window.
 // This allows the AutoRecovery engine in app-rebuild.js to correctly detect them,
 // preventing redundant O(N) localStorage parsing and state assignments every 10 seconds.
-var balance=50, startBalance=50, totalPnl=0;
-var closedTrades=[], openPositions=[], equityHistory=[50];
+var balance=0, startBalance=0, totalPnl=0;
+var closedTrades=[], openPositions=[], equityHistory=[0];
 var _lastClosedCount = -1;
 var _lastLogRenderCount = -1;
 var _lastLogTradeCount = -1;
+var _quantPending = false;
+var _logPending = false;
 let agentHistory=[]; // per-agent vote accuracy for quant report
 let globalLog=[];
 var bots=[], botCounter=0;
@@ -2176,7 +2181,22 @@ function showExitResult(pos, bot) {
 // ══════════════════════════════════════════════════════
 // QUANT REPORT ENGINE
 // ══════════════════════════════════════════════════════
+/**
+ * ⚡ Bolt Optimization: UI Update Throttling
+ * Prevents O(N) calculations and DOM churn by batching high-frequency
+ * updates to the browser's refresh rate (max once per frame).
+ */
 function updateQuantReport() {
+  if (_quantPending) return;
+  _quantPending = true;
+
+  requestAnimationFrame(() => {
+    _quantPending = false;
+    _runUpdateQuantReport();
+  });
+}
+
+function _runUpdateQuantReport() {
   // Optimization: Skip expensive O(N) filtering and DOM updates if panel is hidden
   const body = document.getElementById('quantBody');
   if (body && !body.classList.contains('open')) return;
@@ -2956,7 +2976,7 @@ function renderAgentIdentities() {
                         ${s.superteam.registered ?
                             `<div style="color:var(--green); font-size:8px;">✅ REGISTERED</div>
                              <div style="font-size:7px; color:var(--dim); margin-top:2px;">Key: ${escapeHTML(s.superteam.apiKey.slice(0,10))}...</div>` :
-                            `<button onclick="registerAgentUI(event, '${escapeHTML(s.id)}', 'superteam')" style="width:100%; padding:4px; background:var(--bg); border:1px solid var(--purple); color:var(--purple); border-radius:4px; font-size:8px; cursor:pointer;">REGISTER</button>`
+                            `<button onclick="registerAgentUI(event, ${escapeHTML(JSON.stringify(s.id))}, 'superteam')" style="width:100%; padding:4px; background:var(--bg); border:1px solid var(--purple); color:var(--purple); border-radius:4px; font-size:8px; cursor:pointer;">REGISTER</button>`
                         }
                     </div>
 
@@ -2970,9 +2990,9 @@ function renderAgentIdentities() {
                              </div>
                              <div style="display:flex; gap:4px; margin-top:4px;">
                                 <input type="number" id="price-${escapeHTML(s.id)}" value="${s.g0.servicePrice}" step="1" style="width:30px; background:var(--bg); border:1px solid var(--border); color:white; font-size:7px; padding:2px;">
-                                <button onclick="updatePriceUI('${escapeHTML(s.id)}')" style="background:var(--chrome); border:1px solid var(--border); color:var(--dim); font-size:7px; padding:2px 4px; cursor:pointer;">SET</button>
+                                <button onclick="updatePriceUI(${escapeHTML(JSON.stringify(s.id))})" style="background:var(--chrome); border:1px solid var(--border); color:var(--dim); font-size:7px; padding:2px 4px; cursor:pointer;">SET</button>
                              </div>` :
-                            `<button onclick="registerAgentUI(event, '${escapeHTML(s.id)}', 'g0')" style="width:100%; padding:4px; background:var(--bg); border:1px solid var(--cyan); color:var(--cyan); border-radius:4px; font-size:8px; cursor:pointer;">REGISTER</button>`
+                            `<button onclick="registerAgentUI(event, ${escapeHTML(JSON.stringify(s.id))}, 'g0')" style="width:100%; padding:4px; background:var(--bg); border:1px solid var(--cyan); color:var(--cyan); border-radius:4px; font-size:8px; cursor:pointer;">REGISTER</button>`
                         }
                     </div>
                 </div>
@@ -3032,7 +3052,7 @@ function renderMarketplaceTasks() {
                     ${active ?
                         `<div style="font-size:8px; color:var(--amber); animation:gh-blink 1s infinite alternate;">PROCESSING...</div>` :
                         registered ?
-                            `<button onclick="acceptTaskUI('${escapeHTML(t.category)}', '${escapeHTML(t.id)}')" style="padding:6px 12px; background:var(--chrome); border:1px solid var(--green); color:var(--green); border-radius:4px; font-family:'Bungee'; font-size:9px; cursor:pointer;">ACCEPT</button>` :
+                            `<button onclick="acceptTaskUI(${escapeHTML(JSON.stringify(t.category))}, ${escapeHTML(JSON.stringify(t.id))})" style="padding:6px 12px; background:var(--chrome); border:1px solid var(--green); color:var(--green); border-radius:4px; font-family:'Bungee'; font-size:9px; cursor:pointer;">ACCEPT</button>` :
                             `<div style="font-size:7px; color:var(--dim); text-align:center; max-width:60px;">Register ${escapeHTML(t.category.toUpperCase())} first</div>`
                     }
                 </div>
@@ -3261,7 +3281,7 @@ function handleGoogleLoginResponse(response){
       if(data.success) {
         s.textContent='✅ Welcome back, ' + (data.user.name || 'User') + '!';
         // Initialize app with server data
-        if(typeof balance !== 'undefined') balance = data.user.balance || 50;
+        if(typeof balance !== 'undefined') balance = data.user.balance || 0;
         setupApp({
           ...userData,
           ...data.user
@@ -3318,7 +3338,7 @@ async function claimPayout() {
     }
 
     const address = window.ethereum.selectedAddress;
-    const res = await fetch('/api/payouts/claim', {
+    const res = await fetch('/api/v1/payouts/claim', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -3428,7 +3448,8 @@ async function loginMetaMask(isAuto = false){
     
     balance = balanceUSD;
     startBalance = balanceUSD;
-    
+    if (window.walletState) window.walletState.balanceUSD = balanceUSD;
+
     const userData = {
       name: address.slice(0, 6) + '···' + address.slice(-4),
       address: address,
@@ -3451,9 +3472,21 @@ async function loginMetaMask(isAuto = false){
         if(typeof balance !== 'undefined') balance = Math.max(balanceUSD, data.user.balance || 0);
         setupApp({ ...userData, ...data.user });
         // Enable real trading mode if connected via MetaMask
-        if (typeof switchTradingMode === "function") {
-           switchTradingMode("live");
+        if (typeof toggleLiveMode === "function" && !window.isLiveMode) {
+           toggleLiveMode();
+        } else {
+           window.isLiveMode = true;
+           const badge = document.getElementById('ghBadge');
+           if (badge) {
+               badge.textContent = 'LIVE';
+               badge.style.color = 'var(--green)';
+           }
         }
+
+        // Refresh UI
+        updateLiveBalance();
+        updateGlobalBalance();
+        updateMatrix();
 
         // Show claim button
         const claimBtn = document.getElementById('ghClaimBtn');
@@ -3850,10 +3883,10 @@ function renderBot(bot){
     <div class="consensus-bar-wrap"><div class="consensus-bar-fill" id="cbar-${bot.id}" style="width:0%;background:var(--dim)"></div></div>
     <div class="m-controls">
       <div class="m-settings-bar">
-        <div class="m-bet-display" id="mbetdisp-${bot.id}">$1.00 <span>per trade</span></div>
+        <div class="m-bet-display" id="mbetdisp-${bot.id}">$${bot.bet.toFixed(2)} <span>per trade</span></div>
         <div style="display:flex;gap:4px;align-items:center">
-          <button class="auto-btn" id="mauto-${bot.id}" onclick="toggleAuto(${bot.id})" aria-pressed="false">AUTO</button>
-          <button class="spin-btn" id="mspin-${bot.id}" onclick="spinBot(${bot.id})" style="padding:6px 12px;font-size:11px">🎰 SPIN</button>
+          <button class="auto-btn" id="mauto-${bot.id}" onclick="toggleAuto(${bot.id})" aria-pressed="false" title="Toggle auto-trading for this bot">AUTO</button>
+          <button class="spin-btn" id="mspin-${bot.id}" onclick="spinBot(${bot.id})" style="padding:6px 12px;font-size:11px" title="Manually trigger a trade spin">🎰 SPIN</button>
           <button class="m-gear-btn" id="mgear-${bot.id}" onclick="toggleBotSettings(${bot.id})" title="Bot settings" aria-label="Bot ${bot.id} settings" aria-expanded="false">⚙</button>
         </div>
       </div>
@@ -3861,7 +3894,7 @@ function renderBot(bot){
         <div class="m-dd-section">
           <div class="m-dd-label">Trade Amount</div>
           <div class="m-dd-bets" id="mbets-${bot.id}">
-            ${[0.10,0.25,0.50,1.00,2.00,5.00,20.00,100.00].map(v=>`<button class="m-dd-bet${v===1.00?' on':''}" data-bet="${v}" onclick="setBet(${bot.id},${v})">$${v%1===0?v.toFixed(0):v.toFixed(2)}</button>`).join('')}
+            ${[0.10,0.25,0.50,1.00,2.00,5.00,10.00,20.00,100.00].map(v=>{const isOn=v===bot.bet; return `<button class="m-dd-bet${isOn?' on':''}" data-bet="${v}" onclick="setBet(${bot.id},${v})" aria-pressed="${isOn}" title="Set bet to $${v.toFixed(2)}">$${v%1===0?v.toFixed(0):v.toFixed(2)}</button>`;}).join('')}
           </div>
           <div class="m-dd-custom">
             <input type="number" id="mcustom-${bot.id}" placeholder="Custom $" min="0.01" step="0.01">
@@ -5424,9 +5457,16 @@ function manualClear(key) {
 // ── UI ──
 function updateAuditSummaryBadge() {
   const el = document.getElementById('auditSummary'); if (!el) return;
-  const notices   = AGENT_KEYS.filter(k => agentStatus[k] === 'ON_NOTICE').length;
-  const suspended = AGENT_KEYS.filter(k => agentStatus[k] === 'SUSPENDED').length;
-  const reinstated= AGENT_KEYS.filter(k => agentStatus[k] === 'REINSTATED').length;
+
+  // ⚡ Bolt Optimization: Consolidate O(N) passes into a single loop to reduce iterations and allocations
+  let notices = 0, suspended = 0, reinstated = 0;
+  for (const k of AGENT_KEYS) {
+    const status = agentStatus[k];
+    if (status === 'ON_NOTICE') notices++;
+    else if (status === 'SUSPENDED') suspended++;
+    else if (status === 'REINSTATED') reinstated++;
+  }
+
   if (suspended > 0) { el.textContent = `${suspended} SUSPENDED`; el.style.background='rgba(255,45,120,.15)'; el.style.color='var(--hot)'; }
   else if (notices > 0) { el.textContent = `${notices} ON NOTICE`; el.style.background='rgba(255,179,0,.15)'; el.style.color='var(--amber)'; }
   else if (reinstated > 0) { el.textContent = `${reinstated} REINSTATED`; el.style.background='rgba(68,136,255,.15)'; el.style.color='var(--blue)'; }
@@ -5456,12 +5496,12 @@ function renderAuditPanel() {
     }[status] || '';
 
     const actions = status === 'SUSPENDED'
-      ? `<button class="aa-action-btn aa-btn-reinstate" onclick="manualReinstate('${key}')">REINSTATE</button>`
+      ? `<button class="aa-action-btn aa-btn-reinstate" onclick="manualReinstate(${escapeHTML(JSON.stringify(key))})">REINSTATE</button>`
       : status === 'ON_NOTICE'
-      ? `<button class="aa-action-btn aa-btn-clear" onclick="manualClear('${key}')">CLEAR</button><button class="aa-action-btn aa-btn-suspend" onclick="manualSuspend('${key}')">SUSPEND</button>`
+      ? `<button class="aa-action-btn aa-btn-clear" onclick="manualClear(${escapeHTML(JSON.stringify(key))})">CLEAR</button><button class="aa-action-btn aa-btn-suspend" onclick="manualSuspend(${escapeHTML(JSON.stringify(key))})">SUSPEND</button>`
       : status === 'REINSTATED'
-      ? `<button class="aa-action-btn aa-btn-clear" onclick="manualClear('${key}')">FULLY CLEAR</button><button class="aa-action-btn aa-btn-suspend" onclick="manualSuspend('${key}')">SUSPEND</button>`
-      : `<button class="aa-action-btn aa-btn-suspend" onclick="manualSuspend('${key}')">SUSPEND</button>`;
+      ? `<button class="aa-action-btn aa-btn-clear" onclick="manualClear(${escapeHTML(JSON.stringify(key))})">FULLY CLEAR</button><button class="aa-action-btn aa-btn-suspend" onclick="manualSuspend(${escapeHTML(JSON.stringify(key))})">SUSPEND</button>`
+      : `<button class="aa-action-btn aa-btn-suspend" onclick="manualSuspend(${escapeHTML(JSON.stringify(key))})">SUSPEND</button>`;
 
     const probBar = status === 'ON_NOTICE' ? `
       <div style="margin-top:3px;font-size:7px;color:var(--amber)">Probation: ${probUsed}/${probTotal} trades</div>
@@ -5622,7 +5662,22 @@ function addToLog(pos){
   if(globalLog.length>60) globalLog.pop();
   renderLog();
 }
+/**
+ * ⚡ Bolt Optimization: UI Update Throttling
+ * Prevents redundant DOM manipulation during rapid trade events by
+ * ensuring the log is only re-rendered at most once per display frame.
+ */
 function renderLog(){
+  if (_logPending) return;
+  _logPending = true;
+
+  requestAnimationFrame(() => {
+    _logPending = false;
+    _runRenderLog();
+  });
+}
+
+function _runRenderLog(){
   // ⚡ Bolt Optimization: Early return if data hasn't changed to skip expensive DOM manipulation
   if (globalLog.length === _lastLogRenderCount && closedTrades.length === _lastLogTradeCount) return;
   _lastLogRenderCount = globalLog.length;
@@ -5802,7 +5857,7 @@ function _busHighlight(containerId, matchFn) {
   document.querySelectorAll(`#${containerId} .bus-preset`).forEach(b => {
     const isActive = matchFn(b);
     b.classList.toggle('active', isActive);
-    b.setAttribute('aria-pressed', isActive);
+    b.setAttribute('aria-pressed', isActive.toString());
   });
 }
 
@@ -5819,7 +5874,10 @@ function busSetCustomAmount() {
   if (isNaN(val) || val < 0.01) { if(inp) inp.style.borderColor='var(--hot)'; return; }
   if (inp) { inp.style.borderColor=''; inp.value=''; }
   bots.forEach(b => setBet(b.id, val));
-  document.querySelectorAll('#busAmtPresets .bus-preset').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#busAmtPresets .bus-preset').forEach(b => {
+    b.classList.remove('active');
+    b.setAttribute('aria-pressed', 'false');
+  });
   _busStatus(`All ${bots.length} bots → $${val.toFixed(2)} per trade`);
 }
 
@@ -6322,7 +6380,11 @@ function refreshSettingsUI() {
             : '<span style="color:var(--dim)">🔴 Not connected</span>';
     }
     const apiKeyInput = document.getElementById('settingsApiKey');
-    if (apiKeyInput) apiKeyInput.value = window._userApiKey || '';
+    if (apiKeyInput) apiKeyInput.value = window._userApiKey || localStorage.getItem('ta_api_key') || '';
+    const openAiInput = document.getElementById('settingsOpenAiKey');
+    if (openAiInput) openAiInput.value = localStorage.getItem('ta_openai_key') || '';
+    const geminiInput = document.getElementById('settingsGeminiKey');
+    if (geminiInput) geminiInput.value = localStorage.getItem('ta_gemini_key') || '';
     const breakerStatus = document.getElementById('settingsBreakerStatus');
     const breakerFailures = document.getElementById('settingsBreakerFailures');
     if (breakerStatus && breakerFailures && typeof API_CB !== 'undefined') {
@@ -6364,16 +6426,31 @@ function applyTheme(theme) {
     const t = themes[theme] || themes.default;
     for (const [k,v] of Object.entries(t)) root.style.setProperty(k, v);
     localStorage.setItem('ta_theme', theme);
-    document.querySelectorAll('.theme-preset').forEach(btn => btn.classList.toggle('active', btn.dataset.theme === theme));
+    document.querySelectorAll('.theme-preset').forEach(btn => {
+        const isActive = btn.dataset.theme === theme;
+        btn.classList.toggle('active', isActive);
+        btn.setAttribute('aria-pressed', isActive.toString());
+    });
 }
-function saveSettingsApiKey() {
-    const input = document.getElementById('settingsApiKey');
-    if (!input) return;
-    const val = input.value.trim();
-    window._userApiKey = val;
-    localStorage.setItem('ta_api_key', val);
+function saveSettingsApiKeys() {
+    const antInput = document.getElementById('settingsApiKey');
+    const oaInput = document.getElementById('settingsOpenAiKey');
+    const gemInput = document.getElementById('settingsGeminiKey');
+
+    if (antInput) {
+        const val = antInput.value.trim();
+        window._userApiKey = val;
+        localStorage.setItem('ta_api_key', val);
+    }
+    if (oaInput) {
+        localStorage.setItem('ta_openai_key', oaInput.value.trim());
+    }
+    if (gemInput) {
+        localStorage.setItem('ta_gemini_key', gemInput.value.trim());
+    }
+
     const el = document.getElementById('apiTestResult');
-    if (el) { el.textContent = val ? '✅ API key saved' : 'API key cleared'; el.style.color = val ? 'var(--green)' : 'var(--dim)'; }
+    if (el) { el.textContent = '✅ All keys saved'; el.style.color = 'var(--green)'; }
 }
 function testSettingsApiKey() {
     const apiKey = document.getElementById('settingsApiKey')?.value.trim() || window._userApiKey || '';
@@ -6435,12 +6512,37 @@ function updateSettingsVolume(val) {
       </div>
       <div class="settings-section">
         <div class="settings-section-title">🔑 API Configuration</div>
-        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-          <input type="password" id="settingsApiKey" placeholder="sk-ant-api03-..." style="flex:1;min-width:180px;padding:6px 8px;background:var(--bg);border:1px solid var(--border);color:var(--cyan);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px">
-          <button onclick="saveSettingsApiKey()" style="padding:6px 10px;background:var(--chrome);border:1px solid var(--border);color:var(--dim);border-radius:4px;font-family:'Bungee',display;font-size:8px;cursor:pointer">SAVE</button>
-          <button onclick="testSettingsApiKey()" style="padding:6px 10px;background:var(--chrome);border:1px solid var(--border);color:var(--cyan);border-radius:4px;font-family:'Bungee',display;font-size:8px;cursor:pointer">TEST</button>
+
+        <div style="margin-bottom:8px">
+          <div style="display:flex; justify-content:space-between; font-size:8px; color:var(--dim); margin-bottom:2px">
+            <span>ANTHROPIC (CLAUDE)</span>
+            <a href="https://console.anthropic.com" target="_blank" style="color:var(--cyan)">Get Key →</a>
+          </div>
+          <input type="password" id="settingsApiKey" placeholder="sk-ant-..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
         </div>
-        <div id="apiTestResult" style="font-size:9px;color:var(--dim);margin-top:6px"></div>
+
+        <div style="margin-bottom:8px">
+          <div style="display:flex; justify-content:space-between; font-size:8px; color:var(--dim); margin-bottom:2px">
+            <span>OPENAI (GPT-4)</span>
+            <a href="https://platform.openai.com" target="_blank" style="color:var(--cyan)">Get Key →</a>
+          </div>
+          <input type="password" id="settingsOpenAiKey" placeholder="sk-..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
+        </div>
+
+        <div style="margin-bottom:12px">
+          <div style="display:flex; justify-content:space-between; font-size:8px; color:var(--dim); margin-bottom:2px">
+            <span>GOOGLE (GEMINI)</span>
+            <a href="https://aistudio.google.com" target="_blank" style="color:var(--cyan)">Get Key →</a>
+          </div>
+          <input type="password" id="settingsGeminiKey" placeholder="AIza..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
+        </div>
+
+        <div style="display:flex; gap:6px">
+          <button onclick="saveSettingsApiKeys()" style="flex:1; padding:8px; background:var(--chrome); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Bungee',display; font-size:10px; cursor:pointer">SAVE ALL KEYS</button>
+          <button onclick="testSettingsApiKey()" style="padding:8px 15px; background:var(--chrome); border:1px solid var(--border); color:var(--dim); border-radius:4px; font-family:'Bungee',display; font-size:10px; cursor:pointer">TEST CLAUDE</button>
+        </div>
+
+        <div id="apiTestResult" style="font-size:9px; color:var(--dim); margin-top:6px"></div>
         <div style="margin-top:8px;font-size:9px;color:var(--dim);display:flex;gap:8px;flex-wrap:wrap">
           <span>Circuit Breaker: <span id="settingsBreakerStatus" style="color:var(--green)">OK</span></span>
           <span>Failures: <span id="settingsBreakerFailures">0</span>/3</span>
