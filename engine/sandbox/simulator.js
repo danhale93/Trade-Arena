@@ -55,7 +55,7 @@ async function simulateStrategy(strategyCode, marketPair, timeframe, tradeCount 
 
     // Run simulation
     const trades = [];
-    const startingEquity = (typeof window !== 'undefined' && window.balance) ? window.balance : 10000;
+    const startingEquity = (typeof window !== 'undefined' && window.balance) ? window.balance : 0;
     let equity = startingEquity; // Starting equity in USD
     let peakEquity = equity;
     let maxDrawdown = 0;
@@ -281,7 +281,7 @@ function generateMockMarketData(marketPair, timeframe, limit) {
  */
 function calculateVolatility(trades) {
   if (trades.length < 2) return 0;
-  const startingEquity = (typeof window !== 'undefined' && window.balance) ? window.balance : 10000;
+  const startingEquity = (typeof window !== 'undefined' && window.balance) ? window.balance : 0;
   const returns = trades.map(t => t.pnl / startingEquity); // Normalize by starting equity
   const mean = returns.reduce((sum, r) => sum + r, 0) / returns.length;
   const variance = returns.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / returns.length;
@@ -295,7 +295,7 @@ function calculateVolatility(trades) {
  */
 function calculateSharpeRatio(trades) {
   if (trades.length < 2) return 0;
-  const startingEquity = (typeof window !== 'undefined' && window.balance) ? window.balance : 10000;
+  const startingEquity = (typeof window !== 'undefined' && window.balance) ? window.balance : 0;
   const returns = trades.map(t => t.pnl / startingEquity); // Normalize by starting equity
   const mean = returns.reduce((sum, r) => sum + r, 0) / returns.length;
   if (mean === 0) return 0;

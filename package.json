@@ -25,7 +25,8 @@
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "viem": "^2.54.3",
-    "websocket": "^1.0.35"
+    "websocket": "^1.0.35",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "concurrently": "^10.0.3",
