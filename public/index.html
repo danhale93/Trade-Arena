@@ -4063,7 +4063,7 @@ function setBet(id,amt){
   document.querySelectorAll(`#mbets-${id} .m-dd-bet`).forEach(b=>{
     const isOn = parseFloat(b.dataset.bet)===amt;
     b.classList.toggle('on',isOn);
-    b.setAttribute('aria-pressed', isOn);
+    b.setAttribute('aria-pressed', isOn.toString());
   });
   // update display
   const disp=document.getElementById('mbetdisp-'+id);
@@ -4121,7 +4121,7 @@ function toggleAuto(id){
   if(ghBtn){
     ghBtn.textContent=allOn?'⏸ STOP':'AUTO';
     ghBtn.classList.toggle('on',allOn);
-    ghBtn.setAttribute('aria-pressed', allOn);
+    ghBtn.setAttribute('aria-pressed', allOn.toString());
   }
 }
 function scheduleAuto(bot){
@@ -6412,9 +6412,9 @@ function refreshSettingsUI() {
     const b1 = document.getElementById('settingsSfxBtn');
     const b2 = document.getElementById('settingsVoiceBtn');
     const b3 = document.getElementById('settingsAudioBtn');
-    if (b1) b1.classList.toggle('active', sfxOn);
-    if (b2) b2.classList.toggle('active', voiceOn);
-    if (b3) b3.classList.toggle('active', audioOn);
+    if (b1) { b1.classList.toggle('active', sfxOn); b1.setAttribute('aria-pressed', sfxOn.toString()); }
+    if (b2) { b2.classList.toggle('active', voiceOn); b2.setAttribute('aria-pressed', voiceOn.toString()); }
+    if (b3) { b3.classList.toggle('active', audioOn); b3.setAttribute('aria-pressed', audioOn.toString()); }
 }
 function applyTheme(theme) {
     const root = document.documentElement;
@@ -6554,6 +6554,7 @@ function updateSettingsVolume(val) {
             <span>ANTHROPIC (CLAUDE)</span>
             <div style="display:flex;gap:8px">
               <button onclick="toggleVisibility('settingsApiKey', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
+              <button onclick="copyToClipboard('settingsApiKey', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
               <a href="https://console.anthropic.com" target="_blank" style="color:var(--cyan)">Get Key →</a>
             </div>
           </div>
@@ -6563,7 +6564,11 @@ function updateSettingsVolume(val) {
         <div style="margin-bottom:8px">
           <div style="display:flex; justify-content:space-between; font-size:8px; color:var(--dim); margin-bottom:2px">
             <span>OPENAI (GPT-4)</span>
-            <a href="https://platform.openai.com/api-keys" target="_blank" style="color:var(--cyan)">Get Key →</a>
+            <div style="display:flex;gap:8px">
+              <button onclick="toggleVisibility('settingsOpenAiKey', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
+              <button onclick="copyToClipboard('settingsOpenAiKey', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
+              <a href="https://platform.openai.com/api-keys" target="_blank" style="color:var(--cyan)">Get Key →</a>
+            </div>
           </div>
           <input type="password" id="settingsOpenAiKey" placeholder="sk-..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
         </div>
@@ -6571,7 +6576,11 @@ function updateSettingsVolume(val) {
         <div style="margin-bottom:12px">
           <div style="display:flex; justify-content:space-between; font-size:8px; color:var(--dim); margin-bottom:2px">
             <span>GOOGLE (GEMINI)</span>
-            <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--cyan)">Get Key →</a>
+            <div style="display:flex;gap:8px">
+              <button onclick="toggleVisibility('settingsGeminiKey', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
+              <button onclick="copyToClipboard('settingsGeminiKey', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
+              <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--cyan)">Get Key →</a>
+            </div>
           </div>
           <input type="password" id="settingsGeminiKey" placeholder="AIza..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
         </div>
@@ -6579,7 +6588,11 @@ function updateSettingsVolume(val) {
         <div style="margin-bottom:12px">
           <div style="display:flex; justify-content:space-between; font-size:8px; color:var(--dim); margin-bottom:2px">
             <span>0x API (SWAPS)</span>
-            <a href="https://dashboard.0x.org" target="_blank" style="color:var(--cyan)">Get Key →</a>
+            <div style="display:flex;gap:8px">
+              <button onclick="toggleVisibility('settingsZeroExKey', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
+              <button onclick="copyToClipboard('settingsZeroExKey', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
+              <a href="https://dashboard.0x.org" target="_blank" style="color:var(--cyan)">Get Key →</a>
+            </div>
           </div>
           <input type="password" id="settingsZeroExKey" placeholder="0x-api-key-..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:&#039;Share Tech Mono&#039;,monospace; font-size:10px">
         </div>
@@ -6587,7 +6600,11 @@ function updateSettingsVolume(val) {
         <div style="margin-bottom:12px">
           <div style="display:flex; justify-content:space-between; font-size:8px; color:var(--dim); margin-bottom:2px">
             <span>TASK REWARD SECRET (BOUNTIES)</span>
-            <span style="color:var(--amber)">Secure Server Auth</span>
+            <div style="display:flex;gap:8px">
+              <button onclick="toggleVisibility('settingsTaskSecret', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
+              <button onclick="copyToClipboard('settingsTaskSecret', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
+              <span style="color:var(--amber)">Secure Server Auth</span>
+            </div>
           </div>
           <input type="password" id="settingsTaskSecret" placeholder="Enter payout validation secret..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
         </div>
