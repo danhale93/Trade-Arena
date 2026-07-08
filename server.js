@@ -788,7 +788,8 @@ function generateBotConfig(strategy, riskLevel) {
 }
 
 function generateId() {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+    // Sentinel: Use cryptographically secure random values for ID generation
+    return Date.now().toString(36) + crypto.randomBytes(8).toString('hex');
 }
 
 app.listen(PORT, () => {
