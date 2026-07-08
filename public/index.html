@@ -1684,6 +1684,7 @@ var _perfPending = false;
 var _lastPerfTradeCount = -1;
 var _lastMatrixBotCount = -1;
 var _lastMatrixOpenCount = -1;
+var _lastConsolidatedCount = -1;
 let agentHistory=[]; // per-agent vote accuracy for quant report
 let globalLog=[];
 var bots=[], botCounter=0;
@@ -2015,9 +2016,10 @@ function updateLiveBalance(){
     const unrealised=openPositions.reduce((sum,p)=>sum+(p.livePnl||0),0);
     const displayBalance=balance+unrealised;
     const displayPnl=totalPnl+unrealised;
+    const count=openPositions.length;
 
-    // Optimization: Skip DOM updates if values haven't changed
-    if (displayBalance === _lastDisplayBal && displayPnl === _lastDisplayPnl && unrealised === _lastUnrealised) {
+    // ⚡ Bolt Optimization: Consolidated dirty-check for balance, P&L, and trade count
+    if (displayBalance === _lastDisplayBal && displayPnl === _lastDisplayPnl && unrealised === _lastUnrealised && count === _lastConsolidatedCount) {
       _balanceUpdatePending = false;
       return;
     }
@@ -2035,9 +2037,26 @@ function updateLiveBalance(){
       pnlEl.className='gh-pnl '+(displayPnl>=0?'pnl-pos':'pnl-neg');
     }
 
+    // Consolidated: Handle Open Positions count and Queue Wrap visibility
+    const qWrap=document.getElementById('ghQueueWrap');
+    const qNum=document.getElementById('ghQueueNum');
+    if(qWrap){ qWrap.style.display=count>0?'flex':'none'; }
+    if(qNum) qNum.textContent=count;
+
+    // Consolidated: Handle Ticker visibility (countdown logic remains in _tickHeader)
+    const ticker=document.getElementById('ghTicker');
+    if(ticker){ ticker.style.display=count>0?'flex':'none'; }
+
+    // Consolidated: Global metric card for open positions
+    setVal('mv-open',count);
+
+    // Consolidated: Run breakers alongside balance changes
+    if (typeof checkGlobalBreakers === 'function') checkGlobalBreakers();
+
     _lastDisplayBal = displayBalance;
     _lastDisplayPnl = displayPnl;
     _lastUnrealised = unrealised;
+    _lastConsolidatedCount = count;
     _balanceUpdatePending = false;
   });
 }
@@ -2471,7 +2490,7 @@ function drawVerdict(n, wr, pf, avg) {
   }
 }
 
-function updateOpenCount() { setVal('mv-open',openPositions.length); }
+function updateOpenCount() { updateLiveBalance(); }
 
 // ══════════════════════════════════════════════════════
 // CRUCIBLE MODE
@@ -3715,14 +3734,7 @@ function setupApp({name,avatar,badge,address}){
 // BALANCE
 // ══════════════════════════════════════════════════════
 function updateGlobalBalance(){
-  const balEl=document.getElementById('ghBalance');
-  if(balEl){
-    balEl.textContent='$'+balance.toFixed(2);
-    balEl.title=`Realised: $${balance.toFixed(2)} | Unrealised: $0.00`;
-  }
-  const p=document.getElementById('ghPnl');
-  if(p){p.textContent=(totalPnl>=0?'+':'')+'$'+totalPnl.toFixed(2)+' today';p.className='gh-pnl '+(totalPnl>=0?'pnl-pos':'pnl-neg');}
-  checkGlobalBreakers();
+  updateLiveBalance();
 }
 function updateBotPnl(bot){
   const el=document.getElementById('mpnl-'+bot.id); if(!el) return;
@@ -3846,30 +3858,15 @@ function _startHeaderTicker(){
   _ghTickerInterval=setInterval(_tickHeader,500);
 }
 function _tickHeader(){
-  // Optimization: Refresh global balance (realised + unrealised) every 500ms when app is active
+  // Optimization: Refresh global balance, P&L and counts every 500ms when app is active.
+  // Visibility and count updates are now consolidated inside updateLiveBalance.
   updateLiveBalance();
 
-  // open trade count
   const count=openPositions.length;
-  // ⚡ Bolt Optimization: Dirty-check trade count to skip redundant style/text assignments
-  if (count !== _lastTickCount) {
-    const qWrap=document.getElementById('ghQueueWrap');
-    const qNum=document.getElementById('ghQueueNum');
-    if(qWrap){ qWrap.style.display=count>0?'flex':'none'; }
-    if(qNum) qNum.textContent=count;
-    _lastTickCount = count;
-  }
-
-  // countdown to nearest exit
-  const ticker=document.getElementById('ghTicker');
   const cd=document.getElementById('ghCountdown');
-  if(!ticker||!cd) return;
+  if(!cd) return;
 
-  if(count===0){
-    if (ticker.style.display !== 'none') ticker.style.display='none';
-    return;
-  }
-  if (ticker.style.display !== 'flex') ticker.style.display='flex';
+  if(count===0) return;
 
   const now=Date.now();
   let nearest=null;
