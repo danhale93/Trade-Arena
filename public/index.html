@@ -893,7 +893,6 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
        <button class="gh-auto-btn" id="ghAutoBtn" onclick="globalAutoToggle()" title="Toggle auto-trading on all bots" aria-pressed="false">AUTO</button>
        <button class="gh-bot-btn" id="ghRemoveBtn" onclick="removeLastBot()" title="Remove last bot" aria-label="Remove last bot" disabled>−</button>
        <button class="gh-bot-btn" id="ghAddTraderBtn" onclick="addBot('TRADER')" title="Add Trading Bot" aria-label="Add new trading bot">🤖</button><button class="gh-bot-btn" id="ghAddWorkerBtn" onclick="addBot('WORKER')" title="Add Worker Bot" aria-label="Add new worker bot">👷</button>
-       <button class="gh-bot-btn" id="musicToggleBtn" onclick="toggleBackgroundMusic()" title="Toggle background music" aria-label="Toggle background music">🎵</button>
      </div>
     <span class="gen-badge" id="genBadge">GEN 0</span>
     <span id="apiBreakerBadge" style="display:none"></span>
@@ -3704,7 +3703,7 @@ function setupApp({name,avatar,badge,address}){
       }catch(e){ console.error('addBot:',e); }
       _startHeaderTicker();
       _syncHeaderBotBtns();
-      _injectAVControls();
+
     });
   }catch(e){
     console.error('setupApp critical error:',e);
@@ -6084,52 +6083,7 @@ function busApplyPreset(name) {
   _busStatus(`${labels[name]} applied to ${bots.length} bots`);
 }
 
-// ══════════════════════════════════════════════════════
-// SOUND ENGINE  (Web Audio API — no external files)
-// ══════════════════════════════════════════════════════
-const SFX = (() => {
-  let ctx = null;
-  let enabled = localStorage.getItem('ta_sfx') !== 'false';
 
-  function getCtx() {
-    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
-    if (ctx.state === 'suspended') ctx.resume();
-    return ctx;
-  }
-
-  function tone(freq, type, vol, attack, sustain, decay) {
-    if (!enabled) return;
-    try {
-      const c = getCtx();
-      const osc = c.createOscillator();
-      const gain = c.createGain();
-      osc.connect(gain); gain.connect(c.destination);
-      osc.type = type; osc.frequency.setValueAtTime(freq, c.currentTime);
-      gain.gain.setValueAtTime(0, c.currentTime);
-      gain.gain.linearRampToValueAtTime(vol, c.currentTime + attack);
-      gain.gain.setValueAtTime(vol, c.currentTime + attack + sustain);
-      gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + attack + sustain + decay);
-      osc.start(c.currentTime); osc.stop(c.currentTime + attack + sustain + decay + 0.05);
-    } catch(e) {}
-  }
-
-  function chord(freqs, type, vol, delay=0) {
-    freqs.forEach((f,i) => setTimeout(() => tone(f, type, vol, 0.01, 0.08, 0.25), i*delay));
-  }
-
-  return {
-    get enabled() { return enabled; },
-    toggle() { enabled = !enabled; localStorage.setItem('ta_sfx', enabled ? 'true' : 'false'); return enabled; },
-    spin()       { tone(220,'sawtooth',0.08,0.01,0.04,0.12); setTimeout(()=>tone(330,'sawtooth',0.06,0.01,0.04,0.1),80); },
-    tradeOpen()  { chord([440,554,659],'sine',0.12,60); },
-    win()        { chord([523,659,784,1047],'sine',0.15,55); setTimeout(()=>tone(1047,'sine',0.1,0.01,0.15,0.3),280); },
-    bigWin()     { [523,659,784,1047,1319].forEach((f,i)=>setTimeout(()=>tone(f,'sine',0.18,0.01,0.12,0.25),i*60)); },
-    loss()       { tone(220,'sawtooth',0.1,0.01,0.05,0.18); setTimeout(()=>tone(165,'sawtooth',0.08,0.01,0.05,0.3),120); },
-    stopLoss()   { [330,220,165].forEach((f,i)=>setTimeout(()=>tone(f,'square',0.1,0.01,0.06,0.2),i*90)); },
-    takeProfit() { chord([659,784,1047],'triangle',0.14,70); },
-    tick()       { tone(880,'sine',0.04,0.005,0.01,0.05); },
-  };
-})();
 
 // ══════════════════════════════════════════════════════
 // ANIMATION ENGINE
@@ -6186,49 +6140,7 @@ const FX = (() => {
   return { pnlFlyUp, flash, shake, confetti };
 })();
 
-// ══════════════════════════════════════════════════════
-// VOICE ENGINE  (SpeechSynthesis — no API key needed)
-// ══════════════════════════════════════════════════════
-const VOICE = (() => {
-  let enabled = localStorage.getItem('ta_voice') === 'true';
-  let voice = null;
 
-  function pickVoice() {
-    const voices = speechSynthesis.getVoices();
-    voice = voices.find(v => v.lang.startsWith('en') && /male/i.test(v.name))
-         || voices.find(v => v.lang.startsWith('en'))
-         || voices[0] || null;
-  }
-  if (typeof speechSynthesis !== 'undefined') {
-    if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = pickVoice;
-    pickVoice();
-  }
-
-  function say(text, rate=1.05, pitch=1) {
-    if (!enabled || typeof speechSynthesis === 'undefined') return;
-    try {
-      speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text);
-      u.voice = voice; u.rate = rate; u.pitch = pitch; u.volume = 0.9;
-      speechSynthesis.speak(u);
-    } catch(e) {}
-  }
-
-  function fmt(n) {
-    const a = Math.abs(n);
-    return '$' + (a >= 100 ? a.toFixed(0) : a >= 10 ? a.toFixed(1) : a.toFixed(2));
-  }
-
-  return {
-    get enabled() { return enabled; },
-    toggle() { enabled = !enabled; localStorage.setItem('ta_voice', enabled?'true':'false'); return enabled; },
-    tradeOpen(bot, token, method) { say(`Bot ${bot}, ${method.toLowerCase()} on ${token}`, 1.1); },
-    win(bot, amount)   { say(amount > 20 ? `Big win! ${fmt(amount)} profit, bot ${bot}` : `Bot ${bot} wins ${fmt(amount)}`, 1.05); },
-    loss(bot, amount)  { say(`Bot ${bot} lost ${fmt(amount)}`, 0.95, 0.85); },
-    stopLoss(bot)      { say(`Stop loss, bot ${bot}`, 1.0, 0.8); },
-    takeProfit(bot)    { say(`Take profit hit, bot ${bot}`, 1.1, 1.1); },
-  };
-})();
 
 // Inject keyframe animations
 (function() {
@@ -6243,45 +6155,9 @@ const VOICE = (() => {
 })();
 
 // Sound/Voice toggle buttons in header
-function _injectAVControls() {
-  if (document.getElementById('avControls')) return;
-  const hdr = document.querySelector('.global-header');
-  if (!hdr) return;
-
-  // Hide the legacy music button if it exists
-  const legacyMusic = document.getElementById('musicToggleBtn');
-  if (legacyMusic) legacyMusic.style.display = 'none';
-
-  const wrap = document.createElement('div');
-  wrap.id = 'avControls';
-  wrap.style.cssText = 'display:flex;gap:4px;flex-shrink:0';
-  const btnStyle = 'width:26px;height:26px;border:1px solid var(--border);border-radius:4px;background:var(--chrome);color:var(--dim);font-size:13px;cursor:pointer;transition:all .15s';
-
-  const sfxOn = typeof SFX !== 'undefined' && SFX.enabled;
-  const voiceOn = typeof VOICE !== 'undefined' && VOICE.enabled;
-  const audioOn = typeof ACOUSTIC !== 'undefined' && ACOUSTIC.getConfig().audio.enabled;
-
-  wrap.innerHTML = `
-    <button id="sfxBtn" style="${btnStyle}" class="${sfxOn?'av-on':''}" title="Sound Effects" aria-label="Toggle Sound Effects" aria-pressed="${sfxOn}"
-      onclick="if(typeof ACOUSTIC!=='undefined'){ ACOUSTIC.toggleSFX(); const isOn=ACOUSTIC.getConfig().sfx.enabled; this.classList.toggle('av-on', isOn); this.setAttribute('aria-pressed', isOn); }">🔊</button>
-    <button id="voiceBtn" style="${btnStyle}" class="${voiceOn?'av-on':''}" title="Voice Announcements" aria-label="Toggle Voice Announcements" aria-pressed="${voiceOn}"
-      onclick="if(typeof ACOUSTIC!=='undefined'){ ACOUSTIC.toggleVOICE(); const isOn=ACOUSTIC.getConfig().voice.enabled; this.classList.toggle('av-on', isOn); this.setAttribute('aria-pressed', isOn); }">🎙️</button>
-    <button id="audioBtn" style="${btnStyle}" class="${audioOn?'av-on':''}" title="Acoustic Core Sequencer" aria-label="Toggle Acoustic Core Sequencer" aria-pressed="${audioOn}"
-      onclick="if(typeof ACOUSTIC!=='undefined'){ ACOUSTIC.toggleAudio(); const isOn=ACOUSTIC.getConfig().audio.enabled; this.classList.toggle('av-on', isOn); this.setAttribute('aria-pressed', isOn); }">🎹</button>`;
-
-  const gen = document.getElementById('genBadge');
-  if (gen) hdr.insertBefore(wrap, gen); else hdr.appendChild(wrap);
-
-  const st = document.createElement('style');
-  st.textContent = '#avControls .av-on{border-color:var(--cyan)!important;color:var(--cyan)!important;background:rgba(0,255,231,.08)!important}';
-  document.head.appendChild(st);
-}
-
 function toggleBackgroundMusic() {
   if (typeof ACOUSTIC !== 'undefined') {
     ACOUSTIC.toggleAudio();
-    const btn = document.getElementById('audioBtn');
-    if (btn) btn.classList.toggle('av-on', ACOUSTIC.getConfig().audio.enabled);
   }
 }
 
@@ -6304,6 +6180,7 @@ document.addEventListener('keydown', function(e) {
 
 <!-- ACOUSTIC Audio-Visual Engines -->
 <script src="acoustic-bundle.js" defer></script>
+<script src="ACOUSTIC_CORE.js" defer></script>
 <script src="trading-bundle.js" defer></script>
 <script src="management-bundle.js" defer></script>
 <script>
@@ -6534,7 +6411,7 @@ function refreshSettingsUI() {
     const audioOn = cfg ? cfg.audio.enabled : false;
     const b1 = document.getElementById('settingsSfxBtn');
     const b2 = document.getElementById('settingsVoiceBtn');
-    const b3 = document.getElementById('settingsMusicBtn');
+    const b3 = document.getElementById('settingsAudioBtn');
     if (b1) b1.classList.toggle('active', sfxOn);
     if (b2) b2.classList.toggle('active', voiceOn);
     if (b3) b3.classList.toggle('active', audioOn);
@@ -6634,10 +6511,10 @@ function toggleSettingsVoice() {
         btn.setAttribute('aria-pressed', isOn.toString());
     }
 }
-function toggleSettingsMusic() {
+function toggleSettingsAudio() {
     if (typeof ACOUSTIC === 'undefined') return;
     ACOUSTIC.toggleAudio();
-    const btn = document.getElementById('settingsMusicBtn');
+    const btn = document.getElementById('settingsAudioBtn');
     if (btn) {
         const isOn = ACOUSTIC.getConfig().audio.enabled;
         btn.classList.toggle('active', isOn);
@@ -6753,7 +6630,7 @@ function updateSettingsVolume(val) {
         <div style="display:flex;gap:6px;flex-wrap:wrap">
           <button id="settingsSfxBtn" class="sound-toggle active" onclick="toggleSettingsSfx()">🔊 SFX</button>
           <button id="settingsVoiceBtn" class="sound-toggle" onclick="toggleSettingsVoice()">🗣️ Voice</button>
-          <button id="settingsMusicBtn" class="sound-toggle" onclick="toggleSettingsMusic()">🎹 Music</button>
+          <button id="settingsAudioBtn" class="sound-toggle" onclick="toggleSettingsAudio()">🎹 Audio</button>
         </div>
       </div>
     </div>

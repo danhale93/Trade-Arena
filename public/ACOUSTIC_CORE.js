@@ -1,7 +1,7 @@
 /**
  * ACOUSTIC CORE - Main Integration
  * Bridges all audio/visual engines to trade events
- * Provides UI controls for SFX, FX, VOICE
+ * Provides UI controls for SFX, FX, VOICE, and Audio Telemetry
  */
 
 (function() {
@@ -11,15 +11,10 @@
   // CONFIGURATION
   // ══════════════════════════════════════════════════════
   const CONFIG = {
-    // SFX settings
     sfx: {
       enabled: true,
-      volume: 0.5,
-      winPitch: 880,
-      lossPitch: 440,
-      openPitch: 660
+      volume: 0.5
     },
-    // FX settings  
     fx: {
       enabled: true,
       flashWin: 'rgba(57,255,20,0.12)',
@@ -27,13 +22,11 @@
       confettiCount: 20,
       shakeDuration: 400
     },
-    // VOICE settings
     voice: {
-      enabled: false, // Default off
+      enabled: false,
       muted: true,
       volume: 0.8
     },
-    // Audio engine settings
     audio: {
       enabled: false,
       bpm: 120,
@@ -53,9 +46,8 @@
   // INITIALIZATION
   // ══════════════════════════════════════════════════════
   async function init() {
-    console.log('[ACOUSTIC] Initializing...');
+    console.log('[ACOUSTIC] Initializing Core...');
     
-    // Load engines if they exist
     if (window.SFX) {
       sfx = window.SFX;
       if (sfx.setVolume) sfx.setVolume(CONFIG.sfx.volume);
@@ -77,164 +69,136 @@
       audioEngine = window.audioEngine;
     }
     
-    // Create ACOUSTIC control panel in header
     createControlPanel();
     
-    // Global Unlock for AudioContext
     const unlock = async () => {
-      console.log('[ACOUSTIC] User interaction detected, unlocking audio...');
+      console.log('[ACOUSTIC] Audio unlocking...');
+      if (sfx && sfx.init) await sfx.init().catch(e => {});
+      if (voice && voice.init) await voice.init().catch(e => {});
+      if (audioEngine && audioEngine.init) await audioEngine.init().catch(e => {});
 
-      // Initialize engines if needed
-      if (sfx && sfx.init) await sfx.init().catch(e => console.warn('SFX init failed', e));
-      if (voice && voice.init) await voice.init().catch(e => console.warn('VOICE init failed', e));
-      if (audioEngine && audioEngine.init) await audioEngine.init().catch(e => console.warn('AudioEngine init failed', e));
-
-      // Resume contexts
       [sfx?.ctx, voice?.ctx, audioEngine?.ctx].forEach(ctx => {
-        if (ctx && ctx.state === 'suspended') {
-          ctx.resume().then(() => console.log(`[ACOUSTIC] AudioContext resumed: ${ctx.constructor.name}`));
-        }
+        if (ctx && ctx.state === 'suspended') ctx.resume();
       });
 
-      // If audio engine was already enabled, start it
       if (CONFIG.audio.enabled && audioEngine && audioEngine.start) {
         audioEngine.start();
       }
     };
     document.addEventListener('click', unlock, { once: true });
     document.addEventListener('touchstart', unlock, { once: true });
-
-    console.log('[ACOUSTIC] Initialized');
   }
 
   // ══════════════════════════════════════════════════════
   // CONTROL PANEL
   // ══════════════════════════════════════════════════════
   function createControlPanel() {
-    // Check if already exists
     if (document.getElementById('acoustic-ctrl')) return;
     
     const panel = document.createElement('div');
     panel.id = 'acoustic-ctrl';
-    panel.className = 'gh-controls';
-    panel.style.cssText = 'margin-left:8px;display:flex;gap:4px;';
+    panel.style.cssText = 'display:flex;gap:4px;flex-shrink:0;margin-left:8px;';
+
+    const btnStyle = 'width:26px;height:26px;border:1px solid var(--border);border-radius:4px;background:var(--chrome);color:var(--dim);font-size:13px;cursor:pointer;transition:all .15s';
+
+    const sfxOn = CONFIG.sfx.enabled;
+    const voiceOn = CONFIG.voice.enabled;
+    const audioOn = CONFIG.audio.enabled;
     
     panel.innerHTML = `
-      <button class="gh-bot-btn" id="acoustic-sfx-btn" onclick="ACOUSTIC.toggleSFX()" title="Toggle sound effects">
-        🔊
-      </button>
-      <button class="gh-bot-btn" id="acoustic-fx-btn" onclick="ACOUSTIC.toggleFX()" title="Toggle visual effects">
-        ✨
-      </button>
-      <button class="gh-bot-btn" id="acoustic-voice-btn" onclick="ACOUSTIC.toggleVOICE()" title="Toggle voice announcements">
-        🗣️
-      </button>
-      <button class="gh-bot-btn" id="acoustic-audio-btn" onclick="ACOUSTIC.toggleAudio()" title="Toggle synth pad sequencer">
-        🎹
-      </button>
-    `;
+      <button id="sfxBtn" style="${btnStyle}" class="${sfxOn?'av-on':''}" title="Sound Effects" aria-label="Toggle Sound Effects" aria-pressed="${sfxOn}"
+        onclick="ACOUSTIC.toggleSFX()">🔊</button>
+      <button id="voiceBtn" style="${btnStyle}" class="${voiceOn?'av-on':''}" title="Voice Announcements" aria-label="Toggle Voice Announcements" aria-pressed="${voiceOn}"
+        onclick="ACOUSTIC.toggleVOICE()">🎙️</button>
+      <button id="audioBtn" style="${btnStyle}" class="${audioOn?'av-on':''}" title="Acoustic Core Sequencer (Telemetry)" aria-label="Toggle Acoustic Core Sequencer" aria-pressed="${audioOn}"
+        onclick="ACOUSTIC.toggleAudio()">🎹</button>
+      <button id="fxBtn" style="${btnStyle}" class="${CONFIG.fx.enabled?'av-on':''}" title="Visual Effects" aria-label="Toggle Visual Effects" aria-pressed="${CONFIG.fx.enabled}"
+        onclick="ACOUSTIC.toggleFX()">✨</button>`;
     
-    // Insert after the last gh-controls button
-    const ghControls = document.querySelector('.gh-controls');
-    if (ghControls) {
-      ghControls.appendChild(panel);
+    const hdr = document.querySelector('.global-header');
+    const gen = document.getElementById('genBadge');
+    if (hdr) {
+      if (gen) hdr.insertBefore(panel, gen); else hdr.appendChild(panel);
+    }
+
+    if (!document.getElementById('acoustic-styles')) {
+      const st = document.createElement('style');
+      st.id = 'acoustic-styles';
+      st.textContent = '#acoustic-ctrl .av-on{border-color:var(--cyan)!important;color:var(--cyan)!important;background:rgba(0,255,231,.08)!important}';
+      document.head.appendChild(st);
     }
   }
 
   // ══════════════════════════════════════════════════════
   // TOGGLE FUNCTIONS
-  // ══════════════════════════════════════════════
+  // ══════════════════════════════════════════════════════
   function toggleSFX() {
     if (!sfx) return;
-    
     CONFIG.sfx.enabled = !CONFIG.sfx.enabled;
     sfx.setMuted(!CONFIG.sfx.enabled);
-    
-    const btn = document.getElementById('acoustic-sfx-btn');
+    const btn = document.getElementById('sfxBtn');
     if (btn) {
-      btn.textContent = CONFIG.sfx.enabled ? '🔊' : '🔇';
       btn.classList.toggle('av-on', CONFIG.sfx.enabled);
+      btn.setAttribute('aria-pressed', CONFIG.sfx.enabled.toString());
     }
+    if (window.refreshSettingsUI) window.refreshSettingsUI();
   }
 
   function toggleFX() {
     if (!fx) return;
-    
     CONFIG.fx.enabled = !CONFIG.fx.enabled;
     CONFIG.fx.enabled ? fx.enable() : fx.disable();
-    
-    const btn = document.getElementById('acoustic-fx-btn');
+    const btn = document.getElementById('fxBtn');
     if (btn) {
       btn.classList.toggle('av-on', CONFIG.fx.enabled);
+      btn.setAttribute('aria-pressed', CONFIG.fx.enabled.toString());
     }
   }
 
   function toggleVOICE() {
     if (!voice) return;
-    
-    CONFIG.voice.muted = !CONFIG.voice.muted;
-    CONFIG.voice.enabled = !CONFIG.voice.muted;
+    CONFIG.voice.enabled = !CONFIG.voice.enabled;
+    CONFIG.voice.muted = !CONFIG.voice.enabled;
     voice.setMuted(CONFIG.voice.muted);
-    
-    const btn = document.getElementById('acoustic-voice-btn');
+    const btn = document.getElementById('voiceBtn');
     if (btn) {
       btn.classList.toggle('av-on', CONFIG.voice.enabled);
-      btn.textContent = CONFIG.voice.enabled ? '🗣️' : '🤐';
+      btn.setAttribute('aria-pressed', CONFIG.voice.enabled.toString());
     }
+    if (window.refreshSettingsUI) window.refreshSettingsUI();
   }
 
   function toggleAudio() {
     if (!audioEngine) return;
-    
     CONFIG.audio.enabled = !CONFIG.audio.enabled;
-    
     if (CONFIG.audio.enabled) {
-      audioEngine.init();
-      audioEngine.start();
+      audioEngine.init().then(() => audioEngine.start());
     } else {
       audioEngine.stop();
     }
-    
-    const btn = document.getElementById('acoustic-audio-btn');
+    const btn = document.getElementById('audioBtn');
     if (btn) {
       btn.classList.toggle('av-on', CONFIG.audio.enabled);
+      btn.setAttribute('aria-pressed', CONFIG.audio.enabled.toString());
     }
+    if (window.refreshSettingsUI) window.refreshSettingsUI();
   }
 
   // ══════════════════════════════════════════════════════
-  // TRADE EVENT HANDLERS
+  // TRADE EVENT HANDLERS (TELEMETRY)
   // ══════════════════════════════════════════════════════
-  
-  // Called when a trade opens
   function onTradeOpen(botId, token, method) {
-    if (sfx && CONFIG.sfx.enabled) {
-      sfx.tradeOpen();
-    }
-    
-    // Update synth pad if enabled
+    if (sfx && CONFIG.sfx.enabled) sfx.tradeOpen();
     if (audioEngine && CONFIG.audio.enabled) {
       const row = (botId - 1) % 8;
-      audioEngine.triggerPad(row, 0.7, {
-        botId,
-        token,
-        method,
-        status: 'open'
-      });
+      audioEngine.triggerTrade({ botId, token, method, status: 'open' });
     }
   }
 
-  // Called when a trade wins
   function onWin(botId, pnl, isBigWin = false) {
-    // SFX
-    if (sfx && CONFIG.sfx.enabled) {
-      isBigWin ? sfx.bigWin() : sfx.win();
-    }
-    
-    // FX - flash screen
+    if (sfx && CONFIG.sfx.enabled) isBigWin ? sfx.bigWin() : sfx.win();
     if (fx && CONFIG.fx.enabled) {
       fx.flash(CONFIG.fx.flashWin, isBigWin ? 500 : 300);
-      
-      // Get position for confetti and P&L fly up
       const card = document.getElementById('bot-' + botId);
       if (card) {
         const rect = card.getBoundingClientRect();
@@ -244,30 +208,17 @@
         if (fx.pnlFlyUp) fx.pnlFlyUp(pnl, cx - 30, cy);
       }
     }
-    
-    // Synth pad
     if (audioEngine && CONFIG.audio.enabled) {
       const row = (botId - 1) % 8;
-      audioEngine.triggerPad(row, 1, { botId, pnl, isWin: true });
+      audioEngine.triggerTrade({ botId, pnl, isWin: true });
     }
-    
-    // VOICE
-    if (voice && CONFIG.voice.enabled) {
-      voice.win(botId, pnl);
-    }
+    if (voice && CONFIG.voice.enabled) voice.win(botId, pnl);
   }
 
-  // Called when a trade loses
   function onLoss(botId, pnl, isStopLoss = false) {
-    // SFX
-    if (sfx && CONFIG.sfx.enabled) {
-      isStopLoss ? sfx.stopLoss() : sfx.loss();
-    }
-    
-    // FX - flash screen
+    if (sfx && CONFIG.sfx.enabled) isStopLoss ? sfx.stopLoss() : sfx.loss();
     if (fx && CONFIG.fx.enabled) {
       fx.flash(CONFIG.fx.flashLoss, 400);
-      
       const card = document.getElementById('bot-' + botId);
       if (card) {
         const rect = card.getBoundingClientRect();
@@ -277,28 +228,16 @@
         if (fx.pnlFlyUp) fx.pnlFlyUp(pnl, cx - 30, cy);
       }
     }
-    
-    // Synth pad
     if (audioEngine && CONFIG.audio.enabled) {
       const row = (botId - 1) % 8;
-      audioEngine.triggerPad(row, 0.6, { botId, pnl, isWin: false });
+      audioEngine.triggerTrade({ botId, pnl, isWin: false });
     }
-    
-    // VOICE
-    if (voice && CONFIG.voice.enabled) {
-      isStopLoss ? voice.stopLoss(botId) : voice.loss(botId, pnl);
-    }
+    if (voice && CONFIG.voice.enabled) isStopLoss ? voice.stopLoss(botId) : voice.loss(botId, pnl);
   }
 
-  // Called when take profit triggers
   function onTakeProfit(botId) {
-    if (voice && CONFIG.voice.enabled) {
-      voice.takeProfit(botId);
-    }
-    
-    if (sfx && CONFIG.sfx.enabled) {
-      sfx.takeProfit();
-    }
+    if (voice && CONFIG.voice.enabled) voice.takeProfit(botId);
+    if (sfx && CONFIG.sfx.enabled) sfx.takeProfit();
   }
 
   // ══════════════════════════════════════════════════════
@@ -317,11 +256,9 @@
     getConfig: () => CONFIG
   };
   
-  // Auto-init when DOM ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
     init();
   }
-
 })();
