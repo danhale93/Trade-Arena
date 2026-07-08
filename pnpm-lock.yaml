@@ -50,6 +50,9 @@ importers:
       websocket:
         specifier: ^1.0.35
         version: 1.0.35
+      zod:
+        specifier: ^3.25.76
+        version: 3.25.76
     devDependencies:
       concurrently:
         specifier: ^10.0.3

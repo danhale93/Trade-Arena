@@ -168,7 +168,14 @@ async function submitTaskToBackend(quest) {
             renderTaskCenter();
             fetchDeployments();
             if (typeof SFX !== 'undefined') SFX.win();
-            if (window.showToast) window.showToast(`${quest.label} Complete!`, 'success');
+            if (window.showToast) {
+                if (data.payout?.onChainAuth) {
+                    window.showToast(`${quest.label} Complete! Signature received for on-chain claim.`, 'success');
+                    offerOnChainClaim(data.payout.authPayload);
+                } else {
+                    window.showToast(`${quest.label} Complete!`, 'success');
+                }
+            }
         } else {
             if (window.showToast) window.showToast(data.error || 'Task submission failed', 'error');
         }
@@ -278,6 +285,52 @@ function renderQuestRow(quest) {
             </button>
         </div>
     \`;
+}
+
+async function offerOnChainClaim(authData) {
+    if (!window.ethereum && !window.privyProvider) {
+        if (window.showToast) window.showToast('Connect wallet to claim on-chain', 'error');
+        return;
+    }
+
+    const confirmClaim = confirm(`Task verified! Would you like to claim your reward on-chain now?
+(This requires a transaction on Base Mainnet)`);
+
+    if (!confirmClaim) return;
+
+    try {
+        if (window.showToast) window.showToast('Initiating on-chain claim...', 'info');
+
+        const provider = window.privyProvider || (window.ethereum ? new ethers.BrowserProvider(window.ethereum) : null);
+        if (!provider) throw new Error('No wallet provider found');
+
+        const signer = await provider.getSigner();
+        const payoutManagerAddress = localStorage.getItem('ta_payout_manager_address') || '0x0000000000000000000000000000000000000000'; // Default or from config
+
+        if (payoutManagerAddress === '0x0000000000000000000000000000000000000000') {
+            throw new Error('PayoutManager contract address not configured in settings.');
+        }
+
+        const abi = [
+            "function claimReward(address user, string taskId, uint256 amount, uint256 nonce, bytes signature) external"
+        ];
+        const contract = new ethers.Contract(payoutManagerAddress, abi, signer);
+
+        const tx = await contract.claimReward(
+            authData.user,
+            authData.taskId,
+            authData.amount,
+            authData.nonce,
+            authData.signature
+        );
+
+        if (window.showToast) window.showToast('Transaction submitted! Waiting for confirmation...', 'info');
+        await tx.wait();
+        if (window.showToast) window.showToast('Reward claimed successfully on-chain!', 'success');
+    } catch (e) {
+        console.error('[TaskCenter] On-chain claim failed:', e);
+        if (window.showToast) window.showToast(`Claim failed: ${e.message}`, 'error');
+    }
 }
 
 function renderDeploymentMonitor() {
