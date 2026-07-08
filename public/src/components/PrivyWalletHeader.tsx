@@ -1,12 +1,13 @@
 import React, { useEffect, useRef } from 'react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 
-// Extend Window interface for TypeScript
+// Extend Window interface for TypeScript bridge with legacy environment
 declare global {
   interface Window {
     privyUser: any;
     privyWalletAddress: string | null;
-    privyConnected: boolean; privyProvider: any;
+    privyConnected: boolean;
+    privyProvider: any;
     onPrivyLoginSuccess: () => void;
     onPrivyReady: (user: any, address: string | null) => void;
     updateWalletUI: () => void;
@@ -15,22 +16,27 @@ declare global {
   }
 }
 
+/**
+ * PrivyWalletHeader Component
+ * Handles Privy authentication and isolates the embedded wallet for Trade Arena.
+ */
 export const PrivyWalletHeader = () => {
   const { authenticated, user, login, logout } = usePrivy();
   const { wallets } = useWallets();
   const hasTriggeredSuccess = useRef(false);
   const lastKnownAddress = useRef<string | null>(null);
 
-  // Isolate the embedded wallet (where walletClientType === 'privy')
-  const embeddedWallet = wallets.find((wallet) => wallet.walletClientType === 'privy');
+  // 1. Isolate the active Privy embedded wallet
+  // This satisfies the requirement to pull the specific 'privy' client type.
+  const embeddedWallet = wallets.find((w) => w.walletClientType === 'privy');
 
-  // Expose login/logout to global scope for legacy HTML bridge
+  // Expose authentication controls to the global scope for legacy JS integration
   useEffect(() => {
     window.privyLoginGoogle = () => login({ loginMethod: 'google' });
     window.privyLogout = logout;
   }, [login, logout]);
 
-  // Reset trigger state upon logout
+  // Reset global state upon logout
   useEffect(() => {
     if (!authenticated) {
       hasTriggeredSuccess.current = false;
@@ -42,24 +48,22 @@ export const PrivyWalletHeader = () => {
     }
   }, [authenticated]);
 
-  // Synchronize React state with legacy global state for Trade Arena integration
+  // 2. Synchronize React state with legacy global state for Trade Arena interaction
   useEffect(() => {
-    if (authenticated) {
-      // Sync global variables used by the legacy vanilla JS engine
+    if (authenticated && user) {
+      // Update global bridge variables
       window.privyUser = user;
       window.privyWalletAddress = embeddedWallet?.address || null;
       window.privyConnected = true;
       window.privyProvider = embeddedWallet;
 
-      // Trigger the legacy transition logic (hides connect screen, shows main app)
-      // We trigger this immediately upon authentication so the user enters the Arena
-      // while the wallet continues to initialize in the background.
+      // Immediately enter the Arena upon successful login
       if (!hasTriggeredSuccess.current && typeof window.onPrivyLoginSuccess === 'function') {
         window.onPrivyLoginSuccess();
         hasTriggeredSuccess.current = true;
       }
 
-      // If the wallet address becomes available or changes, notify the legacy environment
+      // Notify the legacy engine when the wallet address becomes available
       if (embeddedWallet?.address && embeddedWallet.address !== lastKnownAddress.current) {
         lastKnownAddress.current = embeddedWallet.address;
 
@@ -74,6 +78,7 @@ export const PrivyWalletHeader = () => {
     }
   }, [authenticated, embeddedWallet, user]);
 
+  // Unauthenticated state: Show LOGIN trigger
   if (!authenticated) {
     return (
       <div className="gh-controls">
@@ -88,21 +93,22 @@ export const PrivyWalletHeader = () => {
     );
   }
 
-  // Graceful loading state if logged in but wallet is still being provisioned
+  // 3. Graceful loading state: Authenticated but wallet is still provisioning
   if (!embeddedWallet) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
-        <div className="gh-name" style={{ fontSize: '10px', color: 'var(--cyan)' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+        <div className="gh-name" style={{ fontSize: '10px', color: 'var(--cyan)', whiteSpace: 'nowrap' }}>
           {user?.google?.email || user?.email?.address || 'Authenticated'}
         </div>
-        <div style={{ fontSize: '8px', color: 'var(--amber)', fontFamily: 'Share Tech Mono' }}>
+        <div style={{ fontSize: '8px', color: 'var(--amber)', fontFamily: 'Share Tech Mono', letterSpacing: '0.5px' }}>
           Initializing arena wallet...
         </div>
       </div>
     );
   }
 
-  // Clean, truncated string format: 0x1234...abcd
+  // 4. Truncated address display: 0x1234...abcd
+  // isolates the address from the embedded wallet and formats it as requested.
   const address = embeddedWallet.address;
   const truncatedAddress = `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
 
