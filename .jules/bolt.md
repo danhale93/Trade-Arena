@@ -35,3 +35,7 @@ Action: Implemented dual-mode trading system with real on-chain execution, batch
 ## 2026-07-06 - UI Event Throttling with requestAnimationFrame
 **Learning:** In dashboards driven by high-frequency asynchronous events (like rapid trade executions or multiple bot updates), synchronous UI update functions that perform O(N) calculations and DOM manipulation can stack up multiple calls within a single browser frame. This leads to redundant CPU work and potential "jank" as the main thread struggles to clear the task queue between frames.
 **Action:** Implement a throttling wrapper using `requestAnimationFrame` and a "pending" flag for expensive UI render functions. This ensures that regardless of event burst frequency, the application only performs one calculation and render pass per display frame, significantly smoothing the UX during periods of high activity.
+
+## 2026-07-08 - Visibility Guards and Single-Pass Rolling Metrics
+**Learning:** Collapsible dashboard panels often trigger expensive O(N) re-renders even when hidden from view. Adding simple "is open" guards to these render functions eliminates unnecessary DOM churn. Furthermore, calculating rolling window metrics (like win rate over the last N trades) should be done via a backwards loop to achieve O(window) complexity instead of O(N) full array traversals.
+**Action:** Always implement visibility guards for render functions tied to collapsible UI sections. Refactor rolling metrics to walk backwards from the end of the dataset.

@@ -1679,6 +1679,10 @@ var _lastLogRenderCount = -1;
 var _lastLogTradeCount = -1;
 var _quantPending = false;
 var _logPending = false;
+var _perfPending = false;
+var _lastPerfTradeCount = -1;
+var _lastMatrixBotCount = -1;
+var _lastMatrixOpenCount = -1;
 let agentHistory=[]; // per-agent vote accuracy for quant report
 let globalLog=[];
 var bots=[], botCounter=0;
@@ -4912,17 +4916,42 @@ function updateConsensusBar(botId, pct, label, color){
 function trackAgentPerformance(ensemble, isWin){
   if(!ensemble) return;
   const correct=isWin?'LONG':'SHORT';
+
+  // ⚡ Bolt Optimization: Pre-calculate lookup Map for agentHistory to reduce O(N^2) complexity to O(N)
+  const historyMap = new Map(agentHistory.map(a => [a.key, a]));
+
   Object.entries(ensemble).forEach(([key,result])=>{
-    const existing=agentHistory.find(a=>a.key===key);
-    if(!existing){ agentHistory.push({key,correct:0,total:0,name:result.name||key}); }
-    const ag=agentHistory.find(a=>a.key===key);
+    let ag = historyMap.get(key);
+    if(!ag){
+        ag = {key,correct:0,total:0,name:result.name||key};
+        agentHistory.push(ag);
+        historyMap.set(key, ag);
+    }
     ag.total++;
     if(result.vote===correct) ag.correct++;
   });
   updateAgentPerfUI();
 }
 
+/**
+ * ⚡ Bolt Optimization: UI Update Throttling
+ * Throttles per-agent accuracy updates to once per frame and adds dirty-checking
+ * to skip redundant O(N) mapping when no new data exists.
+ */
 function updateAgentPerfUI(){
+  if (_perfPending) return;
+  _perfPending = true;
+
+  requestAnimationFrame(() => {
+    _perfPending = false;
+    _runUpdateAgentPerfUI();
+  });
+}
+
+function _runUpdateAgentPerfUI(){
+  if (closedTrades.length === _lastPerfTradeCount) return;
+  _lastPerfTradeCount = closedTrades.length;
+
   const el=document.getElementById('agentPerfRows'); if(!el) return;
   if(!agentHistory.length){ el.innerHTML='<div style="font-size:9px;color:var(--dim)">No closed trades yet.</div>'; return; }
   const ICONS={mom:'🔥',vol:'🌀',pol:'🏛️',sen:'📊',risk:'🛡️'};
@@ -5209,6 +5238,9 @@ function logLearn(msg, type = 'info') {
 }
 
 function renderLearnLog() {
+  const body = document.getElementById('learnBody');
+  if (body && !body.classList.contains('open')) return;
+
   const el = document.getElementById('learnLog'); if (!el) return;
   el.innerHTML = learningLog.slice(0, 30).map(e =>
     `<div class="ll-entry ${escapeHTML(e.type)}">[${escapeHTML(e.ts)}] ${escapeHTML(e.msg)}</div>`
@@ -5217,6 +5249,9 @@ function renderLearnLog() {
 
 // ── Render weights panel ──
 function renderLearnPanel() {
+  const body = document.getElementById('learnBody');
+  if (body && !body.classList.contains('open')) return;
+
   const AGENTS = ['mom','vol','pol','sen','risk'];
   const maxW = Math.max(...Object.values(agentWeights));
 
@@ -5259,6 +5294,9 @@ function renderLearnPanel() {
 }
 
 function renderRegimeTable() {
+  const body = document.getElementById('learnBody');
+  if (body && !body.classList.contains('open')) return;
+
   const el = document.getElementById('regimeTable'); if (!el) return;
   const strats = Object.keys(strategyRegimeMatrix);
   if (!strats.length) { el.innerHTML = '<tr><th>Strategy</th><th>TREND</th><th>CHOP</th><th>THIN</th><th>Best</th></tr><tr><td colspan="5" style="color:var(--dim)">No closed trades yet</td></tr>'; return; }
@@ -5458,19 +5496,26 @@ function checkReinstatement(totalTrades) {
 }
 
 // Get win rate for an agent over last N trades
-function getRecentAgentWr(key, window) {
-  const relevant = closedTrades
-    .filter(t => t.method !== 'HOLD' && t.ensemble && t.ensemble[key])
-    .slice(-window);
-  if (!relevant.length) return 0;
-  const correctVotes = relevant.filter(t => {
+/**
+ * ⚡ Bolt Optimization: Single-pass O(window) Backwards Loop
+ * Replaces O(N) full filter/slice/filter chain. We only care about the last
+ * M relevant trades, so we walk backwards from the end of closedTrades.
+ */
+function getRecentAgentWr(key, windowSize) {
+  let count = 0;
+  let correctVotes = 0;
+  for (let i = closedTrades.length - 1; i >= 0 && count < windowSize; i--) {
+    const t = closedTrades[i];
+    if (t.method === 'HOLD' || !t.ensemble || !t.ensemble[key]) continue;
+
+    count++;
     const vote = t.ensemble[key]?.vote;
     const correct = t.isWin
       ? (t.direction === 'long' ? 'LONG' : 'SHORT')
       : (t.direction === 'long' ? 'SHORT' : 'LONG');
-    return vote === correct;
-  }).length;
-  return correctVotes / relevant.length;
+    if (vote === correct) correctVotes++;
+  }
+  return count > 0 ? correctVotes / count : 0;
 }
 
 // ── Prompt mutation for agents on notice ──
@@ -5530,6 +5575,9 @@ function updateAuditSummaryBadge() {
 }
 
 function renderAuditPanel() {
+  const body = document.getElementById('auditBody');
+  if (body && !body.classList.contains('open')) return;
+
   const container = document.getElementById('auditAgentRows'); if (!container) return;
   const totalTrades = closedTrades.filter(t => t.method !== 'HOLD').length;
   const threshold = getNoticeThreshold();
@@ -5603,6 +5651,9 @@ function logAudit(msg, type = 'audit') {
 }
 
 function renderAuditLog() {
+  const body = document.getElementById('auditBody');
+  if (body && !body.classList.contains('open')) return;
+
   const el = document.getElementById('auditLog'); if (!el) return;
   el.innerHTML = auditHistory.slice(0, 40).map(e =>
     `<div class="al-entry ${escapeHTML(e.type)}"><span class="al-ts">${escapeHTML(e.ts)}</span><span class="al-msg">${escapeHTML(e.msg)}</span></div>`
@@ -5624,6 +5675,9 @@ function toggleAudit() {
 
 // ── Update renderLearnPanel to reflect audit status on weight cards ──
 function updateWeightCardAuditStatus() {
+  const body = document.getElementById('learnBody');
+  if (body && !body.classList.contains('open')) return;
+
   AGENT_KEYS.forEach(key => {
     const statusEl = document.getElementById('ws-' + key);
     const card = document.getElementById('wc-' + key);
@@ -5788,6 +5842,11 @@ function closeResult(id){ document.getElementById('mresult-'+id)?.classList.remo
  * Update Agent/Machine Matrix (Pad Grid)
  */
 function updateMatrix() {
+  // ⚡ Bolt Optimization: Skip redundant DOM churn if bot/position counts haven't changed
+  if (bots.length === _lastMatrixBotCount && openPositions.length === _lastMatrixOpenCount) return;
+  _lastMatrixBotCount = bots.length;
+  _lastMatrixOpenCount = openPositions.length;
+
   const grid = document.getElementById('padGrid');
   if (!grid) return;
 
