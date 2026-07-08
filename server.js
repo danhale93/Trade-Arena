@@ -455,7 +455,8 @@ app.get('/api/status/connections', async (req, res) => {
     const aiKeys = [
         { name: 'ANTHROPIC_API_KEY', key: process.env.ANTHROPIC_API_KEY, type: 'AI' },
         { name: 'OPENAI_API_KEY', key: process.env.OPENAI_API_KEY, type: 'AI' },
-        { name: 'GEMINI_API_KEY', key: process.env.GEMINI_API_KEY, type: 'AI' }
+        { name: 'GEMINI_API_KEY', key: process.env.GEMINI_API_KEY, type: 'AI' },
+        { name: '0x_API_KEY', key: process.env.ZERO_EX_API_KEY, type: 'AI' }
     ];
 
     for (const item of aiKeys) {
@@ -520,6 +521,13 @@ app.get('/api/status/connections', async (req, res) => {
         type: 'WEBHOOK',
         status: process.env.MOONPAY_WEBHOOK_SECRET ? 'CONFIGURED' : 'MISSING',
         value: mask(process.env.MOONPAY_WEBHOOK_SECRET)
+    });
+
+    results.connections.push({
+        name: 'TASK_CLAIM_SECRET',
+        type: 'SECRET',
+        status: process.env.TASK_CLAIM_SECRET ? 'CONFIGURED' : 'MISSING',
+        value: mask(process.env.TASK_CLAIM_SECRET)
     });
 
     // Contract Deployments
@@ -599,7 +607,28 @@ app.post('/api/tasks/claim', taskClaimLimiter, async (req, res) => {
         }
 
         const payoutAmount = reward <= 10 ? 0.01 : reward <= 25 ? 0.025 : 0.05;
-        const payout = await sendPayout(userAddress || 'demo', payoutAmount, 'ETH');
+
+        let payout;
+        let authPayload = null;
+
+        // On-chain PayoutManager fallback
+        if (process.env.PAYOUT_MANAGER_ADDRESS && process.env.ORACLE_PRIVATE_KEY) {
+            try {
+                const payoutService = new (require('./services/payouts/payoutService'))({
+                    oraclePrivateKey: process.env.ORACLE_PRIVATE_KEY,
+                    rewardTokenAddress: process.env.REWARD_TOKEN_ADDRESS,
+                    payoutManagerAddress: process.env.PAYOUT_MANAGER_ADDRESS,
+                    chainId: parseInt(process.env.CHAIN_ID || '8453')
+                });
+                authPayload = await payoutService.authorizePayout(userAddress, taskId, 'validated_backend_claim');
+                payout = { onChainAuth: true, authPayload };
+            } catch (e) {
+                console.error('[Payout] On-chain auth failed, falling back to direct transfer:', e.message);
+                payout = await sendPayout(userAddress || 'demo', payoutAmount, 'ETH');
+            }
+        } else {
+            payout = await sendPayout(userAddress || 'demo', payoutAmount, 'ETH');
+        }
 
         const deployment = queueBotDeployment({
             source: 'task',
