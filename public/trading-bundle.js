@@ -3192,6 +3192,9 @@ function loadEloState() {
  * UI: Render ELO Arena
  */
 function renderEloArena() {
+    const body = document.getElementById('eloBody');
+    if (body && !body.classList.contains('open')) return;
+
     const container = document.getElementById('eloArenaRows');
     if (!container) return;
 
