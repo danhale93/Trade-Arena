@@ -19,7 +19,7 @@ app.use(express.json());
 app.use(express.static(__dirname)); // Serve all files in current directory as static
 
 // Configuration
-const RPC_URL = 'https://mainnet.base.org'; // Base network RPC
+const RPC_URL = 'https://base-mainnet.g.alchemy.com/v2/3zUWwmlHTQNjmM55sV2X0'; // Base network RPC
 const AAVE_FLASH_LOAN_ADDRESS = '0x794a61358D6845594F94dc1DB02A252b5b4814aD'; // Base Aave
 const UNISWAP_V3_ADDRESS = '0x68b3465833fb72B5A828cCEA02FFAD6bCFB8ACCA'; // Base Swap Router
 

@@ -9,8 +9,8 @@ const baseMainnet = {
   network: 'base',
   nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
   rpcUrls: {
-    default: { http: ['https://mainnet.base.org'] },
-    public: { http: ['https://mainnet.base.org'] },
+    default: { http: ['https://base-mainnet.g.alchemy.com/v2/3zUWwmlHTQNjmM55sV2X0', 'https://mainnet.base.org'] },
+    public: { http: ['https://base-mainnet.g.alchemy.com/v2/3zUWwmlHTQNjmM55sV2X0', 'https://mainnet.base.org'] },
   },
   blockExplorers: {
     default: { name: 'Basescan', url: 'https://basescan.org' },

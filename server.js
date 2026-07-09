@@ -338,7 +338,8 @@ app.get('/api/deployments', (req, res) => {
 const FAUCET_CLAIMED_IPS = new Set();
 
 const PAYOUT_PRIVATE_KEY = process.env.PAYOUT_PRIVATE_KEY || '';
-const PAYOUT_RPC_URL = process.env.RPC_URL || 'https://mainnet.base.org';
+const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY || '3zUWwmlHTQNjmM55sV2X0';
+const PAYOUT_RPC_URL = ALCHEMY_API_KEY ? `https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}` : (process.env.RPC_URL || 'https://mainnet.base.org');
 const PAYOUT_CHAIN_ID = 8453;
 const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 const BASE_ETH_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
@@ -469,7 +470,7 @@ app.get('/api/status/connections', async (req, res) => {
     }
 
     const rpcs = [
-        { name: 'RPC_URL (Base Mainnet)', url: process.env.RPC_URL || 'https://mainnet.base.org' },
+        { name: 'RPC_URL (Base Mainnet)', url: PAYOUT_RPC_URL },
         { name: 'BASE_SEPOLIA_RPC_URL', url: process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org' }
     ];
 
