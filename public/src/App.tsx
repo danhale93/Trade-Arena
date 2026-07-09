@@ -2,6 +2,12 @@ import React from 'react';
 import { PrivyProvider } from '@privy-io/react-auth';
 import PrivyWalletHeader from './components/PrivyWalletHeader';
 
+// RPC configuration with fallback
+const ALCHEMY_KEY = ''; // Add your Alchemy Key here if needed for local builds
+const RPC_URLS = ALCHEMY_KEY
+  ? [`https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}`, 'https://mainnet.base.org']
+  : ['https://mainnet.base.org'];
+
 // Define Base Mainnet configuration manually to avoid external dependency issues
 const baseMainnet = {
   id: 8453,
@@ -9,8 +15,8 @@ const baseMainnet = {
   network: 'base',
   nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
   rpcUrls: {
-    default: { http: ['https://mainnet.base.org'] },
-    public: { http: ['https://mainnet.base.org'] },
+    default: { http: RPC_URLS },
+    public: { http: RPC_URLS },
   },
   blockExplorers: {
     default: { name: 'Basescan', url: 'https://basescan.org' },
