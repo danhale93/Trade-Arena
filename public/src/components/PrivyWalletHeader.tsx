@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 
 // Extend Window interface for TypeScript bridge with legacy environment
@@ -11,7 +11,9 @@ declare global {
     onPrivyLoginSuccess: () => void;
     onPrivyReady: (user: any, address: string | null) => void;
     updateWalletUI: () => void;
+    privyInit: () => void;
     privyLoginGoogle: () => void;
+    privyLoginApple: () => void;
     privyLogout: () => void;
   }
 }
@@ -26,13 +28,18 @@ export const PrivyWalletHeader = () => {
   const hasTriggeredSuccess = useRef(false);
   const lastKnownAddress = useRef<string | null>(null);
 
-  // 1. Isolate the active Privy embedded wallet
+  // 1. Isolate the active Privy embedded wallet using useMemo for efficiency
   // This satisfies the requirement to pull the specific 'privy' client type.
-  const embeddedWallet = wallets.find((w) => w.walletClientType === 'privy');
+  const embeddedWallet = useMemo(() =>
+    wallets.find((w) => w.walletClientType === 'privy'),
+    [wallets]
+  );
 
   // Expose authentication controls to the global scope for legacy JS integration
   useEffect(() => {
+    window.privyInit = () => console.log('[Privy] Header bridge active');
     window.privyLoginGoogle = () => login({ loginMethod: 'google' });
+    window.privyLoginApple = () => login({ loginMethod: 'apple' });
     window.privyLogout = logout;
   }, [login, logout]);
 
