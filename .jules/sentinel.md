@@ -94,3 +94,26 @@ Running security audit across localStorage and active config...
 
 ## 2026-07-08T11:25:26.972Z - [INFO] SENTINEL
 Running security audit across localStorage and active config...
+
+## 2026-07-09T06:44:24.486Z - [INFO] SENTINEL
+Running security audit across localStorage and active config...
+
+## 2026-07-09T06:44:28.469Z - [SUCCESS] SENTINEL
+Security audit complete. All encryption layers intact.
+
+## 2026-07-09T06:48:08.782Z - [INFO] SENTINEL
+Running security audit across localStorage and active config...
+
+## 2026-07-09T06:48:12.782Z - [SUCCESS] SENTINEL
+Security audit complete. All encryption layers intact.
+
+## 2026-07-09T06:58:45.991Z - [INFO] SENTINEL
+Running security audit across localStorage and active config...
+
+## 2026-07-09T06:58:49.992Z - [SUCCESS] SENTINEL
+Security audit complete. All encryption layers intact.
+
+## 2025-05-15 - Unauthenticated Payout Claims
+**Vulnerability:** The `/api/v1/payouts/claim` endpoint lacked authentication, allowing any user to request a payout signature by providing just a wallet address and a taskId.
+**Learning:** High-value endpoints (like those involving financial transfers or signatures) must not rely on client-side logic for authorization. The lack of a server-side secret check meant the "proof of work" was effectively bypassed.
+**Prevention:** Always require a server-validated token or signature for sensitive operations, and ensure environment variables for these secrets are mandatory for the service to start.

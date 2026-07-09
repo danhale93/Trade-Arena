@@ -21,7 +21,19 @@ const payoutService = new PayoutService({
 
 router.post('/claim', payoutLimiter, async (req, res) => {
     try {
-        const { userAddress, taskId, proofOfWork } = req.body;
+        const { userAddress, taskId, proofOfWork, validationToken } = req.body;
+
+        // Security: Validate the claim secret to prevent unauthorized signature requests
+        const CLAIM_SECRET = process.env.TASK_CLAIM_SECRET;
+        if (!CLAIM_SECRET) {
+            return res.status(503).json({ error: 'Payout system not configured' });
+        }
+
+        if (validationToken !== CLAIM_SECRET) {
+            console.warn(`[Payout API] Unauthorized claim attempt for ${userAddress}`);
+            return res.status(401).json({ error: 'Unauthorized claim' });
+        }
+
         const authPayload = await payoutService.authorizePayout(userAddress, taskId, proofOfWork);
         res.json({ success: true, data: authPayload });
     } catch (error) {
