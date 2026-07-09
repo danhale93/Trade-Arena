@@ -1505,7 +1505,7 @@ function escapeHTML(str) {
  * Toggle visibility of a password/API key input field
  */
 function toggleAdvancedSettings(btn) {
-  if(typeof SFX !== 'undefined') SFX.tick();
+  if(typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
   const panel = document.getElementById('advancedSettings');
   if (!panel) return;
   const isHidden = panel.style.display === 'none' || panel.style.display === '';
@@ -2880,7 +2880,7 @@ function downloadFile(content, filename, type) {
 // CIRCUIT BREAKERS
 // ══════════════════════════════════════════════════════
 function togglePanel(name) {
-  if(typeof SFX !== 'undefined') SFX.tick();
+  if(typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
   const bodyId=name+'Body', hdId=name+'Hd', toggleId=name+'Toggle';
   const body=document.getElementById(bodyId), toggle=document.getElementById(toggleId), hd=document.getElementById(hdId);
   if(!body||!toggle) return;
@@ -2989,7 +2989,7 @@ function saveApiKeyFromDashboard(keyName) {
   }
 
   if (window.showToast) window.showToast(`${keyName} saved locally!`, 'success');
-  if (typeof SFX !== 'undefined') SFX.tick();
+  if (typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
   updateConnectionDashboard();
 }
 
@@ -2997,7 +2997,7 @@ function saveApiKeyFromDashboard(keyName) {
  * MARKETPLACE UI LOGIC
  */
 function switchTaskTab(tab) {
-    if(typeof SFX !== 'undefined') SFX.tick();
+    if(typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
     ['internal', 'identities', 'market'].forEach(t => {
         const content = document.getElementById(`task-tab-${t}`);
         const btn = document.getElementById(`tab-${t}`);
@@ -3405,7 +3405,7 @@ async function claimPayout() {
   btn.disabled = true;
 
   try {
-    if (typeof SFX !== 'undefined') SFX.tick();
+    if (typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
 
     // Check wallet connection
     if (!window.ethereum || !window.ethereum.selectedAddress) {
@@ -3753,7 +3753,7 @@ function updateBotPnl(bot){
 // BOT MANAGEMENT
 // ══════════════════════════════════════════════════════
 function addBot(type = 'TRADER', silent = false){
-  if(!silent && typeof SFX !== 'undefined') SFX.tick();
+  if(!silent && typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
   if(bots.length>=MAX_BOTS) {
     if(!silent && window.showToast) showToast(`Maximum bot limit reached (${MAX_BOTS})`, 'error');
     return;
@@ -3826,7 +3826,7 @@ function _syncHeaderBotBtns(){
 // ── Global auto toggle ──
 let _ghAutoOn=false;
 function globalAutoToggle(){
-  if(typeof SFX !== 'undefined') SFX.tick();
+  if(typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
   _ghAutoOn=!_ghAutoOn;
   bots.forEach(b=>{
     if(_ghAutoOn===b.auto) return; // already in target state
@@ -4175,7 +4175,7 @@ async function spinBot(id){
       if (stepEl) stepEl.textContent = '📂 Scanning for tasks...';
 
       try {
-          if (typeof SFX !== 'undefined') SFX.tick();
+          if (typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
           await new Promise(r => setTimeout(r, 2000));
 
           if (window.taskState) {
@@ -5322,7 +5322,7 @@ function renderRegimeTable() {
 
 // ── UI toggles ──
 function toggleLearn() {
-  if(typeof SFX !== 'undefined') SFX.tick();
+  if(typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
   const body = document.getElementById('learnBody');
   const hd = document.getElementById('learnHd');
   const toggle = document.getElementById('learnToggle');
@@ -5660,7 +5660,7 @@ function renderAuditLog() {
 }
 
 function toggleAudit() {
-  if(typeof SFX !== 'undefined') SFX.tick();
+  if(typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
   const body = document.getElementById('auditBody');
   const hd = document.getElementById('auditHd');
   const toggle = document.getElementById('auditToggle');
@@ -5899,7 +5899,7 @@ function scrollToBot(id) {
   el.classList.add('highlight-pulse');
 
   // Play subtle tick
-  if (typeof SFX !== 'undefined') SFX.tick();
+  if (typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
 }
 
 function setVal(id,v){ const e=document.getElementById(id); if(!e) return; if(e && e.textContent !== String(v)) e.textContent=v; }
@@ -5936,7 +5936,7 @@ setInterval(function(){
 const PERSONALITIES = ['AGGRESSIVE','CONSERVATIVE','MOMENTUM','CONTRARIAN','BALANCED'];
 
 function toggleFleetView() {
-  if(typeof SFX !== 'undefined') SFX.tick();
+  if(typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
   const grid = document.getElementById('botGrid');
   const btn = document.getElementById('fleetViewBtn');
   if (!grid) return;
@@ -5948,7 +5948,7 @@ function toggleFleetView() {
 }
 
 function toggleBusPanel() {
-  if(typeof SFX !== 'undefined') SFX.tick();
+  if(typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
   const panel = document.getElementById('busPanel');
   const btn   = document.getElementById('ghBusBtn');
   if (!panel) return;
@@ -6216,7 +6216,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script>
 function toggleVoiceAgent() {
-  if(typeof SFX !== 'undefined') SFX.tick();
+  if(typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
   const modal = document.getElementById('voiceAgentModal');
   const btn = document.getElementById('voiceAgentBtn');
   if (!modal) return;
@@ -6349,7 +6349,7 @@ Respond in JSON format:
 
 // ═══ SETTINGS MODAL FUNCTIONS ═══
 function toggleSettingsModal() {
-    if(typeof SFX !== 'undefined') SFX.tick();
+    if(typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
     const modal = document.getElementById('settingsModal');
     if (!modal) return;
     const isOpening = modal.style.display === 'none' || modal.style.display === '';
@@ -6526,6 +6526,7 @@ function updateSettingsVolume(val) {
         if (window.VOICE && window.VOICE.setVolume) window.VOICE.setVolume(vol / 100);
     }
 }
+</script>
 
 <!-- ══ SETTINGS MODAL ══ -->
 <div id="settingsModal" style="display:none">
