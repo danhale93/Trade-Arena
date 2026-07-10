@@ -740,78 +740,34 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
   <div style="display:flex;gap:8px;font-size:10px;color:var(--dim);justify-content:center;flex-wrap:wrap;text-align:center">
     <span>5 AI agents · Real prices · Self-learning · Politician filings</span>
   </div>
-  <!-- Fiat Deposit Section -->
-                        <div class="login-card">
-      <div class="login-card-hd">SIGN IN TO THE FLOOR</div>
-      <div class="login-card-bd">
-        <button class="mm-btn" onclick="window.loginMetaMask && loginMetaMask()" style="width:100%; margin-bottom: 8px;">
-          <svg width="20" height="20" viewBox="0 0 318 318"><path d="M274 35L174 109l19-44z" fill="#E17726"/><path d="M44 35l99 75-18-44z" fill="#E27625"/><path d="M234 218l-27 41 58 16 17-56z" fill="#E27625"/><path d="M36 219l17 56 57-16-26-41z" fill="#E27625"/><path d="M107 143l-17 25 60 3-2-64z" fill="#E27625"/><path d="M211 143l-42-37-2 64 60-3z" fill="#E27625"/></svg>
-          METAMASK (RECOMMENDED)
-        </button>
+<div class="login-card">
+    <div class="login-card-hd">UNIFIED ARENA ACCESS</div>
+    <div class="login-card-bd">
+      <button class="mm-btn" onclick="if(typeof privyInit==='function') privyInit(); privyLoginGoogle()" style="width:100%; height: 52px; font-size: 16px;">
+        ENTER ARENA
+      </button>
 
-        <div class="divider">— or —</div>
-
-        <button class="privy-btn" onclick="window.loginPrivy && loginPrivy()" style="width:100%; margin-bottom: 8px; background:#6344d4; color:white; border:none; border-radius:8px; padding:12px; font-family:'Bungee',display; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px;">
-          <img src="https://mintlfy.s3.amazonaws.com/privy/logo/dark.svg" alt="Privy" style="height:12px; filter:invert(1)">
-          SOCIAL LOGIN (GOOGLE/EMAIL)
-        </button>
-
-        <button class="demo-btn" onclick="window.loginDemo && loginDemo()" style="width:100%; margin-bottom: 8px;">
-          <span style="font-size:16px">🎮</span> ENTER DEMO ARENA (FREE)
-        </button>
-
-        <button class="advanced-toggle" onclick="window.toggleAdvancedSettings && toggleAdvancedSettings(this)" aria-expanded="false" aria-controls="advancedSettings" style="width:100%; background:none; border:1px solid var(--border); color:var(--dim); padding:8px; border-radius:8px; cursor:pointer; font-family:'Share Tech Mono',monospace; font-size:11px;">
-          ⚙️ System Options
-        </button>
-
-        <div id="advancedSettings" style="display:none;margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
-          <div class="divider">— System Options —</div>
-          <div style="font-size: 9px; color: var(--dim); text-align: center; margin-bottom: 8px;">Technical controls for debugging and testing.</div>
-
-          <div style="display:flex; gap:8px; margin-bottom: 8px;">
-            <button class="cb-btn" onclick="window.loginCoinbase && loginCoinbase()" style="flex:1; margin-top:0">COINBASE</button>
-          </div>
-
-          <button class="payid-btn" onclick="window.loginPayID && loginPayID()" style="margin-top:0; width:100%">
-            <span style="font-size:16px">⚡</span> PAYID NO-KYC ONBOARDING (AUD)
-          </button>
-        </div>
+      <div style="margin-top: 12px; display:flex; gap:8px;">
+        <button class="onramp-btn" onclick="window.openMoonpay && window.openMoonpay()" style="flex:1">💳 DEPOSIT</button>
+        <button class="offramp-btn" onclick="openOskoRamp('offramp')" style="flex:1">💵 WITHDRAW</button>
       </div>
     </div>
-      <div class="login-card-bd">
-        <button class="mm-btn" onclick="window.loginMetaMask && loginMetaMask()" style="width:100%; margin-bottom: 8px;">
-          <svg width="20" height="20" viewBox="0 0 318 318"><path d="M274 35L174 109l19-44z" fill="#E17726"/><path d="M44 35l99 75-18-44z" fill="#E27625"/><path d="M234 218l-27 41 58 16 17-56z" fill="#E27625"/><path d="M36 219l17 56 57-16-26-41z" fill="#E27625"/><path d="M107 143l-17 25 60 3-2-64z" fill="#E27625"/><path d="M211 143l-42-37-2 64 60-3z" fill="#E27625"/></svg>
-          METAMASK (RECOMMENDED)
-        </button>
-
-        <div class="divider">— or —</div>
-
-        <button class="privy-btn" onclick="window.loginPrivy && loginPrivy()" style="width:100%; margin-bottom: 8px; background:#6344d4; color:white; border:none; border-radius:8px; padding:12px; font-family:'Bungee',display; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px;">
-          <img src="https://mintlfy.s3.amazonaws.com/privy/logo/dark.svg" alt="Privy" style="height:12px; filter:invert(1)">
-          SOCIAL LOGIN (GOOGLE/EMAIL)
-        </button>
-
-        <button class="demo-btn" onclick="window.loginDemo && loginDemo()" style="width:100%; margin-bottom: 8px;">
-          <span style="font-size:16px">🎮</span> ENTER DEMO ARENA (FREE)
-        </button>
-
-        <button class="advanced-toggle" onclick="window.toggleAdvancedSettings && toggleAdvancedSettings(this)" aria-expanded="false" aria-controls="advancedSettings" style="width:100%; background:none; border:1px solid var(--border); color:var(--dim); padding:8px; border-radius:8px; cursor:pointer; font-family:'Share Tech Mono',monospace; font-size:11px;">
-          ⚙️ System Options
-        </button>
-
-        <div id="advancedSettings" style="display:none;margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
-          <div class="divider">— System Options —</div>
-          <div style="font-size: 9px; color: var(--dim); text-align: center; margin-bottom: 8px;">Technical controls for debugging and testing.</div>
-
-          <div style="display:flex; gap:8px; margin-bottom: 8px;">
-            <button class="cb-btn" onclick="window.loginCoinbase && loginCoinbase()" style="flex:1; margin-top:0">COINBASE</button>
-          </div>
-
-          <button class="payid-btn" onclick="window.loginPayID && loginPayID()" style="margin-top:0; width:100%">
-            <span style="font-size:16px">⚡</span> PAYID NO-KYC ONBOARDING (AUD)
-          </button>
-        </div>
-      </div>
+  </div>
+  <p id="loginStatus" aria-live="polite" style="min-height:16px;font-size:11px;color:var(--cyan);text-align:center;transition:all .3s"></p>
+  <div class="setup-note">
+    <strong>AI API Keys</strong> — enables full AI agents. Get yours:
+    <a href="https://console.anthropic.com" target="_blank">Anthropic</a> |
+    <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI</a> |
+    <a href="https://aistudio.google.com/app/apikey" target="_blank">Gemini</a> |
+    <a href="https://dashboard.0x.org" target="_blank">0x (Swaps)</a>
+    <div style="display:flex;gap:4px;margin-top:5px">
+      <input type="password" id="apiKeyInput" placeholder="Paste primary key (Anthropic) here..." style="flex:1;padding:5px 8px;background:var(--bg);border:1px solid var(--border);color:var(--cyan);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px;" oninput="window._userApiKey=this.value.trim(); localStorage.setItem('ta_api_key', this.value.trim())">
+      <button onclick="toggleSettingsModal()" style="padding:4px 8px;background:var(--chrome);border:1px solid var(--border);color:var(--cyan);border-radius:4px;font-family:'Bungee',display;font-size:8px;cursor:pointer">ALL KEYS</button>
+    </div>
+    <span style="color:var(--dim);font-size:8px">Without keys the app uses rule-based signals. Demo Mode requires no wallet or key.</span>
+  </div>
+  
+  <!-- Fiat Deposit Section -->
   <div id="depositSection" style="margin-top:16px;padding:12px;border-top:1px solid var(--border);">
     <div class="divider">💰 Fiat Deposit (USDC on Base)</div>
     
@@ -853,19 +809,20 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         </svg>
         <span id="errorMessage">Deposit failed. Please try again.</span>
       </div>
-      <button class="demo-btn" onclick="retryDeposit()" style="width:100%;">
-        Retry Deposit
-      </button>
+
+      <p style="font-size:9px; color:var(--dim); text-align:center; margin-top:8px; line-height:1.4">
+        Powered by Privy • Secure Multi-Chain Authentication<br>
+        <span style="color:var(--cyan)">Base Mainnet Protocol</span>
+      </p>
     </div>
   </div>
-</div>
 
 <!-- ══ MAIN APP ══ -->
 <div id="mainApp">
 
   <!-- Header -->
   <div class="global-header">
-    <div class="gh-avatar" id="ghAvatar">👤</div>
+    <div class="gh-avatar" id="ghAvatar" role="img" aria-label="User Avatar">👤</div>
     <div style="flex:1;overflow:hidden;min-width:60px">
       <div id="react-header-root"></div>
       <div class="gh-name" id="ghName" style="display:none">—</div>
@@ -890,13 +847,13 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     </div>
      <!-- bot controls -->
      <div class="gh-controls">
-       <button class="gh-bus-btn" id="ghStaffBtn" onclick="togglePanel('staff')" title="Application Maintenance & Support" aria-expanded="false">👷 STAFF</button>
-       <button class="gh-bus-btn" id="ghTaskBtn" onclick="window.togglePanel && togglePanel('task')" title="Earn Trade Credits" aria-expanded="false">💰 EARN</button>
-       <button class="gh-bus-btn" id="ghEloBtn" onclick="togglePanel('elo')" title="ELO Arena - Recursive Improvement" aria-expanded="false">🏆 ARENA</button>
-       <button class="gh-bus-btn" id="voiceAgentBtn" onclick="toggleVoiceAgent()" title="AI Floor Manager (Voice Chat)" aria-expanded="false">🎙️ AGENT</button>
-       <button class="gh-bus-btn" id="fleetViewBtn" onclick="toggleFleetView()" title="Toggle Fleet View (Compact Grid)">📊 FLEET</button>
-        <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots" aria-expanded="false">⚙ BUS</button>
-        <button class="gh-bus-btn" id="ghSettingsBtn" onclick="window.toggleSettingsModal && toggleSettingsModal()" title="Settings" aria-expanded="false">⚙ SETTINGS</button>
+       <button class="gh-bus-btn" id="ghStaffBtn" onclick="togglePanel('staff')" title="Application Maintenance & Support" aria-expanded="false"><span role="img" aria-hidden="true">👷</span> STAFF</button>
+       <button class="gh-bus-btn" id="ghTaskBtn" onclick="togglePanel('task')" title="Earn Trade Credits" aria-expanded="false"><span role="img" aria-hidden="true">💰</span> EARN</button>
+       <button class="gh-bus-btn" id="ghEloBtn" onclick="togglePanel('elo')" title="ELO Arena - Recursive Improvement" aria-expanded="false"><span role="img" aria-hidden="true">🏆</span> ARENA</button>
+       <button class="gh-bus-btn" id="voiceAgentBtn" onclick="toggleVoiceAgent()" title="AI Floor Manager (Voice Chat)" aria-expanded="false"><span role="img" aria-hidden="true">🎙️</span> AGENT</button>
+       <button class="gh-bus-btn" id="fleetViewBtn" onclick="toggleFleetView()" title="Toggle Fleet View (Compact Grid)"><span role="img" aria-hidden="true">📊</span> FLEET</button>
+        <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots" aria-expanded="false"><span role="img" aria-hidden="true">⚙</span> BUS</button>
+        <button class="gh-bus-btn" id="ghSettingsBtn" onclick="toggleSettingsModal()" title="Settings" aria-expanded="false"><span role="img" aria-hidden="true">⚙</span> SETTINGS</button>
         <button class="gh-auto-btn" id="liveToggleBtn" onclick="toggleLiveMode()" title="Toggle Live/Demo Mode" style="border-color:var(--gold2);color:var(--gold2)">DEMO</button>
        <button class="gh-auto-btn" id="ghAutoBtn" onclick="globalAutoToggle()" title="Toggle auto-trading on all bots" aria-pressed="false">AUTO</button>
        <button class="gh-bot-btn" id="ghRemoveBtn" onclick="removeLastBot()" title="Remove last bot" aria-label="Remove last bot" disabled>−</button>
@@ -990,14 +947,14 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('optimized')"   title="Optimized spread based on learning model">⚡ OPTIMIZED</button>
       <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('reset')"       title="Reset all bots to defaults">↺ RESET ALL</button>
     </div>
-    <div class="bus-status" id="busStatus"></div>
+    <div class="bus-status" id="busStatus" aria-live="polite"></div>
   </div>
 
   <!-- ★ AGENT AUDIT PANEL ★ -->
   <div class="audit-panel" id="auditPanel">
     <div class="audit-hd" id="auditHd" onclick="toggleAudit()" role="button" tabindex="0">
       <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:14px">🔍</span>
+        <span style="font-size:14px" role="img" aria-hidden="true">🔍</span>
         <span class="audit-title">AGENT AUDIT</span>
         <span class="audit-summary" id="auditSummary">ALL CLEAR</span>
       </div>
@@ -1029,7 +986,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
   <div class="learn-panel" id="learnPanel">
     <div class="learn-hd" id="learnHd" onclick="toggleLearn()" role="button" tabindex="0">
       <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:14px">🧬</span>
+        <span style="font-size:14px" role="img" aria-hidden="true">🧬</span>
         <span class="learn-title">SELF-LEARNING MODEL</span>
         <span class="learn-gen" id="learnGenLabel">GENERATION 0</span>
       </div>
@@ -1077,7 +1034,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
   <div class="cpanel" id="quantPanel">
     <div class="cpanel-hd" id="quantHd" onclick="togglePanel('quant')" style="background:linear-gradient(90deg,rgba(68,136,255,.06),transparent)" role="button" tabindex="0">
       <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:14px">🧪</span>
+        <span style="font-size:14px" role="img" aria-hidden="true">🧪</span>
         <span class="cpanel-title" style="color:var(--blue)">QUANT REPORT</span>
         <span style="font-size:9px;color:var(--dim)" id="qTradeCount">0 closed trades</span>
       </div>
@@ -1219,7 +1176,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
   <div class="cpanel" id="connPanel">
     <div class="cpanel-hd" id="connHd" onclick="togglePanel('conn')" style="background:linear-gradient(90deg,rgba(0,255,231,.06),transparent)" role="button" tabindex="0">
       <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:14px">🔌</span>
+        <span style="font-size:14px" role="img" aria-hidden="true">🔌</span>
         <span class="cpanel-title" style="color:var(--cyan)">CONNECTION DASHBOARD</span>
         <span style="font-size:9px;color:var(--dim)">System Connectivity & Requirements</span>
       </div>
@@ -1242,7 +1199,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
             <ul style="list-style:none; color:var(--dim); line-height:1.6">
               <li>• Network: <span style="color:#fff">Base Mainnet</span></li>
               <li>• Chain ID: <span style="color:#fff">8453</span></li>
-              <li>• RPC URL: <span style="color:#fff">https://mainnet.base.org</span></li>
+              <li>• RPC URL: <span style="color:#fff">Alchemy (Primary)</span></li>
               <li>• Currency: <span style="color:#fff">ETH</span></li>
             </ul>
           </div>
@@ -1263,7 +1220,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
   <div class="cpanel" id="staffPanel">
     <div class="cpanel-hd" id="staffHd" onclick="togglePanel('staff')" style="background:linear-gradient(90deg,rgba(0,255,231,.06),transparent)" role="button" tabindex="0">
       <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:14px">👷</span>
+        <span style="font-size:14px" role="img" aria-hidden="true">👷</span>
         <span class="cpanel-title" style="color:var(--cyan)">STAFF OPERATIONS</span>
         <span style="font-size:9px;color:var(--dim)">Maintenance & Customer Service</span>
       </div>
@@ -1312,7 +1269,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
   <div class="cpanel" id="eloPanel">
     <div class="cpanel-hd" id="eloHd" onclick="togglePanel('elo')" style="background:linear-gradient(90deg,rgba(0,255,231,.06),transparent)" role="button" tabindex="0">
       <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:14px">🏆</span>
+        <span style="font-size:14px" role="img" aria-hidden="true">🏆</span>
         <span class="cpanel-title" style="color:var(--cyan)">ELO ARENA</span>
         <span style="font-size:9px;color:var(--dim)">Recursive Self-Improvement</span>
       </div>
@@ -1330,7 +1287,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
   <div class="cpanel" id="taskPanel">
     <div class="cpanel-hd" id="taskHd" onclick="window.togglePanel && togglePanel('task')" style="background:linear-gradient(90deg,rgba(57,255,20,.06),transparent)" role="button" tabindex="0">
       <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:14px">📡</span>
+        <span style="font-size:14px" role="img" aria-hidden="true">📡</span>
         <span class="cpanel-title" style="color:var(--green)">TASK CENTER & MARKETPLACE</span>
         <span style="font-size:9px;color:var(--dim)" id="marketplaceEarning">Total Earned: 0 USDC</span>
       </div>
@@ -1378,7 +1335,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
   <div class="cpanel" id="breakerPanel">
     <div class="cpanel-hd" id="breakerHd" onclick="togglePanel('breaker')" style="background:linear-gradient(90deg,rgba(255,179,0,.06),transparent)" role="button" tabindex="0">
       <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:14px">🛡️</span>
+        <span style="font-size:14px" role="img" aria-hidden="true">🛡️</span>
         <span class="cpanel-title" style="color:var(--amber)">CIRCUIT BREAKERS</span>
         <span class="breaker-status bs-ok" id="breakerStatus">ALL CLEAR</span>
       </div>
@@ -1513,7 +1470,7 @@ function escapeHTML(str) {
  * Toggle visibility of a password/API key input field
  */
 function toggleAdvancedSettings(btn) {
-  if(typeof SFX !== 'undefined') SFX.tick();
+  if(typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
   const panel = document.getElementById('advancedSettings');
   if (!panel) return;
   const isHidden = panel.style.display === 'none' || panel.style.display === '';
@@ -1692,6 +1649,7 @@ var _perfPending = false;
 var _lastPerfTradeCount = -1;
 var _lastMatrixBotCount = -1;
 var _lastMatrixOpenCount = -1;
+var _lastConsolidatedCount = -1;
 let agentHistory=[]; // per-agent vote accuracy for quant report
 let globalLog=[];
 var bots=[], botCounter=0;
@@ -2023,9 +1981,10 @@ function updateLiveBalance(){
     const unrealised=openPositions.reduce((sum,p)=>sum+(p.livePnl||0),0);
     const displayBalance=balance+unrealised;
     const displayPnl=totalPnl+unrealised;
+    const count=openPositions.length;
 
-    // Optimization: Skip DOM updates if values haven't changed
-    if (displayBalance === _lastDisplayBal && displayPnl === _lastDisplayPnl && unrealised === _lastUnrealised) {
+    // ⚡ Bolt Optimization: Consolidated dirty-check for balance, P&L, and trade count
+    if (displayBalance === _lastDisplayBal && displayPnl === _lastDisplayPnl && unrealised === _lastUnrealised && count === _lastConsolidatedCount) {
       _balanceUpdatePending = false;
       return;
     }
@@ -2043,9 +2002,26 @@ function updateLiveBalance(){
       pnlEl.className='gh-pnl '+(displayPnl>=0?'pnl-pos':'pnl-neg');
     }
 
+    // Consolidated: Handle Open Positions count and Queue Wrap visibility
+    const qWrap=document.getElementById('ghQueueWrap');
+    const qNum=document.getElementById('ghQueueNum');
+    if(qWrap){ qWrap.style.display=count>0?'flex':'none'; }
+    if(qNum) qNum.textContent=count;
+
+    // Consolidated: Handle Ticker visibility (countdown logic remains in _tickHeader)
+    const ticker=document.getElementById('ghTicker');
+    if(ticker){ ticker.style.display=count>0?'flex':'none'; }
+
+    // Consolidated: Global metric card for open positions
+    setVal('mv-open',count);
+
+    // Consolidated: Run breakers alongside balance changes
+    if (typeof checkGlobalBreakers === 'function') checkGlobalBreakers();
+
     _lastDisplayBal = displayBalance;
     _lastDisplayPnl = displayPnl;
     _lastUnrealised = unrealised;
+    _lastConsolidatedCount = count;
     _balanceUpdatePending = false;
   });
 }
@@ -2329,15 +2305,17 @@ function drawEquityCurve(preMin, preMax) {
 
   const range=max-min||1;
 
-  // ⚡ Bolt Optimization: Manual loop for point generation to avoid intermediate array allocations
-  let pts = "";
+  // ⚡ Bolt Optimization: Build points using an array to avoid O(N²) string concatenation overhead.
+  // This approach is more efficient for larger datasets like the 1000-point equity history.
   const len = equityHistory.length;
+  const ptsArr = new Array(len);
   for (let i = 0; i < len; i++) {
     const v = equityHistory[i];
     const x = (i / (len - 1)) * W;
     const y = H - ((v - min) / range) * (H - 6) - 3;
-    pts += (i === 0 ? "" : " ") + x.toFixed(1) + "," + y.toFixed(1);
+    ptsArr[i] = x.toFixed(1) + "," + y.toFixed(1);
   }
+  const pts = ptsArr.join(" ");
   line.setAttribute('points',pts); fill.setAttribute('points',pts+` ${W},${H} 0,${H}`);
   const isUp=equityHistory[equityHistory.length-1]>=startBalance;
   line.setAttribute('stroke',isUp?'var(--green)':'var(--hot)');
@@ -2358,9 +2336,16 @@ function drawBaselines(n, claudePnl, winRate, baselinePnls, baselineWins, claude
     bData[k] = { pnl, avg: n ? pnl / n : 0, wr: n ? (wins / n * 100).toFixed(1) + '%' : '—' };
   });
 
-  // Highlight the winner
-  const allPnls = { claude: claudePnl, ...Object.fromEntries(bKeys.map(k => [k, bData[k].pnl])) };
-  const best = Object.keys(allPnls).reduce((a, b) => allPnls[a] > allPnls[b] ? a : b);
+  // ⚡ Bolt Optimization: Replace expensive Object.fromEntries and reduce with a simple comparison loop.
+  // This reduces object allocation and iteration overhead.
+  let best = 'claude';
+  let maxPnl = claudePnl;
+  for (const k of bKeys) {
+    if (bData[k].pnl > maxPnl) {
+      maxPnl = bData[k].pnl;
+      best = k;
+    }
+  }
 
   const fmt = (v) => (v >= 0 ? '+' : '') + '$' + v.toFixed(2);
 
@@ -2479,7 +2464,7 @@ function drawVerdict(n, wr, pf, avg) {
   }
 }
 
-function updateOpenCount() { setVal('mv-open',openPositions.length); }
+function updateOpenCount() { updateLiveBalance(); }
 
 // ══════════════════════════════════════════════════════
 // CRUCIBLE MODE
@@ -2869,7 +2854,7 @@ function downloadFile(content, filename, type) {
 // CIRCUIT BREAKERS
 // ══════════════════════════════════════════════════════
 function togglePanel(name) {
-  if(typeof SFX !== 'undefined') SFX.tick();
+  if(typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
   const bodyId=name+'Body', hdId=name+'Hd', toggleId=name+'Toggle';
   const body=document.getElementById(bodyId), toggle=document.getElementById(toggleId), hd=document.getElementById(hdId);
   if(!body||!toggle) return;
@@ -2978,7 +2963,7 @@ function saveApiKeyFromDashboard(keyName) {
   }
 
   if (window.showToast) window.showToast(`${keyName} saved locally!`, 'success');
-  if (typeof SFX !== 'undefined') SFX.tick();
+  if (typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
   updateConnectionDashboard();
 }
 
@@ -2986,7 +2971,7 @@ function saveApiKeyFromDashboard(keyName) {
  * MARKETPLACE UI LOGIC
  */
 function switchTaskTab(tab) {
-    if(typeof SFX !== 'undefined') SFX.tick();
+    if(typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
     ['internal', 'identities', 'market'].forEach(t => {
         const content = document.getElementById(`task-tab-${t}`);
         const btn = document.getElementById(`tab-${t}`);
@@ -3169,6 +3154,7 @@ function isGlobalBlocked() {
 function globalKill() {
   if(!confirm('Stop all bots?')) return;
   globalKilled=true;
+  if(window.showToast) showToast('EMERGENCY STOP TRIGGERED', 'error');
   bots.forEach(b=>{ b.auto=false; if(b.autoTimer) clearTimeout(b.autoTimer);
     const btn=document.getElementById('mauto-'+b.id), card=document.getElementById('bot-'+b.id);
     if(btn){btn.textContent='AUTO';btn.classList.remove('on');} if(card) card.classList.remove('auto-on'); });
@@ -3183,6 +3169,7 @@ function globalKill() {
 }
 function resetKill(){
   globalKilled=false;
+  if(window.showToast) showToast('Emergency Stop Reset', 'success');
   const kb=document.getElementById('killBtn');
   if(kb){kb.textContent='🔴 EMERGENCY STOP ALL BOTS';kb.onclick=globalKill;kb.style.background='';}
   checkGlobalBreakers();
@@ -3267,19 +3254,11 @@ function startOverride(bot,btn){
 // ══════════════════════════════════════════════════════
 // LOGIN
 // ══════════════════════════════════════════════════════
-function loginGoogle(){
-  const s=document.getElementById('loginStatus'); if(!s) return;
-  
-  // Check if Google Client ID is configured
-  if(GOOGLE_CLIENT_ID.includes('YOUR_')){ 
-    s.innerHTML='ℹ️ Google Client ID not configured. <a href="https://console.cloud.google.com" target="_blank" style="color:var(--cyan);cursor:pointer">Set up OAuth →</a> or use Demo/MetaMask'; 
-    return; 
-  }
+
   
   // Wait for Google SDK to load
   if(typeof google==='undefined'){ 
     s.textContent='⏳ Loading Google SDK…'; 
-    setTimeout(loginGoogle, 1000); 
     return; 
   }
   
@@ -3377,7 +3356,7 @@ async function checkAutoLogin() {
       const accounts = await window.ethereum.request({ method: 'eth_accounts' });
       if (accounts && accounts.length > 0) {
         console.log('🦊 Auto-logging in MetaMask...');
-        loginMetaMask(true);
+        /* Handled by Privy */;
       }
     } catch (e) {
       console.error('Auto-login check failed:', e);
@@ -3394,7 +3373,7 @@ async function claimPayout() {
   btn.disabled = true;
 
   try {
-    if (typeof SFX !== 'undefined') SFX.tick();
+    if (typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
 
     // Check wallet connection
     if (!window.ethereum || !window.ethereum.selectedAddress) {
@@ -3405,13 +3384,16 @@ async function claimPayout() {
     }
 
     const address = window.ethereum.selectedAddress;
+    const validationToken = localStorage.getItem('ta_task_secret');
+
     const res = await fetch('/api/v1/payouts/claim', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         userAddress: address,
         taskId: 'MANUAL_CLAIM_' + Date.now(),
-        proofOfWork: 'CLAIM_PNL_' + balance.toFixed(2)
+        proofOfWork: 'CLAIM_PNL_' + balance.toFixed(2),
+        validationToken: validationToken
       })
     });
 
@@ -3431,14 +3413,7 @@ async function claimPayout() {
   }
 }
 
-async function loginMetaMask(isAuto = false){
-  const s=document.getElementById('cStatus'); if(!s) return;
-  
-  try{
-    if(!window.ethereum){ 
-      if(!isAuto) s.innerHTML='<span style="color:var(--hot)">❌ MetaMask not detected</span><br><small style="color:var(--dim);margin-top:8px;display:block">Install MetaMask: <a href="https://metamask.io" target="_blank" style="color:var(--cyan)">metamask.io →</a></small>';
-      return; 
-    }
+
     
     if(!isAuto) s.textContent='⏳ Connecting MetaMask wallet…';
 
@@ -3479,7 +3454,7 @@ async function loginMetaMask(isAuto = false){
             params: [{
               chainId: '0x2105',
               chainName: 'Base Mainnet',
-              rpcUrls: ['https://mainnet.base.org'],
+              rpcUrls: ['https://base-mainnet.g.alchemy.com/v2/3zUWwmlHTQNjmM55sV2X0', 'https://mainnet.base.org'],
               nativeCurrency: { name: 'Ethereum', symbol: 'ETH', decimals: 18 },
               blockExplorerUrls: ['https://basescan.org']
             }]
@@ -3591,17 +3566,12 @@ async function loginMetaMask(isAuto = false){
   }
 }
 
-function loginDemo(){
-  try{ setupApp({name:'DEMO PLAYER', avatar:null, badge:'🎮 DEMO'}); }
+); }
 catch(e){ const s=document.getElementById('loginStatus'); if(s) s.textContent='❌ '+e.message; console.error('Demo error:',e); }
 }
 
 // Coinbase Wallet login - checks for window.coinbaseWalletExtension
-async function loginCoinbase(){
-  const s=document.getElementById('loginStatus'); if(!s) return;
-  try{
-    if(window.coinbaseWalletExtension){
-      const a=await window.coinbaseWalletExtension.request({method:'eth_requestAccounts'});
+);
       if(a&&a[0]){
         w=window.coinbaseWalletExtension;walletAddress=a[0];
         const safeAddr = escapeHTML(walletAddress);
@@ -3612,14 +3582,7 @@ async function loginCoinbase(){
   }catch(e){s.innerHTML='❌ '+escapeHTML(e.message);console.error('Coinbase error:',e);}
 }
 
-async function loginPayID() {
-  const s = document.getElementById('loginStatus');
-  if(!s) return;
 
-  if(!window.ethereum) {
-    s.innerHTML = '❌ MetaMask not found. Please install MetaMask to use PayID onboarding.';
-    return;
-  }
 
   try {
     s.innerHTML = '⚡ Initiating PayID Onboarding...<br><span style="font-size:9px;color:var(--dim)">Step 1: Connecting Wallet</span>';
@@ -3640,7 +3603,7 @@ async function loginPayID() {
 
     setTimeout(() => {
         window.open(rampUrl, '_blank');
-        s.innerHTML = '✅ Redirected! Return here once your deposit arrives.<br><button onclick="window.loginMetaMask && loginMetaMask()" style="width:100%; margin-bottom: 8px;" style="margin-top:8px;padding:6px 12px;background:var(--cyan);border:none;border-radius:4px;color:var(--bg);cursor:pointer;font-family:Bungee;font-size:9px">I HAVE FUNDS NOW</button>';
+        s.innerHTML = '✅ Redirected! Return here once your deposit arrives.<br><button onclick="if(window.privyLogin) window.privyLogin()" style="margin-top:8px;padding:6px 12px;background:var(--cyan);border:none;border-radius:4px;color:var(--bg);cursor:pointer;font-family:Bungee;font-size:9px">I HAVE FUNDS NOW</button>';
     }, 1500);
 
   } catch (e) {
@@ -3663,7 +3626,7 @@ function openOskoRamp(type) {
   } else {
     // Sell - check if wallet connected first
     if(!window.ethereum?.selectedAddress) {
-      s.innerHTML = '⚠️ Connect wallet first to sell.<br><button onclick="window.loginMetaMask && loginMetaMask()" style="width:100%; margin-bottom: 8px;" style="margin-top:8px;padding:6px 12px;background:var(--hot);border:none;border-radius:4px;color:#fff;cursor:pointer">CONNECT WALLET</button>';
+      s.innerHTML = '⚠️ Connect wallet first to sell.<br><button onclick="if(window.privyLogin) window.privyLogin()" style="margin-top:8px;padding:6px 12px;background:var(--hot);border:none;border-radius:4px;color:#fff;cursor:pointer">CONNECT WALLET</button>';
       return;
     }
     // Sell - opens Ramp's sell widget
@@ -3675,12 +3638,32 @@ function openOskoRamp(type) {
   window.open(url, '_blank');
 }
 
-window.onPrivyReady = function(user, walletAddress) {
-  setupApp({
-    name: user.name || (walletAddress ? walletAddress.substring(0, 6) + '...' + walletAddress.substring(38) : 'Privy User'),
-    avatar: user.avatar,
-    badge: user.provider ? '🔵 ' + user.provider.toUpperCase() : '🔵 PRIVY',
-    address: walletAddress
+
+
+
+window.onPrivyLoginSuccess = function() {
+  const s = document.getElementById('loginStatus');
+  if(s) s.textContent = '✅ Privy Authorized! Syncing Arena instance...';
+
+  const userData = {
+    name: window.privyUser?.google?.name || window.privyUser?.email?.address || 'Arena Trader',
+    email: window.privyUser?.email?.address || window.privyUser?.google?.email,
+    address: window.privyWalletAddress,
+    provider: 'privy',
+    badge: '💠 PRIVY'
+  };
+
+  fetch('/api/user/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(userData)
+  })
+  .then(res => res.json())
+  .then(data => {
+    if(data.success) {
+      if(typeof balance !== 'undefined') balance = data.user.balance || 0;
+      if(typeof setupApp === 'function') setupApp({ ...userData, ...data.user });
+    }
   });
 };
 
@@ -3738,14 +3721,7 @@ function setupApp({name,avatar,badge,address}){
 // BALANCE
 // ══════════════════════════════════════════════════════
 function updateGlobalBalance(){
-  const balEl=document.getElementById('ghBalance');
-  if(balEl){
-    balEl.textContent='$'+balance.toFixed(2);
-    balEl.title=`Realised: $${balance.toFixed(2)} | Unrealised: $0.00`;
-  }
-  const p=document.getElementById('ghPnl');
-  if(p){p.textContent=(totalPnl>=0?'+':'')+'$'+totalPnl.toFixed(2)+' today';p.className='gh-pnl '+(totalPnl>=0?'pnl-pos':'pnl-neg');}
-  checkGlobalBreakers();
+  updateLiveBalance();
 }
 function updateBotPnl(bot){
   const el=document.getElementById('mpnl-'+bot.id); if(!el) return;
@@ -3764,7 +3740,7 @@ function updateBotPnl(bot){
 // BOT MANAGEMENT
 // ══════════════════════════════════════════════════════
 function addBot(type = 'TRADER', silent = false){
-  if(!silent && typeof SFX !== 'undefined') SFX.tick();
+  if(!silent && typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
   if(bots.length>=MAX_BOTS) {
     if(!silent && window.showToast) showToast(`Maximum bot limit reached (${MAX_BOTS})`, 'error');
     return;
@@ -3837,8 +3813,9 @@ function _syncHeaderBotBtns(){
 // ── Global auto toggle ──
 let _ghAutoOn=false;
 function globalAutoToggle(){
-  if(typeof SFX !== 'undefined') SFX.tick();
+  if(typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
   _ghAutoOn=!_ghAutoOn;
+  if(window.showToast) showToast(`Global Auto-Trading: ${_ghAutoOn ? 'ON' : 'OFF'}`, _ghAutoOn ? 'success' : 'info');
   bots.forEach(b=>{
     if(_ghAutoOn===b.auto) return; // already in target state
     b.auto=_ghAutoOn;
@@ -3869,30 +3846,15 @@ function _startHeaderTicker(){
   _ghTickerInterval=setInterval(_tickHeader,500);
 }
 function _tickHeader(){
-  // Optimization: Refresh global balance (realised + unrealised) every 500ms when app is active
+  // Optimization: Refresh global balance, P&L and counts every 500ms when app is active.
+  // Visibility and count updates are now consolidated inside updateLiveBalance.
   updateLiveBalance();
 
-  // open trade count
   const count=openPositions.length;
-  // ⚡ Bolt Optimization: Dirty-check trade count to skip redundant style/text assignments
-  if (count !== _lastTickCount) {
-    const qWrap=document.getElementById('ghQueueWrap');
-    const qNum=document.getElementById('ghQueueNum');
-    if(qWrap){ qWrap.style.display=count>0?'flex':'none'; }
-    if(qNum) qNum.textContent=count;
-    _lastTickCount = count;
-  }
-
-  // countdown to nearest exit
-  const ticker=document.getElementById('ghTicker');
   const cd=document.getElementById('ghCountdown');
-  if(!ticker||!cd) return;
+  if(!cd) return;
 
-  if(count===0){
-    if (ticker.style.display !== 'none') ticker.style.display='none';
-    return;
-  }
-  if (ticker.style.display !== 'flex') ticker.style.display='flex';
+  if(count===0) return;
 
   const now=Date.now();
   let nearest=null;
@@ -3918,11 +3880,13 @@ function _tickHeader(){
 function renderBot(bot){
   const el=document.createElement('div'); el.className='machine'; el.id='bot-'+bot.id;
   el.tabIndex = -1; // Allow programmatic focus
+  const botIcon = bot.type === "WORKER" ? "👷" : "🤖";
+  const botLabel = bot.type === "WORKER" ? "Worker Bot" : "Trader Bot";
   el.innerHTML=`
     <div class="m-status-badge" id="mstatus-${bot.id}"></div>
-    <div class="mutation-badge" id="mbadge-${bot.id}">🧬 ADAPTED</div>
+    <div class="mutation-badge" id="mbadge-${bot.id}"><span role="img" aria-hidden="true">🧬</span> ADAPTED</div>
     <div class="m-head">
-      <div style="display:flex;align-items:center;gap:5px"><span class="m-id" style="display:flex;align-items:center;gap:4px">${bot.type === "WORKER" ? "👷" : "🤖"} BOT #${bot.id} <small style="font-size:8px;padding:1px 4px;background:rgba(255,255,255,0.1);border-radius:3px">${bot.type}</small></span><span class="m-pnl" id="mpnl-${bot.id}">$0.00</span></div>
+      <div style="display:flex;align-items:center;gap:5px"><span class="m-id" style="display:flex;align-items:center;gap:4px"><span role="img" aria-label="${botLabel}">${botIcon}</span> BOT #${bot.id} <small style="font-size:8px;padding:1px 4px;background:rgba(255,255,255,0.1);border-radius:3px">${bot.type}</small></span><span class="m-pnl" id="mpnl-${bot.id}">$0.00</span></div>
       <div style="display:flex;align-items:center;gap:4px"><div class="m-ticker" id="mtick-${bot.id}">READY</div><button class="m-close" onclick="removeBot(${bot.id})" aria-label="Remove bot ${bot.id}" title="Remove bot">✕</button></div>
     </div>
     <div style="position:relative">
@@ -4086,7 +4050,7 @@ function setBet(id,amt){
   document.querySelectorAll(`#mbets-${id} .m-dd-bet`).forEach(b=>{
     const isOn = parseFloat(b.dataset.bet)===amt;
     b.classList.toggle('on',isOn);
-    b.setAttribute('aria-pressed', isOn);
+    b.setAttribute('aria-pressed', isOn.toString());
   });
   // update display
   const disp=document.getElementById('mbetdisp-'+id);
@@ -4144,7 +4108,7 @@ function toggleAuto(id){
   if(ghBtn){
     ghBtn.textContent=allOn?'⏸ STOP':'AUTO';
     ghBtn.classList.toggle('on',allOn);
-    ghBtn.setAttribute('aria-pressed', allOn);
+    ghBtn.setAttribute('aria-pressed', allOn.toString());
   }
 }
 function scheduleAuto(bot){
@@ -4201,7 +4165,7 @@ async function spinBot(id){
       if (stepEl) stepEl.textContent = '📂 Scanning for tasks...';
 
       try {
-          if (typeof SFX !== 'undefined') SFX.tick();
+          if (typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
           await new Promise(r => setTimeout(r, 2000));
 
           if (window.taskState) {
@@ -5348,7 +5312,7 @@ function renderRegimeTable() {
 
 // ── UI toggles ──
 function toggleLearn() {
-  if(typeof SFX !== 'undefined') SFX.tick();
+  if(typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
   const body = document.getElementById('learnBody');
   const hd = document.getElementById('learnHd');
   const toggle = document.getElementById('learnToggle');
@@ -5686,7 +5650,7 @@ function renderAuditLog() {
 }
 
 function toggleAudit() {
-  if(typeof SFX !== 'undefined') SFX.tick();
+  if(typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
   const body = document.getElementById('auditBody');
   const hd = document.getElementById('auditHd');
   const toggle = document.getElementById('auditToggle');
@@ -5894,13 +5858,15 @@ function updateMatrix() {
         padState = pnl > 0 ? 'pad-hit' : pnl < 0 ? 'pad-miss' : '';
     }
 
+    const botIcon = bot.type === "WORKER" ? "👷" : "🤖";
+    const botLabel = bot.type === "WORKER" ? "Worker Bot" : "Trader Bot";
     return `
       <div class="pad ${padState}" id="pad-${bot.id}"
            role="button" tabindex="0"
            onclick="scrollToBot(${escapeHTML(JSON.stringify(bot.id))})"
            onkeydown="if(event.key==='Enter'||event.key===' ') scrollToBot(${escapeHTML(JSON.stringify(bot.id))})"
            aria-label="Agent ${agentId}, P&L: $${pnl.toFixed(2)}">
-        <span class="pad-agent-id">${bot.type === "WORKER" ? "👷" : "🤖"} AG-${agentId}</span>
+        <span class="pad-agent-id"><span role="img" aria-label="${botLabel}">${botIcon}</span> AG-${agentId}</span>
         <span class="pad-pnl ${pnlClass}" id="pad-pnl-${bot.id}">${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}</span>
       </div>`;
   }).join('');
@@ -5925,7 +5891,7 @@ function scrollToBot(id) {
   el.classList.add('highlight-pulse');
 
   // Play subtle tick
-  if (typeof SFX !== 'undefined') SFX.tick();
+  if (typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
 }
 
 function setVal(id,v){ const e=document.getElementById(id); if(!e) return; if(e && e.textContent !== String(v)) e.textContent=v; }
@@ -5962,7 +5928,7 @@ setInterval(function(){
 const PERSONALITIES = ['AGGRESSIVE','CONSERVATIVE','MOMENTUM','CONTRARIAN','BALANCED'];
 
 function toggleFleetView() {
-  if(typeof SFX !== 'undefined') SFX.tick();
+  if(typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
   const grid = document.getElementById('botGrid');
   const btn = document.getElementById('fleetViewBtn');
   if (!grid) return;
@@ -5974,7 +5940,7 @@ function toggleFleetView() {
 }
 
 function toggleBusPanel() {
-  if(typeof SFX !== 'undefined') SFX.tick();
+  if(typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
   const panel = document.getElementById('busPanel');
   const btn   = document.getElementById('ghBusBtn');
   if (!panel) return;
@@ -6242,7 +6208,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script>
 function toggleVoiceAgent() {
-  if(typeof SFX !== 'undefined') SFX.tick();
+  if(typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
   const modal = document.getElementById('voiceAgentModal');
   const btn = document.getElementById('voiceAgentBtn');
   if (!modal) return;
@@ -6375,7 +6341,7 @@ Respond in JSON format:
 
 // ═══ SETTINGS MODAL FUNCTIONS ═══
 function toggleSettingsModal() {
-    if(typeof SFX !== 'undefined') SFX.tick();
+    if(typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
     const modal = document.getElementById('settingsModal');
     if (!modal) return;
     const isOpening = modal.style.display === 'none' || modal.style.display === '';
@@ -6437,9 +6403,9 @@ function refreshSettingsUI() {
     const b1 = document.getElementById('settingsSfxBtn');
     const b2 = document.getElementById('settingsVoiceBtn');
     const b3 = document.getElementById('settingsAudioBtn');
-    if (b1) b1.classList.toggle('active', sfxOn);
-    if (b2) b2.classList.toggle('active', voiceOn);
-    if (b3) b3.classList.toggle('active', audioOn);
+    if (b1) { b1.classList.toggle('active', sfxOn); b1.setAttribute('aria-pressed', sfxOn.toString()); }
+    if (b2) { b2.classList.toggle('active', voiceOn); b2.setAttribute('aria-pressed', voiceOn.toString()); }
+    if (b3) { b3.classList.toggle('active', audioOn); b3.setAttribute('aria-pressed', audioOn.toString()); }
 }
 function applyTheme(theme) {
     const root = document.documentElement;
@@ -6554,6 +6520,7 @@ function updateSettingsVolume(val) {
         if (window.VOICE && window.VOICE.setVolume) window.VOICE.setVolume(vol / 100);
     }
 }
+</script>
 
 <!-- ══ SETTINGS MODAL ══ -->
 <div id="settingsModal" style="display:none">
@@ -6567,8 +6534,7 @@ function updateSettingsVolume(val) {
         <div class="settings-section-title">💳 Wallet Connection</div>
         <div id="settingsWalletStatus" style="font-size:10px;color:var(--dim);margin-bottom:8px">🔴 Not connected</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <button class="mm-btn" onclick="window.loginMetaMask && loginMetaMask()" style="width:100%; margin-bottom: 8px;" style="flex:1;min-width:120px;padding:8px;font-size:10px">Connect MetaMask</button>
-          <button class="cb-btn" onclick="window.loginCoinbase && loginCoinbase()" style="width:100%; margin-bottom: 8px;" style="flex:1;min-width:120px;padding:8px;font-size:10px">Connect Coinbase</button>
+          <button class="mm-btn" onclick="if(window.privyLogin) window.privyLogin()" style="flex:1;min-width:120px;padding:8px;font-size:10px">Connect MetaMask</button>
         </div>
       </div>
       <div class="settings-section">
@@ -6687,5 +6653,53 @@ function updateSettingsVolume(val) {
 
 
 <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+
+<!-- Withdrawal QR Modal -->
+<div id="withdrawModal" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:10000; justify-content:center; align-items:center;">
+  <div class="mcard" style="width:320px; padding:20px; text-align:center; position:relative;">
+    <button onclick="closeWithdrawModal()" style="position:absolute; top:10px; right:10px; background:none; border:none; color:var(--dim); cursor:pointer; font-size:16px;">×</button>
+    <div style="font-family:'Oswald'; letter-spacing:2px; font-size:14px; color:var(--cyan); margin-bottom:15px;">SECURE WITHDRAWAL</div>
+    <div id="qrcode" style="background:#fff; padding:15px; border-radius:8px; display:inline-block; margin-bottom:15px;"></div>
+    <div id="withdrawStatus" style="font-size:10px; color:var(--dim); line-height:1.4; margin-bottom:15px;">
+      Scan this QR with your mobile wallet to claim your earnings on Base Mainnet.
+    </div>
+    <button class="gh-auto-btn" onclick="claimPayout()" style="width:100%; padding:10px; border:1px solid var(--green); color:var(--green)">CONFIRM CLAIM</button>
+  </div>
+</div>
+
+<script>
+function openWithdrawModal() {
+  const modal = document.getElementById('withdrawModal');
+  if(!modal) return;
+  modal.style.display = 'flex';
+
+  const addr = window.privyWalletAddress || (window.ethereum && window.ethereum.selectedAddress);
+  const statusEl = document.getElementById('withdrawStatus');
+  const qrContainer = document.getElementById('qrcode');
+
+  if(!addr) {
+    if(statusEl) statusEl.innerHTML = '<span style="color:var(--hot)">⚠️ CONNECT WALLET FIRST</span>';
+    if(qrContainer) qrContainer.innerHTML = '🔒';
+    return;
+  }
+
+  // Generate QR for EIP-681 / Claim Link
+  const claimLink = `ethereum:pay-${addr}@8453/transfer?uint256=0`;
+  if(qrContainer && typeof QRCode !== 'undefined') {
+    qrContainer.innerHTML = '';
+    const canvas = document.createElement('canvas');
+    qrContainer.appendChild(canvas);
+    QRCode.toCanvas(canvas, claimLink, { width: 200, margin: 2 }, function (error) {
+      if (error) console.error(error);
+    });
+  }
+  if(statusEl) statusEl.innerHTML = 'Scan this QR with your mobile wallet to claim your earnings on Base Mainnet.';
+}
+
+function closeWithdrawModal() {
+  const modal = document.getElementById('withdrawModal');
+  if(modal) modal.style.display = 'none';
+}
+</script>
 </body>
 </html>

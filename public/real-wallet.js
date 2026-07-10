@@ -8,7 +8,7 @@ const REAL_WALLET_NETWORKS = {
     id: 8453,
     name: 'Base Mainnet',
     chainId: '0x2105',
-    rpcUrl: 'https://mainnet.base.org',
+    rpcUrl: 'https://base-mainnet.g.alchemy.com/v2/3zUWwmlHTQNjmM55sV2X0',
     explorerUrl: 'https://basescan.org',
     nativeCurrency: 'ETH',
   },

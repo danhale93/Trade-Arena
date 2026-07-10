@@ -18,7 +18,7 @@ const REAL_WALLET_CONFIG = {
   network: {
     id: 8453,
     name: 'Base Mainnet',
-    rpcUrl: 'https://mainnet.base.org',
+    rpcUrl: 'https://base-mainnet.g.alchemy.com/v2/3zUWwmlHTQNjmM55sV2X0',
     chainId: '0x2105',
     explorerUrl: 'https://basescan.org',
     nativeCurrency: 'ETH',

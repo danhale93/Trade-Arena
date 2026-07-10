@@ -279,7 +279,7 @@ function renderQuestRow(quest) {
     const rowColor = quest.completed ? 'var(--green)' : (isVerified ? 'var(--cyan)' : 'var(--border)');
     return \`
         <div class=\"task-row\" style=\"display:flex; align-items:center; gap:10px; padding:10px; background:rgba(0,0,0,0.2); border-radius:8px; margin-bottom:5px; border:1px solid \${rowColor}\">
-            <div style="font-size:20px">${escapeHTML(quest.icon)}</div>
+            <div style="font-size:20px" role="img" aria-label="${escapeHTML(quest.label)} icon">${escapeHTML(quest.icon)}</div>
             <div style=\"flex:1\">
                 <div style=\"display:flex; align-items:center; gap:5px\">
                     <div style="font-size:11px; font-weight:bold; color:${quest.completed ? 'var(--green)' : 'white'}">${escapeHTML(quest.label)}</div>
@@ -355,7 +355,7 @@ function renderDeploymentMonitor() {
         return \`
             <div style=\"display:flex; flex-direction:column; gap:4px; padding:10px 12px; background:rgba(0,0,0,0.25); border-radius:8px; margin-bottom:6px; border-left:3px solid \${statusColor}\">
                 <div style=\"display:flex; align-items:center; gap:8px; justify-content:space-between\">
-                    <span style=\"font-size:16px\">\${srcIcon}</span>
+                    <span style="font-size:16px" role="img" aria-label="${escapeHTML(src)} icon">${srcIcon}</span>
                     <span style=\"font-size:9px; padding:2px 8px; border-radius:8px; background:\${statusColor}; color:var(--bg); font-weight:bold; text-transform:uppercase\">
                         \${escapeHTML(status)}
                     </span>
