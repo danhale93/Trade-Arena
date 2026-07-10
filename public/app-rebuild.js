@@ -580,7 +580,7 @@ async function toggleLiveMode() {
     if (goingLive) {
         if (!window.walletState || !window.walletState.isConnected) {
             if (typeof window.privyLogin === 'function') {
-                await if(window.privyLogin) window.privyLogin();
+                await window.privyLogin();
             }
             if (!window.walletState || !window.walletState.isConnected) {
                 if (typeof showToast === 'function') {
