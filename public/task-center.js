@@ -168,7 +168,14 @@ async function submitTaskToBackend(quest) {
             renderTaskCenter();
             fetchDeployments();
             if (typeof SFX !== 'undefined') SFX.win();
-            if (window.showToast) window.showToast(`${quest.label} Complete!`, 'success');
+            if (window.showToast) {
+                if (data.payout?.onChainAuth) {
+                    window.showToast(`${quest.label} Complete! Signature received for on-chain claim.`, 'success');
+                    offerOnChainClaim(data.payout.authPayload);
+                } else {
+                    window.showToast(`${quest.label} Complete!`, 'success');
+                }
+            }
         } else {
             if (window.showToast) window.showToast(data.error || 'Task submission failed', 'error');
         }
@@ -264,7 +271,7 @@ function renderQuestRow(quest) {
     const rowColor = quest.completed ? 'var(--green)' : (isVerified ? 'var(--cyan)' : 'var(--border)');
     return \`
         <div class=\"task-row\" style=\"display:flex; align-items:center; gap:10px; padding:10px; background:rgba(0,0,0,0.2); border-radius:8px; margin-bottom:5px; border:1px solid \${rowColor}\">
-            <div style="font-size:20px">${escapeHTML(quest.icon)}</div>
+            <div style="font-size:20px" role="img" aria-label="${escapeHTML(quest.label)} icon">${escapeHTML(quest.icon)}</div>
             <div style=\"flex:1\">
                 <div style=\"display:flex; align-items:center; gap:5px\">
                     <div style="font-size:11px; font-weight:bold; color:${quest.completed ? 'var(--green)' : 'white'}">${escapeHTML(quest.label)}</div>
@@ -278,6 +285,52 @@ function renderQuestRow(quest) {
             </button>
         </div>
     \`;
+}
+
+async function offerOnChainClaim(authData) {
+    if (!window.ethereum && !window.privyProvider) {
+        if (window.showToast) window.showToast('Connect wallet to claim on-chain', 'error');
+        return;
+    }
+
+    const confirmClaim = confirm(`Task verified! Would you like to claim your reward on-chain now?
+(This requires a transaction on Base Mainnet)`);
+
+    if (!confirmClaim) return;
+
+    try {
+        if (window.showToast) window.showToast('Initiating on-chain claim...', 'info');
+
+        const provider = window.privyProvider || (window.ethereum ? new ethers.BrowserProvider(window.ethereum) : null);
+        if (!provider) throw new Error('No wallet provider found');
+
+        const signer = await provider.getSigner();
+        const payoutManagerAddress = localStorage.getItem('ta_payout_manager_address') || '0x0000000000000000000000000000000000000000'; // Default or from config
+
+        if (payoutManagerAddress === '0x0000000000000000000000000000000000000000') {
+            throw new Error('PayoutManager contract address not configured in settings.');
+        }
+
+        const abi = [
+            "function claimReward(address user, string taskId, uint256 amount, uint256 nonce, bytes signature) external"
+        ];
+        const contract = new ethers.Contract(payoutManagerAddress, abi, signer);
+
+        const tx = await contract.claimReward(
+            authData.user,
+            authData.taskId,
+            authData.amount,
+            authData.nonce,
+            authData.signature
+        );
+
+        if (window.showToast) window.showToast('Transaction submitted! Waiting for confirmation...', 'info');
+        await tx.wait();
+        if (window.showToast) window.showToast('Reward claimed successfully on-chain!', 'success');
+    } catch (e) {
+        console.error('[TaskCenter] On-chain claim failed:', e);
+        if (window.showToast) window.showToast(`Claim failed: ${e.message}`, 'error');
+    }
 }
 
 function renderDeploymentMonitor() {
@@ -294,7 +347,7 @@ function renderDeploymentMonitor() {
         return \`
             <div style=\"display:flex; flex-direction:column; gap:4px; padding:10px 12px; background:rgba(0,0,0,0.25); border-radius:8px; margin-bottom:6px; border-left:3px solid \${statusColor}\">
                 <div style=\"display:flex; align-items:center; gap:8px; justify-content:space-between\">
-                    <span style=\"font-size:16px\">\${srcIcon}</span>
+                    <span style="font-size:16px" role="img" aria-label="${escapeHTML(src)} icon">${srcIcon}</span>
                     <span style=\"font-size:9px; padding:2px 8px; border-radius:8px; background:\${statusColor}; color:var(--bg); font-weight:bold; text-transform:uppercase\">
                         \${escapeHTML(status)}
                     </span>

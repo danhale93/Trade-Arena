@@ -7,7 +7,7 @@
 const BASE_CONFIG = {
     chainId: 8453,
     name: 'Base Mainnet',
-    rpcUrl: 'https://mainnet.base.org',
+    rpcUrl: 'https://base-mainnet.g.alchemy.com/v2/3zUWwmlHTQNjmM55sV2X0',
     blockExplorerUrl: 'https://basescan.org',
     currency: {
         name: 'Ethereum',

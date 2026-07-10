@@ -8,7 +8,7 @@ const EXECUTION_CONFIG = {
     zeroExApiKey: localStorage.getItem('ta_0x_api_key') || '',
     minLiquidityUSD: 50000,
     maxSlippage: 0.01, // 1%
-    privateRpcUrl: 'https://mainnet.base.org',
+    privateRpcUrl: 'https://base-mainnet.g.alchemy.com/v2/3zUWwmlHTQNjmM55sV2X0',
     useAtomicBundles: true
 };
 
