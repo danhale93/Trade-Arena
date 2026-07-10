@@ -420,8 +420,15 @@ app.post('/api/user/login', (req, res) => {
             return res.status(400).json({ success: false, error: 'Missing userId (email or address)' });
         }
 
+        // Sentinel: Prevent Prototype Pollution by blocking dangerous property names
+        const dangerousProps = ['__proto__', 'constructor', 'prototype'];
+        if (dangerousProps.includes(userId)) {
+            return res.status(400).json({ success: false, error: 'Invalid userId' });
+        }
+
         const users = loadUsers();
-        if (!users[userId]) {
+        // Sentinel: Use Object.hasOwn for safe property checking
+        if (!Object.hasOwn(users, userId)) {
             users[userId] = {
                 id: userId,
                 name: name || 'New User',
