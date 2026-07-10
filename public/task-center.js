@@ -7,7 +7,7 @@ const API_BASE = (location.protocol === 'https:' ? '' : 'http://localhost:3001')
 const DEPLOYMENT_POLL_INTERVAL = 4000;
 
 const TASK_CONFIG = {
-    initialFaucetAmount: 50,
+    initialFaucetAmount: 50, // Starting credits // $50 starting credit
     quests: [
         { id: 'follow_twitter', label: 'Follow on Twitter', reward: 10, completed: false, icon: '🐦', type: 'social' },
         { id: 'join_discord', label: 'Join Discord Arena', reward: 15, completed: false, icon: '💬', type: 'social' },
@@ -98,7 +98,11 @@ async function claimFaucet() {
 
     try {
         if (window.showToast) window.showToast('Requesting Faucet Payout...', 'info');
-        const userAddress = window.privyWalletAddress || window.ethereum?.selectedAddress || 'demo';
+        const userAddress = window.privyWalletAddress || window.ethereum?.selectedAddress || '';
+        if (!userAddress) {
+            if (window.showToast) window.showToast("Please connect a wallet to claim rewards", "error");
+            return;
+        }
         const resp = await fetch(`${API_BASE}/api/faucet/claim`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -144,7 +148,11 @@ async function completeTask(taskId) {
 async function submitTaskToBackend(quest) {
     try {
         if (window.showToast) window.showToast(`Submitting ${quest.label}...`, 'info');
-        const userAddress = window.privyWalletAddress || window.ethereum?.selectedAddress || 'demo';
+        const userAddress = window.privyWalletAddress || window.ethereum?.selectedAddress || '';
+        if (!userAddress) {
+            if (window.showToast) window.showToast("Please connect a wallet to claim rewards", "error");
+            return;
+        }
         const resp = await fetch(`${API_BASE}/api/tasks/claim`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -250,7 +258,7 @@ function renderTaskCenter() {
     const faucetBtn = document.getElementById('claimFaucetBtn');
     if (faucetBtn) {
         faucetBtn.disabled = taskState.faucetClaimed;
-        faucetBtn.textContent = taskState.faucetClaimed ? 'CLAIMED' : 'CLAIM $50 STARTING CAPITAL';
+        faucetBtn.textContent = taskState.faucetClaimed ? 'CLAIMED' : 'CLAIM TRADING CAPITAL';
     }
 
     questContainer.innerHTML = \`
