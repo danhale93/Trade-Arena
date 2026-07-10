@@ -157,3 +157,8 @@ Running security audit across localStorage and active config...
 
 ## 2026-07-09T13:29:34.869Z - [SUCCESS] SENTINEL
 Security audit complete. All encryption layers intact.
+
+## 2026-07-10 - CORS Bypass via startsWith
+**Vulnerability:** CORS origin validation used `origin.startsWith('http://localhost:')`, which allowed attackers to bypass the policy using origins like `http://localhost:80.attacker.com`.
+**Learning:** Simple string matching for origins is dangerous as it can be fooled by cleverly crafted subdomains or port suffixes.
+**Prevention:** Always parse the origin URL and perform exact matching on the hostname and protocol to ensure only intended origins are allowed.
