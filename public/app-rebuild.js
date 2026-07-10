@@ -579,8 +579,8 @@ async function toggleLiveMode() {
     const goingLive = !window.isLiveMode;
     if (goingLive) {
         if (!window.walletState || !window.walletState.isConnected) {
-            if (typeof loginMetaMask === 'function') {
-                await loginMetaMask();
+            if (typeof window.privyLogin === 'function') {
+                await if(window.privyLogin) window.privyLogin();
             }
             if (!window.walletState || !window.walletState.isConnected) {
                 if (typeof showToast === 'function') {

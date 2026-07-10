@@ -18,17 +18,17 @@ const baseMainnet = {
 };
 
 const App = () => {
-  // Use the App ID found in privy-client.js
   const appId = 'cmpl1hc0k00ui0djsr3qo8gg8';
 
   return (
     <PrivyProvider
       appId={appId}
       config={{
-        loginMethods: ['google', 'apple', 'email', 'wallet'],
+        loginMethods: ['wallet', 'google', 'apple', 'email'],
         appearance: {
           theme: 'dark',
           accentColor: '#00ffe7',
+          showWalletLoginFirst: true,
         },
         embeddedWallets: {
           createOnLogin: 'users-without-wallets',
