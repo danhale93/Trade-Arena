@@ -6,8 +6,6 @@
 <title>TRADE ARENA — AI TRADING FLOOR</title>
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Bungee+Shade&family=JetBrains+Mono:wght@400;700&family=Oswald:wght@400;700&family=Share+Tech+Mono&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" defer></script>
-<script src="https://accounts.google.com/gsi/client" async></script>
-<style>
 :root{
   --gold:#ffd700;--gold2:#ffaa00;--hot:#ff2d78;--cyan:#00ffe7;
   --green:#39ff14;--amber:#ffb300;--blue:#4488ff;--purple:#bf5fff;
@@ -18,7 +16,6 @@
   outline-offset: 2px;
 }
 :root {
-  --bg:#06030a;--panel:#0e0914;--chrome:#160f1e;--border:#241830;--dim:#6a5878;
 }
 /* Demo-first UI enhancements */
 .g-btn{
@@ -1288,7 +1285,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
   <!-- ★ TASK CENTER ★ -->
   <div class="cpanel" id="taskPanel">
-    <div class="cpanel-hd" id="taskHd" onclick="togglePanel('task')" style="background:linear-gradient(90deg,rgba(57,255,20,.06),transparent)" role="button" tabindex="0">
+    <div class="cpanel-hd" id="taskHd" onclick="window.togglePanel && togglePanel('task')" style="background:linear-gradient(90deg,rgba(57,255,20,.06),transparent)" role="button" tabindex="0">
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:14px" role="img" aria-hidden="true">📡</span>
         <span class="cpanel-title" style="color:var(--green)">TASK CENTER & MARKETPLACE</span>
@@ -2721,7 +2718,7 @@ function simulateCrucibleV2Results(regime, costModel, tradeCount) {
   const avgWin = Math.abs(pnlPerTrade) * 1.5; // Assuming 1.5:1 reward:risk
   const avgLoss = Math.abs(pnlPerTrade);
   const totalPnl = (wins * avgWin) - (losses * avgLoss);
-  const returnPct = (totalPnl / 50) * 100; // Assuming $10k starting balance
+  const returnPct = startBalance > 0 ? (totalPnl / startBalance) * 100 : 0;
   
   // Generate baseline comparisons
   const baselines = {
@@ -3333,8 +3330,23 @@ function setupApp({name,avatar,badge,address}){
       // ⚡ Bolt Optimization: Batch initial bot additions and trigger a single UI update
       try{
         addBot('TRADER', true);
+
+
         addBot('WORKER', true);
         addBot('TRADER', false); // Last one triggers UI
+
+
+
+
+
+
+
+
+
+
+
+
+
       }catch(e){ console.error('addBot:',e); }
       _startHeaderTicker();
       _syncHeaderBotBtns();
@@ -5984,6 +5996,8 @@ function toggleSettingsModal() {
     }
 
     if (isOpening) refreshSettingsUI();
+    try{ if(typeof renderTaskCenter === "function") renderTaskCenter(); }catch(e){}
+
 }
 function refreshSettingsUI() {
     const ws = document.getElementById('settingsWalletStatus');
@@ -6154,7 +6168,7 @@ function updateSettingsVolume(val) {
   <div class="settings-panel">
     <div class="settings-hd">
       <span class="settings-title">⚙ SETTINGS</span>
-      <button class="m-close" onclick="toggleSettingsModal()" aria-label="Close Settings" title="Close Settings">✕</button>
+      <button class="m-close" onclick="window.toggleSettingsModal && toggleSettingsModal()" aria-label="Close Settings" title="Close Settings">✕</button>
     </div>
     <div class="settings-bd">
       <div class="settings-section">
@@ -6167,7 +6181,9 @@ function updateSettingsVolume(val) {
       <div class="settings-section">
         <div class="settings-section-title">🔑 API Configuration</div>
 
-        <div style="margin-bottom:8px">
+
+
+        <div style="margin-bottom:12px">
           <div style="display:flex; justify-content:space-between; font-size:8px; color:var(--dim); margin-bottom:2px">
             <span>ANTHROPIC (CLAUDE)</span>
             <div style="display:flex;gap:8px">
@@ -6179,7 +6195,7 @@ function updateSettingsVolume(val) {
           <input type="password" id="settingsApiKey" placeholder="sk-ant-..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
         </div>
 
-        <div style="margin-bottom:8px">
+        <div style="margin-bottom:12px">
           <div style="display:flex; justify-content:space-between; font-size:8px; color:var(--dim); margin-bottom:2px">
             <span>OPENAI (GPT-4)</span>
             <div style="display:flex;gap:8px">
@@ -6212,7 +6228,7 @@ function updateSettingsVolume(val) {
               <a href="https://dashboard.0x.org" target="_blank" style="color:var(--cyan)">Get Key →</a>
             </div>
           </div>
-          <input type="password" id="settingsZeroExKey" placeholder="0x-api-key-..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:&#039;Share Tech Mono&#039;,monospace; font-size:10px">
+          <input type="password" id="settingsZeroExKey" placeholder="0x-api-key-..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
         </div>
 
         <div style="margin-bottom:12px">
@@ -6230,12 +6246,15 @@ function updateSettingsVolume(val) {
         <div style="margin-bottom:12px">
           <div style="display:flex; justify-content:space-between; font-size:8px; color:var(--dim); margin-bottom:2px">
             <span>PAYOUT MANAGER (ON-CHAIN)</span>
-            <span style="color:var(--cyan)">Contract Address</span>
+            <div style="display:flex;gap:8px">
+              <button onclick="copyToClipboard('settingsPayoutManager', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
+              <span style="color:var(--cyan)">Contract Address</span>
+            </div>
           </div>
           <input type="text" id="settingsPayoutManager" placeholder="0x..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
         </div>
 
-        <div style="display:flex; gap:6px">
+        <div style="display:flex; gap:6px"><div style="display:flex; gap:6px">
           <button onclick="saveSettingsApiKeys()" style="flex:1; padding:8px; background:var(--chrome); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Bungee',display; font-size:10px; cursor:pointer">SAVE ALL KEYS</button>
           <button onclick="testSettingsApiKey()" style="padding:8px 15px; background:var(--chrome); border:1px solid var(--border); color:var(--dim); border-radius:4px; font-family:'Bungee',display; font-size:10px; cursor:pointer">TEST CLAUDE</button>
         </div>

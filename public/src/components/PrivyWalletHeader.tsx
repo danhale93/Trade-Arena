@@ -23,7 +23,7 @@ declare global {
  * Handles Privy authentication and isolates the embedded wallet for Trade Arena.
  */
 export const PrivyWalletHeader = () => {
-  const { authenticated, user, login, logout } = usePrivy();
+  const { authenticated, user, login, logout, ready } = usePrivy();
   const { wallets } = useWallets();
   const hasTriggeredSuccess = useRef(false);
   const lastKnownAddress = useRef<string | null>(null);
@@ -85,6 +85,17 @@ export const PrivyWalletHeader = () => {
     }
   }, [authenticated, embeddedWallet, user]);
 
+  // 0. Loading state: Privy SDK initializing
+  if (!ready) {
+    return (
+      <div className="gh-controls">
+        <div style={{ fontSize: '10px', color: 'var(--dim)', fontFamily: 'Share Tech Mono' }}>
+          BOOTING...
+        </div>
+      </div>
+    );
+  }
+
   // Unauthenticated state: Show LOGIN trigger
   if (!authenticated) {
     return (
@@ -118,6 +129,8 @@ export const PrivyWalletHeader = () => {
   // isolates the address from the embedded wallet and formats it as requested.
   const address = embeddedWallet.address;
   const truncatedAddress = `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+
+  console.log('[Privy] Active Embedded Wallet:', address);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
