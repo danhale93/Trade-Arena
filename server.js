@@ -27,7 +27,7 @@ app.use((req, res, next) => {
     res.setHeader('X-XSS-Protection', '1; mode=block');
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
     res.setHeader('Referrer-Policy', 'no-referrer');
-    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://accounts.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https:;");
+    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://accounts.google.com https://cdn.privy.io https://js.hcaptcha.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https:;");
     next();
 });
 
@@ -99,13 +99,16 @@ app.use("/api/v1/payouts", payoutRoutes);
 const allowedOrigin = process.env.ALLOWED_ORIGIN;
 app.use(cors({
     origin: (origin, cb) => {
-        // Sentinel: Prevent CORS bypass via partial origin matches (e.g. localhost.attacker.com)
-        const isLocal = origin && (
-            origin === 'http://localhost' || origin.startsWith('http://localhost:') ||
-            origin === 'http://127.0.0.1' || origin.startsWith('http://127.0.0.1:') ||
-            origin === 'https://localhost' || origin.startsWith('https://localhost:') ||
-            origin === 'https://127.0.0.1' || origin.startsWith('https://127.0.0.1:')
-        );
+        // Sentinel: Prevent CORS bypass via partial origin matches (e.g. localhost:80.attacker.com)
+        let isLocal = false;
+        try {
+            if (origin) {
+                const url = new URL(origin);
+                isLocal = (url.hostname === 'localhost' || url.hostname === '127.0.0.1');
+            }
+        } catch (e) {
+            isLocal = false;
+        }
 
         if (!origin || isLocal || allowedOrigin === '*' || origin === allowedOrigin) {
             cb(null, true);
