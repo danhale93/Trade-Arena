@@ -2340,15 +2340,17 @@ function drawEquityCurve(preMin, preMax) {
 
   const range=max-min||1;
 
-  // ⚡ Bolt Optimization: Manual loop for point generation to avoid intermediate array allocations
-  let pts = "";
+  // ⚡ Bolt Optimization: Build points using an array to avoid O(N²) string concatenation overhead.
+  // This approach is more efficient for larger datasets like the 1000-point equity history.
   const len = equityHistory.length;
+  const ptsArr = new Array(len);
   for (let i = 0; i < len; i++) {
     const v = equityHistory[i];
     const x = (i / (len - 1)) * W;
     const y = H - ((v - min) / range) * (H - 6) - 3;
-    pts += (i === 0 ? "" : " ") + x.toFixed(1) + "," + y.toFixed(1);
+    ptsArr[i] = x.toFixed(1) + "," + y.toFixed(1);
   }
+  const pts = ptsArr.join(" ");
   line.setAttribute('points',pts); fill.setAttribute('points',pts+` ${W},${H} 0,${H}`);
   const isUp=equityHistory[equityHistory.length-1]>=startBalance;
   line.setAttribute('stroke',isUp?'var(--green)':'var(--hot)');
@@ -2369,9 +2371,16 @@ function drawBaselines(n, claudePnl, winRate, baselinePnls, baselineWins, claude
     bData[k] = { pnl, avg: n ? pnl / n : 0, wr: n ? (wins / n * 100).toFixed(1) + '%' : '—' };
   });
 
-  // Highlight the winner
-  const allPnls = { claude: claudePnl, ...Object.fromEntries(bKeys.map(k => [k, bData[k].pnl])) };
-  const best = Object.keys(allPnls).reduce((a, b) => allPnls[a] > allPnls[b] ? a : b);
+  // ⚡ Bolt Optimization: Replace expensive Object.fromEntries and reduce with a simple comparison loop.
+  // This reduces object allocation and iteration overhead.
+  let best = 'claude';
+  let maxPnl = claudePnl;
+  for (const k of bKeys) {
+    if (bData[k].pnl > maxPnl) {
+      maxPnl = bData[k].pnl;
+      best = k;
+    }
+  }
 
   const fmt = (v) => (v >= 0 ? '+' : '') + '$' + v.toFixed(2);
 
