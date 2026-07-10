@@ -744,111 +744,23 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     <span>5 AI agents · Real prices · Self-learning · Politician filings</span>
   </div>
 <div class="login-card">
-    <div class="login-card-hd">SIGN IN TO THE FLOOR</div>
+    <div class="login-card-hd">UNIFIED SECURE LOGIN</div>
     <div class="login-card-bd">
-      <!-- Privy Embedded Wallet Login -->
-      <button class="g-btn" onclick="if(typeof privyInit==='function') privyInit(); privyLoginGoogle()">
-        <svg class="g-icon" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-        SIGN IN WITH GOOGLE
+      <button class="g-btn" onclick="if(typeof privyInit==='function') privyInit(); if(window.privyLogin) window.privyLogin();" style="height:54px; font-size:14px; background: linear-gradient(90deg, var(--cyan), var(--hot)); color: #000; border: none; box-shadow: 0 0 20px rgba(0,255,231,0.3)">
+        <span style="font-family:'Bungee'; letter-spacing:1px">ENTER ARENA →</span>
       </button>
-      <button class="g-btn" onclick="if(typeof privyInit==='function') privyInit(); privyLoginApple()" style="background:#000;color:#fff;margin-top:4px">
-        <svg class="g-icon" viewBox="0 0 384 512" style="width:20px;height:20px"><path fill="#fff" d="M318.7 268.7c-.2-1.2-.4-2.4-.4-3.6 0-23.6-19.1-42.8-42.7-42.8-12.5 0-23.6 5.4-32 14-8.4-8.6-19.6-14.1-32.1-14.1-23.5 0-42.6 19.2-42.6 42.8 0 1.2-.1 2.4-.1 3.6C106.5 282.3 173 350 256 350s149.5-67.7 149.5-151.3c0-1.2.1-2.4.1-3.6-12.4 0-23.8 5.3-32.3 14.3-8.5-9-19.9-14.3-32.4-14.3zM192 342.7c20.9-2.3 39.2-14.1 52.3-35.3-20-20.9-52.3-34.3-92.3-34.3-40.1 0-72.3 13.4-92.4 34.3 13 21.2 31.4 33 52.2 35.3 20.9 2.3 41.7-2.3 60.2-1.1z"/></svg>
-        SIGN IN WITH APPLE
-      </button>
-      <div class="divider">— or —</div>
 
-      <button class="payid-btn" onclick="loginPayID()">
-        <span style="font-size:16px">⚡</span> PAYID NO-KYC ONBOARDING (AUD)
-      </button>
-      <div class="divider" style="margin:12px 0">— or —</div>
-<button class="mm-btn" onclick="loginMetaMask()">
-        <svg width="20" height="20" viewBox="0 0 318 318"><path d="M274 35L174 109l19-44z" fill="#E17726"/><path d="M44 35l99 75-18-44z" fill="#E27625"/><path d="M234 218l-27 41 58 16 17-56z" fill="#E27625"/><path d="M36 219l17 56 57-16-26-41z" fill="#E27625"/><path d="M107 143l-17 25 60 3-2-64z" fill="#E27625"/><path d="M211 143l-42-37-2 64 60-3z" fill="#E27625"/></svg>
-        METAMASK
-      </button>
-      <button class="cb-btn" onclick="loginCoinbase()">
-        <svg width="20" height="20" viewBox="0 0 48 48"><circle cx="24" cy="24" r="24" fill="#0052FF"/><path d="M24 12c-1.5 0-2.7.9-3.3 2.2l-4.3-2.6c.8-1.9 2.6-3.1 4.7-3.1 2.9 0 5.2 2.3 5.2 5.2s-2.3 5.2-5.2 5.2c-1.5 0-2.8-.6-3.8-1.6l-4.1 2.5c1.7 1.8 4.1 2.9 6.8 2.9 4.4 0 8-3.6 8-8s-3.6-8-8-8zm-1.1 10c2.5 0 4.5-2 4.5-4.5s-2-4.5-4.5-4.5-4.5 2-4.5 4.5 2 4.5 4.5 4.5z" fill="#fff"/></svg>
-        COINBASE
-      </button>
-      <div class="divider">— or —</div>
-      <button class="demo-btn" onclick="loginDemo()">🎮 ENTER DEMO MODE — NO SETUP NEEDED</button>
-      <button class="advanced-toggle" onclick="toggleAdvancedSettings(this)" aria-expanded="false" aria-controls="advancedSettings">
-        ⚙️ Advanced Settings
-      </button>
-      <div class="fiat-ramp-row">
-        <button class="onramp-btn" onclick="window.openMoonpay && window.openMoonpay()">💳 DEPOSIT USDC</button>
-        <button class="offramp-btn" onclick="openOskoRamp('offramp')">💵 WITHDRAW</button>
+      <div style="margin-top:12px; display:flex; gap:8px;">
+        <button class="onramp-btn" onclick="window.openMoonpay && window.openMoonpay()" style="flex:1">💳 DEPOSIT</button>
+        <button class="offramp-btn" onclick="openWithdrawModal()" style="flex:1">💵 WITHDRAW</button>
       </div>
-    </div>
-    <!-- Advanced Settings (hidden by default) -->
-    <div id="advancedSettings" style="display:none;margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
-      <div class="divider">— Advanced Settings —</div>
-      <button class="mm-btn" onclick="loginMetaMask()" style="width:100%;">
-        <svg width="20" height="20" viewBox="0 0 318 318"><path d="M274 35L174 109l19-44z" fill="#E17726"/><path d="M44 35l99 75-18-44z" fill="#E27625"/><path d="M234 218l-27 41 58 16 17-56z" fill="#E27625"/><path d="M36 219l17 56 57-16-26-41z" fill="#E27625"/><path d="M107 143l-17 25 60 3-2-64z" fill="#E27625"/><path d="M211 143l-42-37-2 64 60-3z" fill="#E27625"/></svg>
-        METAMASK
-      </button>
+
+      <p style="font-size:9px; color:var(--dim); text-align:center; margin-top:8px; line-height:1.4">
+        Powered by Privy • Secure Multi-Chain Authentication<br>
+        <span style="color:var(--cyan)">Base Mainnet Protocol</span>
+      </p>
     </div>
   </div>
-  <p id="loginStatus" aria-live="polite" style="min-height:16px;font-size:11px;color:var(--cyan);text-align:center;transition:all .3s"></p>
-  <div class="setup-note">
-    <strong>AI API Keys</strong> — enables full AI agents. Get yours:
-    <a href="https://console.anthropic.com" target="_blank">Anthropic</a> |
-    <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI</a> |
-    <a href="https://aistudio.google.com/app/apikey" target="_blank">Gemini</a>
-    <div style="display:flex;gap:4px;margin-top:5px">
-      <input type="password" id="apiKeyInput" placeholder="Paste primary key (Anthropic) here..." style="flex:1;padding:5px 8px;background:var(--bg);border:1px solid var(--border);color:var(--cyan);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px;" oninput="window._userApiKey=this.value.trim(); localStorage.setItem('ta_api_key', this.value.trim())">
-      <button onclick="toggleSettingsModal()" style="padding:4px 8px;background:var(--chrome);border:1px solid var(--border);color:var(--cyan);border-radius:4px;font-family:'Bungee',display;font-size:8px;cursor:pointer">ALL KEYS</button>
-    </div>
-    <span style="color:var(--dim);font-size:8px">Without keys the app uses rule-based signals. Demo Mode requires no wallet or key.</span>
-  </div>
-  
-  <!-- Fiat Deposit Section -->
-  <div id="depositSection" style="margin-top:16px;padding:12px;border-top:1px solid var(--border);">
-    <div class="divider">💰 Fiat Deposit (USDC on Base)</div>
-    
-    <!-- Deposit Buttons -->
-    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-      <button class="onramp-btn" onclick="openDepositFlow(50)" style="flex:1;min-width:120px;">
-        Deposit $50
-      </button>
-      <button class="onramp-btn" onclick="openDepositFlow(100)" style="flex:1;min-width:120px;">
-        Deposit $100
-      </button>
-    </div>
-    
-    <!-- Fee Breakdown Display -->
-    <div id="feeBreakdown" style="background:rgba(255,170,0,.07);border:1px solid rgba(255,170,0,.2);border-radius:8px;padding:10px;margin-bottom:12px;display:none;">
-      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--dim);margin-bottom:4px;">
-        <span>Deposit Amount:</span>
-        <span id="depositAmountDisplay">$50.00</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--dim);margin-bottom:4px;">
-        <span>MoonPay Fee (3.5%):</span>
-        <span id="moonpayFeeDisplay">$1.75</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--dim);margin-bottom:4px;">
-        <span>Network Fee:</span>
-        <span id="networkFeeDisplay">$1.50</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--dim);font-weight:bold;">
-        <span>Total:</span>
-        <span id="totalAmountDisplay">$53.25</span>
-      </div>
-    </div>
-    
-    <!-- Error State -->
-    <div id="depositError" style="background:rgba(255,45,120,.07);border:1px solid rgba(255,45,120,.2);border-radius:8px;padding:10px;color:var(--hot);display:none;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="currentColor"/>
-        </svg>
-        <span id="errorMessage">Deposit failed. Please try again.</span>
-      </div>
-      <button class="demo-btn" onclick="retryDeposit()" style="width:100%;">
-        Retry Deposit
-      </button>
-    </div>
-  </div>
-</div>
 
 <!-- ══ MAIN APP ══ -->
 <div id="mainApp">
@@ -1551,7 +1463,7 @@ function copyToClipboard(inputId, btn) {
 // ══════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════
-const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = '';
 // ── Anthropic API Key ──
 // Get yours free at console.anthropic.com — paste it here to enable AI agents
 // Without it the app uses rule-based fallback signals (still trades, just no Claude)
@@ -3257,19 +3169,11 @@ function startOverride(bot,btn){
 // ══════════════════════════════════════════════════════
 // LOGIN
 // ══════════════════════════════════════════════════════
-function loginGoogle(){
-  const s=document.getElementById('loginStatus'); if(!s) return;
-  
-  // Check if Google Client ID is configured
-  if(GOOGLE_CLIENT_ID.includes('YOUR_')){ 
-    s.innerHTML='ℹ️ Google Client ID not configured. <a href="https://console.cloud.google.com" target="_blank" style="color:var(--cyan);cursor:pointer">Set up OAuth →</a> or use Demo/MetaMask'; 
-    return; 
-  }
+
   
   // Wait for Google SDK to load
   if(typeof google==='undefined'){ 
     s.textContent='⏳ Loading Google SDK…'; 
-    setTimeout(loginGoogle, 1000); 
     return; 
   }
   
@@ -3367,7 +3271,7 @@ async function checkAutoLogin() {
       const accounts = await window.ethereum.request({ method: 'eth_accounts' });
       if (accounts && accounts.length > 0) {
         console.log('🦊 Auto-logging in MetaMask...');
-        loginMetaMask(true);
+        /* Handled by Privy */;
       }
     } catch (e) {
       console.error('Auto-login check failed:', e);
@@ -3421,14 +3325,7 @@ async function claimPayout() {
   }
 }
 
-async function loginMetaMask(isAuto = false){
-  const s=document.getElementById('cStatus'); if(!s) return;
-  
-  try{
-    if(!window.ethereum){ 
-      if(!isAuto) s.innerHTML='<span style="color:var(--hot)">❌ MetaMask not detected</span><br><small style="color:var(--dim);margin-top:8px;display:block">Install MetaMask: <a href="https://metamask.io" target="_blank" style="color:var(--cyan)">metamask.io →</a></small>';
-      return; 
-    }
+
     
     if(!isAuto) s.textContent='⏳ Connecting MetaMask wallet…';
 
@@ -3581,17 +3478,12 @@ async function loginMetaMask(isAuto = false){
   }
 }
 
-function loginDemo(){
-  try{ setupApp({name:'DEMO PLAYER', avatar:null, badge:'🎮 DEMO'}); }
+); }
 catch(e){ const s=document.getElementById('loginStatus'); if(s) s.textContent='❌ '+e.message; console.error('Demo error:',e); }
 }
 
 // Coinbase Wallet login - checks for window.coinbaseWalletExtension
-async function loginCoinbase(){
-  const s=document.getElementById('loginStatus'); if(!s) return;
-  try{
-    if(window.coinbaseWalletExtension){
-      const a=await window.coinbaseWalletExtension.request({method:'eth_requestAccounts'});
+);
       if(a&&a[0]){
         w=window.coinbaseWalletExtension;walletAddress=a[0];
         const safeAddr = escapeHTML(walletAddress);
@@ -3602,14 +3494,7 @@ async function loginCoinbase(){
   }catch(e){s.innerHTML='❌ '+escapeHTML(e.message);console.error('Coinbase error:',e);}
 }
 
-async function loginPayID() {
-  const s = document.getElementById('loginStatus');
-  if(!s) return;
 
-  if(!window.ethereum) {
-    s.innerHTML = '❌ MetaMask not found. Please install MetaMask to use PayID onboarding.';
-    return;
-  }
 
   try {
     s.innerHTML = '⚡ Initiating PayID Onboarding...<br><span style="font-size:9px;color:var(--dim)">Step 1: Connecting Wallet</span>';
@@ -3630,7 +3515,7 @@ async function loginPayID() {
 
     setTimeout(() => {
         window.open(rampUrl, '_blank');
-        s.innerHTML = '✅ Redirected! Return here once your deposit arrives.<br><button onclick="loginMetaMask()" style="margin-top:8px;padding:6px 12px;background:var(--cyan);border:none;border-radius:4px;color:var(--bg);cursor:pointer;font-family:Bungee;font-size:9px">I HAVE FUNDS NOW</button>';
+        s.innerHTML = '✅ Redirected! Return here once your deposit arrives.<br><button onclick="if(window.privyLogin) window.privyLogin()" style="margin-top:8px;padding:6px 12px;background:var(--cyan);border:none;border-radius:4px;color:var(--bg);cursor:pointer;font-family:Bungee;font-size:9px">I HAVE FUNDS NOW</button>';
     }, 1500);
 
   } catch (e) {
@@ -3653,7 +3538,7 @@ function openOskoRamp(type) {
   } else {
     // Sell - check if wallet connected first
     if(!window.ethereum?.selectedAddress) {
-      s.innerHTML = '⚠️ Connect wallet first to sell.<br><button onclick="loginMetaMask()" style="margin-top:8px;padding:6px 12px;background:var(--hot);border:none;border-radius:4px;color:#fff;cursor:pointer">CONNECT WALLET</button>';
+      s.innerHTML = '⚠️ Connect wallet first to sell.<br><button onclick="if(window.privyLogin) window.privyLogin()" style="margin-top:8px;padding:6px 12px;background:var(--hot);border:none;border-radius:4px;color:#fff;cursor:pointer">CONNECT WALLET</button>';
       return;
     }
     // Sell - opens Ramp's sell widget
@@ -3665,12 +3550,32 @@ function openOskoRamp(type) {
   window.open(url, '_blank');
 }
 
-window.onPrivyReady = function(user, walletAddress) {
-  setupApp({
-    name: user.name || (walletAddress ? walletAddress.substring(0, 6) + '...' + walletAddress.substring(38) : 'Privy User'),
-    avatar: user.avatar,
-    badge: user.provider ? '🔵 ' + user.provider.toUpperCase() : '🔵 PRIVY',
-    address: walletAddress
+
+
+
+window.onPrivyLoginSuccess = function() {
+  const s = document.getElementById('loginStatus');
+  if(s) s.textContent = '✅ Privy Authorized! Syncing Arena instance...';
+
+  const userData = {
+    name: window.privyUser?.google?.name || window.privyUser?.email?.address || 'Arena Trader',
+    email: window.privyUser?.email?.address || window.privyUser?.google?.email,
+    address: window.privyWalletAddress,
+    provider: 'privy',
+    badge: '💠 PRIVY'
+  };
+
+  fetch('/api/user/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(userData)
+  })
+  .then(res => res.json())
+  .then(data => {
+    if(data.success) {
+      if(typeof balance !== 'undefined') balance = data.user.balance || 0;
+      if(typeof setupApp === 'function') setupApp({ ...userData, ...data.user });
+    }
   });
 };
 
@@ -6650,8 +6555,7 @@ function updateSettingsVolume(val) {
         <div class="settings-section-title">💳 Wallet Connection</div>
         <div id="settingsWalletStatus" style="font-size:10px;color:var(--dim);margin-bottom:8px">🔴 Not connected</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <button class="mm-btn" onclick="loginMetaMask()" style="flex:1;min-width:120px;padding:8px;font-size:10px">Connect MetaMask</button>
-          <button class="cb-btn" onclick="loginCoinbase()" style="flex:1;min-width:120px;padding:8px;font-size:10px">Connect Coinbase</button>
+          <button class="mm-btn" onclick="if(window.privyLogin) window.privyLogin()" style="flex:1;min-width:120px;padding:8px;font-size:10px">Connect MetaMask</button>
         </div>
       </div>
       <div class="settings-section">
@@ -6732,5 +6636,53 @@ function updateSettingsVolume(val) {
 
 
 <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+
+<!-- Withdrawal QR Modal -->
+<div id="withdrawModal" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:10000; justify-content:center; align-items:center;">
+  <div class="mcard" style="width:320px; padding:20px; text-align:center; position:relative;">
+    <button onclick="closeWithdrawModal()" style="position:absolute; top:10px; right:10px; background:none; border:none; color:var(--dim); cursor:pointer; font-size:16px;">×</button>
+    <div style="font-family:'Oswald'; letter-spacing:2px; font-size:14px; color:var(--cyan); margin-bottom:15px;">SECURE WITHDRAWAL</div>
+    <div id="qrcode" style="background:#fff; padding:15px; border-radius:8px; display:inline-block; margin-bottom:15px;"></div>
+    <div id="withdrawStatus" style="font-size:10px; color:var(--dim); line-height:1.4; margin-bottom:15px;">
+      Scan this QR with your mobile wallet to claim your earnings on Base Mainnet.
+    </div>
+    <button class="gh-auto-btn" onclick="claimPayout()" style="width:100%; padding:10px; border:1px solid var(--green); color:var(--green)">CONFIRM CLAIM</button>
+  </div>
+</div>
+
+<script>
+function openWithdrawModal() {
+  const modal = document.getElementById('withdrawModal');
+  if(!modal) return;
+  modal.style.display = 'flex';
+
+  const addr = window.privyWalletAddress || (window.ethereum && window.ethereum.selectedAddress);
+  const statusEl = document.getElementById('withdrawStatus');
+  const qrContainer = document.getElementById('qrcode');
+
+  if(!addr) {
+    if(statusEl) statusEl.innerHTML = '<span style="color:var(--hot)">⚠️ CONNECT WALLET FIRST</span>';
+    if(qrContainer) qrContainer.innerHTML = '🔒';
+    return;
+  }
+
+  // Generate QR for EIP-681 / Claim Link
+  const claimLink = `ethereum:pay-${addr}@8453/transfer?uint256=0`;
+  if(qrContainer && typeof QRCode !== 'undefined') {
+    qrContainer.innerHTML = '';
+    const canvas = document.createElement('canvas');
+    qrContainer.appendChild(canvas);
+    QRCode.toCanvas(canvas, claimLink, { width: 200, margin: 2 }, function (error) {
+      if (error) console.error(error);
+    });
+  }
+  if(statusEl) statusEl.innerHTML = 'Scan this QR with your mobile wallet to claim your earnings on Base Mainnet.';
+}
+
+function closeWithdrawModal() {
+  const modal = document.getElementById('withdrawModal');
+  if(modal) modal.style.display = 'none';
+}
+</script>
 </body>
 </html>
