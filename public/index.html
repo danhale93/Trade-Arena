@@ -3387,13 +3387,16 @@ async function claimPayout() {
     }
 
     const address = window.ethereum.selectedAddress;
+    const validationToken = localStorage.getItem('ta_task_secret');
+
     const res = await fetch('/api/v1/payouts/claim', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         userAddress: address,
         taskId: 'MANUAL_CLAIM_' + Date.now(),
-        proofOfWork: 'CLAIM_PNL_' + balance.toFixed(2)
+        proofOfWork: 'CLAIM_PNL_' + balance.toFixed(2),
+        validationToken: validationToken
       })
     });
 
