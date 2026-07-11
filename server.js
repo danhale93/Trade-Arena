@@ -821,10 +821,13 @@ function generateBotConfig(strategy, riskLevel) {
         'Arbitrage Detection': { minSpread: 0.3, maxSpread: 10, maxSlippage: 1, checkInterval: 30000 },
         'Flash Loan Farming': { minProfit: 0.1, maxLoanMultiplier: 50, riskAssessment: 'HIGH', checkInterval: 15000 }
     };
-    const config = configs[strategy] || configs['Arbitrage Detection'];
+    const hasValidStrategy = Object.prototype.hasOwnProperty.call(configs, strategy);
+    const baseConfig = hasValidStrategy ? configs[strategy] : configs['Arbitrage Detection'];
     const riskMultipliers = { 'Conservative (2x leverage)': 0.5, 'Moderate (5x leverage)': 1.0, 'Aggressive (10x leverage)': 2.0 };
-    config.riskMultiplier = riskMultipliers[riskLevel] || 1;
-    return config;
+    return {
+        ...baseConfig,
+        riskMultiplier: riskMultipliers[riskLevel] || 1
+    };
 }
 
 function generateId() {
