@@ -119,6 +119,7 @@ async function claimFaucet() {
             saveTaskState();
             renderTaskCenter();
             fetchDeployments();
+            if (typeof FX !== 'undefined' && FX.confetti) FX.confetti(window.innerWidth / 2, window.innerHeight / 2);
             if (typeof SFX !== 'undefined') SFX.bigWin();
             if (window.showToast) window.showToast('Faucet Claimed! Deployment Queued.', 'success');
         } else {
@@ -175,6 +176,7 @@ async function submitTaskToBackend(quest) {
             saveTaskState();
             renderTaskCenter();
             fetchDeployments();
+            if (typeof FX !== 'undefined' && FX.confetti) FX.confetti(window.innerWidth / 2, window.innerHeight / 2);
             if (typeof SFX !== 'undefined') SFX.win();
             if (window.showToast) {
                 if (data.payout?.onChainAuth) {
@@ -245,6 +247,7 @@ async function verifyTaskCompletion(taskId, token = null) {
     }
     saveTaskState();
     renderTaskCenter();
+    if (typeof FX !== 'undefined' && FX.confetti) FX.confetti(window.innerWidth / 2, window.innerHeight / 2);
     if (typeof SFX !== 'undefined') SFX.bigWin();
     const rewardType = task.type === 'verified' ? 'Real Crypto' : 'Credits';
     if (window.showToast) window.showToast(`Verified Task Complete! +$${task.reward} ${rewardType} Credited`, 'success');

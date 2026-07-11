@@ -831,7 +831,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     </div>
     <div style="margin-right:4px;text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end">
       <div style="display:flex;align-items:center;gap:6px">
-        <button id="ghClaimBtn" onclick="claimPayout()" style="display:none;padding:2px 6px;font-size:8px;background:var(--green);color:#000;border:none;border-radius:4px;font-family:Bungee;cursor:pointer;line-height:1">CLAIM</button>
+        <button id="ghClaimBtn" onclick="claimPayout()" style="display:none;padding:2px 6px;font-size:8px;background:var(--green);color:#000;border:none;border-radius:4px;font-family:Bungee;cursor:pointer;line-height:1" aria-label="Claim available rewards" title="Claim available rewards">CLAIM</button>
         <div class="gh-balance" id="ghBalance" style="transition:color .3s">$0.00</div>
       </div>
       <div class="gh-pnl pnl-pos" id="ghPnl">+$0.00 today</div>
@@ -3528,7 +3528,7 @@ function renderBot(bot){
     <div class="mutation-badge" id="mbadge-${bot.id}"><span role="img" aria-hidden="true">🧬</span> ADAPTED</div>
     <div class="m-head">
       <div style="display:flex;align-items:center;gap:5px"><span class="m-id" style="display:flex;align-items:center;gap:4px"><span role="img" aria-label="${botLabel}">${botIcon}</span> BOT #${bot.id} <small style="font-size:8px;padding:1px 4px;background:rgba(255,255,255,0.1);border-radius:3px">${bot.type}</small></span><span class="m-pnl" id="mpnl-${bot.id}">$0.00</span></div>
-      <div style="display:flex;align-items:center;gap:4px"><div class="m-ticker" id="mtick-${bot.id}">READY</div><button class="m-close" onclick="removeBot(${bot.id})" aria-label="Remove bot ${bot.id}" title="Remove bot">✕</button></div>
+      <div style="display:flex;align-items:center;gap:4px"><div class="m-ticker" id="mtick-${bot.id}">READY</div><button class="m-close" onclick="removeBot(${bot.id})" aria-label="Remove bot #${bot.id}" title="Remove bot">✕</button></div>
     </div>
     <div style="position:relative">
       <div class="m-reels" id="mreels-${bot.id}">
@@ -3563,11 +3563,11 @@ function renderBot(bot){
     </div>
     <!-- Agent vote cards -->
     <div class="agent-grid" id="agentGrid-${bot.id}">
-      <div class="agent-card" id="ag-mom-${bot.id}"><div class="ac-icon">🔥</div><div class="ac-name">MOMENTUM</div><div class="ac-vote" id="agv-mom-${bot.id}">—</div><div class="ac-conv" id="agc-mom-${bot.id}"></div></div>
-      <div class="agent-card" id="ag-vol-${bot.id}"><div class="ac-icon">🌀</div><div class="ac-name">VOLATILITY</div><div class="ac-vote" id="agv-vol-${bot.id}">—</div><div class="ac-conv" id="agc-vol-${bot.id}"></div></div>
-      <div class="agent-card" id="ag-pol-${bot.id}"><div class="ac-icon">🏛️</div><div class="ac-name">POLITICIAN</div><div class="ac-vote" id="agv-pol-${bot.id}">—</div><div class="ac-conv" id="agc-pol-${bot.id}"></div></div>
-      <div class="agent-card" id="ag-sen-${bot.id}"><div class="ac-icon">📊</div><div class="ac-name">SENTIMENT</div><div class="ac-vote" id="agv-sen-${bot.id}">—</div><div class="ac-conv" id="agc-sen-${bot.id}"></div></div>
-      <div class="agent-card" id="ag-risk-${bot.id}"><div class="ac-icon">🛡️</div><div class="ac-name">RISK</div><div class="ac-vote" id="agv-risk-${bot.id}">—</div><div class="ac-conv" id="agc-risk-${bot.id}"></div></div>
+      <div class="agent-card" id="ag-mom-${bot.id}"><div class="ac-icon"><span role="img" aria-label="Momentum Agent">🔥</span></div><div class="ac-name">MOMENTUM</div><div class="ac-vote" id="agv-mom-${bot.id}">—</div><div class="ac-conv" id="agc-mom-${bot.id}"></div></div>
+      <div class="agent-card" id="ag-vol-${bot.id}"><div class="ac-icon"><span role="img" aria-label="Volatility Agent">🌀</span></div><div class="ac-name">VOLATILITY</div><div class="ac-vote" id="agv-vol-${bot.id}">—</div><div class="ac-conv" id="agc-vol-${bot.id}"></div></div>
+      <div class="agent-card" id="ag-pol-${bot.id}"><div class="ac-icon"><span role="img" aria-label="Politician Agent">🏛️</span></div><div class="ac-name">POLITICIAN</div><div class="ac-vote" id="agv-pol-${bot.id}">—</div><div class="ac-conv" id="agc-pol-${bot.id}"></div></div>
+      <div class="agent-card" id="ag-sen-${bot.id}"><div class="ac-icon"><span role="img" aria-label="Sentiment Agent">📊</span></div><div class="ac-name">SENTIMENT</div><div class="ac-vote" id="agv-sen-${bot.id}">—</div><div class="ac-conv" id="agc-sen-${bot.id}"></div></div>
+      <div class="agent-card" id="ag-risk-${bot.id}"><div class="ac-icon"><span role="img" aria-label="Risk Agent">🛡️</span></div><div class="ac-name">RISK</div><div class="ac-vote" id="agv-risk-${bot.id}">—</div><div class="ac-conv" id="agc-risk-${bot.id}"></div></div>
     </div>
     <div class="consensus-label"><span id="clab-${bot.id}" style="color:var(--dim);font-style:italic">awaiting spin…</span><span id="cthresh-${bot.id}"></span></div>
     <div class="consensus-bar-wrap"><div class="consensus-bar-fill" id="cbar-${bot.id}" style="width:0%;background:var(--dim)"></div></div>
@@ -3584,17 +3584,17 @@ function renderBot(bot){
         <div class="m-dd-section">
           <div class="m-dd-label">Trade Amount</div>
           <div class="m-dd-bets" id="mbets-${bot.id}">
-            ${[0.10,0.25,0.50,1.00,2.00,5.00,10.00,20.00,100.00].map(v=>{const isOn=v===bot.bet; return `<button class="m-dd-bet${isOn?' on':''}" data-bet="${v}" onclick="setBet(${bot.id},${v})" aria-pressed="${isOn}" title="Set bet to $${v.toFixed(2)}">$${v%1===0?v.toFixed(0):v.toFixed(2)}</button>`;}).join('')}
+            ${[0.10,0.25,0.50,1.00,2.00,5.00,10.00,20.00,100.00].map(v=>{const isOn=v===bot.bet; return `<button class="m-dd-bet${isOn?' on':''}" data-bet="${v}" onclick="setBet(${bot.id},${v})" aria-pressed="${isOn}" title="Set bet to $${v.toFixed(2)}" aria-label="Trade amount preset: $${v.toFixed(2)}">$${v%1===0?v.toFixed(0):v.toFixed(2)}</button>`;}).join('')}
           </div>
           <div class="m-dd-custom">
-            <input type="number" id="mcustom-${bot.id}" placeholder="Custom $" min="0.01" step="0.01">
-            <button onclick="setCustomBet(${bot.id})">SET</button>
+            <input type="number" id="mcustom-${bot.id}" placeholder="Custom $" min="0.01" step="0.01" aria-label="Custom trade amount in dollars">
+            <button onclick="setCustomBet(${bot.id})" aria-label="Set custom trade amount">SET</button>
           </div>
         </div>
         <div class="m-dd-row">
           <div class="m-dd-section">
             <div class="m-dd-label">Personality</div>
-            <select class="m-dd-select" id="mpersonality-${bot.id}" onchange="setBotPersonality(${bot.id},this.value)">
+            <select class="m-dd-select" id="mpersonality-${bot.id}" onchange="setBotPersonality(${bot.id},this.value)" aria-label="Select bot personality">
               <option value="BALANCED">⚖️ Balanced</option>
               <option value="AGGRESSIVE">🔥 Aggressive</option>
               <option value="CONSERVATIVE">🛡️ Conservative</option>
@@ -3604,7 +3604,7 @@ function renderBot(bot){
           </div>
           <div class="m-dd-section">
             <div class="m-dd-label">Auto Delay</div>
-            <select class="m-dd-select" id="mdelay-${bot.id}" onchange="setBotDelay(${bot.id},this.value)">
+            <select class="m-dd-select" id="mdelay-${bot.id}" onchange="setBotDelay(${bot.id},this.value)" aria-label="Select auto-trading delay">
               <option value="2000">Fast (2s)</option>
               <option value="5000" selected>Normal (5s)</option>
               <option value="15000">Slow (15s)</option>
@@ -3615,7 +3615,7 @@ function renderBot(bot){
         <div class="m-dd-row">
           <div class="m-dd-section">
             <div class="m-dd-label">Stop Loss</div>
-            <select class="m-dd-select" id="mstoploss-${bot.id}" onchange="setBotStopLoss(${bot.id},this.value)">
+            <select class="m-dd-select" id="mstoploss-${bot.id}" onchange="setBotStopLoss(${bot.id},this.value)" aria-label="Select stop loss percentage">
               <option value="0">None</option>
               <option value="10">−10%</option>
               <option value="20" selected>−20%</option>
@@ -3625,7 +3625,7 @@ function renderBot(bot){
           </div>
           <div class="m-dd-section">
             <div class="m-dd-label">Take Profit</div>
-            <select class="m-dd-select" id="mtakeprofit-${bot.id}" onchange="setBotTakeProfit(${bot.id},this.value)">
+            <select class="m-dd-select" id="mtakeprofit-${bot.id}" onchange="setBotTakeProfit(${bot.id},this.value)" aria-label="Select take profit percentage">
               <option value="0">None</option>
               <option value="10">+10%</option>
               <option value="20">+20%</option>
@@ -3846,14 +3846,16 @@ async function spinBot(id){
   bot.spinning=true;
   try{ if(typeof SFX!=='undefined') SFX.spin(); }catch(e){}
   const spinEl=document.getElementById('mspin-'+id), thinkEl=document.getElementById('mthink-'+id), stepEl=document.getElementById('mstep-'+id);
-  if(spinEl){spinEl.disabled=true;spinEl.classList.add('going');spinEl.textContent='⏳';}
+  if(spinEl){spinEl.disabled=true;spinEl.classList.add('going');spinEl.textContent='⏳'; spinEl.ariaLabel='Fetching live market data...';}
   if(thinkEl) thinkEl.classList.add('show');
   if(stepEl) stepEl.textContent='📡 Fetching live market data…';
   const market=await getMarketData();
 
+  if(spinEl) spinEl.ariaLabel='Running 5-agent ensemble...';
   if(stepEl) stepEl.textContent='🧠 Running 5-agent ensemble…';
   const decision=await callAI(market,bot.bet,id,bot);
 
+  if(spinEl) spinEl.ariaLabel=`Getting real ${decision.token} price...`;
   if(stepEl) stepEl.textContent=`💎 Getting real ${decision.token} price…`;
   let entryPrice=await getLivePrice(decision.token);
   let volumeUsd=1e9, priceChangePct15m=0; // Higher realistic volume for meme coins
@@ -3868,6 +3870,7 @@ async function spinBot(id){
   }
   if(!entryPrice) entryPrice=1;
 
+  if(spinEl) spinEl.ariaLabel='Opening position...';
   if(stepEl) stepEl.textContent='⚡ Opening position…';
   if(thinkEl) thinkEl.classList.remove('show');
 
@@ -3894,7 +3897,7 @@ async function spinBot(id){
   const tick=document.getElementById('mtick-'+id);
   if(tick) tick.textContent=decision.method==='HOLD'?`🧠 HOLD — ${decision.reasoning}`:`⏱ ${decision.token} ${decision.method} @ $${entryPrice.toFixed(entryPrice<1?4:2)}`;
 
-  if(spinEl){spinEl.disabled=false;spinEl.classList.remove('going');spinEl.textContent='🎰 SPIN';}
+  if(spinEl){spinEl.disabled=false;spinEl.classList.remove('going');spinEl.textContent='🎰 SPIN'; spinEl.ariaLabel='Spin bot for trade';}
   bot.spinning=false;
 
   // Execute trade (on-chain if connected, else paper)
