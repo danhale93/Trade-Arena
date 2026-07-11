@@ -6,6 +6,7 @@
 <title>TRADE ARENA — AI TRADING FLOOR</title>
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Bungee+Shade&family=JetBrains+Mono:wght@400;700&family=Oswald:wght@400;700&family=Share+Tech+Mono&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" defer></script>
+<style>
 :root{
   --gold:#ffd700;--gold2:#ffaa00;--hot:#ff2d78;--cyan:#00ffe7;
   --green:#39ff14;--amber:#ffb300;--blue:#4488ff;--purple:#bf5fff;
@@ -14,8 +15,6 @@
 *:focus-visible {
   outline: 2px solid var(--cyan);
   outline-offset: 2px;
-}
-:root {
 }
 /* Demo-first UI enhancements */
 .g-btn{
@@ -1646,6 +1645,12 @@ var _lastLogTradeCount = -1;
 var _quantPending = false;
 var _logPending = false;
 var _perfPending = false;
+
+// ⚡ Bolt Optimization: DOM Cache and State Tracking
+const _domCache = {};
+const _getEl = (id) => _domCache[id] || (_domCache[id] = document.getElementById(id));
+let _lastBreakerState = '';
+
 var _lastPerfTradeCount = -1;
 var _lastMatrixBotCount = -1;
 var _lastMatrixOpenCount = -1;
@@ -1895,7 +1900,6 @@ async function openPosition(bot, decision, entryPrice, bet, volumeUsd, priceChan
   // bet already deducted as part of costs
 
   updateLiveBalance();
-  updateGlobalBalance();
   
   updateOpenCount();
   setTimeout(()=>checkExit(pos,bot), EXIT_TIMES[decision.method]);
@@ -1989,8 +1993,8 @@ function updateLiveBalance(){
       return;
     }
 
-    const balEl=document.getElementById('ghBalance');
-    const pnlEl=document.getElementById('ghPnl');
+    const balEl=_getEl('ghBalance');
+    const pnlEl=_getEl('ghPnl');
     if(balEl){
       balEl.textContent='$'+displayBalance.toFixed(2);
       balEl.title=`Realised: $${balance.toFixed(2)} | Unrealised: $${unrealised.toFixed(2)}`;
@@ -2003,13 +2007,13 @@ function updateLiveBalance(){
     }
 
     // Consolidated: Handle Open Positions count and Queue Wrap visibility
-    const qWrap=document.getElementById('ghQueueWrap');
-    const qNum=document.getElementById('ghQueueNum');
+    const qWrap=_getEl('ghQueueWrap');
+    const qNum=_getEl('ghQueueNum');
     if(qWrap){ qWrap.style.display=count>0?'flex':'none'; }
     if(qNum) qNum.textContent=count;
 
     // Consolidated: Handle Ticker visibility (countdown logic remains in _tickHeader)
-    const ticker=document.getElementById('ghTicker');
+    const ticker=_getEl('ghTicker');
     if(ticker){ ticker.style.display=count>0?'flex':'none'; }
 
     // Consolidated: Global metric card for open positions
@@ -2078,7 +2082,7 @@ async function checkExit(pos, bot) {
   const card=document.getElementById('bot-'+pos.botId);
   if(card&&!openPositions.find(p=>p.botId===pos.botId)) card.classList.remove('has-open');
 
-  updateGlobalBalance(); updateBotPnl(bot); updateQuantReport(); updateOpenCount();
+  updateLiveBalance(); updateBotPnl(bot); updateQuantReport(); updateOpenCount();
   showExitResult(pos,bot); addToLog(pos);
 
   // Sync Matrix Pad state
@@ -3139,11 +3143,21 @@ function updateGasDisplay() {
   });
 }
 function checkGlobalBreakers() {
-  const s=document.getElementById('breakerStatus'); if(!s) return;
-  if(globalKilled){ s.textContent='🔴 EMERGENCY STOP'; s.className='breaker-status bs-stop'; return; }
-  if(currentGas>gasHardCeiling){ s.textContent='⛽ HIGH GAS'; s.className='breaker-status bs-warn'; return; }
-  if(totalPnl<=-(startBalance*drawdownPct/100)){ s.textContent='📉 DRAWDOWN KILL'; s.className='breaker-status bs-stop'; return; }
-  s.textContent='ALL CLEAR'; s.className='breaker-status bs-ok';
+  const s=_getEl('breakerStatus'); if(!s) return;
+  let state = 'OK';
+  let text = 'ALL CLEAR';
+  let cls = 'breaker-status bs-ok';
+
+  if(globalKilled){ state='STOP'; text='🔴 EMERGENCY STOP'; cls='breaker-status bs-stop'; }
+  else if(currentGas>gasHardCeiling){ state='WARN'; text='⛽ HIGH GAS'; cls='breaker-status bs-warn'; }
+  else if(totalPnl<=-(startBalance*drawdownPct/100)){ state='STOP'; text='📉 DRAWDOWN KILL'; cls='breaker-status bs-stop'; }
+
+  // ⚡ Bolt Optimization: Skip DOM updates if status hasn't changed
+  if (state === _lastBreakerState && s.textContent === text) return;
+
+  s.textContent = text;
+  s.className = cls;
+  _lastBreakerState = state;
 }
 function isGlobalBlocked() {
   if(globalKilled) return{blocked:true,reason:'EMERGENCY STOP'};
@@ -3317,7 +3331,7 @@ function setupApp({name,avatar,badge,address}){
     try{ setVal('ghName',name); setVal('ghBadge',badge); }catch(e){}
     if(avatar){ try{ const a=document.getElementById('ghAvatar'); if(a){ a.innerHTML=''; const img=document.createElement('img'); img.src=avatar; img.alt='User avatar'; img.style.cssText='width:26px;height:26px;border-radius:50%;object-fit:cover'; img.onerror=function(){ a.innerHTML='👤'; }; a.appendChild(img); } }catch(e){} }
     equityHistory=[balance];
-    try{ updateGlobalBalance(); }catch(e){ console.warn('balance:',e); }
+    try{ updateLiveBalance(); }catch(e){ console.warn('balance:',e); }
     try{ updateBreakers(); }catch(e){ console.warn('breakers:',e); }
     requestAnimationFrame(function(){
       try{ loadLearningState(); }catch(e){ console.warn('learning:',e); }
@@ -3361,9 +3375,6 @@ function setupApp({name,avatar,badge,address}){
 // ══════════════════════════════════════════════════════
 // BALANCE
 // ══════════════════════════════════════════════════════
-function updateGlobalBalance(){
-  updateLiveBalance();
-}
 function updateBotPnl(bot){
   const el=document.getElementById('mpnl-'+bot.id); if(!el) return;
   el.textContent=(bot.pnl>=0?'+':'')+'$'+bot.pnl.toFixed(2);
@@ -3492,14 +3503,17 @@ function _tickHeader(){
   updateLiveBalance();
 
   const count=openPositions.length;
-  const cd=document.getElementById('ghCountdown');
+  const cd=_getEl('ghCountdown');
   if(!cd) return;
 
   if(count===0) return;
 
   const now=Date.now();
   let nearest=null;
-  openPositions.forEach(p=>{ if(p.exitTime&&(!nearest||p.exitTime<nearest)) nearest=p.exitTime; });
+  for (let i = 0; i < openPositions.length; i++) {
+    const p = openPositions[i];
+    if (p.exitTime && (!nearest || p.exitTime < nearest)) nearest = p.exitTime;
+  }
   if(!nearest){
     if (cd.textContent !== '--:--') cd.textContent='--:--';
     return;
@@ -5480,12 +5494,16 @@ function updateMatrix() {
   _lastMatrixBotCount = bots.length;
   _lastMatrixOpenCount = openPositions.length;
 
-  const grid = document.getElementById('padGrid');
+  const grid = _getEl('padGrid');
   if (!grid) return;
 
   // ⚡ Bolt Optimization: Use Set for O(1) lookup of bots with open positions
-  // Reduces complexity from O(M * N) to O(M + N) where M=bots, N=positions
-  const botsWithOpen = new Set(openPositions.map(p => p.botId));
+  // Reduces complexity from O(M * N) to O(M + N) where M=bots, N=positions.
+  // We use a manual loop to avoid the intermediate array allocation of .map()
+  const botsWithOpen = new Set();
+  for (let i = 0; i < openPositions.length; i++) {
+    botsWithOpen.add(openPositions[i].botId);
+  }
 
   grid.innerHTML = bots.map((bot, i) => {
     const agentId = String(bot.id).padStart(2, '0');
