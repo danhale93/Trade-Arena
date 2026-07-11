@@ -6114,14 +6114,15 @@ function saveSettingsApiKeys() {
         localStorage.setItem('ta_0x_api_key', zxInput.value.trim());
     }
     if (tsInput) {
-        localStorage.setItem('ta_task_secret', tsInput.value.trim());
+        window._taskSecret = tsInput.value.trim();
+        localStorage.removeItem('ta_task_secret');
     }
     if (pmInput) {
         localStorage.setItem('ta_payout_manager_address', pmInput.value.trim());
     }
 
     const el = document.getElementById('apiTestResult');
-    if (el) { el.textContent = '✅ All keys saved'; el.style.color = 'var(--green)'; }
+    if (el) { el.textContent = '✅ Settings saved (task secret kept in-memory only)'; el.style.color = 'var(--green)'; }
 
     // Re-initialize AI and Execution configs
     if (typeof reinitializeConfigs === "function") reinitializeConfigs();
