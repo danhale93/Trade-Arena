@@ -187,3 +187,8 @@ Running security audit across localStorage and active config...
 
 ## 2026-07-10T22:48:32.803Z - [SUCCESS] SENTINEL
 Security audit complete. All encryption layers intact.
+
+## 2026-07-11 - Alchemy API Key Purge & RPC Masking
+**Vulnerability:** Exposure of a hardcoded Alchemy API key (`3zUWwmlHTQNjmM55sV2X0`) across multiple frontend and backend files, and information disclosure of full RPC URLs (including keys) via the `/api/status/connections` endpoint.
+**Learning:** Credentials can easily proliferate into artifact bundles and example environment files. Simply removing from source is not enough; all locations must be purged, and API outputs must be sanitized.
+**Prevention:** Never include real API keys in `.env.example` or as default fallbacks in code. Use masking utilities for all system status endpoints that return URLs.

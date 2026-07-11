@@ -444,7 +444,7 @@ async function loginMetaMask(){
     const signer=provider.getSigner(); const addr=await signer.getAddress();
     s.textContent='⏳ Switching to Base…';
     try{ await window.ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x2105'}]}); }
-    catch(sw){ if(sw.code===4902) await window.ethereum.request({method:'wallet_addEthereumChain',params:[{chainId:'0x2105',chainName:'Base Mainnet',rpcUrls:['https://base-mainnet.g.alchemy.com/v2/3zUWwmlHTQNjmM55sV2X0', 'https://mainnet.base.org'],nativeCurrency:{name:'ETH',symbol:'ETH',decimals:18},blockExplorerUrls:['https://basescan.org']}]}); }
+    catch(sw){ if(sw.code===4902) await window.ethereum.request({method:'wallet_addEthereumChain',params:[{chainId:'0x2105',chainName:'Base Mainnet',rpcUrls:['https://mainnet.base.org'],nativeCurrency:{name:'ETH',symbol:'ETH',decimals:18},blockExplorerUrls:['https://basescan.org']}]}); }
     let bal=0;
     try{ const b=await provider.getBalance(addr); const eth=parseFloat(ethers.utils.formatEther(b)); const d=await(await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd')).json(); bal=eth*(d?.ethereum?.usd||3200); }catch(e){}
     balance=bal; startBalance=bal;

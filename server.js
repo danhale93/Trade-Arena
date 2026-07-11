@@ -49,6 +49,30 @@ const { loadUsers, saveUsers } = require('./user_persistence');
 const PORT = process.env.PORT || 3001;
 
 /**
+ * Sentinel: Mask sensitive parts of an RPC URL (like Alchemy/Infura API keys)
+ */
+function maskRpcUrl(url) {
+    if (!url || typeof url !== 'string') return url;
+    try {
+        const u = new URL(url);
+        // Mask the path (often contains the API key)
+        if (u.pathname && u.pathname.length > 8) {
+            u.pathname = u.pathname.substring(0, 4) + '****' + u.pathname.substring(u.pathname.length - 4);
+        }
+        // Mask any credentials in the URL
+        if (u.username) u.username = '****';
+        if (u.password) u.password = '****';
+        return u.toString();
+    } catch (e) {
+        // Fallback: Mask the end of the string if it looks like it might contain a key
+        if (url.length > 20) {
+            return url.substring(0, url.length - 12) + '********';
+        }
+        return '********';
+    }
+}
+
+/**
  * Simple in-memory rate limiter (avoids express-rate-limit Node 26+ subnet.networkForm bug)
  */
 const rateLimitMap = new Map();
@@ -341,7 +365,7 @@ app.get('/api/deployments', (req, res) => {
 const FAUCET_CLAIMED_IPS = new Set();
 
 const PAYOUT_PRIVATE_KEY = process.env.PAYOUT_PRIVATE_KEY || '';
-const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY || '3zUWwmlHTQNjmM55sV2X0';
+const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY || '';
 const PAYOUT_RPC_URL = ALCHEMY_API_KEY ? `https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}` : (process.env.RPC_URL || 'https://mainnet.base.org');
 const PAYOUT_CHAIN_ID = 8453;
 const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
@@ -498,7 +522,7 @@ app.get('/api/status/connections', async (req, res) => {
             name: rpc.name,
             type: 'RPC',
             status,
-            value: rpc.url
+            value: maskRpcUrl(rpc.url)
         };
     });
 

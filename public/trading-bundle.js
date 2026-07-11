@@ -820,7 +820,7 @@ const BASE_SEPOLIA_CONFIG = {
 const BASE_CONFIG = {
   chainId: 8453,
   name: "Base Mainnet",
-  rpcUrl: "https://base-mainnet.g.alchemy.com/v2/3zUWwmlHTQNjmM55sV2X0",
+  rpcUrl: "https://mainnet.base.org",
   blockExplorerUrl: "https://basescan.org",
   currency: {
     name: "Ethereum",
@@ -1180,7 +1180,7 @@ const REAL_WALLET_NETWORKS = {
   8453: {
     id: 8453,
     name: 'Base Mainnet',
-    rpcUrl: 'https://base-mainnet.g.alchemy.com/v2/3zUWwmlHTQNjmM55sV2X0',
+    rpcUrl: 'https://mainnet.base.org',
     chainId: '0x2105',
     explorerUrl: 'https://basescan.org',
     nativeCurrency: 'ETH',
