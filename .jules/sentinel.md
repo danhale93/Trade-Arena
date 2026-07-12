@@ -193,3 +193,8 @@ Running security audit across localStorage and active config...
 
 ## 2026-07-12T05:40:40.850Z - [SUCCESS] SENTINEL
 Security audit complete. All encryption layers intact.
+
+## 2026-07-12 - Rate Limiter Memory Protection & Gemini Key Hardening
+**Vulnerability:** Unbounded memory growth in custom rate limiter and API key exposure in Gemini proxy URL.
+**Learning:** Custom in-memory rate limiters without size constraints are vulnerable to heap exhaustion DoS via IP spoofing or botnets. Transmitting API keys in query parameters risks exposure in logs and browser history.
+**Prevention:** Always cap the size of tracking maps in memory and use header-based authentication (e.g., 'x-goog-api-key') for API proxies.

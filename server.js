@@ -78,17 +78,27 @@ function maskRpcUrl(url) {
 const rateLimitMap = new Map();
 const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
 const RATE_LIMIT_MAX = 1000;
+const MAX_TRACKED_IPS = 5000; // Sentinel: Prevent memory exhaustion
 
 function checkRateLimit(ip) {
     const now = Date.now();
-    const record = rateLimitMap.get(ip) || { count: 0, resetAt: now + RATE_LIMIT_WINDOW };
-    if (now > record.resetAt) {
-        record.count = 0;
-        record.resetAt = now + RATE_LIMIT_WINDOW;
+    const record = rateLimitMap.get(ip);
+
+    if (record) {
+        if (now > record.resetAt) {
+            record.count = 1;
+            record.resetAt = now + RATE_LIMIT_WINDOW;
+        } else {
+            record.count += 1;
+        }
+        return record.count <= RATE_LIMIT_MAX;
     }
-    record.count += 1;
-    rateLimitMap.set(ip, record);
-    return record.count <= RATE_LIMIT_MAX;
+
+    // Sentinel: If map is full, block new IPs until cleanup to prevent DoS
+    if (rateLimitMap.size >= MAX_TRACKED_IPS) return false;
+
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW });
+    return true;
 }
 
 // Cleanup expired entries periodically
@@ -285,9 +295,13 @@ app.post('/api/gemini', async (req, res) => {
         }
 
         const safeModel = encodeURIComponent(requestedModel);
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${safeModel}:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+        // Sentinel: Move API key to header to prevent leakage in server/proxy logs
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${safeModel}:generateContent`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'x-goog-api-key': process.env.GEMINI_API_KEY || ''
+            },
             body: JSON.stringify({
                 contents: req.body.contents,
                 generationConfig: req.body.generationConfig
