@@ -12,7 +12,7 @@
     "build": "esbuild public/src/main.tsx --bundle --outfile=public/arena-react-bundle.js --minify --sourcemap --loader:.tsx=tsx --loader:.jsx=jsx"
   },
   "dependencies": {
-    "@biconomy/abstractjs": "^1.2.4",
+    "@biconomy/abstractjs": "^1.2.5",
     "@biconomy/account": "^4.5.7",
     "@privy-io/react-auth": "^3.33.1",
     "axios": "1.18.1",
