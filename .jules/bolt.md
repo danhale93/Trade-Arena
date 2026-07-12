@@ -43,3 +43,7 @@ Action: Implemented dual-mode trading system with real on-chain execution, batch
 ## 2026-07-08 - Multi-Factor UI Consolidation
 **Learning:** High-frequency applications often have multiple disparate functions updating different parts of the same UI component (e.g., the global header). Running these independently leads to redundant DOM queries, layout thrashing, and multiple 'requestAnimationFrame' overheads. Furthermore, updates that only check one piece of state (like balance) may miss the need to refresh when a related piece of state (like open trade count) changes.
 **Action:** Consolidate related UI updates into a single "Master" update function (like 'updateLiveBalance'). Implement a multi-factor dirty-check that evaluates all relevant state variables (balance, P&L, counts) simultaneously to trigger a single, atomic DOM update pass per display frame.
+
+## 2026-07-12 - Defensive requestAnimationFrame Scheduling
+**Learning:** Throttling UI updates with `requestAnimationFrame` is a good practice, but scheduling the frame callback itself can be a source of overhead if triggered at high frequency (e.g., from multiple asynchronous trade events) when the panel is hidden or data hasn't changed.
+**Action:** Move visibility and data-change guards *before* the `requestAnimationFrame` call to prevent unnecessary frame registrations.
