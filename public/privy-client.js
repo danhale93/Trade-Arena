@@ -109,7 +109,7 @@ async function privyLoginGoogle() {
             // Base only - no network choice
             chains: [{ 
                 id: PRIVY_CONFIG.chain,
-                rpcUrl: 'https://base-mainnet.g.alchemy.com/v2/3zUWwmlHTQNjmM55sV2X0'
+                rpcUrl: 'https://mainnet.base.org'
             }],
         });
         
