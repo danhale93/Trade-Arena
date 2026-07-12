@@ -3168,6 +3168,7 @@ function isGlobalBlocked() {
 function globalKill() {
   if(!confirm('Stop all bots?')) return;
   globalKilled=true;
+  if(window.FX && window.FX.flash) FX.flash('var(--hot)', 500);
   if(window.showToast) showToast('EMERGENCY STOP TRIGGERED', 'error');
   bots.forEach(b=>{ b.auto=false; if(b.autoTimer) clearTimeout(b.autoTimer);
     const btn=document.getElementById('mauto-'+b.id), card=document.getElementById('bot-'+b.id);
@@ -3433,6 +3434,7 @@ function addBot(type = 'TRADER', silent = false){
   }
 }
 function removeBot(id){
+  if(!confirm(`Are you sure you want to decommission Bot #${id}?`)) return;
   const bot=bots.find(b=>b.id===id);
   if(bot){if(bot.autoTimer)clearTimeout(bot.autoTimer);if(bot.tickerTimer)clearTimeout(bot.tickerTimer);}
   bots=bots.filter(b=>b.id!==id);
