@@ -17,3 +17,7 @@ Action: Integrated payout claim logic directly into the header for high visibili
 ## 2026-07-10 - Reinforcing Success with Delight
 **Learning:** Functional success messages (toasts) are expected, but pairing them with celebratory visuals (confetti) for high-value actions like reward claims or task completions transforms a routine interaction into a moment of delight.
 **Action:** Identify "pinnacle" success moments in the user journey and augment them with existing visual effects systems.
+
+## 2026-07-11 - Safeguarding Destructive Actions and Enhancing Critical Feedback
+**Learning:** Destructive actions like decommissioning a bot require a friction point (`confirm`) to prevent accidental data loss, especially in high-density dashboards. Conversely, critical system-wide events like an "Emergency Stop" benefit from amplified sensory feedback (e.g., a screen flash) to provide immediate, undeniable confirmation of the action's success.
+**Action:** Always implement confirmation dialogs for destructive individual actions and use global visual effects (like `FX.flash`) to emphasize high-stakes system state transitions.
