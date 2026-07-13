@@ -12,6 +12,7 @@ declare global {
     onPrivyReady: (user: any, address: string | null) => void;
     updateWalletUI: () => void;
     privyInit: () => void;
+    privyLogin: () => void;
     privyLoginGoogle: () => void;
     privyLoginApple: () => void;
     privyLogout: () => void;
