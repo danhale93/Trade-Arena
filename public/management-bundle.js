@@ -3,7 +3,7 @@
  * Trade Arena v4 • Real-time task queue viewer
  */
 
-const API_BASE = (location.protocol === 'https:' ? '' : 'http://localhost:3001');
+var API_BASE = (location.protocol === 'https:' ? '' : 'http://localhost:3001');
 const DEPLOYMENT_POLL_INTERVAL = 4000;
 
 /**
@@ -21,10 +21,10 @@ function escapeHTML(str) {
 let deploymentTimer = null;
 let latestDeployments = [];
 
-let taskState = {
+window.taskState = window.taskState || {
     faucetClaimed: false,
     creditsEarned: 0,
-    tasks: []
+    quests: []
 };
 
 async function fetchDeployments() {
@@ -146,7 +146,7 @@ window.latestDeployments = latestDeployments;
 // Init
 
 // Export to window for bot auto-onboarding
-window.taskState = taskState;
+window.taskState = window.taskState || taskState;
 
 // Start polling immediately after load (outside setupApp timing issues)
 setTimeout(() => {

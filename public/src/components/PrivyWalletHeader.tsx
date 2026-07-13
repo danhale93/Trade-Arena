@@ -12,6 +12,7 @@ declare global {
     onPrivyReady: (user: any, address: string | null) => void;
     updateWalletUI: () => void;
     privyInit: () => void;
+    privyLogin: () => void;
     privyLoginGoogle: () => void;
     privyLoginApple: () => void;
     privyLogout: () => void;
@@ -53,6 +54,7 @@ export const PrivyWalletHeader = () => {
   // Expose authentication controls to the global scope for legacy JS integration (MetaMask buttons, etc.)
   useEffect(() => {
     window.privyInit = () => console.log('[Privy] Header bridge active');
+    window.privyLogin = login;
     window.privyLoginGoogle = () => login({ loginMethod: 'google' });
     window.privyLoginApple = () => login({ loginMethod: 'apple' });
     window.privyLogout = logout;

@@ -742,7 +742,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 <div class="login-card">
     <div class="login-card-hd">UNIFIED ARENA ACCESS</div>
     <div class="login-card-bd">
-      <button class="mm-btn" onclick="if(typeof privyInit==='function') privyInit(); privyLoginGoogle()" style="width:100%; height: 52px; font-size: 16px;">
+      <button class="mm-btn" onclick="if(window.privyLogin) window.privyLogin(); else if(typeof privyInit==='function') { privyInit(); privyLoginGoogle(); }" style="width:100%; height: 52px; font-size: 16px;">
         ENTER ARENA
       </button>
 
@@ -2964,6 +2964,8 @@ function saveApiKeyFromDashboard(keyName) {
     localStorage.setItem('ta_openai_key', val);
   } else if (keyName === 'GEMINI_API_KEY') {
     localStorage.setItem('ta_gemini_key', val);
+  } else if (keyName === '0x_API_KEY') {
+    localStorage.setItem('ta_0x_api_key', val);
   }
 
   if (window.showToast) window.showToast(`${keyName} saved locally!`, 'success');
@@ -5833,6 +5835,7 @@ document.addEventListener('keydown', function(e) {
 <script src="acoustic-bundle.js" defer></script>
 <script src="ACOUSTIC_CORE.js" defer></script>
 <script src="trading-bundle.js" defer></script>
+<script src="task-center.js" defer></script>
 <script src="management-bundle.js" defer></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
