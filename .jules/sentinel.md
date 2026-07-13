@@ -205,3 +205,8 @@ Running security audit across localStorage and active config...
 
 ## 2026-07-13T05:43:34.897Z - [INFO] SENTINEL
 Running security audit across localStorage and active config...
+
+## 2026-07-13 - Security Hardening & Proxy Alignment
+**Vulnerability:** Information disclosure in `proxy.js` (X-Powered-By) and potential timing attacks on reward claim validation tokens. Gemini API key leakage in URL query parameters.
+**Learning:** Secondary proxy servers often lag behind main servers in security posture. Sensitive validation tokens compared with `!==` are vulnerable to timing-based side-channel attacks.
+**Prevention:** Align security headers across all entry points. Use `crypto.timingSafeEqual` for all secret/token comparisons. Prefer header-based authentication for third-party AI APIs (like Gemini) over URL parameters.

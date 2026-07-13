@@ -1,4 +1,5 @@
 const express = require('express');
+const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
 const PayoutService = require('../services/payouts/payoutService');
 const router = express.Router();
@@ -29,7 +30,12 @@ router.post('/claim', payoutLimiter, async (req, res) => {
             return res.status(503).json({ error: 'Payout system not configured' });
         }
 
-        if (validationToken !== CLAIM_SECRET) {
+        // Sentinel: Use timing-safe comparison to prevent timing attacks on validation tokens
+        const isValidToken = validationToken &&
+                           validationToken.length === CLAIM_SECRET.length &&
+                           crypto.timingSafeEqual(Buffer.from(validationToken), Buffer.from(CLAIM_SECRET));
+
+        if (!isValidToken) {
             console.warn(`[Payout API] Unauthorized claim attempt for ${userAddress}`);
             return res.status(401).json({ error: 'Unauthorized claim' });
         }
