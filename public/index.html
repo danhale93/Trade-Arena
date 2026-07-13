@@ -1654,7 +1654,6 @@ let _lastBreakerState = '';
 var _lastPerfTradeCount = -1;
 var _lastMatrixBotCount = -1;
 var _lastMatrixOpenCount = -1;
-var _lastConsolidatedCount = -1;
 let agentHistory=[]; // per-agent vote accuracy for quant report
 let globalLog=[];
 var bots=[], botCounter=0;
@@ -1901,7 +1900,6 @@ async function openPosition(bot, decision, entryPrice, bet, volumeUsd, priceChan
 
   updateLiveBalance();
   
-  updateOpenCount();
   setTimeout(()=>checkExit(pos,bot), EXIT_TIMES[decision.method]);
   startLivePnlTicker(pos, bot);
 
@@ -1975,49 +1973,76 @@ function startLivePnlTicker(pos, bot) {
 
 let _balanceUpdatePending = false;
 let _lastDisplayBal = -1, _lastDisplayPnl = -1, _lastUnrealised = -1;
+let _lastConsolidatedCount = -1;
+let _lastTickCd = '', _lastTickUrgent = null;
 
 function updateLiveBalance(){
   if (_balanceUpdatePending) return;
   _balanceUpdatePending = true;
 
   requestAnimationFrame(() => {
-    // Realised balance + sum of all live unrealised positions
-    const unrealised=openPositions.reduce((sum,p)=>sum+(p.livePnl||0),0);
-    const displayBalance=balance+unrealised;
-    const displayPnl=totalPnl+unrealised;
-    const count=openPositions.length;
+    // ⚡ Bolt Optimization: Single-pass O(N) calculation for unrealised P&L and nearest exit
+    let unrealised = 0;
+    let nearest = null;
+    const now = Date.now();
+    const count = openPositions.length;
 
-    // ⚡ Bolt Optimization: Consolidated dirty-check for balance, P&L, and trade count
-    if (displayBalance === _lastDisplayBal && displayPnl === _lastDisplayPnl && unrealised === _lastUnrealised && count === _lastConsolidatedCount) {
+    for (let i = 0; i < count; i++) {
+      const p = openPositions[i];
+      unrealised += (p.livePnl || 0);
+      if (p.exitTime && (!nearest || p.exitTime < nearest)) nearest = p.exitTime;
+    }
+
+    const displayBalance = balance + unrealised;
+    const displayPnl = totalPnl + unrealised;
+
+    // ⚡ Bolt Optimization: Consolidate countdown formatting into the same frame
+    let cdStr = '--:--';
+    let urgent = false;
+    if (count > 0 && nearest) {
+      const ms = Math.max(0, nearest - now);
+      const s = Math.floor(ms / 1000) % 60, m = Math.floor(ms / 60000) % 60, h = Math.floor(ms / 3600000);
+      cdStr = h > 0 ? `${h}h${m}m` : m > 0 ? `${m}:${String(s).padStart(2, '0')}` : `0:${String(s).padStart(2, '0')}`;
+      urgent = ms < 15000;
+    }
+
+    // ⚡ Bolt Optimization: Consolidated dirty-check for balance, P&L, count, and countdown
+    if (displayBalance === _lastDisplayBal && displayPnl === _lastDisplayPnl &&
+        unrealised === _lastUnrealised && count === _lastConsolidatedCount &&
+        cdStr === _lastTickCd && urgent === _lastTickUrgent) {
       _balanceUpdatePending = false;
       return;
     }
 
-    const balEl=_getEl('ghBalance');
-    const pnlEl=_getEl('ghPnl');
-    if(balEl){
-      balEl.textContent='$'+displayBalance.toFixed(2);
-      balEl.title=`Realised: $${balance.toFixed(2)} | Unrealised: $${unrealised.toFixed(2)}`;
-      // Flash gold when unrealised is active
-      balEl.style.color=unrealised>0?'var(--green)':unrealised<0?'var(--hot)':'var(--gold)';
+    const balEl = _getEl('ghBalance');
+    const pnlEl = _getEl('ghPnl');
+    if (balEl) {
+      balEl.textContent = '$' + displayBalance.toFixed(2);
+      balEl.title = `Realised: $${balance.toFixed(2)} | Unrealised: $${unrealised.toFixed(2)}`;
+      balEl.style.color = unrealised > 0 ? 'var(--green)' : unrealised < 0 ? 'var(--hot)' : 'var(--gold)';
     }
-    if(pnlEl){
-      pnlEl.textContent=(displayPnl>=0?'+':'')+'$'+displayPnl.toFixed(2)+(unrealised!==0?' (live)':' today');
-      pnlEl.className='gh-pnl '+(displayPnl>=0?'pnl-pos':'pnl-neg');
+    if (pnlEl) {
+      pnlEl.textContent = (displayPnl >= 0 ? '+' : '') + '$' + displayPnl.toFixed(2) + (unrealised !== 0 ? ' (live)' : ' today');
+      pnlEl.className = 'gh-pnl ' + (displayPnl >= 0 ? 'pnl-pos' : 'pnl-neg');
     }
 
     // Consolidated: Handle Open Positions count and Queue Wrap visibility
-    const qWrap=_getEl('ghQueueWrap');
-    const qNum=_getEl('ghQueueNum');
-    if(qWrap){ qWrap.style.display=count>0?'flex':'none'; }
-    if(qNum) qNum.textContent=count;
+    const qWrap = _getEl('ghQueueWrap');
+    const qNum = _getEl('ghQueueNum');
+    if (qWrap) { qWrap.style.display = count > 0 ? 'flex' : 'none'; }
+    if (qNum) qNum.textContent = count;
 
-    // Consolidated: Handle Ticker visibility (countdown logic remains in _tickHeader)
-    const ticker=_getEl('ghTicker');
-    if(ticker){ ticker.style.display=count>0?'flex':'none'; }
+    // Consolidated: Handle Ticker visibility and Countdown string
+    const ticker = _getEl('ghTicker');
+    if (ticker) { ticker.style.display = count > 0 ? 'flex' : 'none'; }
+    const cdEl = _getEl('ghCountdown');
+    if (cdEl) {
+      cdEl.textContent = cdStr;
+      cdEl.className = 'gh-ticker-cd' + (urgent ? ' urgent' : '');
+    }
 
     // Consolidated: Global metric card for open positions
-    setVal('mv-open',count);
+    setVal('mv-open', count);
 
     // Consolidated: Run breakers alongside balance changes
     if (typeof checkGlobalBreakers === 'function') checkGlobalBreakers();
@@ -2026,6 +2051,8 @@ function updateLiveBalance(){
     _lastDisplayPnl = displayPnl;
     _lastUnrealised = unrealised;
     _lastConsolidatedCount = count;
+    _lastTickCd = cdStr;
+    _lastTickUrgent = urgent;
     _balanceUpdatePending = false;
   });
 }
@@ -2082,7 +2109,7 @@ async function checkExit(pos, bot) {
   const card=document.getElementById('bot-'+pos.botId);
   if(card&&!openPositions.find(p=>p.botId===pos.botId)) card.classList.remove('has-open');
 
-  updateLiveBalance(); updateBotPnl(bot); updateQuantReport(); updateOpenCount();
+  updateLiveBalance(); updateBotPnl(bot); updateQuantReport();
   showExitResult(pos,bot); addToLog(pos);
 
   // Sync Matrix Pad state
@@ -2468,7 +2495,6 @@ function drawVerdict(n, wr, pf, avg) {
   }
 }
 
-function updateOpenCount() { updateLiveBalance(); }
 
 // ══════════════════════════════════════════════════════
 // CRUCIBLE MODE
@@ -3502,45 +3528,15 @@ function globalAutoToggle(){
 
 // ── Header countdown + open-trade tally ──
 let _ghTickerInterval=null;
-let _lastTickCount=-1, _lastTickCd='', _lastTickUrgent=null;
 function _startHeaderTicker(){
   if(_ghTickerInterval) clearInterval(_ghTickerInterval);
   _ghTickerInterval=setInterval(_tickHeader,500);
 }
 function _tickHeader(){
-  // Optimization: Refresh global balance, P&L and counts every 500ms when app is active.
-  // Visibility and count updates are now consolidated inside updateLiveBalance.
+  // ⚡ Bolt Optimization: All header metrics (Balance, P&L, Counts, Countdown)
+  // are consolidated into updateLiveBalance() to ensure single-pass O(N) traversal
+  // and synchronized DOM updates in a single display frame.
   updateLiveBalance();
-
-  const count=openPositions.length;
-  const cd=_getEl('ghCountdown');
-  if(!cd) return;
-
-  if(count===0) return;
-
-  const now=Date.now();
-  let nearest=null;
-  for (let i = 0; i < openPositions.length; i++) {
-    const p = openPositions[i];
-    if (p.exitTime && (!nearest || p.exitTime < nearest)) nearest = p.exitTime;
-  }
-  if(!nearest){
-    if (cd.textContent !== '--:--') cd.textContent='--:--';
-    return;
-  }
-
-  const ms=Math.max(0,nearest-now);
-  const s=Math.floor(ms/1000)%60, m=Math.floor(ms/60000)%60, h=Math.floor(ms/3600000);
-  const cdStr=h>0?`${h}h${m}m`:m>0?`${m}:${String(s).padStart(2,'0')}`:`0:${String(s).padStart(2,'0')}`;
-  const urgent=ms<15000;
-
-  // ⚡ Bolt Optimization: Skip DOM churn if countdown string and urgency state haven't changed
-  if (cdStr !== _lastTickCd || urgent !== _lastTickUrgent) {
-    cd.textContent=cdStr;
-    cd.className='gh-ticker-cd'+(urgent?' urgent':'');
-    _lastTickCd = cdStr;
-    _lastTickUrgent = urgent;
-  }
 }
 function renderBot(bot){
   const el=document.createElement('div'); el.className='machine'; el.id='bot-'+bot.id;
