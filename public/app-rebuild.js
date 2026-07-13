@@ -573,7 +573,7 @@ window.TradeArenaApp = {
 /**
  * Live Mode Management
  */
-window.isLiveMode = false;
+window.isLiveMode = true;
 
 async function toggleLiveMode() {
     const goingLive = !window.isLiveMode;

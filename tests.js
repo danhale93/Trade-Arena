@@ -738,10 +738,10 @@ describe("Payout Service - Robustness & Security", () => {
   });
 
   it("initializes wallet correctly when key provided", () => {
-    const privateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
-    const service = new PayoutService({ oraclePrivateKey: privateKey });
+    const wallet = require("ethers").Wallet.createRandom();
+    const service = new PayoutService({ oraclePrivateKey: wallet.privateKey });
     expect(service.oracleWallet !== null).toBe(true);
-    expect(service.oracleWallet.address).toBe("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266");
+    expect(service.oracleWallet.address).toBe(wallet.address);
   });
 });
 

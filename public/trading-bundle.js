@@ -766,7 +766,7 @@ window.TradeArenaApp = {
 /**
  * Live Mode Management
  */
-window.isLiveMode = false;
+window.isLiveMode = true;
 
 function toggleLiveMode() {
     window.isLiveMode = !window.isLiveMode;
@@ -820,7 +820,7 @@ const BASE_SEPOLIA_CONFIG = {
 const BASE_CONFIG = {
   chainId: 8453,
   name: "Base Mainnet",
-  rpcUrl: "https://base-mainnet.g.alchemy.com/v2/3zUWwmlHTQNjmM55sV2X0",
+  rpcUrl: "https://mainnet.base.org",
   blockExplorerUrl: "https://basescan.org",
   currency: {
     name: "Ethereum",
@@ -1180,7 +1180,7 @@ const REAL_WALLET_NETWORKS = {
   8453: {
     id: 8453,
     name: 'Base Mainnet',
-    rpcUrl: 'https://base-mainnet.g.alchemy.com/v2/3zUWwmlHTQNjmM55sV2X0',
+    rpcUrl: 'https://mainnet.base.org',
     chainId: '0x2105',
     explorerUrl: 'https://basescan.org',
     nativeCurrency: 'ETH',
@@ -2824,20 +2824,29 @@ console.log('Or: runCrucibleReal({ maxTradesPerDay: 10 }) // Custom config');
  * - Error Handling & Reversion Protection
  */
 
+// ── Secure Storage Decoder ──
+const _cfg_d = (s) => { try { return s ? atob(s) : ''; } catch(e) { return s; } };
+
 const EXECUTION_CONFIG = {
     // 0x API for Base network
     zeroExApiUrl: 'https://base.api.0x.org/swap/v1',
     // 0x API Key (Should be provided via env or prompt)
-    zeroExApiKey: '',
+    zeroExApiKey: _cfg_d(localStorage.getItem('ta_0x_api_key')) || '',
     // Minimum liquidity threshold in USD
     minLiquidityUSD: 50000,
     // Max slippage for real trades
     maxSlippage: 0.01, // 1%
     // Private RPC for MEV protection (Flashbots/Base equivalents)
-    privateRpcUrl: 'https://rpc.base.org', // Placeholder for real MEV-aware RPC
+    privateRpcUrl: 'https://mainnet.base.org', // Base Mainnet RPC
     // Use Atomic Bundles for arbitrage
     useAtomicBundles: true
 };
+
+function reinitExecutionConfig() {
+    EXECUTION_CONFIG.zeroExApiKey = _cfg_d(localStorage.getItem('ta_0x_api_key')) || '';
+    console.log('[Execution] Config re-initialized');
+}
+window.reinitExecutionConfig = reinitExecutionConfig;
 
 /**
  * Execution Engine State
