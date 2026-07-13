@@ -2,6 +2,10 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 
+// Sentinel: Security hardening
+app.set('trust proxy', 1); // Trust first proxy (Render, Heroku, etc.)
+app.disable('x-powered-by'); // Mitigate information disclosure
+
 // Sentinel: Security headers middleware
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -114,9 +118,13 @@ app.post('/api/gemini', async (req, res) => {
     }
 
     const safeModel = encodeURIComponent(requestedModel);
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${safeModel}:generateContent?key=${process.env.GEMINI_API_KEY || ''}`, {
+    // Sentinel: Move API key to header to prevent leakage in server/proxy logs
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${safeModel}:generateContent`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': process.env.GEMINI_API_KEY || ''
+      },
       body: JSON.stringify({
         contents: req.body.contents,
         generationConfig: req.body.generationConfig

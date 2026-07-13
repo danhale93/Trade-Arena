@@ -647,7 +647,12 @@ app.post('/api/tasks/claim', taskClaimLimiter, async (req, res) => {
             return res.status(503).json({ success: false, error: 'Payout validation service unavailable' });
         }
 
-        if (!validationToken || validationToken !== taskSecret) {
+        // Sentinel: Use timing-safe comparison to prevent timing attacks on validation tokens
+        const isValidToken = validationToken &&
+                           validationToken.length === taskSecret.length &&
+                           crypto.timingSafeEqual(Buffer.from(validationToken), Buffer.from(taskSecret));
+
+        if (!isValidToken) {
             return res.status(401).json({ success: false, error: 'Invalid or missing validation token' });
         }
 
