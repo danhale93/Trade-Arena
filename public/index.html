@@ -2872,10 +2872,11 @@ function updateConnectionDashboard() {
         const statusIcon = conn.status === 'CONNECTED' || conn.status === 'CONFIGURED' || conn.status === 'ACTIVE' ? '🟢' : '🔴';
 
         const isAiKey = conn.type === 'AI';
+        const isSecret = conn.type === 'SECRET';
         const isMissing = conn.status === 'MISSING';
 
         let keyEntryHtml = '';
-        if (isAiKey && isMissing) {
+        if ((isAiKey || isSecret) && isMissing) {
           const keyGenLinks = {
             'ANTHROPIC_API_KEY': 'https://console.anthropic.com',
             'OPENAI_API_KEY': 'https://platform.openai.com/api-keys',
@@ -2883,15 +2884,16 @@ function updateConnectionDashboard() {
             '0x_API_KEY': 'https://dashboard.0x.org'
           };
           const genUrl = keyGenLinks[conn.name] || '#';
+          const label = isSecret ? 'FILL MISSING SECRET' : 'FILL MISSING KEY';
 
           keyEntryHtml = `
             <div style="margin-top:8px; border-top:1px solid var(--border); padding-top:8px;">
               <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-                <span style="font-size:8px; color:var(--dim);">FILL MISSING KEY</span>
-                <a href="${genUrl}" target="_blank" style="font-size:8px; color:var(--cyan); text-decoration:none;">GET KEY →</a>
+                <span style="font-size:8px; color:var(--dim);">${label}</span>
+                ${!isSecret ? `<a href="${genUrl}" target="_blank" style="font-size:8px; color:var(--cyan); text-decoration:none;">GET KEY →</a>` : ''}
               </div>
               <div style="display:flex; gap:4px;">
-                <input type="password" id="dash_key_${conn.name}" placeholder="Paste key here..."
+                <input type="password" id="dash_key_${conn.name}" placeholder="Paste here..."
                   style="flex:1; padding:4px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px;">
                 <button onclick="saveApiKeyFromDashboard('${conn.name}')"
                   style="padding:4px 8px; background:var(--green); color:black; border:none; border-radius:4px; font-family:'Bungee'; font-size:8px; cursor:pointer;">
@@ -2931,17 +2933,32 @@ function saveApiKeyFromDashboard(keyName) {
   const val = input.value.trim();
   if (!val) return;
 
+  let saved = false;
   if (keyName === 'ANTHROPIC_API_KEY') {
     window._userApiKey = val;
     localStorage.setItem('ta_api_key', val);
+    saved = true;
   } else if (keyName === 'OPENAI_API_KEY') {
     localStorage.setItem('ta_openai_key', val);
+    saved = true;
   } else if (keyName === 'GEMINI_API_KEY') {
     localStorage.setItem('ta_gemini_key', val);
+    saved = true;
+  } else if (keyName === '0x_API_KEY') {
+    localStorage.setItem('ta_0x_api_key', val);
+    saved = true;
+  } else if (keyName === 'TASK_CLAIM_SECRET') {
+    window._taskSecret = val;
+    localStorage.setItem('ta_task_secret', val);
+    saved = true;
   }
 
-  if (window.showToast) window.showToast(`${keyName} saved locally!`, 'success');
+  if (saved && window.showToast) window.showToast(`${keyName} saved locally!`, 'success');
   if (typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
+
+  // Re-initialize AI and Execution configs
+  if (typeof reinitializeConfigs === "function") reinitializeConfigs();
+
   updateConnectionDashboard();
 }
 
@@ -3257,22 +3274,23 @@ async function claimPayout() {
   try {
     if (typeof SFX !== 'undefined') SFX.tick();
 
-    // Check wallet connection
-    if (!window.ethereum || !window.ethereum.selectedAddress) {
+    // Check wallet connection (Privy or MetaMask)
+    const address = window.privyWalletAddress || window.ethereum?.selectedAddress;
+    if (!address) {
       if (window.showToast) window.showToast('Connect wallet first', 'warn');
       btn.textContent = originalText;
       btn.disabled = false;
       return;
     }
 
-    const address = window.ethereum.selectedAddress;
     const res = await fetch('/api/v1/payouts/claim', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         userAddress: address,
         taskId: 'MANUAL_CLAIM_' + Date.now(),
-        proofOfWork: 'CLAIM_PNL_' + balance.toFixed(2)
+        proofOfWork: 'CLAIM_PNL_' + balance.toFixed(2),
+        validationToken: localStorage.getItem('ta_task_secret') || ''
       })
     });
 
@@ -6116,14 +6134,14 @@ function saveSettingsApiKeys() {
     }
     if (tsInput) {
         window._taskSecret = tsInput.value.trim();
-        localStorage.removeItem('ta_task_secret');
+        localStorage.setItem('ta_task_secret', tsInput.value.trim());
     }
     if (pmInput) {
         localStorage.setItem('ta_payout_manager_address', pmInput.value.trim());
     }
 
     const el = document.getElementById('apiTestResult');
-    if (el) { el.textContent = '✅ Settings saved (task secret kept in-memory only)'; el.style.color = 'var(--green)'; }
+    if (el) { el.textContent = '✅ Settings saved locally'; el.style.color = 'var(--green)'; }
 
     // Re-initialize AI and Execution configs
     if (typeof reinitializeConfigs === "function") reinitializeConfigs();

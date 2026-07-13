@@ -312,10 +312,21 @@ async function offerOnChainClaim(authData) {
     try {
         if (window.showToast) window.showToast('Initiating on-chain claim...', 'info');
 
-        const provider = window.privyProvider || (window.ethereum ? new ethers.BrowserProvider(window.ethereum) : null);
+        let provider;
+        if (window.privyProvider && window.privyProvider.getEthersProvider) {
+            provider = await window.privyProvider.getEthersProvider();
+        } else if (window.ethereum) {
+            const ethersLib = window.ethers;
+            provider = ethersLib.BrowserProvider
+                ? new ethersLib.BrowserProvider(window.ethereum)
+                : new ethersLib.providers.Web3Provider(window.ethereum);
+        }
+
         if (!provider) throw new Error('No wallet provider found');
 
-        const signer = await provider.getSigner();
+        const signer = provider.getSigner.constructor.name === 'AsyncFunction'
+            ? await provider.getSigner()
+            : provider.getSigner();
         const payoutManagerAddress = localStorage.getItem('ta_payout_manager_address') || '0x0000000000000000000000000000000000000000'; // Default or from config
 
         if (payoutManagerAddress === '0x0000000000000000000000000000000000000000') {
