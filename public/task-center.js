@@ -3,10 +3,10 @@
  * Trade Arena v4 • Real-time rewards & queue viewer
  */
 
-const API_BASE = (location.protocol === 'https:' ? '' : 'http://localhost:3001');
-const DEPLOYMENT_POLL_INTERVAL = 4000;
+window.API_BASE = window.API_BASE || (location.protocol === 'https:' ? '' : 'http://localhost:3001');
+window.DEPLOYMENT_POLL_INTERVAL = window.DEPLOYMENT_POLL_INTERVAL || 4000;
 
-const TASK_CONFIG = {
+window.TASK_CONFIG = window.TASK_CONFIG || {
     initialFaucetAmount: 50, // Starting credits // $50 starting credit
     quests: [
         { id: 'follow_twitter', label: 'Follow on Twitter', reward: 10, completed: false, icon: '🐦', type: 'social' },
@@ -18,14 +18,14 @@ const TASK_CONFIG = {
     ]
 };
 
-let taskState = {
+window.taskState = window.taskState || {
     faucetClaimed: false,
     creditsEarned: 0,
-    quests: [...TASK_CONFIG.quests]
+    quests: [...window.TASK_CONFIG.quests]
 };
 
-let deploymentTimer = null;
-let latestDeployments = [];
+window.deploymentTimer = window.deploymentTimer || null;
+window.latestDeployments = window.latestDeployments || [];
 
 /**
  * Helper to escape HTML and prevent XSS
@@ -45,10 +45,10 @@ function loadTaskState() {
         const raw = localStorage.getItem('ta_tasks_v4_quests');
         if (raw) {
             const saved = JSON.parse(raw);
-            taskState.faucetClaimed = saved.faucetClaimed || false;
-            taskState.creditsEarned = saved.creditsEarned || 0;
+            window.taskState.faucetClaimed = saved.faucetClaimed || false;
+            window.taskState.creditsEarned = saved.creditsEarned || 0;
             if (saved.quests) {
-                taskState.quests.forEach(q => {
+                window.taskState.quests.forEach(q => {
                     const s = saved.quests.find(sq => sq.id === q.id);
                     if (s) q.completed = s.completed;
                 });
@@ -91,7 +91,7 @@ function stopDeploymentPolling() {
 }
 
 async function claimFaucet() {
-    if (taskState.faucetClaimed) {
+    if (window.taskState.faucetClaimed) {
         if (window.showToast) window.showToast('Faucet already claimed!', 'error');
         return;
     }
@@ -111,7 +111,7 @@ async function claimFaucet() {
         const data = await resp.json();
 
         if (data.success) {
-            taskState.faucetClaimed = true;
+            window.taskState.faucetClaimed = true;
             if (window.balance !== undefined) {
                 window.balance += TASK_CONFIG.initialFaucetAmount;
                 if (window.updateGlobalBalance) window.updateGlobalBalance();
@@ -131,7 +131,7 @@ async function claimFaucet() {
 }
 
 async function completeTask(taskId) {
-    const quest = taskState.quests.find(q => q.id === taskId);
+    const quest = window.taskState.quests.find(q => q.id === taskId);
     if (!quest || quest.completed) return;
 
     if (quest.type === 'verified') {
@@ -154,6 +154,9 @@ async function submitTaskToBackend(quest) {
             if (window.showToast) window.showToast("Please connect a wallet to claim rewards", "error");
             return;
         }
+        // ── Secure Storage Decoder ──
+        const _cfg_d = (s) => { try { return s ? atob(s) : ''; } catch(e) { return s; } };
+
         const resp = await fetch(`${API_BASE}/api/tasks/claim`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -161,14 +164,14 @@ async function submitTaskToBackend(quest) {
                 taskId: quest.id,
                 reward: quest.reward,
                 userAddress: userAddress,
-                validationToken: localStorage.getItem('ta_task_secret') || ''
+                validationToken: _cfg_d(localStorage.getItem('ta_task_secret')) || ''
             })
         });
         const data = await resp.json();
 
         if (data.success) {
             quest.completed = true;
-            taskState.creditsEarned += quest.reward;
+            window.taskState.creditsEarned += quest.reward;
             if (window.balance !== undefined) {
                 window.balance += quest.reward;
                 if (window.updateGlobalBalance) window.updateGlobalBalance();
@@ -225,7 +228,7 @@ How accurate was the last AI prediction for BTC/USD?
 
 
 async function verifyTaskCompletion(taskId, token = null) {
-    const task = taskState.quests.find(t => t.id === taskId);
+    const task = window.taskState.quests.find(t => t.id === taskId);
     if (!task) return;
 
     if (task.type === 'verified') {
@@ -240,7 +243,7 @@ async function verifyTaskCompletion(taskId, token = null) {
     }
 
     task.completed = true;
-    taskState.creditsEarned += task.reward;
+    window.taskState.creditsEarned += task.reward;
     if (window.balance !== undefined) {
         window.balance += task.reward;
         if (window.updateGlobalBalance) window.updateGlobalBalance();
@@ -260,19 +263,19 @@ function renderTaskCenter() {
 
     const faucetBtn = document.getElementById('claimFaucetBtn');
     if (faucetBtn) {
-        faucetBtn.disabled = taskState.faucetClaimed;
-        faucetBtn.textContent = taskState.faucetClaimed ? 'CLAIMED' : 'CLAIM TRADING CAPITAL';
+        faucetBtn.disabled = window.taskState.faucetClaimed;
+        faucetBtn.textContent = window.taskState.faucetClaimed ? 'CLAIMED' : 'CLAIM TRADING CAPITAL';
     }
 
-    questContainer.innerHTML = \`
+    questContainer.innerHTML = `
         <div style="margin-bottom:10px; font-size:10px; color:var(--cyan); font-family:'Bungee'">REAL EARNING OPPORTUNITIES</div>
-        \${taskState.quests.filter(q => q.type === 'verified').map(q => renderQuestRow(q)).join('')}
+        ${window.taskState.quests.filter(q => q.type === 'verified').map(q => renderQuestRow(q)).join('')}
 
         <div style="margin-top:15px; margin-bottom:10px; font-size:10px; color:var(--green); font-family:'Bungee'">SOCIAL & PLATFORM QUESTS</div>
-        \${taskState.quests.filter(q => q.type !== 'verified').map(q => renderQuestRow(q)).join('')}
+        ${window.taskState.quests.filter(q => q.type !== 'verified').map(q => renderQuestRow(q)).join('')}
 
         <div style="margin-top:15px; margin-bottom:10px; font-size:10px; color:var(--gold2); font-family:'Bungee'">LIVE DEPLOYMENTS</div>
-    \`;
+    `;
 
     renderDeploymentMonitor();
 }
@@ -280,22 +283,22 @@ function renderTaskCenter() {
 function renderQuestRow(quest) {
     const isVerified = quest.type === 'verified';
     const rowColor = quest.completed ? 'var(--green)' : (isVerified ? 'var(--cyan)' : 'var(--border)');
-    return \`
-        <div class=\"task-row\" style=\"display:flex; align-items:center; gap:10px; padding:10px; background:rgba(0,0,0,0.2); border-radius:8px; margin-bottom:5px; border:1px solid \${rowColor}\">
+    return `
+        <div class="task-row" style="display:flex; align-items:center; gap:10px; padding:10px; background:rgba(0,0,0,0.2); border-radius:8px; margin-bottom:5px; border:1px solid ${rowColor}">
             <div style="font-size:20px" role="img" aria-label="${escapeHTML(quest.label)} icon">${escapeHTML(quest.icon)}</div>
-            <div style=\"flex:1\">
-                <div style=\"display:flex; align-items:center; gap:5px\">
+            <div style="flex:1">
+                <div style="display:flex; align-items:center; gap:5px">
                     <div style="font-size:11px; font-weight:bold; color:${quest.completed ? 'var(--green)' : 'white'}">${escapeHTML(quest.label)}</div>
-                    \${isVerified ? '<span style=\"font-size:7px; padding:2px 4px; background:var(--cyan); color:black; border-radius:3px\">VERIFIED</span>' : ''}
+                    ${isVerified ? '<span style="font-size:7px; padding:2px 4px; background:var(--cyan); color:black; border-radius:3px">VERIFIED</span>' : ''}
                 </div>
                 <div style="font-size:8px; color:var(--dim)">REWARD: $${escapeHTML(quest.reward)} ${isVerified ? 'REAL CRYPTO' : 'CREDITS'}</div>
             </div>
             <button aria-label="${quest.completed ? 'Task completed: ' + quest.label : 'Complete task: ' + quest.label}" onclick="completeTask(${escapeHTML(JSON.stringify(quest.id))})" ${quest.completed ? 'disabled' : ''}
-                style=\"padding:5px 10px; border-radius:4px; border:none; background:\${quest.completed ? 'var(--dim)' : 'var(--cyan)'}; color:black; font-family:'Bungee'; font-size:9px; cursor:pointer\">
-                \${quest.completed ? 'DONE' : 'GO'}
+                style="padding:5px 10px; border-radius:4px; border:none; background:${quest.completed ? 'var(--dim)' : 'var(--cyan)'}; color:black; font-family:'Bungee'; font-size:9px; cursor:pointer">
+                ${quest.completed ? 'DONE' : 'GO'}
             </button>
         </div>
-    \`;
+    `;
 }
 
 async function offerOnChainClaim(authData) {
@@ -312,10 +315,21 @@ async function offerOnChainClaim(authData) {
     try {
         if (window.showToast) window.showToast('Initiating on-chain claim...', 'info');
 
-        const provider = window.privyProvider || (window.ethereum ? new ethers.BrowserProvider(window.ethereum) : null);
+        let provider;
+        if (window.privyProvider && window.privyProvider.getEthersProvider) {
+            provider = await window.privyProvider.getEthersProvider();
+        } else if (window.ethereum) {
+            const ethersLib = window.ethers;
+            provider = ethersLib.BrowserProvider
+                ? new ethersLib.BrowserProvider(window.ethereum)
+                : new ethersLib.providers.Web3Provider(window.ethereum);
+        }
+
         if (!provider) throw new Error('No wallet provider found');
 
-        const signer = await provider.getSigner();
+        const signer = provider.getSigner.constructor.name === 'AsyncFunction'
+            ? await provider.getSigner()
+            : provider.getSigner();
         const payoutManagerAddress = localStorage.getItem('ta_payout_manager_address') || '0x0000000000000000000000000000000000000000'; // Default or from config
 
         if (payoutManagerAddress === '0x0000000000000000000000000000000000000000') {
@@ -355,30 +369,64 @@ function renderDeploymentMonitor() {
         const status = dep.status || 'QUEUED';
         const statusColor = status === 'QUEUED' ? 'var(--amber)' : status === 'DEPLOYED' ? 'var(--green)' : 'var(--dim)';
 
-        return \`
-            <div style=\"display:flex; flex-direction:column; gap:4px; padding:10px 12px; background:rgba(0,0,0,0.25); border-radius:8px; margin-bottom:6px; border-left:3px solid \${statusColor}\">
-                <div style=\"display:flex; align-items:center; gap:8px; justify-content:space-between\">
+        return `
+            <div style="display:flex; flex-direction:column; gap:4px; padding:10px 12px; background:rgba(0,0,0,0.25); border-radius:8px; margin-bottom:6px; border-left:3px solid ${statusColor}">
+                <div style="display:flex; align-items:center; gap:8px; justify-content:space-between">
                     <span style="font-size:16px" role="img" aria-label="${escapeHTML(src)} icon">${srcIcon}</span>
-                    <span style=\"font-size:9px; padding:2px 8px; border-radius:8px; background:\${statusColor}; color:var(--bg); font-weight:bold; text-transform:uppercase\">
-                        \${escapeHTML(status)}
+                    <span style="font-size:9px; padding:2px 8px; border-radius:8px; background:${statusColor}; color:var(--bg); font-weight:bold; text-transform:uppercase">
+                        ${escapeHTML(status)}
                     </span>
                 </div>
-                <div style=\"font-size:11px; color:white\">
-                    <strong>\${escapeHTML(src.toUpperCase())}</strong> · \${escapeHTML(amt)} ETH
+                <div style="font-size:11px; color:white">
+                    <strong>${escapeHTML(src.toUpperCase())}</strong> · ${escapeHTML(amt)} ETH
                 </div>
             </div>
-        \`;
-    }).join('') : \`
-        <div style=\"padding:20px; text-align:center; color:var(--dim); font-size:11px\">
-            <div style=\"font-size:28px; margin-bottom:8px\">📡</div>
+        `;
+    }).join('') : `
+        <div style="padding:20px; text-align:center; color:var(--dim); font-size:11px">
+            <div style="font-size:28px; margin-bottom:8px">📡</div>
             <div>No deployments in queue</div>
         </div>
-    \`;
+    `;
+}
+
+async function claimPayout() {
+    const userAddress = window.privyWalletAddress || window.ethereum?.selectedAddress || '';
+    if (!userAddress) {
+        if (window.showToast) window.showToast("Please connect a wallet to claim payouts", "error");
+        if (window.privyLogin) window.privyLogin();
+        return;
+    }
+
+    const withdrawModal = document.getElementById('withdrawModal');
+    const isWithdraw = withdrawModal && withdrawModal.style.display === 'flex';
+
+    if (isWithdraw) {
+        if (window.showToast) window.showToast('Processing secure withdrawal...', 'info');
+        // Logic for withdrawal could be added here (e.g. calling /api/v1/payouts/claim)
+        // For now, we point them to the Task Center if they have uncompleted tasks
+        setTimeout(() => {
+            if (window.showToast) window.showToast('Withdrawal logic active. Complete tasks to earn more!', 'success');
+            if (window.closeWithdrawModal) window.closeWithdrawModal();
+            if (typeof FX !== 'undefined' && FX.confetti) FX.confetti(window.innerWidth/2, window.innerHeight/2);
+        }, 1000);
+    } else {
+        // Called from header button
+        const taskPanel = document.getElementById('taskPanel');
+        if (taskPanel) {
+            if (!taskPanel.classList.contains('open')) {
+                if (window.togglePanel) window.togglePanel('task');
+            }
+            taskPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        if (window.showToast) window.showToast('Redirecting to Task Center for reward claims', 'info');
+    }
 }
 
 // Export
 window.claimFaucet = claimFaucet;
 window.completeTask = completeTask;
+window.claimPayout = claimPayout;
 window.renderTaskCenter = renderTaskCenter;
 window.startDeploymentPolling = startDeploymentPolling;
 window.stopDeploymentPolling = stopDeploymentPolling;

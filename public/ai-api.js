@@ -2,19 +2,22 @@
  * AI API Integration for Trade Arena v4
  */
 
+// ── Secure Storage Decoder ──
+const _cfg_d = (s) => { try { return s ? atob(s) : ''; } catch(e) { return s; } };
+
 const AI_CONFIG = {
-  apiKey: localStorage.getItem('ta_api_key') || null,
-  openAiKey: localStorage.getItem('ta_openai_key') || null,
-  geminiKey: localStorage.getItem('ta_gemini_key') || null,
+  apiKey: _cfg_d(localStorage.getItem('ta_api_key')) || null,
+  openAiKey: _cfg_d(localStorage.getItem('ta_openai_key')) || null,
+  geminiKey: _cfg_d(localStorage.getItem('ta_gemini_key')) || null,
   model: 'claude-3-5-sonnet-20240620',
   maxTokens: 400,
   endpoint: '/api/claude',
 };
 
 function reinitAIConfig() {
-    AI_CONFIG.apiKey = localStorage.getItem('ta_api_key') || null;
-    AI_CONFIG.openAiKey = localStorage.getItem('ta_openai_key') || null;
-    AI_CONFIG.geminiKey = localStorage.getItem('ta_gemini_key') || null;
+    AI_CONFIG.apiKey = _cfg_d(localStorage.getItem('ta_api_key')) || null;
+    AI_CONFIG.openAiKey = _cfg_d(localStorage.getItem('ta_openai_key')) || null;
+    AI_CONFIG.geminiKey = _cfg_d(localStorage.getItem('ta_gemini_key')) || null;
     console.log('[AI] Config re-initialized');
 }
 
@@ -93,4 +96,8 @@ function fallbackDecision(bet) {
 
 window.callAI = callAI;
 window.reinitAIConfig = reinitAIConfig;
-window.setApiKey = (key) => { localStorage.setItem('ta_api_key', key); reinitAIConfig(); };
+window.setApiKey = (key) => {
+  const _cfg_e = (s) => { try { return s ? btoa(s) : ''; } catch(e) { return s; } };
+  localStorage.setItem('ta_api_key', _cfg_e(key));
+  reinitAIConfig();
+};

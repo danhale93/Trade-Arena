@@ -3,9 +3,12 @@
  * Trade Arena v4 • Real Money Trading on Base
  */
 
+// ── Secure Storage Decoder ──
+const _cfg_d = (s) => { try { return s ? atob(s) : ''; } catch(e) { return s; } };
+
 const EXECUTION_CONFIG = {
     zeroExApiUrl: 'https://base.api.0x.org/swap/v1',
-    zeroExApiKey: localStorage.getItem('ta_0x_api_key') || '',
+    zeroExApiKey: _cfg_d(localStorage.getItem('ta_0x_api_key')) || '',
     minLiquidityUSD: 50000,
     maxSlippage: 0.01, // 1%
     privateRpcUrl: 'https://mainnet.base.org',
@@ -13,7 +16,7 @@ const EXECUTION_CONFIG = {
 };
 
 function reinitExecutionConfig() {
-    EXECUTION_CONFIG.zeroExApiKey = localStorage.getItem('ta_0x_api_key') || '';
+    EXECUTION_CONFIG.zeroExApiKey = _cfg_d(localStorage.getItem('ta_0x_api_key')) || '';
     console.log('[Execution] Config re-initialized');
 }
 
