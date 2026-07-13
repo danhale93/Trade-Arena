@@ -740,73 +740,15 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     <span>5 AI agents · Real prices · Self-learning · Politician filings</span>
   </div>
 <div class="login-card">
-    <div class="login-card-hd">UNIFIED ARENA ACCESS</div>
-    <div class="login-card-bd">
-      <button class="mm-btn" onclick="if(typeof privyInit==='function') privyInit(); privyLoginGoogle()" style="width:100%; height: 52px; font-size: 16px;">
-        ENTER ARENA
+    <div class=login-card-hd>UNIFIED SECURE LOGIN</div>
+    <div class=login-card-bd>
+      <button class=g-btn onclick="if(typeof privyInit==='function') privyInit(); if(window.privyLogin) window.privyLogin();" style="height:54px; font-size:14px; background: linear-gradient(90deg, var(--cyan), var(--hot)); color: #000; border: none; box-shadow: 0 0 20px rgba(0,255,231,0.3)">
+        <span style="font-family:'Bungee'; letter-spacing:1px">ENTER ARENA →</span>
       </button>
 
-      <div style="margin-top: 12px; display:flex; gap:8px;">
-        <button class="onramp-btn" onclick="window.openMoonpay && window.openMoonpay()" style="flex:1">💳 DEPOSIT</button>
-        <button class="offramp-btn" onclick="openOskoRamp('offramp')" style="flex:1">💵 WITHDRAW</button>
-      </div>
-    </div>
-  </div>
-  <p id="loginStatus" aria-live="polite" style="min-height:16px;font-size:11px;color:var(--cyan);text-align:center;transition:all .3s"></p>
-  <div class="setup-note">
-    <strong>AI API Keys</strong> — enables full AI agents. Get yours:
-    <a href="https://console.anthropic.com" target="_blank">Anthropic</a> |
-    <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI</a> |
-    <a href="https://aistudio.google.com/app/apikey" target="_blank">Gemini</a> |
-    <a href="https://dashboard.0x.org" target="_blank">0x (Swaps)</a>
-    <div style="display:flex;gap:4px;margin-top:5px">
-      <input type="password" id="apiKeyInput" placeholder="Paste primary key (Anthropic) here..." style="flex:1;padding:5px 8px;background:var(--bg);border:1px solid var(--border);color:var(--cyan);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px;" oninput="window._userApiKey=this.value.trim(); localStorage.setItem('ta_api_key', this.value.trim())">
-      <button onclick="toggleSettingsModal()" style="padding:4px 8px;background:var(--chrome);border:1px solid var(--border);color:var(--cyan);border-radius:4px;font-family:'Bungee',display;font-size:8px;cursor:pointer">ALL KEYS</button>
-    </div>
-    <span style="color:var(--dim);font-size:8px">Without keys the app uses rule-based signals. Demo Mode requires no wallet or key.</span>
-  </div>
-  
-  <!-- Fiat Deposit Section -->
-  <div id="depositSection" style="margin-top:16px;padding:12px;border-top:1px solid var(--border);">
-    <div class="divider">💰 Fiat Deposit (USDC on Base)</div>
-    
-    <!-- Deposit Buttons -->
-    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-      <button class="onramp-btn" onclick="openDepositFlow(50)" style="flex:1;min-width:120px;">
-        Deposit $50
-      </button>
-      <button class="onramp-btn" onclick="openDepositFlow(100)" style="flex:1;min-width:120px;">
-        Deposit $100
-      </button>
-    </div>
-    
-    <!-- Fee Breakdown Display -->
-    <div id="feeBreakdown" style="background:rgba(255,170,0,.07);border:1px solid rgba(255,170,0,.2);border-radius:8px;padding:10px;margin-bottom:12px;display:none;">
-      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--dim);margin-bottom:4px;">
-        <span>Deposit Amount:</span>
-        <span id="depositAmountDisplay">$50.00</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--dim);margin-bottom:4px;">
-        <span>MoonPay Fee (3.5%):</span>
-        <span id="moonpayFeeDisplay">$1.75</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--dim);margin-bottom:4px;">
-        <span>Network Fee:</span>
-        <span id="networkFeeDisplay">$1.50</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--dim);font-weight:bold;">
-        <span>Total:</span>
-        <span id="totalAmountDisplay">$53.25</span>
-      </div>
-    </div>
-    
-    <!-- Error State -->
-    <div id="depositError" style="background:rgba(255,45,120,.07);border:1px solid rgba(255,45,120,.2);border-radius:8px;padding:10px;color:var(--hot);display:none;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="currentColor"/>
-        </svg>
-        <span id="errorMessage">Deposit failed. Please try again.</span>
+      <div style="margin-top:12px; display:flex; gap:8px;">
+        <button class=onramp-btn onclick="window.openMoonpay && window.openMoonpay()" style="flex:1">💳 DEPOSIT</button>
+        <button class=offramp-btn onclick="openWithdrawModal()" style="flex:1">💵 WITHDRAW</button>
       </div>
 
       <p style="font-size:9px; color:var(--dim); text-align:center; margin-top:8px; line-height:1.4">
@@ -815,6 +757,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       </p>
     </div>
   </div>
+  <p id="loginStatus" aria-live="polite" style="min-height:16px;font-size:11px;color:var(--cyan);text-align:center;transition:all .3s"></p>
+</div>
 
 <!-- ══ MAIN APP ══ -->
 <div id="mainApp">
@@ -1516,7 +1460,7 @@ function copyToClipboard(inputId, btn) {
 // ══════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════
-const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = '';
 // ── Anthropic API Key ──
 // Get yours free at console.anthropic.com — paste it here to enable AI agents
 // Without it the app uses rule-based fallback signals (still trades, just no Claude)
@@ -3301,6 +3245,52 @@ function startOverride(bot,btn){
 }
 
 // Obsolete standalone login functions (MetaMask, Coinbase, Demo, PayID) removed to prevent SyntaxErrors and ensure unified Privy flow
+
+async function claimPayout() {
+  const btn = document.getElementById('ghClaimBtn');
+  if (!btn || btn.disabled) return;
+
+  const originalText = btn.textContent;
+  btn.textContent = '⏳ ...';
+  btn.disabled = true;
+
+  try {
+    if (typeof SFX !== 'undefined') SFX.tick();
+
+    // Check wallet connection
+    if (!window.ethereum || !window.ethereum.selectedAddress) {
+      if (window.showToast) window.showToast('Connect wallet first', 'warn');
+      btn.textContent = originalText;
+      btn.disabled = false;
+      return;
+    }
+
+    const address = window.ethereum.selectedAddress;
+    const res = await fetch('/api/v1/payouts/claim', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userAddress: address,
+        taskId: 'MANUAL_CLAIM_' + Date.now(),
+        proofOfWork: 'CLAIM_PNL_' + balance.toFixed(2)
+      })
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      if (window.showToast) window.showToast('Payout authorized! Check tx on Base.', 'success');
+      console.log('Payout data:', data.data);
+    } else {
+      throw new Error(data.error || 'Claim failed');
+    }
+  } catch (e) {
+    console.error('Claim error:', e);
+    if (window.showToast) window.showToast(e.message, 'hot');
+  } finally {
+    btn.textContent = originalText;
+    btn.disabled = false;
+  }
+}
 
 // OSKO Fiat On/Off Ramp Functions
 function openOskoRamp(type) {
