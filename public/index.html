@@ -1043,7 +1043,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <!-- Crucible mode -->
       <div class="crucible-bar">
         <span class="crucible-label">🔬 CRUCIBLE</span>
-        <div class="crucible-progress"><div class="crucible-fill" id="crucibleFill" style="width:0%"></div></div>
+        <div class="crucible-progress"><div class="crucible-fill" id="crucibleFill" style="width:0%" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Crucible Progress"></div></div>
         <span class="crucible-count" id="crucibleCount">0 / 100</span>
         <button class="crucible-toggle" id="crucibleBtn" onclick="toggleCrucible()">OFF</button>
       </div>
@@ -2511,7 +2511,11 @@ function toggleCrucible() {
 }
 function updateCrucible() {
   const pct=Math.min(crucibleCount/100*100,100);
-  const fill=document.getElementById('crucibleFill'); if(fill) fill.style.width=pct+'%';
+  const fill=document.getElementById('crucibleFill');
+  if(fill) {
+    fill.style.width=pct+'%';
+    fill.setAttribute('aria-valuenow', Math.round(pct).toString());
+  }
   setVal('crucibleCount',crucibleCount+' / 100');
 }
 
@@ -3211,6 +3215,8 @@ function globalKill() {
 function resetKill(){
   globalKilled=false;
   if(window.showToast) showToast('Emergency Stop Reset', 'success');
+  if(window.FX && window.FX.flash) FX.flash('var(--green)', 500);
+  if(window.FX && window.FX.confetti) FX.confetti(window.innerWidth / 2, window.innerHeight / 2);
   const kb=document.getElementById('killBtn');
   if(kb){kb.textContent='🔴 EMERGENCY STOP ALL BOTS';kb.onclick=globalKill;kb.style.background='';}
   checkGlobalBreakers();
@@ -3235,8 +3241,10 @@ function recordWin(bot){ bot.consecutiveLosses=0; updateStreakBar(bot); }
 function updateStreakBar(bot){
   const fill=document.getElementById('mstreak-'+bot.id); if(!fill) return;
   const l=bot.consecutiveLosses||0;
-  fill.style.width=(l/3*100)+'%';
+  const pct = Math.round(l/3*100);
+  fill.style.width=pct+'%';
   fill.style.background=l===0?'var(--green)':l===1?'var(--amber)':'var(--hot)';
+  fill.setAttribute('aria-valuenow', pct.toString());
 }
 function startCooldownUI(bot,durationMs,level){
   const resultEl=document.getElementById('mresult-'+bot.id);
@@ -3582,7 +3590,7 @@ function renderBot(bot){
       <div class="agent-card" id="ag-risk-${bot.id}"><div class="ac-icon"><span role="img" aria-label="Risk Agent">🛡️</span></div><div class="ac-name">RISK</div><div class="ac-vote" id="agv-risk-${bot.id}">—</div><div class="ac-conv" id="agc-risk-${bot.id}"></div></div>
     </div>
     <div class="consensus-label"><span id="clab-${bot.id}" style="color:var(--dim);font-style:italic">awaiting spin…</span><span id="cthresh-${bot.id}"></span></div>
-    <div class="consensus-bar-wrap"><div class="consensus-bar-fill" id="cbar-${bot.id}" style="width:0%;background:var(--dim)"></div></div>
+    <div class="consensus-bar-wrap"><div class="consensus-bar-fill" id="cbar-${bot.id}" style="width:0%;background:var(--dim)" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Agent Consensus"></div></div>
     <div class="m-controls">
       <div class="m-settings-bar">
         <div class="m-bet-display" id="mbetdisp-${bot.id}">$${bot.bet.toFixed(2)} <span>per trade</span></div>
@@ -3647,7 +3655,7 @@ function renderBot(bot){
           </div>
         </div>
       </div>
-      <div class="loss-streak-bar"><div class="loss-streak-fill" id="mstreak-${bot.id}" style="width:0%"></div></div>
+      <div class="loss-streak-bar"><div class="loss-streak-fill" id="mstreak-${bot.id}" style="width:0%" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Loss Streak Probability"></div></div>
     </div>`;
   document.getElementById('botGrid').appendChild(el);
   buildReels(bot.id); startTicker(bot);
@@ -4553,7 +4561,12 @@ function updateAgentCard(botId, agentKey, result){
 function updateConsensusBar(botId, pct, label, color){
   const bar=document.getElementById('cbar-'+botId);
   const lbl=document.getElementById('clab-'+botId);
-  if(bar){ bar.style.width=(pct*100).toFixed(0)+'%'; bar.style.background=color; }
+  if(bar){
+    const val = Math.round(pct*100);
+    bar.style.width=val+'%';
+    bar.style.background=color;
+    bar.setAttribute('aria-valuenow', val.toString());
+  }
   if(lbl) lbl.textContent=label;
 }
 
@@ -6205,7 +6218,7 @@ function updateSettingsVolume(val) {
 
         <div style="margin-bottom:12px">
           <div style="display:flex; justify-content:space-between; font-size:8px; color:var(--dim); margin-bottom:2px">
-            <span>ANTHROPIC (CLAUDE)</span>
+            <label for="settingsApiKey">ANTHROPIC (CLAUDE)</label>
             <div style="display:flex;gap:8px">
               <button onclick="toggleVisibility('settingsApiKey', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
               <button onclick="copyToClipboard('settingsApiKey', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
@@ -6217,7 +6230,7 @@ function updateSettingsVolume(val) {
 
         <div style="margin-bottom:12px">
           <div style="display:flex; justify-content:space-between; font-size:8px; color:var(--dim); margin-bottom:2px">
-            <span>OPENAI (GPT-4)</span>
+            <label for="settingsOpenAiKey">OPENAI (GPT-4)</label>
             <div style="display:flex;gap:8px">
               <button onclick="toggleVisibility('settingsOpenAiKey', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
               <button onclick="copyToClipboard('settingsOpenAiKey', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
@@ -6229,7 +6242,7 @@ function updateSettingsVolume(val) {
 
         <div style="margin-bottom:12px">
           <div style="display:flex; justify-content:space-between; font-size:8px; color:var(--dim); margin-bottom:2px">
-            <span>GOOGLE (GEMINI)</span>
+            <label for="settingsGeminiKey">GOOGLE (GEMINI)</label>
             <div style="display:flex;gap:8px">
               <button onclick="toggleVisibility('settingsGeminiKey', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
               <button onclick="copyToClipboard('settingsGeminiKey', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
@@ -6241,7 +6254,7 @@ function updateSettingsVolume(val) {
 
         <div style="margin-bottom:12px">
           <div style="display:flex; justify-content:space-between; font-size:8px; color:var(--dim); margin-bottom:2px">
-            <span>0x API (SWAPS)</span>
+            <label for="settingsZeroExKey">0x API (SWAPS)</label>
             <div style="display:flex;gap:8px">
               <button onclick="toggleVisibility('settingsZeroExKey', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
               <button onclick="copyToClipboard('settingsZeroExKey', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
@@ -6253,7 +6266,7 @@ function updateSettingsVolume(val) {
 
         <div style="margin-bottom:12px">
           <div style="display:flex; justify-content:space-between; font-size:8px; color:var(--dim); margin-bottom:2px">
-            <span>TASK REWARD SECRET (BOUNTIES)</span>
+            <label for="settingsTaskSecret">TASK REWARD SECRET (BOUNTIES)</label>
             <div style="display:flex;gap:8px">
               <button onclick="toggleVisibility('settingsTaskSecret', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
               <button onclick="copyToClipboard('settingsTaskSecret', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
@@ -6265,7 +6278,7 @@ function updateSettingsVolume(val) {
 
         <div style="margin-bottom:12px">
           <div style="display:flex; justify-content:space-between; font-size:8px; color:var(--dim); margin-bottom:2px">
-            <span>PAYOUT MANAGER (ON-CHAIN)</span>
+            <label for="settingsPayoutManager">PAYOUT MANAGER (ON-CHAIN)</label>
             <div style="display:flex;gap:8px">
               <button onclick="copyToClipboard('settingsPayoutManager', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
               <span style="color:var(--cyan)">Contract Address</span>
