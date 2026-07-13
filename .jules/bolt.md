@@ -39,3 +39,15 @@ Action: Implemented dual-mode trading system with real on-chain execution, batch
 ## 2026-07-08 - Visibility Guards and Single-Pass Rolling Metrics
 **Learning:** Collapsible dashboard panels often trigger expensive O(N) re-renders even when hidden from view. Adding simple "is open" guards to these render functions eliminates unnecessary DOM churn. Furthermore, calculating rolling window metrics (like win rate over the last N trades) should be done via a backwards loop to achieve O(window) complexity instead of O(N) full array traversals.
 **Action:** Always implement visibility guards for render functions tied to collapsible UI sections. Refactor rolling metrics to walk backwards from the end of the dataset.
+
+## 2026-07-08 - Multi-Factor UI Consolidation
+**Learning:** High-frequency applications often have multiple disparate functions updating different parts of the same UI component (e.g., the global header). Running these independently leads to redundant DOM queries, layout thrashing, and multiple 'requestAnimationFrame' overheads. Furthermore, updates that only check one piece of state (like balance) may miss the need to refresh when a related piece of state (like open trade count) changes.
+**Action:** Consolidate related UI updates into a single "Master" update function (like 'updateLiveBalance'). Implement a multi-factor dirty-check that evaluates all relevant state variables (balance, P&L, counts) simultaneously to trigger a single, atomic DOM update pass per display frame.
+
+## 2026-07-12 - Defensive requestAnimationFrame Scheduling
+**Learning:** Throttling UI updates with `requestAnimationFrame` is a good practice, but scheduling the frame callback itself can be a source of overhead if triggered at high frequency (e.g., from multiple asynchronous trade events) when the panel is hidden or data hasn't changed.
+**Action:** Move visibility and data-change guards *before* the `requestAnimationFrame` call to prevent unnecessary frame registrations.
+
+## 2026-07-13 - Consolidated Header Ticker and O(N) Traversals
+**Learning:** Consolidating disparate O(N) traversals (like P&L calculation and nearest exit search) into a single pass not only reduces CPU cycles but also provides a natural point for synchronizing related DOM updates into a single `requestAnimationFrame` block. This eliminates potential visual "stutter" where different parts of a component (like a header) update in different display frames.
+**Action:** When multiple metrics depend on the same dataset (e.g., `openPositions`), always prefer a manual `for` loop that aggregates all required data in a single pass, and perform all associated UI writes within the same animation frame.

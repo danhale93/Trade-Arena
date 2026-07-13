@@ -3,7 +3,7 @@ services:
     name: trade-arena
     runtime: node
     plan: starter
-    buildCommand: pnpm install
+    buildCommand: pnpm install && pnpm run build
     startCommand: node server.js
     envVars:
       - key: PORT

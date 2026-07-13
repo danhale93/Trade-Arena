@@ -109,7 +109,7 @@ async function privyLoginGoogle() {
             // Base only - no network choice
             chains: [{ 
                 id: PRIVY_CONFIG.chain,
-                rpcUrl: 'https://mainnet.base.org' 
+                rpcUrl: 'https://mainnet.base.org'
             }],
         });
         

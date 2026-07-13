@@ -7,12 +7,14 @@ function loadUsers() {
     try {
         if (fs.existsSync(USERS_FILE)) {
             const data = fs.readFileSync(USERS_FILE, 'utf8');
-            return JSON.parse(data);
+            const users = JSON.parse(data);
+            // Sentinel: Return a prototype-less object to prevent prototype pollution lookups
+            return Object.assign(Object.create(null), users);
         }
     } catch (e) {
         console.error('Error loading users:', e);
     }
-    return {};
+    return Object.create(null);
 }
 
 function saveUsers(users) {

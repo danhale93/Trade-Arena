@@ -27,7 +27,7 @@ app.use((req, res, next) => {
     res.setHeader('X-XSS-Protection', '1; mode=block');
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
     res.setHeader('Referrer-Policy', 'no-referrer');
-    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://accounts.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https:;");
+    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://accounts.google.com https://cdn.privy.io https://js.hcaptcha.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https:; frame-src 'self' https://auth.privy.io https://newassets.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com; child-src 'self' https://auth.privy.io https://newassets.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com;");
     next();
 });
 
@@ -49,22 +49,56 @@ const { loadUsers, saveUsers } = require('./user_persistence');
 const PORT = process.env.PORT || 3001;
 
 /**
+ * Sentinel: Mask sensitive parts of an RPC URL (like Alchemy/Infura API keys)
+ */
+function maskRpcUrl(url) {
+    if (!url || typeof url !== 'string') return url;
+    try {
+        const u = new URL(url);
+        // Mask the path (often contains the API key)
+        if (u.pathname && u.pathname.length > 8) {
+            u.pathname = u.pathname.substring(0, 4) + '****' + u.pathname.substring(u.pathname.length - 4);
+        }
+        // Mask any credentials in the URL
+        if (u.username) u.username = '****';
+        if (u.password) u.password = '****';
+        return u.toString();
+    } catch (e) {
+        // Fallback: Mask the end of the string if it looks like it might contain a key
+        if (url.length > 20) {
+            return url.substring(0, url.length - 12) + '********';
+        }
+        return '********';
+    }
+}
+
+/**
  * Simple in-memory rate limiter (avoids express-rate-limit Node 26+ subnet.networkForm bug)
  */
 const rateLimitMap = new Map();
 const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
 const RATE_LIMIT_MAX = 1000;
+const MAX_TRACKED_IPS = 5000; // Sentinel: Prevent memory exhaustion
 
 function checkRateLimit(ip) {
     const now = Date.now();
-    const record = rateLimitMap.get(ip) || { count: 0, resetAt: now + RATE_LIMIT_WINDOW };
-    if (now > record.resetAt) {
-        record.count = 0;
-        record.resetAt = now + RATE_LIMIT_WINDOW;
+    const record = rateLimitMap.get(ip);
+
+    if (record) {
+        if (now > record.resetAt) {
+            record.count = 1;
+            record.resetAt = now + RATE_LIMIT_WINDOW;
+        } else {
+            record.count += 1;
+        }
+        return record.count <= RATE_LIMIT_MAX;
     }
-    record.count += 1;
-    rateLimitMap.set(ip, record);
-    return record.count <= RATE_LIMIT_MAX;
+
+    // Sentinel: If map is full, block new IPs until cleanup to prevent DoS
+    if (rateLimitMap.size >= MAX_TRACKED_IPS) return false;
+
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW });
+    return true;
 }
 
 // Cleanup expired entries periodically
@@ -99,13 +133,16 @@ app.use("/api/v1/payouts", payoutRoutes);
 const allowedOrigin = process.env.ALLOWED_ORIGIN;
 app.use(cors({
     origin: (origin, cb) => {
-        // Sentinel: Prevent CORS bypass via partial origin matches (e.g. localhost.attacker.com)
-        const isLocal = origin && (
-            origin === 'http://localhost' || origin.startsWith('http://localhost:') ||
-            origin === 'http://127.0.0.1' || origin.startsWith('http://127.0.0.1:') ||
-            origin === 'https://localhost' || origin.startsWith('https://localhost:') ||
-            origin === 'https://127.0.0.1' || origin.startsWith('https://127.0.0.1:')
-        );
+        // Sentinel: Prevent CORS bypass via partial origin matches (e.g. localhost:80.attacker.com)
+        let isLocal = false;
+        try {
+            if (origin) {
+                const url = new URL(origin);
+                isLocal = (url.hostname === 'localhost' || url.hostname === '127.0.0.1');
+            }
+        } catch (e) {
+            isLocal = false;
+        }
 
         if (!origin || isLocal || allowedOrigin === '*' || origin === allowedOrigin) {
             cb(null, true);
@@ -258,9 +295,13 @@ app.post('/api/gemini', async (req, res) => {
         }
 
         const safeModel = encodeURIComponent(requestedModel);
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${safeModel}:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+        // Sentinel: Move API key to header to prevent leakage in server/proxy logs
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${safeModel}:generateContent`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'x-goog-api-key': process.env.GEMINI_API_KEY || ''
+            },
             body: JSON.stringify({
                 contents: req.body.contents,
                 generationConfig: req.body.generationConfig
@@ -338,7 +379,8 @@ app.get('/api/deployments', (req, res) => {
 const FAUCET_CLAIMED_IPS = new Set();
 
 const PAYOUT_PRIVATE_KEY = process.env.PAYOUT_PRIVATE_KEY || '';
-const PAYOUT_RPC_URL = process.env.RPC_URL || 'https://mainnet.base.org';
+const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY || '';
+const PAYOUT_RPC_URL = ALCHEMY_API_KEY ? `https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}` : (process.env.RPC_URL || 'https://mainnet.base.org');
 const PAYOUT_CHAIN_ID = 8453;
 const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 const BASE_ETH_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
@@ -416,8 +458,15 @@ app.post('/api/user/login', (req, res) => {
             return res.status(400).json({ success: false, error: 'Missing userId (email or address)' });
         }
 
+        // Sentinel: Prevent Prototype Pollution by blocking dangerous property names
+        const dangerousProps = ['__proto__', 'constructor', 'prototype'];
+        if (dangerousProps.includes(userId)) {
+            return res.status(400).json({ success: false, error: 'Invalid userId' });
+        }
+
         const users = loadUsers();
-        if (!users[userId]) {
+        // Sentinel: Use Object.hasOwn for safe property checking
+        if (!Object.hasOwn(users, userId)) {
             users[userId] = {
                 id: userId,
                 name: name || 'New User',
@@ -455,7 +504,8 @@ app.get('/api/status/connections', async (req, res) => {
     const aiKeys = [
         { name: 'ANTHROPIC_API_KEY', key: process.env.ANTHROPIC_API_KEY, type: 'AI' },
         { name: 'OPENAI_API_KEY', key: process.env.OPENAI_API_KEY, type: 'AI' },
-        { name: 'GEMINI_API_KEY', key: process.env.GEMINI_API_KEY, type: 'AI' }
+        { name: 'GEMINI_API_KEY', key: process.env.GEMINI_API_KEY, type: 'AI' },
+        { name: '0x_API_KEY', key: process.env.ZERO_EX_API_KEY, type: 'AI' }
     ];
 
     for (const item of aiKeys) {
@@ -468,7 +518,7 @@ app.get('/api/status/connections', async (req, res) => {
     }
 
     const rpcs = [
-        { name: 'RPC_URL (Base Mainnet)', url: process.env.RPC_URL || 'https://mainnet.base.org' },
+        { name: 'RPC_URL (Base Mainnet)', url: PAYOUT_RPC_URL },
         { name: 'BASE_SEPOLIA_RPC_URL', url: process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org' }
     ];
 
@@ -486,7 +536,7 @@ app.get('/api/status/connections', async (req, res) => {
             name: rpc.name,
             type: 'RPC',
             status,
-            value: rpc.url
+            value: maskRpcUrl(rpc.url)
         };
     });
 
@@ -520,6 +570,13 @@ app.get('/api/status/connections', async (req, res) => {
         type: 'WEBHOOK',
         status: process.env.MOONPAY_WEBHOOK_SECRET ? 'CONFIGURED' : 'MISSING',
         value: mask(process.env.MOONPAY_WEBHOOK_SECRET)
+    });
+
+    results.connections.push({
+        name: 'TASK_CLAIM_SECRET',
+        type: 'SECRET',
+        status: process.env.TASK_CLAIM_SECRET ? 'CONFIGURED' : 'MISSING',
+        value: mask(process.env.TASK_CLAIM_SECRET)
     });
 
     // Contract Deployments
@@ -599,7 +656,28 @@ app.post('/api/tasks/claim', taskClaimLimiter, async (req, res) => {
         }
 
         const payoutAmount = reward <= 10 ? 0.01 : reward <= 25 ? 0.025 : 0.05;
-        const payout = await sendPayout(userAddress || 'demo', payoutAmount, 'ETH');
+
+        let payout;
+        let authPayload = null;
+
+        // On-chain PayoutManager fallback
+        if (process.env.PAYOUT_MANAGER_ADDRESS && process.env.ORACLE_PRIVATE_KEY) {
+            try {
+                const payoutService = new (require('./services/payouts/payoutService'))({
+                    oraclePrivateKey: process.env.ORACLE_PRIVATE_KEY,
+                    rewardTokenAddress: process.env.REWARD_TOKEN_ADDRESS,
+                    payoutManagerAddress: process.env.PAYOUT_MANAGER_ADDRESS,
+                    chainId: parseInt(process.env.CHAIN_ID || '8453')
+                });
+                authPayload = await payoutService.authorizePayout(userAddress, taskId, 'validated_backend_claim');
+                payout = { onChainAuth: true, authPayload };
+            } catch (e) {
+                console.error('[Payout] On-chain auth failed, falling back to direct transfer:', e.message);
+                payout = await sendPayout(userAddress || 'demo', payoutAmount, 'ETH');
+            }
+        } else {
+            payout = await sendPayout(userAddress || 'demo', payoutAmount, 'ETH');
+        }
 
         const deployment = queueBotDeployment({
             source: 'task',
@@ -781,10 +859,13 @@ function generateBotConfig(strategy, riskLevel) {
         'Arbitrage Detection': { minSpread: 0.3, maxSpread: 10, maxSlippage: 1, checkInterval: 30000 },
         'Flash Loan Farming': { minProfit: 0.1, maxLoanMultiplier: 50, riskAssessment: 'HIGH', checkInterval: 15000 }
     };
-    const config = configs[strategy] || configs['Arbitrage Detection'];
+    const hasValidStrategy = Object.prototype.hasOwnProperty.call(configs, strategy);
+    const baseConfig = hasValidStrategy ? configs[strategy] : configs['Arbitrage Detection'];
     const riskMultipliers = { 'Conservative (2x leverage)': 0.5, 'Moderate (5x leverage)': 1.0, 'Aggressive (10x leverage)': 2.0 };
-    config.riskMultiplier = riskMultipliers[riskLevel] || 1;
-    return config;
+    return {
+        ...baseConfig,
+        riskMultiplier: riskMultipliers[riskLevel] || 1
+    };
 }
 
 function generateId() {

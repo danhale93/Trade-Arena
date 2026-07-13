@@ -54,6 +54,11 @@ self.addEventListener('activate', event => {
 // FETCH EVENT - Network first, fallback to cache
 // ═══════════════════════════════════════════════════════════
 self.addEventListener('fetch', event => {
+  // Only cache GET requests (POST is unsupported by Cache API)
+  if (event.request.method !== "GET") {
+    return event.respondWith(fetch(event.request));
+  }
+
   // Network first strategy - try to fetch, fallback to cache
   event.respondWith(
     fetch(event.request)

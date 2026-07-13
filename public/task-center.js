@@ -7,7 +7,7 @@ const API_BASE = (location.protocol === 'https:' ? '' : 'http://localhost:3001')
 const DEPLOYMENT_POLL_INTERVAL = 4000;
 
 const TASK_CONFIG = {
-    initialFaucetAmount: 50,
+    initialFaucetAmount: 50, // Starting credits // $50 starting credit
     quests: [
         { id: 'follow_twitter', label: 'Follow on Twitter', reward: 10, completed: false, icon: '🐦', type: 'social' },
         { id: 'join_discord', label: 'Join Discord Arena', reward: 15, completed: false, icon: '💬', type: 'social' },
@@ -98,7 +98,11 @@ async function claimFaucet() {
 
     try {
         if (window.showToast) window.showToast('Requesting Faucet Payout...', 'info');
-        const userAddress = window.privyWalletAddress || window.ethereum?.selectedAddress || 'demo';
+        const userAddress = window.privyWalletAddress || window.ethereum?.selectedAddress || '';
+        if (!userAddress) {
+            if (window.showToast) window.showToast("Please connect a wallet to claim rewards", "error");
+            return;
+        }
         const resp = await fetch(`${API_BASE}/api/faucet/claim`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -115,6 +119,7 @@ async function claimFaucet() {
             saveTaskState();
             renderTaskCenter();
             fetchDeployments();
+            if (typeof FX !== 'undefined' && FX.confetti) FX.confetti(window.innerWidth / 2, window.innerHeight / 2);
             if (typeof SFX !== 'undefined') SFX.bigWin();
             if (window.showToast) window.showToast('Faucet Claimed! Deployment Queued.', 'success');
         } else {
@@ -144,7 +149,11 @@ async function completeTask(taskId) {
 async function submitTaskToBackend(quest) {
     try {
         if (window.showToast) window.showToast(`Submitting ${quest.label}...`, 'info');
-        const userAddress = window.privyWalletAddress || window.ethereum?.selectedAddress || 'demo';
+        const userAddress = window.privyWalletAddress || window.ethereum?.selectedAddress || '';
+        if (!userAddress) {
+            if (window.showToast) window.showToast("Please connect a wallet to claim rewards", "error");
+            return;
+        }
         const resp = await fetch(`${API_BASE}/api/tasks/claim`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -167,8 +176,16 @@ async function submitTaskToBackend(quest) {
             saveTaskState();
             renderTaskCenter();
             fetchDeployments();
+            if (typeof FX !== 'undefined' && FX.confetti) FX.confetti(window.innerWidth / 2, window.innerHeight / 2);
             if (typeof SFX !== 'undefined') SFX.win();
-            if (window.showToast) window.showToast(`${quest.label} Complete!`, 'success');
+            if (window.showToast) {
+                if (data.payout?.onChainAuth) {
+                    window.showToast(`${quest.label} Complete! Signature received for on-chain claim.`, 'success');
+                    offerOnChainClaim(data.payout.authPayload);
+                } else {
+                    window.showToast(`${quest.label} Complete!`, 'success');
+                }
+            }
         } else {
             if (window.showToast) window.showToast(data.error || 'Task submission failed', 'error');
         }
@@ -230,6 +247,7 @@ async function verifyTaskCompletion(taskId, token = null) {
     }
     saveTaskState();
     renderTaskCenter();
+    if (typeof FX !== 'undefined' && FX.confetti) FX.confetti(window.innerWidth / 2, window.innerHeight / 2);
     if (typeof SFX !== 'undefined') SFX.bigWin();
     const rewardType = task.type === 'verified' ? 'Real Crypto' : 'Credits';
     if (window.showToast) window.showToast(`Verified Task Complete! +$${task.reward} ${rewardType} Credited`, 'success');
@@ -243,7 +261,7 @@ function renderTaskCenter() {
     const faucetBtn = document.getElementById('claimFaucetBtn');
     if (faucetBtn) {
         faucetBtn.disabled = taskState.faucetClaimed;
-        faucetBtn.textContent = taskState.faucetClaimed ? 'CLAIMED' : 'CLAIM $50 STARTING CAPITAL';
+        faucetBtn.textContent = taskState.faucetClaimed ? 'CLAIMED' : 'CLAIM TRADING CAPITAL';
     }
 
     questContainer.innerHTML = \`
@@ -264,7 +282,7 @@ function renderQuestRow(quest) {
     const rowColor = quest.completed ? 'var(--green)' : (isVerified ? 'var(--cyan)' : 'var(--border)');
     return \`
         <div class=\"task-row\" style=\"display:flex; align-items:center; gap:10px; padding:10px; background:rgba(0,0,0,0.2); border-radius:8px; margin-bottom:5px; border:1px solid \${rowColor}\">
-            <div style="font-size:20px">${escapeHTML(quest.icon)}</div>
+            <div style="font-size:20px" role="img" aria-label="${escapeHTML(quest.label)} icon">${escapeHTML(quest.icon)}</div>
             <div style=\"flex:1\">
                 <div style=\"display:flex; align-items:center; gap:5px\">
                     <div style="font-size:11px; font-weight:bold; color:${quest.completed ? 'var(--green)' : 'white'}">${escapeHTML(quest.label)}</div>
@@ -278,6 +296,52 @@ function renderQuestRow(quest) {
             </button>
         </div>
     \`;
+}
+
+async function offerOnChainClaim(authData) {
+    if (!window.ethereum && !window.privyProvider) {
+        if (window.showToast) window.showToast('Connect wallet to claim on-chain', 'error');
+        return;
+    }
+
+    const confirmClaim = confirm(`Task verified! Would you like to claim your reward on-chain now?
+(This requires a transaction on Base Mainnet)`);
+
+    if (!confirmClaim) return;
+
+    try {
+        if (window.showToast) window.showToast('Initiating on-chain claim...', 'info');
+
+        const provider = window.privyProvider || (window.ethereum ? new ethers.BrowserProvider(window.ethereum) : null);
+        if (!provider) throw new Error('No wallet provider found');
+
+        const signer = await provider.getSigner();
+        const payoutManagerAddress = localStorage.getItem('ta_payout_manager_address') || '0x0000000000000000000000000000000000000000'; // Default or from config
+
+        if (payoutManagerAddress === '0x0000000000000000000000000000000000000000') {
+            throw new Error('PayoutManager contract address not configured in settings.');
+        }
+
+        const abi = [
+            "function claimReward(address user, string taskId, uint256 amount, uint256 nonce, bytes signature) external"
+        ];
+        const contract = new ethers.Contract(payoutManagerAddress, abi, signer);
+
+        const tx = await contract.claimReward(
+            authData.user,
+            authData.taskId,
+            authData.amount,
+            authData.nonce,
+            authData.signature
+        );
+
+        if (window.showToast) window.showToast('Transaction submitted! Waiting for confirmation...', 'info');
+        await tx.wait();
+        if (window.showToast) window.showToast('Reward claimed successfully on-chain!', 'success');
+    } catch (e) {
+        console.error('[TaskCenter] On-chain claim failed:', e);
+        if (window.showToast) window.showToast(`Claim failed: ${e.message}`, 'error');
+    }
 }
 
 function renderDeploymentMonitor() {
@@ -294,7 +358,7 @@ function renderDeploymentMonitor() {
         return \`
             <div style=\"display:flex; flex-direction:column; gap:4px; padding:10px 12px; background:rgba(0,0,0,0.25); border-radius:8px; margin-bottom:6px; border-left:3px solid \${statusColor}\">
                 <div style=\"display:flex; align-items:center; gap:8px; justify-content:space-between\">
-                    <span style=\"font-size:16px\">\${srcIcon}</span>
+                    <span style="font-size:16px" role="img" aria-label="${escapeHTML(src)} icon">${srcIcon}</span>
                     <span style=\"font-size:9px; padding:2px 8px; border-radius:8px; background:\${statusColor}; color:var(--bg); font-weight:bold; text-transform:uppercase\">
                         \${escapeHTML(status)}
                     </span>

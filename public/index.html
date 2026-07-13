@@ -6,7 +6,6 @@
 <title>TRADE ARENA — AI TRADING FLOOR</title>
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Bungee+Shade&family=JetBrains+Mono:wght@400;700&family=Oswald:wght@400;700&family=Share+Tech+Mono&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" defer></script>
-<script src="https://accounts.google.com/gsi/client" async></script>
 <style>
 :root{
   --gold:#ffd700;--gold2:#ffaa00;--hot:#ff2d78;--cyan:#00ffe7;
@@ -16,9 +15,6 @@
 *:focus-visible {
   outline: 2px solid var(--cyan);
   outline-offset: 2px;
-}
-:root {
-  --bg:#06030a;--panel:#0e0914;--chrome:#160f1e;--border:#241830;--dim:#6a5878;
 }
 /* Demo-first UI enhancements */
 .g-btn{
@@ -744,15 +740,15 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     <span>5 AI agents · Real prices · Self-learning · Politician filings</span>
   </div>
 <div class="login-card">
-    <div class="login-card-hd">UNIFIED SECURE LOGIN</div>
-    <div class="login-card-bd">
-      <button class="g-btn" onclick="if(typeof privyInit==='function') privyInit(); if(window.privyLogin) window.privyLogin();" style="height:54px; font-size:14px; background: linear-gradient(90deg, var(--cyan), var(--hot)); color: #000; border: none; box-shadow: 0 0 20px rgba(0,255,231,0.3)">
+    <div class=login-card-hd>UNIFIED SECURE LOGIN</div>
+    <div class=login-card-bd>
+      <button class=g-btn onclick="if(typeof privyInit==='function') privyInit(); if(window.privyLogin) window.privyLogin();" style="height:54px; font-size:14px; background: linear-gradient(90deg, var(--cyan), var(--hot)); color: #000; border: none; box-shadow: 0 0 20px rgba(0,255,231,0.3)">
         <span style="font-family:'Bungee'; letter-spacing:1px">ENTER ARENA →</span>
       </button>
 
       <div style="margin-top:12px; display:flex; gap:8px;">
-        <button class="onramp-btn" onclick="window.openMoonpay && window.openMoonpay()" style="flex:1">💳 DEPOSIT</button>
-        <button class="offramp-btn" onclick="openWithdrawModal()" style="flex:1">💵 WITHDRAW</button>
+        <button class=onramp-btn onclick="window.openMoonpay && window.openMoonpay()" style="flex:1">💳 DEPOSIT</button>
+        <button class=offramp-btn onclick="openWithdrawModal()" style="flex:1">💵 WITHDRAW</button>
       </div>
 
       <p style="font-size:9px; color:var(--dim); text-align:center; margin-top:8px; line-height:1.4">
@@ -761,13 +757,15 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       </p>
     </div>
   </div>
+  <p id="loginStatus" aria-live="polite" style="min-height:16px;font-size:11px;color:var(--cyan);text-align:center;transition:all .3s"></p>
+</div>
 
 <!-- ══ MAIN APP ══ -->
 <div id="mainApp">
 
   <!-- Header -->
   <div class="global-header">
-    <div class="gh-avatar" id="ghAvatar">👤</div>
+    <div class="gh-avatar" id="ghAvatar" role="img" aria-label="User Avatar">👤</div>
     <div style="flex:1;overflow:hidden;min-width:60px">
       <div id="react-header-root"></div>
       <div class="gh-name" id="ghName" style="display:none">—</div>
@@ -776,7 +774,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     </div>
     <div style="margin-right:4px;text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end">
       <div style="display:flex;align-items:center;gap:6px">
-        <button id="ghClaimBtn" onclick="claimPayout()" style="display:none;padding:2px 6px;font-size:8px;background:var(--green);color:#000;border:none;border-radius:4px;font-family:Bungee;cursor:pointer;line-height:1">CLAIM</button>
+        <button id="ghClaimBtn" onclick="claimPayout()" style="display:none;padding:2px 6px;font-size:8px;background:var(--green);color:#000;border:none;border-radius:4px;font-family:Bungee;cursor:pointer;line-height:1" aria-label="Claim available rewards" title="Claim available rewards">CLAIM</button>
         <div class="gh-balance" id="ghBalance" style="transition:color .3s">$0.00</div>
       </div>
       <div class="gh-pnl pnl-pos" id="ghPnl">+$0.00 today</div>
@@ -792,18 +790,17 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     </div>
      <!-- bot controls -->
      <div class="gh-controls">
-       <button class="gh-bus-btn" id="ghStaffBtn" onclick="togglePanel('staff')" title="Application Maintenance & Support" aria-expanded="false">👷 STAFF</button>
-       <button class="gh-bus-btn" id="ghTaskBtn" onclick="togglePanel('task')" title="Earn Trade Credits" aria-expanded="false">💰 EARN</button>
-       <button class="gh-bus-btn" id="ghEloBtn" onclick="togglePanel('elo')" title="ELO Arena - Recursive Improvement" aria-expanded="false">🏆 ARENA</button>
-       <button class="gh-bus-btn" id="voiceAgentBtn" onclick="toggleVoiceAgent()" title="AI Floor Manager (Voice Chat)" aria-expanded="false">🎙️ AGENT</button>
-       <button class="gh-bus-btn" id="fleetViewBtn" onclick="toggleFleetView()" title="Toggle Fleet View (Compact Grid)">📊 FLEET</button>
-        <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots" aria-expanded="false">⚙ BUS</button>
-        <button class="gh-bus-btn" id="ghSettingsBtn" onclick="toggleSettingsModal()" title="Settings" aria-expanded="false">⚙ SETTINGS</button>
+       <button class="gh-bus-btn" id="ghStaffBtn" onclick="togglePanel('staff')" title="Application Maintenance & Support" aria-expanded="false"><span role="img" aria-hidden="true">👷</span> STAFF</button>
+       <button class="gh-bus-btn" id="ghTaskBtn" onclick="togglePanel('task')" title="Earn Trade Credits" aria-expanded="false"><span role="img" aria-hidden="true">💰</span> EARN</button>
+       <button class="gh-bus-btn" id="ghEloBtn" onclick="togglePanel('elo')" title="ELO Arena - Recursive Improvement" aria-expanded="false"><span role="img" aria-hidden="true">🏆</span> ARENA</button>
+       <button class="gh-bus-btn" id="voiceAgentBtn" onclick="toggleVoiceAgent()" title="AI Floor Manager (Voice Chat)" aria-expanded="false"><span role="img" aria-hidden="true">🎙️</span> AGENT</button>
+       <button class="gh-bus-btn" id="fleetViewBtn" onclick="toggleFleetView()" title="Toggle Fleet View (Compact Grid)"><span role="img" aria-hidden="true">📊</span> FLEET</button>
+        <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots" aria-expanded="false"><span role="img" aria-hidden="true">⚙</span> BUS</button>
+        <button class="gh-bus-btn" id="ghSettingsBtn" onclick="toggleSettingsModal()" title="Settings" aria-expanded="false"><span role="img" aria-hidden="true">⚙</span> SETTINGS</button>
         <button class="gh-auto-btn" id="liveToggleBtn" onclick="toggleLiveMode()" title="Toggle Live/Demo Mode" style="border-color:var(--gold2);color:var(--gold2)">DEMO</button>
        <button class="gh-auto-btn" id="ghAutoBtn" onclick="globalAutoToggle()" title="Toggle auto-trading on all bots" aria-pressed="false">AUTO</button>
        <button class="gh-bot-btn" id="ghRemoveBtn" onclick="removeLastBot()" title="Remove last bot" aria-label="Remove last bot" disabled>−</button>
        <button class="gh-bot-btn" id="ghAddTraderBtn" onclick="addBot('TRADER')" title="Add Trading Bot" aria-label="Add new trading bot">🤖</button><button class="gh-bot-btn" id="ghAddWorkerBtn" onclick="addBot('WORKER')" title="Add Worker Bot" aria-label="Add new worker bot">👷</button>
-       <button class="gh-bot-btn" id="musicToggleBtn" onclick="toggleBackgroundMusic()" title="Toggle background music" aria-label="Toggle background music">🎵</button>
      </div>
     <span class="gen-badge" id="genBadge">GEN 0</span>
     <span id="apiBreakerBadge" style="display:none"></span>
@@ -893,14 +890,14 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('optimized')"   title="Optimized spread based on learning model">⚡ OPTIMIZED</button>
       <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('reset')"       title="Reset all bots to defaults">↺ RESET ALL</button>
     </div>
-    <div class="bus-status" id="busStatus"></div>
+    <div class="bus-status" id="busStatus" aria-live="polite"></div>
   </div>
 
   <!-- ★ AGENT AUDIT PANEL ★ -->
   <div class="audit-panel" id="auditPanel">
     <div class="audit-hd" id="auditHd" onclick="toggleAudit()" role="button" tabindex="0">
       <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:14px">🔍</span>
+        <span style="font-size:14px" role="img" aria-hidden="true">🔍</span>
         <span class="audit-title">AGENT AUDIT</span>
         <span class="audit-summary" id="auditSummary">ALL CLEAR</span>
       </div>
@@ -932,7 +929,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
   <div class="learn-panel" id="learnPanel">
     <div class="learn-hd" id="learnHd" onclick="toggleLearn()" role="button" tabindex="0">
       <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:14px">🧬</span>
+        <span style="font-size:14px" role="img" aria-hidden="true">🧬</span>
         <span class="learn-title">SELF-LEARNING MODEL</span>
         <span class="learn-gen" id="learnGenLabel">GENERATION 0</span>
       </div>
@@ -980,7 +977,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
   <div class="cpanel" id="quantPanel">
     <div class="cpanel-hd" id="quantHd" onclick="togglePanel('quant')" style="background:linear-gradient(90deg,rgba(68,136,255,.06),transparent)" role="button" tabindex="0">
       <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:14px">🧪</span>
+        <span style="font-size:14px" role="img" aria-hidden="true">🧪</span>
         <span class="cpanel-title" style="color:var(--blue)">QUANT REPORT</span>
         <span style="font-size:9px;color:var(--dim)" id="qTradeCount">0 closed trades</span>
       </div>
@@ -990,7 +987,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <!-- Crucible mode -->
       <div class="crucible-bar">
         <span class="crucible-label">🔬 CRUCIBLE</span>
-        <div class="crucible-progress"><div class="crucible-fill" id="crucibleFill" style="width:0%"></div></div>
+        <div class="crucible-progress"><div class="crucible-fill" id="crucibleFill" style="width:0%" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Crucible Progress"></div></div>
         <span class="crucible-count" id="crucibleCount">0 / 100</span>
         <button class="crucible-toggle" id="crucibleBtn" onclick="toggleCrucible()">OFF</button>
       </div>
@@ -1122,7 +1119,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
   <div class="cpanel" id="connPanel">
     <div class="cpanel-hd" id="connHd" onclick="togglePanel('conn')" style="background:linear-gradient(90deg,rgba(0,255,231,.06),transparent)" role="button" tabindex="0">
       <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:14px">🔌</span>
+        <span style="font-size:14px" role="img" aria-hidden="true">🔌</span>
         <span class="cpanel-title" style="color:var(--cyan)">CONNECTION DASHBOARD</span>
         <span style="font-size:9px;color:var(--dim)">System Connectivity & Requirements</span>
       </div>
@@ -1145,7 +1142,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
             <ul style="list-style:none; color:var(--dim); line-height:1.6">
               <li>• Network: <span style="color:#fff">Base Mainnet</span></li>
               <li>• Chain ID: <span style="color:#fff">8453</span></li>
-              <li>• RPC URL: <span style="color:#fff">https://mainnet.base.org</span></li>
+              <li>• RPC URL: <span style="color:#fff">Alchemy (Primary)</span></li>
               <li>• Currency: <span style="color:#fff">ETH</span></li>
             </ul>
           </div>
@@ -1166,7 +1163,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
   <div class="cpanel" id="staffPanel">
     <div class="cpanel-hd" id="staffHd" onclick="togglePanel('staff')" style="background:linear-gradient(90deg,rgba(0,255,231,.06),transparent)" role="button" tabindex="0">
       <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:14px">👷</span>
+        <span style="font-size:14px" role="img" aria-hidden="true">👷</span>
         <span class="cpanel-title" style="color:var(--cyan)">STAFF OPERATIONS</span>
         <span style="font-size:9px;color:var(--dim)">Maintenance & Customer Service</span>
       </div>
@@ -1215,7 +1212,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
   <div class="cpanel" id="eloPanel">
     <div class="cpanel-hd" id="eloHd" onclick="togglePanel('elo')" style="background:linear-gradient(90deg,rgba(0,255,231,.06),transparent)" role="button" tabindex="0">
       <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:14px">🏆</span>
+        <span style="font-size:14px" role="img" aria-hidden="true">🏆</span>
         <span class="cpanel-title" style="color:var(--cyan)">ELO ARENA</span>
         <span style="font-size:9px;color:var(--dim)">Recursive Self-Improvement</span>
       </div>
@@ -1231,9 +1228,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
   <!-- ★ TASK CENTER ★ -->
   <div class="cpanel" id="taskPanel">
-    <div class="cpanel-hd" id="taskHd" onclick="togglePanel('task')" style="background:linear-gradient(90deg,rgba(57,255,20,.06),transparent)" role="button" tabindex="0">
+    <div class="cpanel-hd" id="taskHd" onclick="window.togglePanel && togglePanel('task')" style="background:linear-gradient(90deg,rgba(57,255,20,.06),transparent)" role="button" tabindex="0">
       <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:14px">📡</span>
+        <span style="font-size:14px" role="img" aria-hidden="true">📡</span>
         <span class="cpanel-title" style="color:var(--green)">TASK CENTER & MARKETPLACE</span>
         <span style="font-size:9px;color:var(--dim)" id="marketplaceEarning">Total Earned: 0 USDC</span>
       </div>
@@ -1281,7 +1278,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
   <div class="cpanel" id="breakerPanel">
     <div class="cpanel-hd" id="breakerHd" onclick="togglePanel('breaker')" style="background:linear-gradient(90deg,rgba(255,179,0,.06),transparent)" role="button" tabindex="0">
       <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:14px">🛡️</span>
+        <span style="font-size:14px" role="img" aria-hidden="true">🛡️</span>
         <span class="cpanel-title" style="color:var(--amber)">CIRCUIT BREAKERS</span>
         <span class="breaker-status bs-ok" id="breakerStatus">ALL CLEAR</span>
       </div>
@@ -1416,7 +1413,7 @@ function escapeHTML(str) {
  * Toggle visibility of a password/API key input field
  */
 function toggleAdvancedSettings(btn) {
-  if(typeof SFX !== 'undefined') SFX.tick();
+  if(typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
   const panel = document.getElementById('advancedSettings');
   if (!panel) return;
   const isHidden = panel.style.display === 'none' || panel.style.display === '';
@@ -1572,7 +1569,7 @@ const COINGECKO_IDS = {
   'ETH':'ethereum','BTC':'bitcoin','SOL':'solana','MATIC':'matic-network',
   'DOGE':'dogecoin','PEPE':'pepe','WIF':'dogwifcoin','BONK':'bonk','FLOKI':'floki','ARB':'arbitrum'
 };
-const COOLDOWNS = [15*60,60*60,24*60*60];
+const COOLDOWNS = [30*60,120*60,48*60*60];
 const CONSENSUS_THRESHOLD = 2; // out of 4 voting agents — aggressive mode
 const AGGRESSION = 0.8;        // 0=cautious, 1=full degen
 // Crucible strategies — latency-tolerant only
@@ -1592,6 +1589,12 @@ var _lastLogTradeCount = -1;
 var _quantPending = false;
 var _logPending = false;
 var _perfPending = false;
+
+// ⚡ Bolt Optimization: DOM Cache and State Tracking
+const _domCache = {};
+const _getEl = (id) => _domCache[id] || (_domCache[id] = document.getElementById(id));
+let _lastBreakerState = '';
+
 var _lastPerfTradeCount = -1;
 var _lastMatrixBotCount = -1;
 var _lastMatrixOpenCount = -1;
@@ -1840,9 +1843,7 @@ async function openPosition(bot, decision, entryPrice, bet, volumeUsd, priceChan
   // bet already deducted as part of costs
 
   updateLiveBalance();
-  updateGlobalBalance();
   
-  updateOpenCount();
   setTimeout(()=>checkExit(pos,bot), EXIT_TIMES[decision.method]);
   startLivePnlTicker(pos, bot);
 
@@ -1916,39 +1917,86 @@ function startLivePnlTicker(pos, bot) {
 
 let _balanceUpdatePending = false;
 let _lastDisplayBal = -1, _lastDisplayPnl = -1, _lastUnrealised = -1;
+let _lastConsolidatedCount = -1;
+let _lastTickCd = '', _lastTickUrgent = null;
 
 function updateLiveBalance(){
   if (_balanceUpdatePending) return;
   _balanceUpdatePending = true;
 
   requestAnimationFrame(() => {
-    // Realised balance + sum of all live unrealised positions
-    const unrealised=openPositions.reduce((sum,p)=>sum+(p.livePnl||0),0);
-    const displayBalance=balance+unrealised;
-    const displayPnl=totalPnl+unrealised;
+    // ⚡ Bolt Optimization: Single-pass O(N) calculation for unrealised P&L and nearest exit
+    let unrealised = 0;
+    let nearest = null;
+    const now = Date.now();
+    const count = openPositions.length;
 
-    // Optimization: Skip DOM updates if values haven't changed
-    if (displayBalance === _lastDisplayBal && displayPnl === _lastDisplayPnl && unrealised === _lastUnrealised) {
+    for (let i = 0; i < count; i++) {
+      const p = openPositions[i];
+      unrealised += (p.livePnl || 0);
+      if (p.exitTime && (!nearest || p.exitTime < nearest)) nearest = p.exitTime;
+    }
+
+    const displayBalance = balance + unrealised;
+    const displayPnl = totalPnl + unrealised;
+
+    // ⚡ Bolt Optimization: Consolidate countdown formatting into the same frame
+    let cdStr = '--:--';
+    let urgent = false;
+    if (count > 0 && nearest) {
+      const ms = Math.max(0, nearest - now);
+      const s = Math.floor(ms / 1000) % 60, m = Math.floor(ms / 60000) % 60, h = Math.floor(ms / 3600000);
+      cdStr = h > 0 ? `${h}h${m}m` : m > 0 ? `${m}:${String(s).padStart(2, '0')}` : `0:${String(s).padStart(2, '0')}`;
+      urgent = ms < 15000;
+    }
+
+    // ⚡ Bolt Optimization: Consolidated dirty-check for balance, P&L, count, and countdown
+    if (displayBalance === _lastDisplayBal && displayPnl === _lastDisplayPnl &&
+        unrealised === _lastUnrealised && count === _lastConsolidatedCount &&
+        cdStr === _lastTickCd && urgent === _lastTickUrgent) {
       _balanceUpdatePending = false;
       return;
     }
 
-    const balEl=document.getElementById('ghBalance');
-    const pnlEl=document.getElementById('ghPnl');
-    if(balEl){
-      balEl.textContent='$'+displayBalance.toFixed(2);
-      balEl.title=`Realised: $${balance.toFixed(2)} | Unrealised: $${unrealised.toFixed(2)}`;
-      // Flash gold when unrealised is active
-      balEl.style.color=unrealised>0?'var(--green)':unrealised<0?'var(--hot)':'var(--gold)';
+    const balEl = _getEl('ghBalance');
+    const pnlEl = _getEl('ghPnl');
+    if (balEl) {
+      balEl.textContent = '$' + displayBalance.toFixed(2);
+      balEl.title = `Realised: $${balance.toFixed(2)} | Unrealised: $${unrealised.toFixed(2)}`;
+      balEl.style.color = unrealised > 0 ? 'var(--green)' : unrealised < 0 ? 'var(--hot)' : 'var(--gold)';
     }
-    if(pnlEl){
-      pnlEl.textContent=(displayPnl>=0?'+':'')+'$'+displayPnl.toFixed(2)+(unrealised!==0?' (live)':' today');
-      pnlEl.className='gh-pnl '+(displayPnl>=0?'pnl-pos':'pnl-neg');
+    if (pnlEl) {
+      pnlEl.textContent = (displayPnl >= 0 ? '+' : '') + '$' + displayPnl.toFixed(2) + (unrealised !== 0 ? ' (live)' : ' today');
+      pnlEl.className = 'gh-pnl ' + (displayPnl >= 0 ? 'pnl-pos' : 'pnl-neg');
     }
+
+    // Consolidated: Handle Open Positions count and Queue Wrap visibility
+    const qWrap = _getEl('ghQueueWrap');
+    const qNum = _getEl('ghQueueNum');
+    if (qWrap) { qWrap.style.display = count > 0 ? 'flex' : 'none'; }
+    if (qNum) qNum.textContent = count;
+
+    // Consolidated: Handle Ticker visibility and Countdown string
+    const ticker = _getEl('ghTicker');
+    if (ticker) { ticker.style.display = count > 0 ? 'flex' : 'none'; }
+    const cdEl = _getEl('ghCountdown');
+    if (cdEl) {
+      cdEl.textContent = cdStr;
+      cdEl.className = 'gh-ticker-cd' + (urgent ? ' urgent' : '');
+    }
+
+    // Consolidated: Global metric card for open positions
+    setVal('mv-open', count);
+
+    // Consolidated: Run breakers alongside balance changes
+    if (typeof checkGlobalBreakers === 'function') checkGlobalBreakers();
 
     _lastDisplayBal = displayBalance;
     _lastDisplayPnl = displayPnl;
     _lastUnrealised = unrealised;
+    _lastConsolidatedCount = count;
+    _lastTickCd = cdStr;
+    _lastTickUrgent = urgent;
     _balanceUpdatePending = false;
   });
 }
@@ -2005,7 +2053,7 @@ async function checkExit(pos, bot) {
   const card=document.getElementById('bot-'+pos.botId);
   if(card&&!openPositions.find(p=>p.botId===pos.botId)) card.classList.remove('has-open');
 
-  updateGlobalBalance(); updateBotPnl(bot); updateQuantReport(); updateOpenCount();
+  updateLiveBalance(); updateBotPnl(bot); updateQuantReport();
   showExitResult(pos,bot); addToLog(pos);
 
   // Sync Matrix Pad state
@@ -2232,15 +2280,17 @@ function drawEquityCurve(preMin, preMax) {
 
   const range=max-min||1;
 
-  // ⚡ Bolt Optimization: Manual loop for point generation to avoid intermediate array allocations
-  let pts = "";
+  // ⚡ Bolt Optimization: Build points using an array to avoid O(N²) string concatenation overhead.
+  // This approach is more efficient for larger datasets like the 1000-point equity history.
   const len = equityHistory.length;
+  const ptsArr = new Array(len);
   for (let i = 0; i < len; i++) {
     const v = equityHistory[i];
     const x = (i / (len - 1)) * W;
     const y = H - ((v - min) / range) * (H - 6) - 3;
-    pts += (i === 0 ? "" : " ") + x.toFixed(1) + "," + y.toFixed(1);
+    ptsArr[i] = x.toFixed(1) + "," + y.toFixed(1);
   }
+  const pts = ptsArr.join(" ");
   line.setAttribute('points',pts); fill.setAttribute('points',pts+` ${W},${H} 0,${H}`);
   const isUp=equityHistory[equityHistory.length-1]>=startBalance;
   line.setAttribute('stroke',isUp?'var(--green)':'var(--hot)');
@@ -2261,9 +2311,16 @@ function drawBaselines(n, claudePnl, winRate, baselinePnls, baselineWins, claude
     bData[k] = { pnl, avg: n ? pnl / n : 0, wr: n ? (wins / n * 100).toFixed(1) + '%' : '—' };
   });
 
-  // Highlight the winner
-  const allPnls = { claude: claudePnl, ...Object.fromEntries(bKeys.map(k => [k, bData[k].pnl])) };
-  const best = Object.keys(allPnls).reduce((a, b) => allPnls[a] > allPnls[b] ? a : b);
+  // ⚡ Bolt Optimization: Replace expensive Object.fromEntries and reduce with a simple comparison loop.
+  // This reduces object allocation and iteration overhead.
+  let best = 'claude';
+  let maxPnl = claudePnl;
+  for (const k of bKeys) {
+    if (bData[k].pnl > maxPnl) {
+      maxPnl = bData[k].pnl;
+      best = k;
+    }
+  }
 
   const fmt = (v) => (v >= 0 ? '+' : '') + '$' + v.toFixed(2);
 
@@ -2382,7 +2439,6 @@ function drawVerdict(n, wr, pf, avg) {
   }
 }
 
-function updateOpenCount() { setVal('mv-open',openPositions.length); }
 
 // ══════════════════════════════════════════════════════
 // CRUCIBLE MODE
@@ -2399,7 +2455,11 @@ function toggleCrucible() {
 }
 function updateCrucible() {
   const pct=Math.min(crucibleCount/100*100,100);
-  const fill=document.getElementById('crucibleFill'); if(fill) fill.style.width=pct+'%';
+  const fill=document.getElementById('crucibleFill');
+  if(fill) {
+    fill.style.width=pct+'%';
+    fill.setAttribute('aria-valuenow', Math.round(pct).toString());
+  }
   setVal('crucibleCount',crucibleCount+' / 100');
 }
 
@@ -2636,7 +2696,7 @@ function simulateCrucibleV2Results(regime, costModel, tradeCount) {
   const avgWin = Math.abs(pnlPerTrade) * 1.5; // Assuming 1.5:1 reward:risk
   const avgLoss = Math.abs(pnlPerTrade);
   const totalPnl = (wins * avgWin) - (losses * avgLoss);
-  const returnPct = (totalPnl / 50) * 100; // Assuming $10k starting balance
+  const returnPct = startBalance > 0 ? (totalPnl / startBalance) * 100 : 0;
   
   // Generate baseline comparisons
   const baselines = {
@@ -2772,7 +2832,7 @@ function downloadFile(content, filename, type) {
 // CIRCUIT BREAKERS
 // ══════════════════════════════════════════════════════
 function togglePanel(name) {
-  if(typeof SFX !== 'undefined') SFX.tick();
+  if(typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
   const bodyId=name+'Body', hdId=name+'Hd', toggleId=name+'Toggle';
   const body=document.getElementById(bodyId), toggle=document.getElementById(toggleId), hd=document.getElementById(hdId);
   if(!body||!toggle) return;
@@ -2819,7 +2879,8 @@ function updateConnectionDashboard() {
           const keyGenLinks = {
             'ANTHROPIC_API_KEY': 'https://console.anthropic.com',
             'OPENAI_API_KEY': 'https://platform.openai.com/api-keys',
-            'GEMINI_API_KEY': 'https://aistudio.google.com/app/apikey'
+            'GEMINI_API_KEY': 'https://aistudio.google.com/app/apikey',
+            '0x_API_KEY': 'https://dashboard.0x.org'
           };
           const genUrl = keyGenLinks[conn.name] || '#';
 
@@ -2880,7 +2941,7 @@ function saveApiKeyFromDashboard(keyName) {
   }
 
   if (window.showToast) window.showToast(`${keyName} saved locally!`, 'success');
-  if (typeof SFX !== 'undefined') SFX.tick();
+  if (typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
   updateConnectionDashboard();
 }
 
@@ -2888,7 +2949,7 @@ function saveApiKeyFromDashboard(keyName) {
  * MARKETPLACE UI LOGIC
  */
 function switchTaskTab(tab) {
-    if(typeof SFX !== 'undefined') SFX.tick();
+    if(typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
     ['internal', 'identities', 'market'].forEach(t => {
         const content = document.getElementById(`task-tab-${t}`);
         const btn = document.getElementById(`tab-${t}`);
@@ -3056,11 +3117,21 @@ function updateGasDisplay() {
   });
 }
 function checkGlobalBreakers() {
-  const s=document.getElementById('breakerStatus'); if(!s) return;
-  if(globalKilled){ s.textContent='🔴 EMERGENCY STOP'; s.className='breaker-status bs-stop'; return; }
-  if(currentGas>gasHardCeiling){ s.textContent='⛽ HIGH GAS'; s.className='breaker-status bs-warn'; return; }
-  if(totalPnl<=-(startBalance*drawdownPct/100)){ s.textContent='📉 DRAWDOWN KILL'; s.className='breaker-status bs-stop'; return; }
-  s.textContent='ALL CLEAR'; s.className='breaker-status bs-ok';
+  const s=_getEl('breakerStatus'); if(!s) return;
+  let state = 'OK';
+  let text = 'ALL CLEAR';
+  let cls = 'breaker-status bs-ok';
+
+  if(globalKilled){ state='STOP'; text='🔴 EMERGENCY STOP'; cls='breaker-status bs-stop'; }
+  else if(currentGas>gasHardCeiling){ state='WARN'; text='⛽ HIGH GAS'; cls='breaker-status bs-warn'; }
+  else if(totalPnl<=-(startBalance*drawdownPct/100)){ state='STOP'; text='📉 DRAWDOWN KILL'; cls='breaker-status bs-stop'; }
+
+  // ⚡ Bolt Optimization: Skip DOM updates if status hasn't changed
+  if (state === _lastBreakerState && s.textContent === text) return;
+
+  s.textContent = text;
+  s.className = cls;
+  _lastBreakerState = state;
 }
 function isGlobalBlocked() {
   if(globalKilled) return{blocked:true,reason:'EMERGENCY STOP'};
@@ -3071,6 +3142,8 @@ function isGlobalBlocked() {
 function globalKill() {
   if(!confirm('Stop all bots?')) return;
   globalKilled=true;
+  if(window.FX && window.FX.flash) FX.flash('var(--hot)', 500);
+  if(window.showToast) showToast('EMERGENCY STOP TRIGGERED', 'error');
   bots.forEach(b=>{ b.auto=false; if(b.autoTimer) clearTimeout(b.autoTimer);
     const btn=document.getElementById('mauto-'+b.id), card=document.getElementById('bot-'+b.id);
     if(btn){btn.textContent='AUTO';btn.classList.remove('on');} if(card) card.classList.remove('auto-on'); });
@@ -3085,6 +3158,9 @@ function globalKill() {
 }
 function resetKill(){
   globalKilled=false;
+  if(window.showToast) showToast('Emergency Stop Reset', 'success');
+  if(window.FX && window.FX.flash) FX.flash('var(--green)', 500);
+  if(window.FX && window.FX.confetti) FX.confetti(window.innerWidth / 2, window.innerHeight / 2);
   const kb=document.getElementById('killBtn');
   if(kb){kb.textContent='🔴 EMERGENCY STOP ALL BOTS';kb.onclick=globalKill;kb.style.background='';}
   checkGlobalBreakers();
@@ -3109,8 +3185,10 @@ function recordWin(bot){ bot.consecutiveLosses=0; updateStreakBar(bot); }
 function updateStreakBar(bot){
   const fill=document.getElementById('mstreak-'+bot.id); if(!fill) return;
   const l=bot.consecutiveLosses||0;
-  fill.style.width=(l/3*100)+'%';
+  const pct = Math.round(l/3*100);
+  fill.style.width=pct+'%';
   fill.style.background=l===0?'var(--green)':l===1?'var(--amber)':'var(--hot)';
+  fill.setAttribute('aria-valuenow', pct.toString());
 }
 function startCooldownUI(bot,durationMs,level){
   const resultEl=document.getElementById('mresult-'+bot.id);
@@ -3166,118 +3244,7 @@ function startOverride(bot,btn){
   btn.onpointerup=btn.onpointerleave=()=>{clearInterval(overrideTimer); if(held<3000) btn.textContent='HOLD TO OVERRIDE (3s)';};
 }
 
-// ══════════════════════════════════════════════════════
-// LOGIN
-// ══════════════════════════════════════════════════════
-
-  
-  // Wait for Google SDK to load
-  if(typeof google==='undefined'){ 
-    s.textContent='⏳ Loading Google SDK…'; 
-    return; 
-  }
-  
-  try{
-    s.textContent='⏳ Opening Google Sign-In…';
-    
-    google.accounts.id.initialize({ 
-      client_id: GOOGLE_CLIENT_ID, 
-      callback: handleGoogleLoginResponse,
-      hosted_domain: 'gmail.com'
-    });
-    
-    // Show the One Tap popup
-    google.accounts.id.prompt((notification) => {
-      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-        // If One Tap didn't display, show the button-based flow
-        google.accounts.id.renderButton(
-          document.getElementById('googleButtonContainer') || s,
-          { theme: 'dark', size: 'large' }
-        );
-      }
-    });
-  }catch(e){ 
-    s.textContent='❌ Google Error: '+e.message; 
-    console.error('Google login error:', e);
-  }
-}
-
-function handleGoogleLoginResponse(response){
-  const s=document.getElementById('loginStatus'); if(!s) return;
-  
-  try{
-    if(!response.credential){
-      s.textContent='❌ Google: No credential received';
-      return;
-    }
-    
-    // Decode JWT token
-    const tokenParts = response.credential.split('.');
-    if(tokenParts.length !== 3){
-      throw new Error('Invalid token format');
-    }
-    
-    const decodedPayload = JSON.parse(
-      atob(tokenParts[1].replace(/-/g, '+').replace(/_/g, '/'))
-    );
-    
-    const userData = {
-      name: decodedPayload.name || decodedPayload.email || 'Google User',
-      email: decodedPayload.email,
-      avatar: decodedPayload.picture || null,
-      badge: '🔵 GOOGLE',
-      provider: 'google'
-    };
-    
-    s.textContent='✅ Verifying account…';
-
-    // Persist user to backend
-    fetch('/api/user/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(userData)
-    })
-    .then(res => res.json())
-    .then(data => {
-      if(data.success) {
-        s.textContent='✅ Welcome back, ' + (data.user.name || 'User') + '!';
-        // Initialize app with server data
-        if(typeof balance !== 'undefined') balance = data.user.balance || 0;
-        setupApp({
-          ...userData,
-          ...data.user
-        });
-      } else {
-        s.textContent='❌ Login failed: ' + (data.error || 'Unknown error');
-      }
-    })
-    .catch(err => {
-      console.error('Persistence error:', err);
-      s.textContent='✅ Signed in (Local Only)';
-      setupApp(userData);
-    });
-  }catch(e){ 
-    s.textContent='❌ Google Sign-In Error: '+e.message; 
-    console.error('Google response handling error:', e);
-  }
-}
-
-// Call lazy listener setup
-if(typeof setupWalletListeners === "function" && !window._listenersInitialized) { setupWalletListeners(); window._listenersInitialized = true; }
-
-async function checkAutoLogin() {
-  if (localStorage.getItem('ta_logged_in') === 'metamask' && window.ethereum) {
-    try {
-      const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-      if (accounts && accounts.length > 0) {
-        console.log('🦊 Auto-logging in MetaMask...');
-        /* Handled by Privy */;
-      }
-    } catch (e) {
-      console.error('Auto-login check failed:', e);
-    }
-  }
-}
+// Obsolete standalone login functions (MetaMask, Coinbase, Demo, PayID) removed to prevent SyntaxErrors and ensure unified Privy flow
 
 async function claimPayout() {
   const btn = document.getElementById('ghClaimBtn');
@@ -3322,205 +3289,6 @@ async function claimPayout() {
   } finally {
     btn.textContent = originalText;
     btn.disabled = false;
-  }
-}
-
-
-    
-    if(!isAuto) s.textContent='⏳ Connecting MetaMask wallet…';
-
-    // Request or get accounts
-    const accounts = await window.ethereum.request({
-      method: isAuto ? 'eth_accounts' : 'eth_requestAccounts'
-    });
-    
-    if (!accounts || accounts.length === 0) {
-      if(!isAuto) s.textContent='❌ No accounts selected in MetaMask';
-      return;
-    }
-    
-    const address = accounts[0];
-    localStorage.setItem('ta_logged_in', 'metamask'); if(window.walletState) window.walletState.isConnected = true;
-    
-    // Create provider
-    let provider;
-    if (window.ethers.BrowserProvider) {
-        provider = new window.ethers.BrowserProvider(window.ethereum);
-    } else if (window.ethers.providers && window.ethers.providers.Web3Provider) {
-        provider = new window.ethers.providers.Web3Provider(window.ethereum);
-    } else {
-        provider = new window.ethers.BrowserProvider(window.ethereum);
-    }
-    
-    if(!isAuto) s.textContent='⏳ Verifying network…';
-    try { 
-      await window.ethereum.request({
-        method: 'wallet_switchEthereumChain',
-        params: [{ chainId: '0x2105' }]
-      }); 
-    } catch(switchError) {
-      if(switchError.code === 4902) {
-        try {
-          await window.ethereum.request({
-            method: 'wallet_addEthereumChain',
-            params: [{
-              chainId: '0x2105',
-              chainName: 'Base Mainnet',
-              rpcUrls: ['https://mainnet.base.org'],
-              nativeCurrency: { name: 'Ethereum', symbol: 'ETH', decimals: 18 },
-              blockExplorerUrls: ['https://basescan.org']
-            }]
-          });
-        } catch(addError) { console.warn('Chain error:', addError); }
-      }
-    }
-    
-    if(!isAuto) s.textContent='⏳ Fetching balance…';
-    let balanceUSD = 0;
-    
-    try { 
-      let balanceWei;
-      if (provider.getBalance) {
-          balanceWei = await provider.getBalance(address);
-      } else {
-          balanceWei = await window.ethereum.request({
-            method: 'eth_getBalance',
-            params: [address, 'latest']
-          });
-      }
-
-      const balanceETH = parseFloat(window.ethers.formatEther ? window.ethers.formatEther(balanceWei) : window.ethers.utils.formatEther(balanceWei));
-      
-      const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
-      const priceData = await priceResponse.json();
-      const ethPrice = priceData?.ethereum?.usd || 3200;
-      
-      balanceUSD = balanceETH * ethPrice;
-    } catch(balanceError) {
-      console.warn('Balance error:', balanceError);
-    }
-    
-    balance = balanceUSD;
-    startBalance = balanceUSD;
-    if (window.walletState) window.walletState.balanceUSD = balanceUSD;
-
-    const userData = {
-      name: address.slice(0, 6) + '···' + address.slice(-4),
-      address: address,
-      avatar: null,
-      badge: '🦊 METAMASK',
-      provider: 'metamask'
-    };
-    
-    if(!isAuto) s.textContent='✅ Verifying account…';
-
-    fetch('/api/user/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(userData)
-    })
-    .then(res => res.json())
-    .then(data => {
-      if(data.success) {
-        if(!isAuto) s.textContent='✅ Welcome back, ' + (data.user.name || 'User') + '!';
-        if(typeof balance !== 'undefined') balance = Math.max(balanceUSD, data.user.balance || 0);
-        setupApp({ ...userData, ...data.user });
-        // Enable real trading mode if connected via MetaMask
-        if (typeof toggleLiveMode === "function" && !window.isLiveMode) {
-           toggleLiveMode();
-        } else {
-           window.isLiveMode = true;
-           const badge = document.getElementById('ghBadge');
-           if (badge) {
-               badge.textContent = 'LIVE';
-               badge.style.color = 'var(--green)';
-           }
-           const netBadge = document.getElementById('ghNetwork');
-           if (netBadge) {
-               netBadge.textContent = 'BASE';
-               netBadge.style.display = 'block';
-           }
-        }
-
-        // Refresh UI
-        updateLiveBalance();
-        updateGlobalBalance();
-        updateMatrix();
-
-        // Show claim button
-        const claimBtn = document.getElementById('ghClaimBtn');
-        if(claimBtn) claimBtn.style.display = 'block';
-
-        // Check if empty wallet
-        if (balanceUSD < 0.01 && !isAuto) {
-           if(window.showToast) window.showToast('Empty wallet detected. Directing to Task Center...', 'info');
-           setTimeout(() => { togglePanel('task'); }, 2000);
-        }
-      } else {
-        if(!isAuto) s.textContent='❌ Login failed: ' + (data.error || 'Unknown error');
-      }
-    })
-    .catch(err => {
-      console.error('Persistence error:', err);
-      if(!isAuto) s.textContent='✅ Connected (Local Only)';
-      setupApp(userData);
-      const claimBtn = document.getElementById('ghClaimBtn');
-      if(claimBtn) claimBtn.style.display = 'block';
-    });
-    
-  }catch(error) { 
-    console.error('MetaMask error:', error);
-    if(!isAuto) {
-      if(error.code === 4001) s.textContent='❌ Connection rejected';
-      else if(error.code === -32002) s.textContent='❌ Request already pending';
-      else s.textContent='❌ Error: '+(error.message||'failed');
-    }
-  }
-}
-
-); }
-catch(e){ const s=document.getElementById('loginStatus'); if(s) s.textContent='❌ '+e.message; console.error('Demo error:',e); }
-}
-
-// Coinbase Wallet login - checks for window.coinbaseWalletExtension
-);
-      if(a&&a[0]){
-        w=window.coinbaseWalletExtension;walletAddress=a[0];
-        const safeAddr = escapeHTML(walletAddress);
-        s.innerHTML=`🔗 <a href="${etherscanBase}${safeAddr}" target="_blank" style="color:var(--accent)">${safeAddr.slice(0,6)}...${safeAddr.slice(-4)}</a><br>✅ Coinbase Wallet connected!`;
-        if(p) p.classList.add('live');return;
-      }
-    }else{s.innerHTML='⚠️ Coinbase Wallet not found.<br><a href="https://www.coinbase.com/wallet" target="_blank" style="color:var(--hot)">Install Coinbase Wallet</a>';}
-  }catch(e){s.innerHTML='❌ '+escapeHTML(e.message);console.error('Coinbase error:',e);}
-}
-
-
-
-  try {
-    s.innerHTML = '⚡ Initiating PayID Onboarding...<br><span style="font-size:9px;color:var(--dim)">Step 1: Connecting Wallet</span>';
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-    const address = accounts[0];
-
-    s.innerHTML = '⚡ Initiating PayID Onboarding...<br><span style="font-size:9px;color:var(--dim)">Step 2: Switching to Base Network</span>';
-    // Switch to Base
-    await window.ethereum.request({
-      method: 'wallet_switchEthereumChain',
-      params: [{ chainId: '0x2105' }],
-    });
-
-    s.innerHTML = '⚡ Redirecting to Ramp (AUD)...<br><span style="font-size:9px;color:var(--dim)">Instant AUD -> crypto without KYC (under limits)</span>';
-
-    // Redirect to AUD-optimized Ramp flow
-    const rampUrl = `https://buy.ramp.network/?ref=tradearena&swapAsset=BASE_ETH&fiatCurrency=AUD&fiatValue=50&userAddress=${address}`;
-
-    setTimeout(() => {
-        window.open(rampUrl, '_blank');
-        s.innerHTML = '✅ Redirected! Return here once your deposit arrives.<br><button onclick="if(window.privyLogin) window.privyLogin()" style="margin-top:8px;padding:6px 12px;background:var(--cyan);border:none;border-radius:4px;color:var(--bg);cursor:pointer;font-family:Bungee;font-size:9px">I HAVE FUNDS NOW</button>';
-    }, 1500);
-
-  } catch (e) {
-    console.error('PayID Error:', e);
-    s.innerHTML = '❌ Onboarding failed: ' + escapeHTML(e.message || 'Unknown error');
   }
 }
 
@@ -3588,7 +3356,7 @@ function setupApp({name,avatar,badge,address}){
     try{ setVal('ghName',name); setVal('ghBadge',badge); }catch(e){}
     if(avatar){ try{ const a=document.getElementById('ghAvatar'); if(a){ a.innerHTML=''; const img=document.createElement('img'); img.src=avatar; img.alt='User avatar'; img.style.cssText='width:26px;height:26px;border-radius:50%;object-fit:cover'; img.onerror=function(){ a.innerHTML='👤'; }; a.appendChild(img); } }catch(e){} }
     equityHistory=[balance];
-    try{ updateGlobalBalance(); }catch(e){ console.warn('balance:',e); }
+    try{ updateLiveBalance(); }catch(e){ console.warn('balance:',e); }
     try{ updateBreakers(); }catch(e){ console.warn('breakers:',e); }
     requestAnimationFrame(function(){
       try{ loadLearningState(); }catch(e){ console.warn('learning:',e); }
@@ -3601,12 +3369,27 @@ function setupApp({name,avatar,badge,address}){
       // ⚡ Bolt Optimization: Batch initial bot additions and trigger a single UI update
       try{
         addBot('TRADER', true);
+
+
         addBot('WORKER', true);
         addBot('TRADER', false); // Last one triggers UI
+
+
+
+
+
+
+
+
+
+
+
+
+
       }catch(e){ console.error('addBot:',e); }
       _startHeaderTicker();
       _syncHeaderBotBtns();
-      _injectAVControls();
+
     });
   }catch(e){
     console.error('setupApp critical error:',e);
@@ -3617,16 +3400,6 @@ function setupApp({name,avatar,badge,address}){
 // ══════════════════════════════════════════════════════
 // BALANCE
 // ══════════════════════════════════════════════════════
-function updateGlobalBalance(){
-  const balEl=document.getElementById('ghBalance');
-  if(balEl){
-    balEl.textContent='$'+balance.toFixed(2);
-    balEl.title=`Realised: $${balance.toFixed(2)} | Unrealised: $0.00`;
-  }
-  const p=document.getElementById('ghPnl');
-  if(p){p.textContent=(totalPnl>=0?'+':'')+'$'+totalPnl.toFixed(2)+' today';p.className='gh-pnl '+(totalPnl>=0?'pnl-pos':'pnl-neg');}
-  checkGlobalBreakers();
-}
 function updateBotPnl(bot){
   const el=document.getElementById('mpnl-'+bot.id); if(!el) return;
   el.textContent=(bot.pnl>=0?'+':'')+'$'+bot.pnl.toFixed(2);
@@ -3644,7 +3417,7 @@ function updateBotPnl(bot){
 // BOT MANAGEMENT
 // ══════════════════════════════════════════════════════
 function addBot(type = 'TRADER', silent = false){
-  if(!silent && typeof SFX !== 'undefined') SFX.tick();
+  if(!silent && typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
   if(bots.length>=MAX_BOTS) {
     if(!silent && window.showToast) showToast(`Maximum bot limit reached (${MAX_BOTS})`, 'error');
     return;
@@ -3685,6 +3458,7 @@ function addBot(type = 'TRADER', silent = false){
   }
 }
 function removeBot(id){
+  if(!confirm(`Are you sure you want to decommission Bot #${id}?`)) return;
   const bot=bots.find(b=>b.id===id);
   if(bot){if(bot.autoTimer)clearTimeout(bot.autoTimer);if(bot.tickerTimer)clearTimeout(bot.tickerTimer);}
   bots=bots.filter(b=>b.id!==id);
@@ -3717,8 +3491,9 @@ function _syncHeaderBotBtns(){
 // ── Global auto toggle ──
 let _ghAutoOn=false;
 function globalAutoToggle(){
-  if(typeof SFX !== 'undefined') SFX.tick();
+  if(typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
   _ghAutoOn=!_ghAutoOn;
+  if(window.showToast) showToast(`Global Auto-Trading: ${_ghAutoOn ? 'ON' : 'OFF'}`, _ghAutoOn ? 'success' : 'info');
   bots.forEach(b=>{
     if(_ghAutoOn===b.auto) return; // already in target state
     b.auto=_ghAutoOn;
@@ -3743,67 +3518,27 @@ function globalAutoToggle(){
 
 // ── Header countdown + open-trade tally ──
 let _ghTickerInterval=null;
-let _lastTickCount=-1, _lastTickCd='', _lastTickUrgent=null;
 function _startHeaderTicker(){
   if(_ghTickerInterval) clearInterval(_ghTickerInterval);
   _ghTickerInterval=setInterval(_tickHeader,500);
 }
 function _tickHeader(){
-  // Optimization: Refresh global balance (realised + unrealised) every 500ms when app is active
+  // ⚡ Bolt Optimization: All header metrics (Balance, P&L, Counts, Countdown)
+  // are consolidated into updateLiveBalance() to ensure single-pass O(N) traversal
+  // and synchronized DOM updates in a single display frame.
   updateLiveBalance();
-
-  // open trade count
-  const count=openPositions.length;
-  // ⚡ Bolt Optimization: Dirty-check trade count to skip redundant style/text assignments
-  if (count !== _lastTickCount) {
-    const qWrap=document.getElementById('ghQueueWrap');
-    const qNum=document.getElementById('ghQueueNum');
-    if(qWrap){ qWrap.style.display=count>0?'flex':'none'; }
-    if(qNum) qNum.textContent=count;
-    _lastTickCount = count;
-  }
-
-  // countdown to nearest exit
-  const ticker=document.getElementById('ghTicker');
-  const cd=document.getElementById('ghCountdown');
-  if(!ticker||!cd) return;
-
-  if(count===0){
-    if (ticker.style.display !== 'none') ticker.style.display='none';
-    return;
-  }
-  if (ticker.style.display !== 'flex') ticker.style.display='flex';
-
-  const now=Date.now();
-  let nearest=null;
-  openPositions.forEach(p=>{ if(p.exitTime&&(!nearest||p.exitTime<nearest)) nearest=p.exitTime; });
-  if(!nearest){
-    if (cd.textContent !== '--:--') cd.textContent='--:--';
-    return;
-  }
-
-  const ms=Math.max(0,nearest-now);
-  const s=Math.floor(ms/1000)%60, m=Math.floor(ms/60000)%60, h=Math.floor(ms/3600000);
-  const cdStr=h>0?`${h}h${m}m`:m>0?`${m}:${String(s).padStart(2,'0')}`:`0:${String(s).padStart(2,'0')}`;
-  const urgent=ms<15000;
-
-  // ⚡ Bolt Optimization: Skip DOM churn if countdown string and urgency state haven't changed
-  if (cdStr !== _lastTickCd || urgent !== _lastTickUrgent) {
-    cd.textContent=cdStr;
-    cd.className='gh-ticker-cd'+(urgent?' urgent':'');
-    _lastTickCd = cdStr;
-    _lastTickUrgent = urgent;
-  }
 }
 function renderBot(bot){
   const el=document.createElement('div'); el.className='machine'; el.id='bot-'+bot.id;
   el.tabIndex = -1; // Allow programmatic focus
+  const botIcon = bot.type === "WORKER" ? "👷" : "🤖";
+  const botLabel = bot.type === "WORKER" ? "Worker Bot" : "Trader Bot";
   el.innerHTML=`
     <div class="m-status-badge" id="mstatus-${bot.id}"></div>
-    <div class="mutation-badge" id="mbadge-${bot.id}">🧬 ADAPTED</div>
+    <div class="mutation-badge" id="mbadge-${bot.id}"><span role="img" aria-hidden="true">🧬</span> ADAPTED</div>
     <div class="m-head">
-      <div style="display:flex;align-items:center;gap:5px"><span class="m-id" style="display:flex;align-items:center;gap:4px">${bot.type === "WORKER" ? "👷" : "🤖"} BOT #${bot.id} <small style="font-size:8px;padding:1px 4px;background:rgba(255,255,255,0.1);border-radius:3px">${bot.type}</small></span><span class="m-pnl" id="mpnl-${bot.id}">$0.00</span></div>
-      <div style="display:flex;align-items:center;gap:4px"><div class="m-ticker" id="mtick-${bot.id}">READY</div><button class="m-close" onclick="removeBot(${bot.id})" aria-label="Remove bot ${bot.id}" title="Remove bot">✕</button></div>
+      <div style="display:flex;align-items:center;gap:5px"><span class="m-id" style="display:flex;align-items:center;gap:4px"><span role="img" aria-label="${botLabel}">${botIcon}</span> BOT #${bot.id} <small style="font-size:8px;padding:1px 4px;background:rgba(255,255,255,0.1);border-radius:3px">${bot.type}</small></span><span class="m-pnl" id="mpnl-${bot.id}">$0.00</span></div>
+      <div style="display:flex;align-items:center;gap:4px"><div class="m-ticker" id="mtick-${bot.id}">READY</div><button class="m-close" onclick="removeBot(${bot.id})" aria-label="Remove bot #${bot.id}" title="Remove bot">✕</button></div>
     </div>
     <div style="position:relative">
       <div class="m-reels" id="mreels-${bot.id}">
@@ -3838,14 +3573,14 @@ function renderBot(bot){
     </div>
     <!-- Agent vote cards -->
     <div class="agent-grid" id="agentGrid-${bot.id}">
-      <div class="agent-card" id="ag-mom-${bot.id}"><div class="ac-icon">🔥</div><div class="ac-name">MOMENTUM</div><div class="ac-vote" id="agv-mom-${bot.id}">—</div><div class="ac-conv" id="agc-mom-${bot.id}"></div></div>
-      <div class="agent-card" id="ag-vol-${bot.id}"><div class="ac-icon">🌀</div><div class="ac-name">VOLATILITY</div><div class="ac-vote" id="agv-vol-${bot.id}">—</div><div class="ac-conv" id="agc-vol-${bot.id}"></div></div>
-      <div class="agent-card" id="ag-pol-${bot.id}"><div class="ac-icon">🏛️</div><div class="ac-name">POLITICIAN</div><div class="ac-vote" id="agv-pol-${bot.id}">—</div><div class="ac-conv" id="agc-pol-${bot.id}"></div></div>
-      <div class="agent-card" id="ag-sen-${bot.id}"><div class="ac-icon">📊</div><div class="ac-name">SENTIMENT</div><div class="ac-vote" id="agv-sen-${bot.id}">—</div><div class="ac-conv" id="agc-sen-${bot.id}"></div></div>
-      <div class="agent-card" id="ag-risk-${bot.id}"><div class="ac-icon">🛡️</div><div class="ac-name">RISK</div><div class="ac-vote" id="agv-risk-${bot.id}">—</div><div class="ac-conv" id="agc-risk-${bot.id}"></div></div>
+      <div class="agent-card" id="ag-mom-${bot.id}"><div class="ac-icon"><span role="img" aria-label="Momentum Agent">🔥</span></div><div class="ac-name">MOMENTUM</div><div class="ac-vote" id="agv-mom-${bot.id}">—</div><div class="ac-conv" id="agc-mom-${bot.id}"></div></div>
+      <div class="agent-card" id="ag-vol-${bot.id}"><div class="ac-icon"><span role="img" aria-label="Volatility Agent">🌀</span></div><div class="ac-name">VOLATILITY</div><div class="ac-vote" id="agv-vol-${bot.id}">—</div><div class="ac-conv" id="agc-vol-${bot.id}"></div></div>
+      <div class="agent-card" id="ag-pol-${bot.id}"><div class="ac-icon"><span role="img" aria-label="Politician Agent">🏛️</span></div><div class="ac-name">POLITICIAN</div><div class="ac-vote" id="agv-pol-${bot.id}">—</div><div class="ac-conv" id="agc-pol-${bot.id}"></div></div>
+      <div class="agent-card" id="ag-sen-${bot.id}"><div class="ac-icon"><span role="img" aria-label="Sentiment Agent">📊</span></div><div class="ac-name">SENTIMENT</div><div class="ac-vote" id="agv-sen-${bot.id}">—</div><div class="ac-conv" id="agc-sen-${bot.id}"></div></div>
+      <div class="agent-card" id="ag-risk-${bot.id}"><div class="ac-icon"><span role="img" aria-label="Risk Agent">🛡️</span></div><div class="ac-name">RISK</div><div class="ac-vote" id="agv-risk-${bot.id}">—</div><div class="ac-conv" id="agc-risk-${bot.id}"></div></div>
     </div>
     <div class="consensus-label"><span id="clab-${bot.id}" style="color:var(--dim);font-style:italic">awaiting spin…</span><span id="cthresh-${bot.id}"></span></div>
-    <div class="consensus-bar-wrap"><div class="consensus-bar-fill" id="cbar-${bot.id}" style="width:0%;background:var(--dim)"></div></div>
+    <div class="consensus-bar-wrap"><div class="consensus-bar-fill" id="cbar-${bot.id}" style="width:0%;background:var(--dim)" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Agent Consensus"></div></div>
     <div class="m-controls">
       <div class="m-settings-bar">
         <div class="m-bet-display" id="mbetdisp-${bot.id}">$${bot.bet.toFixed(2)} <span>per trade</span></div>
@@ -3859,17 +3594,17 @@ function renderBot(bot){
         <div class="m-dd-section">
           <div class="m-dd-label">Trade Amount</div>
           <div class="m-dd-bets" id="mbets-${bot.id}">
-            ${[0.10,0.25,0.50,1.00,2.00,5.00,10.00,20.00,100.00].map(v=>{const isOn=v===bot.bet; return `<button class="m-dd-bet${isOn?' on':''}" data-bet="${v}" onclick="setBet(${bot.id},${v})" aria-pressed="${isOn}" title="Set bet to $${v.toFixed(2)}">$${v%1===0?v.toFixed(0):v.toFixed(2)}</button>`;}).join('')}
+            ${[0.10,0.25,0.50,1.00,2.00,5.00,10.00,20.00,100.00].map(v=>{const isOn=v===bot.bet; return `<button class="m-dd-bet${isOn?' on':''}" data-bet="${v}" onclick="setBet(${bot.id},${v})" aria-pressed="${isOn}" title="Set bet to $${v.toFixed(2)}" aria-label="Trade amount preset: $${v.toFixed(2)}">$${v%1===0?v.toFixed(0):v.toFixed(2)}</button>`;}).join('')}
           </div>
           <div class="m-dd-custom">
-            <input type="number" id="mcustom-${bot.id}" placeholder="Custom $" min="0.01" step="0.01">
-            <button onclick="setCustomBet(${bot.id})">SET</button>
+            <input type="number" id="mcustom-${bot.id}" placeholder="Custom $" min="0.01" step="0.01" aria-label="Custom trade amount in dollars">
+            <button onclick="setCustomBet(${bot.id})" aria-label="Set custom trade amount">SET</button>
           </div>
         </div>
         <div class="m-dd-row">
           <div class="m-dd-section">
             <div class="m-dd-label">Personality</div>
-            <select class="m-dd-select" id="mpersonality-${bot.id}" onchange="setBotPersonality(${bot.id},this.value)">
+            <select class="m-dd-select" id="mpersonality-${bot.id}" onchange="setBotPersonality(${bot.id},this.value)" aria-label="Select bot personality">
               <option value="BALANCED">⚖️ Balanced</option>
               <option value="AGGRESSIVE">🔥 Aggressive</option>
               <option value="CONSERVATIVE">🛡️ Conservative</option>
@@ -3879,7 +3614,7 @@ function renderBot(bot){
           </div>
           <div class="m-dd-section">
             <div class="m-dd-label">Auto Delay</div>
-            <select class="m-dd-select" id="mdelay-${bot.id}" onchange="setBotDelay(${bot.id},this.value)">
+            <select class="m-dd-select" id="mdelay-${bot.id}" onchange="setBotDelay(${bot.id},this.value)" aria-label="Select auto-trading delay">
               <option value="2000">Fast (2s)</option>
               <option value="5000" selected>Normal (5s)</option>
               <option value="15000">Slow (15s)</option>
@@ -3890,7 +3625,7 @@ function renderBot(bot){
         <div class="m-dd-row">
           <div class="m-dd-section">
             <div class="m-dd-label">Stop Loss</div>
-            <select class="m-dd-select" id="mstoploss-${bot.id}" onchange="setBotStopLoss(${bot.id},this.value)">
+            <select class="m-dd-select" id="mstoploss-${bot.id}" onchange="setBotStopLoss(${bot.id},this.value)" aria-label="Select stop loss percentage">
               <option value="0">None</option>
               <option value="10">−10%</option>
               <option value="20" selected>−20%</option>
@@ -3900,7 +3635,7 @@ function renderBot(bot){
           </div>
           <div class="m-dd-section">
             <div class="m-dd-label">Take Profit</div>
-            <select class="m-dd-select" id="mtakeprofit-${bot.id}" onchange="setBotTakeProfit(${bot.id},this.value)">
+            <select class="m-dd-select" id="mtakeprofit-${bot.id}" onchange="setBotTakeProfit(${bot.id},this.value)" aria-label="Select take profit percentage">
               <option value="0">None</option>
               <option value="10">+10%</option>
               <option value="20">+20%</option>
@@ -3910,7 +3645,7 @@ function renderBot(bot){
           </div>
         </div>
       </div>
-      <div class="loss-streak-bar"><div class="loss-streak-fill" id="mstreak-${bot.id}" style="width:0%"></div></div>
+      <div class="loss-streak-bar"><div class="loss-streak-fill" id="mstreak-${bot.id}" style="width:0%" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Loss Streak Probability"></div></div>
     </div>`;
   document.getElementById('botGrid').appendChild(el);
   buildReels(bot.id); startTicker(bot);
@@ -3966,7 +3701,7 @@ function setBet(id,amt){
   document.querySelectorAll(`#mbets-${id} .m-dd-bet`).forEach(b=>{
     const isOn = parseFloat(b.dataset.bet)===amt;
     b.classList.toggle('on',isOn);
-    b.setAttribute('aria-pressed', isOn);
+    b.setAttribute('aria-pressed', isOn.toString());
   });
   // update display
   const disp=document.getElementById('mbetdisp-'+id);
@@ -4024,7 +3759,7 @@ function toggleAuto(id){
   if(ghBtn){
     ghBtn.textContent=allOn?'⏸ STOP':'AUTO';
     ghBtn.classList.toggle('on',allOn);
-    ghBtn.setAttribute('aria-pressed', allOn);
+    ghBtn.setAttribute('aria-pressed', allOn.toString());
   }
 }
 function scheduleAuto(bot){
@@ -4081,7 +3816,7 @@ async function spinBot(id){
       if (stepEl) stepEl.textContent = '📂 Scanning for tasks...';
 
       try {
-          if (typeof SFX !== 'undefined') SFX.tick();
+          if (typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
           await new Promise(r => setTimeout(r, 2000));
 
           if (window.taskState) {
@@ -4121,14 +3856,16 @@ async function spinBot(id){
   bot.spinning=true;
   try{ if(typeof SFX!=='undefined') SFX.spin(); }catch(e){}
   const spinEl=document.getElementById('mspin-'+id), thinkEl=document.getElementById('mthink-'+id), stepEl=document.getElementById('mstep-'+id);
-  if(spinEl){spinEl.disabled=true;spinEl.classList.add('going');spinEl.textContent='⏳';}
+  if(spinEl){spinEl.disabled=true;spinEl.classList.add('going');spinEl.textContent='⏳'; spinEl.ariaLabel='Fetching live market data...';}
   if(thinkEl) thinkEl.classList.add('show');
   if(stepEl) stepEl.textContent='📡 Fetching live market data…';
   const market=await getMarketData();
 
+  if(spinEl) spinEl.ariaLabel='Running 5-agent ensemble...';
   if(stepEl) stepEl.textContent='🧠 Running 5-agent ensemble…';
   const decision=await callAI(market,bot.bet,id,bot);
 
+  if(spinEl) spinEl.ariaLabel=`Getting real ${decision.token} price...`;
   if(stepEl) stepEl.textContent=`💎 Getting real ${decision.token} price…`;
   let entryPrice=await getLivePrice(decision.token);
   let volumeUsd=1e9, priceChangePct15m=0; // Higher realistic volume for meme coins
@@ -4143,6 +3880,7 @@ async function spinBot(id){
   }
   if(!entryPrice) entryPrice=1;
 
+  if(spinEl) spinEl.ariaLabel='Opening position...';
   if(stepEl) stepEl.textContent='⚡ Opening position…';
   if(thinkEl) thinkEl.classList.remove('show');
 
@@ -4169,7 +3907,7 @@ async function spinBot(id){
   const tick=document.getElementById('mtick-'+id);
   if(tick) tick.textContent=decision.method==='HOLD'?`🧠 HOLD — ${decision.reasoning}`:`⏱ ${decision.token} ${decision.method} @ $${entryPrice.toFixed(entryPrice<1?4:2)}`;
 
-  if(spinEl){spinEl.disabled=false;spinEl.classList.remove('going');spinEl.textContent='🎰 SPIN';}
+  if(spinEl){spinEl.disabled=false;spinEl.classList.remove('going');spinEl.textContent='🎰 SPIN'; spinEl.ariaLabel='Spin bot for trade';}
   bot.spinning=false;
 
   // Execute trade (on-chain if connected, else paper)
@@ -4813,7 +4551,12 @@ function updateAgentCard(botId, agentKey, result){
 function updateConsensusBar(botId, pct, label, color){
   const bar=document.getElementById('cbar-'+botId);
   const lbl=document.getElementById('clab-'+botId);
-  if(bar){ bar.style.width=(pct*100).toFixed(0)+'%'; bar.style.background=color; }
+  if(bar){
+    const val = Math.round(pct*100);
+    bar.style.width=val+'%';
+    bar.style.background=color;
+    bar.setAttribute('aria-valuenow', val.toString());
+  }
   if(lbl) lbl.textContent=label;
 }
 
@@ -5228,7 +4971,7 @@ function renderRegimeTable() {
 
 // ── UI toggles ──
 function toggleLearn() {
-  if(typeof SFX !== 'undefined') SFX.tick();
+  if(typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
   const body = document.getElementById('learnBody');
   const hd = document.getElementById('learnHd');
   const toggle = document.getElementById('learnToggle');
@@ -5566,7 +5309,7 @@ function renderAuditLog() {
 }
 
 function toggleAudit() {
-  if(typeof SFX !== 'undefined') SFX.tick();
+  if(typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
   const body = document.getElementById('auditBody');
   const hd = document.getElementById('auditHd');
   const toggle = document.getElementById('auditToggle');
@@ -5752,12 +5495,16 @@ function updateMatrix() {
   _lastMatrixBotCount = bots.length;
   _lastMatrixOpenCount = openPositions.length;
 
-  const grid = document.getElementById('padGrid');
+  const grid = _getEl('padGrid');
   if (!grid) return;
 
   // ⚡ Bolt Optimization: Use Set for O(1) lookup of bots with open positions
-  // Reduces complexity from O(M * N) to O(M + N) where M=bots, N=positions
-  const botsWithOpen = new Set(openPositions.map(p => p.botId));
+  // Reduces complexity from O(M * N) to O(M + N) where M=bots, N=positions.
+  // We use a manual loop to avoid the intermediate array allocation of .map()
+  const botsWithOpen = new Set();
+  for (let i = 0; i < openPositions.length; i++) {
+    botsWithOpen.add(openPositions[i].botId);
+  }
 
   grid.innerHTML = bots.map((bot, i) => {
     const agentId = String(bot.id).padStart(2, '0');
@@ -5774,13 +5521,15 @@ function updateMatrix() {
         padState = pnl > 0 ? 'pad-hit' : pnl < 0 ? 'pad-miss' : '';
     }
 
+    const botIcon = bot.type === "WORKER" ? "👷" : "🤖";
+    const botLabel = bot.type === "WORKER" ? "Worker Bot" : "Trader Bot";
     return `
       <div class="pad ${padState}" id="pad-${bot.id}"
            role="button" tabindex="0"
            onclick="scrollToBot(${escapeHTML(JSON.stringify(bot.id))})"
            onkeydown="if(event.key==='Enter'||event.key===' ') scrollToBot(${escapeHTML(JSON.stringify(bot.id))})"
            aria-label="Agent ${agentId}, P&L: $${pnl.toFixed(2)}">
-        <span class="pad-agent-id">${bot.type === "WORKER" ? "👷" : "🤖"} AG-${agentId}</span>
+        <span class="pad-agent-id"><span role="img" aria-label="${botLabel}">${botIcon}</span> AG-${agentId}</span>
         <span class="pad-pnl ${pnlClass}" id="pad-pnl-${bot.id}">${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}</span>
       </div>`;
   }).join('');
@@ -5805,7 +5554,7 @@ function scrollToBot(id) {
   el.classList.add('highlight-pulse');
 
   // Play subtle tick
-  if (typeof SFX !== 'undefined') SFX.tick();
+  if (typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
 }
 
 function setVal(id,v){ const e=document.getElementById(id); if(!e) return; if(e && e.textContent !== String(v)) e.textContent=v; }
@@ -5842,7 +5591,7 @@ setInterval(function(){
 const PERSONALITIES = ['AGGRESSIVE','CONSERVATIVE','MOMENTUM','CONTRARIAN','BALANCED'];
 
 function toggleFleetView() {
-  if(typeof SFX !== 'undefined') SFX.tick();
+  if(typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
   const grid = document.getElementById('botGrid');
   const btn = document.getElementById('fleetViewBtn');
   if (!grid) return;
@@ -5854,7 +5603,7 @@ function toggleFleetView() {
 }
 
 function toggleBusPanel() {
-  if(typeof SFX !== 'undefined') SFX.tick();
+  if(typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
   const panel = document.getElementById('busPanel');
   const btn   = document.getElementById('ghBusBtn');
   if (!panel) return;
@@ -5986,52 +5735,7 @@ function busApplyPreset(name) {
   _busStatus(`${labels[name]} applied to ${bots.length} bots`);
 }
 
-// ══════════════════════════════════════════════════════
-// SOUND ENGINE  (Web Audio API — no external files)
-// ══════════════════════════════════════════════════════
-const SFX = (() => {
-  let ctx = null;
-  let enabled = localStorage.getItem('ta_sfx') !== 'false';
 
-  function getCtx() {
-    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
-    if (ctx.state === 'suspended') ctx.resume();
-    return ctx;
-  }
-
-  function tone(freq, type, vol, attack, sustain, decay) {
-    if (!enabled) return;
-    try {
-      const c = getCtx();
-      const osc = c.createOscillator();
-      const gain = c.createGain();
-      osc.connect(gain); gain.connect(c.destination);
-      osc.type = type; osc.frequency.setValueAtTime(freq, c.currentTime);
-      gain.gain.setValueAtTime(0, c.currentTime);
-      gain.gain.linearRampToValueAtTime(vol, c.currentTime + attack);
-      gain.gain.setValueAtTime(vol, c.currentTime + attack + sustain);
-      gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + attack + sustain + decay);
-      osc.start(c.currentTime); osc.stop(c.currentTime + attack + sustain + decay + 0.05);
-    } catch(e) {}
-  }
-
-  function chord(freqs, type, vol, delay=0) {
-    freqs.forEach((f,i) => setTimeout(() => tone(f, type, vol, 0.01, 0.08, 0.25), i*delay));
-  }
-
-  return {
-    get enabled() { return enabled; },
-    toggle() { enabled = !enabled; localStorage.setItem('ta_sfx', enabled ? 'true' : 'false'); return enabled; },
-    spin()       { tone(220,'sawtooth',0.08,0.01,0.04,0.12); setTimeout(()=>tone(330,'sawtooth',0.06,0.01,0.04,0.1),80); },
-    tradeOpen()  { chord([440,554,659],'sine',0.12,60); },
-    win()        { chord([523,659,784,1047],'sine',0.15,55); setTimeout(()=>tone(1047,'sine',0.1,0.01,0.15,0.3),280); },
-    bigWin()     { [523,659,784,1047,1319].forEach((f,i)=>setTimeout(()=>tone(f,'sine',0.18,0.01,0.12,0.25),i*60)); },
-    loss()       { tone(220,'sawtooth',0.1,0.01,0.05,0.18); setTimeout(()=>tone(165,'sawtooth',0.08,0.01,0.05,0.3),120); },
-    stopLoss()   { [330,220,165].forEach((f,i)=>setTimeout(()=>tone(f,'square',0.1,0.01,0.06,0.2),i*90)); },
-    takeProfit() { chord([659,784,1047],'triangle',0.14,70); },
-    tick()       { tone(880,'sine',0.04,0.005,0.01,0.05); },
-  };
-})();
 
 // ══════════════════════════════════════════════════════
 // ANIMATION ENGINE
@@ -6088,49 +5792,7 @@ const FX = (() => {
   return { pnlFlyUp, flash, shake, confetti };
 })();
 
-// ══════════════════════════════════════════════════════
-// VOICE ENGINE  (SpeechSynthesis — no API key needed)
-// ══════════════════════════════════════════════════════
-const VOICE = (() => {
-  let enabled = localStorage.getItem('ta_voice') === 'true';
-  let voice = null;
 
-  function pickVoice() {
-    const voices = speechSynthesis.getVoices();
-    voice = voices.find(v => v.lang.startsWith('en') && /male/i.test(v.name))
-         || voices.find(v => v.lang.startsWith('en'))
-         || voices[0] || null;
-  }
-  if (typeof speechSynthesis !== 'undefined') {
-    if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = pickVoice;
-    pickVoice();
-  }
-
-  function say(text, rate=1.05, pitch=1) {
-    if (!enabled || typeof speechSynthesis === 'undefined') return;
-    try {
-      speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text);
-      u.voice = voice; u.rate = rate; u.pitch = pitch; u.volume = 0.9;
-      speechSynthesis.speak(u);
-    } catch(e) {}
-  }
-
-  function fmt(n) {
-    const a = Math.abs(n);
-    return '$' + (a >= 100 ? a.toFixed(0) : a >= 10 ? a.toFixed(1) : a.toFixed(2));
-  }
-
-  return {
-    get enabled() { return enabled; },
-    toggle() { enabled = !enabled; localStorage.setItem('ta_voice', enabled?'true':'false'); return enabled; },
-    tradeOpen(bot, token, method) { say(`Bot ${bot}, ${method.toLowerCase()} on ${token}`, 1.1); },
-    win(bot, amount)   { say(amount > 20 ? `Big win! ${fmt(amount)} profit, bot ${bot}` : `Bot ${bot} wins ${fmt(amount)}`, 1.05); },
-    loss(bot, amount)  { say(`Bot ${bot} lost ${fmt(amount)}`, 0.95, 0.85); },
-    stopLoss(bot)      { say(`Stop loss, bot ${bot}`, 1.0, 0.8); },
-    takeProfit(bot)    { say(`Take profit hit, bot ${bot}`, 1.1, 1.1); },
-  };
-})();
 
 // Inject keyframe animations
 (function() {
@@ -6145,45 +5807,9 @@ const VOICE = (() => {
 })();
 
 // Sound/Voice toggle buttons in header
-function _injectAVControls() {
-  if (document.getElementById('avControls')) return;
-  const hdr = document.querySelector('.global-header');
-  if (!hdr) return;
-
-  // Hide the legacy music button if it exists
-  const legacyMusic = document.getElementById('musicToggleBtn');
-  if (legacyMusic) legacyMusic.style.display = 'none';
-
-  const wrap = document.createElement('div');
-  wrap.id = 'avControls';
-  wrap.style.cssText = 'display:flex;gap:4px;flex-shrink:0';
-  const btnStyle = 'width:26px;height:26px;border:1px solid var(--border);border-radius:4px;background:var(--chrome);color:var(--dim);font-size:13px;cursor:pointer;transition:all .15s';
-
-  const sfxOn = typeof SFX !== 'undefined' && SFX.enabled;
-  const voiceOn = typeof VOICE !== 'undefined' && VOICE.enabled;
-  const audioOn = typeof ACOUSTIC !== 'undefined' && ACOUSTIC.getConfig().audio.enabled;
-
-  wrap.innerHTML = `
-    <button id="sfxBtn" style="${btnStyle}" class="${sfxOn?'av-on':''}" title="Sound Effects" aria-label="Toggle Sound Effects" aria-pressed="${sfxOn}"
-      onclick="if(typeof ACOUSTIC!=='undefined'){ ACOUSTIC.toggleSFX(); const isOn=ACOUSTIC.getConfig().sfx.enabled; this.classList.toggle('av-on', isOn); this.setAttribute('aria-pressed', isOn); }">🔊</button>
-    <button id="voiceBtn" style="${btnStyle}" class="${voiceOn?'av-on':''}" title="Voice Announcements" aria-label="Toggle Voice Announcements" aria-pressed="${voiceOn}"
-      onclick="if(typeof ACOUSTIC!=='undefined'){ ACOUSTIC.toggleVOICE(); const isOn=ACOUSTIC.getConfig().voice.enabled; this.classList.toggle('av-on', isOn); this.setAttribute('aria-pressed', isOn); }">🎙️</button>
-    <button id="audioBtn" style="${btnStyle}" class="${audioOn?'av-on':''}" title="Acoustic Core Sequencer" aria-label="Toggle Acoustic Core Sequencer" aria-pressed="${audioOn}"
-      onclick="if(typeof ACOUSTIC!=='undefined'){ ACOUSTIC.toggleAudio(); const isOn=ACOUSTIC.getConfig().audio.enabled; this.classList.toggle('av-on', isOn); this.setAttribute('aria-pressed', isOn); }">🎹</button>`;
-
-  const gen = document.getElementById('genBadge');
-  if (gen) hdr.insertBefore(wrap, gen); else hdr.appendChild(wrap);
-
-  const st = document.createElement('style');
-  st.textContent = '#avControls .av-on{border-color:var(--cyan)!important;color:var(--cyan)!important;background:rgba(0,255,231,.08)!important}';
-  document.head.appendChild(st);
-}
-
 function toggleBackgroundMusic() {
   if (typeof ACOUSTIC !== 'undefined') {
     ACOUSTIC.toggleAudio();
-    const btn = document.getElementById('audioBtn');
-    if (btn) btn.classList.toggle('av-on', ACOUSTIC.getConfig().audio.enabled);
   }
 }
 
@@ -6206,11 +5832,12 @@ document.addEventListener('keydown', function(e) {
 
 <!-- ACOUSTIC Audio-Visual Engines -->
 <script src="acoustic-bundle.js" defer></script>
+<script src="ACOUSTIC_CORE.js" defer></script>
 <script src="trading-bundle.js" defer></script>
 <script src="management-bundle.js" defer></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  checkAutoLogin();
+  // checkAutoLogin(); // Legacy removed
   // privyInit(); // Lazy loaded on interaction now
 });
 </script>
@@ -6244,7 +5871,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script>
 function toggleVoiceAgent() {
-  if(typeof SFX !== 'undefined') SFX.tick();
+  if(typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
   const modal = document.getElementById('voiceAgentModal');
   const btn = document.getElementById('voiceAgentBtn');
   if (!modal) return;
@@ -6377,7 +6004,7 @@ Respond in JSON format:
 
 // ═══ SETTINGS MODAL FUNCTIONS ═══
 function toggleSettingsModal() {
-    if(typeof SFX !== 'undefined') SFX.tick();
+    if(typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
     const modal = document.getElementById('settingsModal');
     if (!modal) return;
     const isOpening = modal.style.display === 'none' || modal.style.display === '';
@@ -6391,6 +6018,8 @@ function toggleSettingsModal() {
     }
 
     if (isOpening) refreshSettingsUI();
+    try{ if(typeof renderTaskCenter === "function") renderTaskCenter(); }catch(e){}
+
 }
 function refreshSettingsUI() {
     const ws = document.getElementById('settingsWalletStatus');
@@ -6405,8 +6034,12 @@ function refreshSettingsUI() {
     if (openAiInput) openAiInput.value = localStorage.getItem('ta_openai_key') || '';
     const geminiInput = document.getElementById('settingsGeminiKey');
     const zeroExInput = document.getElementById('settingsZeroExKey');
+    const taskSecretInput = document.getElementById('settingsTaskSecret');
+    const payoutManagerInput = document.getElementById('settingsPayoutManager');
     if (geminiInput) geminiInput.value = localStorage.getItem('ta_gemini_key') || '';
     if (zeroExInput) zeroExInput.value = localStorage.getItem('ta_0x_api_key') || '';
+    if (taskSecretInput) taskSecretInput.value = localStorage.getItem('ta_task_secret') || '';
+    if (payoutManagerInput) payoutManagerInput.value = localStorage.getItem('ta_payout_manager_address') || '';
     const breakerStatus = document.getElementById('settingsBreakerStatus');
     const breakerFailures = document.getElementById('settingsBreakerFailures');
     if (breakerStatus && breakerFailures && typeof API_CB !== 'undefined') {
@@ -6432,10 +6065,10 @@ function refreshSettingsUI() {
     const audioOn = cfg ? cfg.audio.enabled : false;
     const b1 = document.getElementById('settingsSfxBtn');
     const b2 = document.getElementById('settingsVoiceBtn');
-    const b3 = document.getElementById('settingsMusicBtn');
-    if (b1) b1.classList.toggle('active', sfxOn);
-    if (b2) b2.classList.toggle('active', voiceOn);
-    if (b3) b3.classList.toggle('active', audioOn);
+    const b3 = document.getElementById('settingsAudioBtn');
+    if (b1) { b1.classList.toggle('active', sfxOn); b1.setAttribute('aria-pressed', sfxOn.toString()); }
+    if (b2) { b2.classList.toggle('active', voiceOn); b2.setAttribute('aria-pressed', voiceOn.toString()); }
+    if (b3) { b3.classList.toggle('active', audioOn); b3.setAttribute('aria-pressed', audioOn.toString()); }
 }
 function applyTheme(theme) {
     const root = document.documentElement;
@@ -6464,6 +6097,8 @@ function saveSettingsApiKeys() {
     const oaInput = document.getElementById('settingsOpenAiKey');
     const gemInput = document.getElementById('settingsGeminiKey');
     const zxInput = document.getElementById('settingsZeroExKey');
+    const tsInput = document.getElementById('settingsTaskSecret');
+    const pmInput = document.getElementById('settingsPayoutManager');
 
     if (antInput) {
         const val = antInput.value.trim();
@@ -6479,9 +6114,16 @@ function saveSettingsApiKeys() {
     if (zxInput) {
         localStorage.setItem('ta_0x_api_key', zxInput.value.trim());
     }
+    if (tsInput) {
+        window._taskSecret = tsInput.value.trim();
+        localStorage.removeItem('ta_task_secret');
+    }
+    if (pmInput) {
+        localStorage.setItem('ta_payout_manager_address', pmInput.value.trim());
+    }
 
     const el = document.getElementById('apiTestResult');
-    if (el) { el.textContent = '✅ All keys saved'; el.style.color = 'var(--green)'; }
+    if (el) { el.textContent = '✅ Settings saved (task secret kept in-memory only)'; el.style.color = 'var(--green)'; }
 
     // Re-initialize AI and Execution configs
     if (typeof reinitializeConfigs === "function") reinitializeConfigs();
@@ -6524,10 +6166,10 @@ function toggleSettingsVoice() {
         btn.setAttribute('aria-pressed', isOn.toString());
     }
 }
-function toggleSettingsMusic() {
+function toggleSettingsAudio() {
     if (typeof ACOUSTIC === 'undefined') return;
     ACOUSTIC.toggleAudio();
-    const btn = document.getElementById('settingsMusicBtn');
+    const btn = document.getElementById('settingsAudioBtn');
     if (btn) {
         const isOn = ACOUSTIC.getConfig().audio.enabled;
         btn.classList.toggle('active', isOn);
@@ -6542,13 +6184,14 @@ function updateSettingsVolume(val) {
         if (window.VOICE && window.VOICE.setVolume) window.VOICE.setVolume(vol / 100);
     }
 }
+</script>
 
 <!-- ══ SETTINGS MODAL ══ -->
 <div id="settingsModal" style="display:none">
   <div class="settings-panel">
     <div class="settings-hd">
       <span class="settings-title">⚙ SETTINGS</span>
-      <button class="m-close" onclick="toggleSettingsModal()" aria-label="Close Settings" title="Close Settings">✕</button>
+      <button class="m-close" onclick="window.toggleSettingsModal && toggleSettingsModal()" aria-label="Close Settings" title="Close Settings">✕</button>
     </div>
     <div class="settings-bd">
       <div class="settings-section">
@@ -6561,42 +6204,80 @@ function updateSettingsVolume(val) {
       <div class="settings-section">
         <div class="settings-section-title">🔑 API Configuration</div>
 
-        <div style="margin-bottom:8px">
+
+
+        <div style="margin-bottom:12px">
           <div style="display:flex; justify-content:space-between; font-size:8px; color:var(--dim); margin-bottom:2px">
-            <span>ANTHROPIC (CLAUDE)</span>
+            <label for="settingsApiKey">ANTHROPIC (CLAUDE)</label>
             <div style="display:flex;gap:8px">
               <button onclick="toggleVisibility('settingsApiKey', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
+              <button onclick="copyToClipboard('settingsApiKey', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
               <a href="https://console.anthropic.com" target="_blank" style="color:var(--cyan)">Get Key →</a>
             </div>
           </div>
           <input type="password" id="settingsApiKey" placeholder="sk-ant-..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
         </div>
 
-        <div style="margin-bottom:8px">
+        <div style="margin-bottom:12px">
           <div style="display:flex; justify-content:space-between; font-size:8px; color:var(--dim); margin-bottom:2px">
-            <span>OPENAI (GPT-4)</span>
-            <a href="https://platform.openai.com/api-keys" target="_blank" style="color:var(--cyan)">Get Key →</a>
+            <label for="settingsOpenAiKey">OPENAI (GPT-4)</label>
+            <div style="display:flex;gap:8px">
+              <button onclick="toggleVisibility('settingsOpenAiKey', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
+              <button onclick="copyToClipboard('settingsOpenAiKey', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
+              <a href="https://platform.openai.com/api-keys" target="_blank" style="color:var(--cyan)">Get Key →</a>
+            </div>
           </div>
           <input type="password" id="settingsOpenAiKey" placeholder="sk-..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
         </div>
 
         <div style="margin-bottom:12px">
           <div style="display:flex; justify-content:space-between; font-size:8px; color:var(--dim); margin-bottom:2px">
-            <span>GOOGLE (GEMINI)</span>
-            <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--cyan)">Get Key →</a>
+            <label for="settingsGeminiKey">GOOGLE (GEMINI)</label>
+            <div style="display:flex;gap:8px">
+              <button onclick="toggleVisibility('settingsGeminiKey', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
+              <button onclick="copyToClipboard('settingsGeminiKey', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
+              <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--cyan)">Get Key →</a>
+            </div>
           </div>
           <input type="password" id="settingsGeminiKey" placeholder="AIza..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
         </div>
 
         <div style="margin-bottom:12px">
           <div style="display:flex; justify-content:space-between; font-size:8px; color:var(--dim); margin-bottom:2px">
-            <span>0x API (SWAPS)</span>
-            <a href="https://dashboard.0x.org" target="_blank" style="color:var(--cyan)">Get Key →</a>
+            <label for="settingsZeroExKey">0x API (SWAPS)</label>
+            <div style="display:flex;gap:8px">
+              <button onclick="toggleVisibility('settingsZeroExKey', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
+              <button onclick="copyToClipboard('settingsZeroExKey', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
+              <a href="https://dashboard.0x.org" target="_blank" style="color:var(--cyan)">Get Key →</a>
+            </div>
           </div>
-          <input type="password" id="settingsZeroExKey" placeholder="0x-api-key-..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:&#039;Share Tech Mono&#039;,monospace; font-size:10px">
+          <input type="password" id="settingsZeroExKey" placeholder="0x-api-key-..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
         </div>
 
-        <div style="display:flex; gap:6px">
+        <div style="margin-bottom:12px">
+          <div style="display:flex; justify-content:space-between; font-size:8px; color:var(--dim); margin-bottom:2px">
+            <label for="settingsTaskSecret">TASK REWARD SECRET (BOUNTIES)</label>
+            <div style="display:flex;gap:8px">
+              <button onclick="toggleVisibility('settingsTaskSecret', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
+              <button onclick="copyToClipboard('settingsTaskSecret', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
+              <span style="color:var(--amber)">Secure Server Auth</span>
+            </div>
+          </div>
+          <input type="password" id="settingsTaskSecret" placeholder="Enter payout validation secret..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
+        </div>
+
+        <div style="margin-bottom:12px">
+          <div style="display:flex; justify-content:space-between; font-size:8px; color:var(--dim); margin-bottom:2px">
+            <label for="settingsPayoutManager">PAYOUT MANAGER (ON-CHAIN)</label>
+            <div style="display:flex;gap:8px">
+              <button onclick="copyToClipboard('settingsPayoutManager', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
+              <span style="color:var(--cyan)">Contract Address</span>
+            </div>
+          </div>
+          <input type="text" id="settingsPayoutManager" placeholder="0x..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
+        </div>
+
+        <div style="display:flex; gap:6px"><div style="display:flex; gap:6px">
           <button onclick="saveSettingsApiKeys()" style="flex:1; padding:8px; background:var(--chrome); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Bungee',display; font-size:10px; cursor:pointer">SAVE ALL KEYS</button>
           <button onclick="testSettingsApiKey()" style="padding:8px 15px; background:var(--chrome); border:1px solid var(--border); color:var(--dim); border-radius:4px; font-family:'Bungee',display; font-size:10px; cursor:pointer">TEST CLAUDE</button>
         </div>
@@ -6626,7 +6307,7 @@ function updateSettingsVolume(val) {
         <div style="display:flex;gap:6px;flex-wrap:wrap">
           <button id="settingsSfxBtn" class="sound-toggle active" onclick="toggleSettingsSfx()">🔊 SFX</button>
           <button id="settingsVoiceBtn" class="sound-toggle" onclick="toggleSettingsVoice()">🗣️ Voice</button>
-          <button id="settingsMusicBtn" class="sound-toggle" onclick="toggleSettingsMusic()">🎹 Music</button>
+          <button id="settingsAudioBtn" class="sound-toggle" onclick="toggleSettingsAudio()">🎹 Audio</button>
         </div>
       </div>
     </div>

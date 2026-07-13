@@ -10,3 +10,11 @@ node_modules
 .env
 public/arena-react-bundle.js
 public/arena-react-bundle.js.map
+
+# Foundry build folders
+contracts/out/
+contracts/cache/
+contracts/foundry.lock
+
+# Local foundry binaries and config
+.foundry/

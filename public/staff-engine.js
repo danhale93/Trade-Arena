@@ -77,10 +77,10 @@ class StaffEngine {
         this.logs = [];
         this.isScanning = false;
         this.rpcStatus = {
-            current: 'Primary (Base)',
+            current: 'Alchemy',
             latency: 42,
             health: 'Excellent',
-            providers: ['Base RPC', 'Alchemy', 'Infura', 'Ankr', 'QuickNode']
+            providers: ['Alchemy', 'Base RPC', 'Infura', 'Ankr', 'QuickNode']
         };
         this.errorCount = 0;
         this.lastAutoUpdate = Date.now();
