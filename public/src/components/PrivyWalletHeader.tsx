@@ -15,6 +15,8 @@ declare global {
     privyLoginGoogle: () => void;
     privyLoginApple: () => void;
     privyLogout: () => void;
+    isPrivyConnected: () => boolean;
+    getPrivyAddress: () => string | null;
   }
 }
 
@@ -54,11 +56,13 @@ export const PrivyWalletHeader = () => {
   // Expose bridge functions to the global scope for legacy JavaScript environment synchronization
   useEffect(() => {
     window.privyInit = () => console.log('[Privy] Trade Arena bridge activated');
-    window.privyLogin = () => login(); // Generic login entry
+    window.privyLogin = () => login({ loginMethod: 'google' }); // Prioritize Google login as requested
     window.privyLoginGoogle = () => login({ loginMethod: 'google' });
     window.privyLoginApple = () => login({ loginMethod: 'apple' });
     window.privyLogout = logout;
-  }, [login, logout]);
+    window.isPrivyConnected = () => authenticated && !!embeddedWallet;
+    window.getPrivyAddress = () => embeddedWallet?.address || null;
+  }, [login, logout, authenticated, embeddedWallet]);
 
   // Handle session cleanup upon logout
   useEffect(() => {
@@ -117,7 +121,7 @@ export const PrivyWalletHeader = () => {
   }, [authenticated, user, embeddedWallet]);
 
   // Loading state: Privy SDK initialization
-  if (!ready || (authenticated && !walletsReady)) {
+  if (!ready) {
     return (
       <div className="gh-controls">
         <div style={{ fontSize: '10px', color: 'var(--dim)', fontFamily: 'Share Tech Mono' }}>
