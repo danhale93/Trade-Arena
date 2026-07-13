@@ -2149,6 +2149,15 @@ function showExitResult(pos, bot) {
     blEl.style.color=better.length?'var(--green)':'var(--hot)';
   }
   rEl.classList.add('show');
+
+  if(pos.isWin) {
+    if(window.FX && window.FX.confetti) FX.confetti(window.innerWidth/2, window.innerHeight/2);
+  } else {
+    if(window.FX && window.FX.shake) {
+      const card = document.getElementById('bot-' + pos.botId);
+      if(card) FX.shake(card);
+    }
+  }
 }
 
 // ══════════════════════════════════════════════════════
@@ -3304,6 +3313,8 @@ async function claimPayout() {
     const data = await res.json();
     if (data.success) {
       if (window.showToast) window.showToast('Payout authorized! Check tx on Base.', 'success');
+      if (window.FX && window.FX.confetti) FX.confetti(window.innerWidth / 2, window.innerHeight / 2);
+      if (window.FX && window.FX.flash) FX.flash('var(--green)', 400);
       console.log('Payout data:', data.data);
     } else {
       throw new Error(data.error || 'Claim failed');
@@ -3443,6 +3454,7 @@ function updateBotPnl(bot){
 // ══════════════════════════════════════════════════════
 function addBot(type = 'TRADER', silent = false){
   if(!silent && typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
+  if(!silent && window.FX && window.FX.flash) FX.flash('rgba(0,255,231,0.1)', 150);
   if(bots.length>=MAX_BOTS) {
     if(!silent && window.showToast) showToast(`Maximum bot limit reached (${MAX_BOTS})`, 'error');
     return;
