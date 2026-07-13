@@ -21,3 +21,7 @@ Action: Integrated payout claim logic directly into the header for high visibili
 ## 2026-07-11 - Safeguarding Destructive Actions and Enhancing Critical Feedback
 **Learning:** Destructive actions like decommissioning a bot require a friction point (`confirm`) to prevent accidental data loss, especially in high-density dashboards. Conversely, critical system-wide events like an "Emergency Stop" benefit from amplified sensory feedback (e.g., a screen flash) to provide immediate, undeniable confirmation of the action's success.
 **Action:** Always implement confirmation dialogs for destructive individual actions and use global visual effects (like `FX.flash`) to emphasize high-stakes system state transitions.
+
+## 2026-07-13 - Multi-Modal Delight Feedback
+**Learning:** For a high-density trading dashboard, visual feedback should be localized to the point of action (e.g., shaking a bot card on loss) as well as global (confetti) to provide immediate sensory confirmation without breaking the user's focus on specific agents.
+**Action:** Use localized effects like `FX.shake(el)` for individual bot events and global effects like `FX.confetti` for high-stakes wins or system-level successes.
