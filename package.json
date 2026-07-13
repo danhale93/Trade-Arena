@@ -9,7 +9,8 @@
     "test": "node tests.js",
     "proxy": "node proxy.js",
     "serve": "npx serve .",
-    "build": "esbuild public/src/main.tsx --bundle --outfile=public/arena-react-bundle.js --minify --sourcemap --loader:.tsx=tsx --loader:.jsx=jsx"
+    "build": "esbuild public/src/main.tsx --bundle --outfile=public/arena-react-bundle.js --minify --sourcemap --loader:.tsx=tsx --loader:.jsx=jsx",
+    "postinstall": "npm run build"
   },
   "dependencies": {
     "@biconomy/abstractjs": "^1.2.4",
@@ -26,11 +27,11 @@
     "react-dom": "^19.2.7",
     "viem": "^2.54.3",
     "websocket": "^1.0.35",
-    "zod": "3.25.76"
+    "zod": "3.25.76",
+    "esbuild": "^0.28.1"
   },
   "devDependencies": {
     "concurrently": "^10.0.3",
-    "esbuild": "^0.28.1",
     "playwright": "^1.61.1"
   }
 }
