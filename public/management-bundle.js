@@ -67,6 +67,9 @@ async function claimFaucet() {
     }
 }
 
+// ── Secure Storage Decoder ──
+const _cfg_d = (s) => { try { return s ? atob(s) : ''; } catch(e) { return s; } };
+
 async function completeTask(taskId) {
     try {
         await fetch(`${API_BASE}/api/tasks/claim`, {
@@ -76,7 +79,7 @@ async function completeTask(taskId) {
                 taskId,
                 reward: 0,
                 userAddress: window.ethereum?.selectedAddress || 'demo',
-                validationToken: localStorage.getItem('ta_task_secret') || ''
+                validationToken: _cfg_d(localStorage.getItem('ta_task_secret')) || ''
             })
         });
         fetchDeployments();
