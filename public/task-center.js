@@ -154,6 +154,9 @@ async function submitTaskToBackend(quest) {
             if (window.showToast) window.showToast("Please connect a wallet to claim rewards", "error");
             return;
         }
+        // ── Secure Storage Decoder ──
+        const _cfg_d = (s) => { try { return s ? atob(s) : ''; } catch(e) { return s; } };
+
         const resp = await fetch(`${API_BASE}/api/tasks/claim`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -161,7 +164,7 @@ async function submitTaskToBackend(quest) {
                 taskId: quest.id,
                 reward: quest.reward,
                 userAddress: userAddress,
-                validationToken: localStorage.getItem('ta_task_secret') || ''
+                validationToken: _cfg_d(localStorage.getItem('ta_task_secret')) || ''
             })
         });
         const data = await resp.json();
