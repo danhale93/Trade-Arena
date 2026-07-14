@@ -35,35 +35,38 @@ export const PrivyWalletHeader = () => {
   const lastKnownAddress = useRef<string | null>(null);
 
   /**
-   * REQUIREMENT 2: Isolate the Privy embedded wallet.
-   * We utilize the useWallets hook to specifically identify the 'privy' wallet client type,
-   * ensuring the Trade Arena interacts with the user's secure embedded wallet.
+   * SENIOR WEB3 PATTERN: Isolated Embedded Wallet Hook
+   * We specifically target the 'privy' client type to ensure the Arena interacts
+   * only with the secure, non-custodial embedded wallet, bypassing external EOA interference.
    */
   const embeddedWallet = useMemo(() => {
-    if (!walletsReady) return null;
-    return wallets.find((w) => w.walletClientType === 'privy');
-  }, [wallets, walletsReady]);
+    return wallets.find((w) => w.walletClientType === 'privy') || null;
+  }, [wallets]);
 
   /**
-   * REQUIREMENT 3: Format truncated address.
-   * Derived from the isolated embedded wallet address using a standard truncated format (0x1234...abcd).
+   * REQUIREMENT 3: Standard Web3 Address Truncation (0x1234...abcd)
    */
   const truncatedAddress = useMemo(() => {
-    if (!embeddedWallet?.address) return '0x0000...0000';
+    if (!embeddedWallet?.address) return 'Connecting...';
     const addr = embeddedWallet.address;
-    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+    return `${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}`;
   }, [embeddedWallet?.address]);
+
+  // Derived user identity for display
+  const userIdentifier = useMemo(() => {
+    return user?.google?.email || user?.email?.address || 'Arena Trader';
+  }, [user]);
 
   // Expose bridge functions to the global scope for legacy JavaScript environment synchronization
   useEffect(() => {
-    window.privyInit = () => console.log('[Privy] Trade Arena bridge activated');
-    window.privyLogin = () => login({ loginMethod: 'google' }); // Prioritize Google login as requested
+    window.privyInit = () => console.log('🎨 Palette: Trade Arena bridge activated');
+    window.privyLogin = () => login({ loginMethod: 'google' });
     window.privyLoginGoogle = () => login({ loginMethod: 'google' });
     window.privyLoginApple = () => login({ loginMethod: 'apple' });
     window.privyLogout = logout;
     window.isPrivyConnected = () => authenticated && !!embeddedWallet;
     window.getPrivyAddress = () => embeddedWallet?.address || null;
-  }, [login, logout, authenticated, embeddedWallet]);
+  }, [login, logout, authenticated, !!embeddedWallet]);
 
   // Handle session cleanup upon logout
   useEffect(() => {
@@ -149,13 +152,12 @@ export const PrivyWalletHeader = () => {
 
   /**
    * REQUIREMENT 4: Graceful loading state for wallet provisioning.
-   * Displayed when the user is logged in but the embedded wallet is still being initialized.
    */
-  if (!embeddedWallet) {
+  if (authenticated && !embeddedWallet) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '0 4px' }}>
         <div className="gh-name" style={{ fontSize: '10px', color: 'var(--cyan)', whiteSpace: 'nowrap' }}>
-          {user?.google?.email || user?.email?.address || 'Authenticating...'}
+          {userIdentifier}
         </div>
         <div style={{ fontSize: '8px', color: 'var(--amber)', fontFamily: 'Share Tech Mono', letterSpacing: '0.5px' }}>
           Initializing arena wallet...
@@ -170,7 +172,7 @@ export const PrivyWalletHeader = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '0 4px' }}>
       <div className="gh-name" style={{ fontSize: '10px', color: 'var(--cyan)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-        {user?.google?.email || user?.email?.address || 'Arena Trader'}
+        {userIdentifier}
       </div>
       <div style={{ fontSize: '9px', color: 'var(--dim)', fontFamily: 'Share Tech Mono', display: 'flex', alignItems: 'center' }}>
         <span style={{ color: 'var(--gold)', marginRight: '4px' }} role="img" aria-label="wallet">💳</span>
