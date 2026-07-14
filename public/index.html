@@ -2261,7 +2261,8 @@ function _runUpdateQuantReport() {
 }
 
 function setMCard(cardId, valId, subId, val, sub, cls) {
-  const c=document.getElementById(cardId);
+  // ⚡ Bolt Optimization: Use _getEl cache to avoid redundant DOM lookups
+  const c = _getEl(cardId);
   const nextClass = 'mcard ' + cls;
   if(c && c.className !== nextClass) c.className = nextClass;
   if(valId) setVal(valId,val);
@@ -2269,8 +2270,10 @@ function setMCard(cardId, valId, subId, val, sub, cls) {
 }
 
 function drawEquityCurve(preMin, preMax) {
-  const svg=document.getElementById('eqSvg');
-  const line=document.getElementById('eqLine'); const fill=document.getElementById('eqFill');
+  // ⚡ Bolt Optimization: Use _getEl cache to avoid redundant DOM lookups
+  const svg = _getEl('eqSvg');
+  const line = _getEl('eqLine');
+  const fill = _getEl('eqFill');
   if(!svg||equityHistory.length<2) return;
   const W=svg.clientWidth||340, H=72;
 
@@ -2304,7 +2307,7 @@ function drawEquityCurve(preMin, preMax) {
   fill.setAttribute('fill',isUp?'rgba(57,255,20,.05)':'rgba(255,45,120,.05)');
   // baseline
   const baseY=H-((startBalance-min)/range)*(H-6)-3;
-  const bl=document.getElementById('eqBaseline');
+  const bl = _getEl('eqBaseline');
   if(bl){ bl.setAttribute('y1',baseY.toFixed(1)); bl.setAttribute('y2',baseY.toFixed(1)); }
 }
 
@@ -2388,6 +2391,7 @@ function drawStratBreakdown(byStrat) {
 }
 
 function drawReturnDist(returns, preMin, preMax) {
+  // ⚡ Bolt Optimization: Use _getEl cache to avoid redundant DOM lookups
   const n=returns.length;
   if(n<5) return;
 
@@ -2406,7 +2410,8 @@ function drawReturnDist(returns, preMin, preMax) {
   const counts=Array(bins).fill(0);
   returns.forEach(r=>{ const i=Math.min(Math.floor((r-min)/size),bins-1); counts[i]++; });
   const maxC=Math.max(...counts);
-  const el=document.getElementById('distBars');
+  const el = _getEl('distBars');
+  if (!el) return;
   el.innerHTML=counts.map((c,i)=>{
     const pct=(c/maxC*100)||0;
     const center=min+(i+0.5)*size;
@@ -5582,7 +5587,13 @@ function scrollToBot(id) {
   if (typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
 }
 
-function setVal(id,v){ const e=document.getElementById(id); if(!e) return; if(e && e.textContent !== String(v)) e.textContent=v; }
+function setVal(id,v){
+  // ⚡ Bolt Optimization: Use _getEl cache to avoid redundant DOM lookups
+  const e = _getEl(id);
+  if(!e) return;
+  const s = String(v);
+  if(e.textContent !== s) e.textContent = s;
+}
 function spawnParticles(win,botId){
   const syms=win?['💰','🪙','✨','💎','🔥']:['💀','📉','💸','😤','❌'];
   const card=document.getElementById('bot-'+botId),rect=card?.getBoundingClientRect();
