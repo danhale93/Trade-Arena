@@ -51,3 +51,7 @@ Action: Implemented dual-mode trading system with real on-chain execution, batch
 ## 2026-07-13 - Consolidated Header Ticker and O(N) Traversals
 **Learning:** Consolidating disparate O(N) traversals (like P&L calculation and nearest exit search) into a single pass not only reduces CPU cycles but also provides a natural point for synchronizing related DOM updates into a single `requestAnimationFrame` block. This eliminates potential visual "stutter" where different parts of a component (like a header) update in different display frames.
 **Action:** When multiple metrics depend on the same dataset (e.g., `openPositions`), always prefer a manual `for` loop that aggregates all required data in a single pass, and perform all associated UI writes within the same animation frame.
+
+## 2026-07-13 - Static Map Allocation and DOM Cache Consistency
+**Learning:** In high-frequency price synchronization loops, re-declaring object literals (like token-to-ID maps) inside getter methods creates significant garbage collection pressure. Furthermore, while a DOM cache (`_getEl`) may exist, inconsistent usage across utility functions (like `setVal`) negates its benefits and leads to redundant DOM tree traversals.
+**Action:** Always move static configuration objects out of hot method scopes. Enforce the use of centralized DOM caching (`_getEl`) in all global UI utility functions to ensure O(1) element access.

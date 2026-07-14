@@ -280,6 +280,20 @@ class AutoRecovery {
 // REAL MARKET PRICING & LIVE PRICE TRACKING
 // ══════════════════════════════════════════════════════
 
+// ⚡ Bolt Optimization: Static map to avoid redundant object allocations in getPrice()
+const MARKET_TOKEN_MAP = {
+  ETH: "ethereum",
+  BTC: "bitcoin",
+  SOL: "solana",
+  DOGE: "dogecoin",
+  PEPE: "pepe",
+  WIF: "dogwifcoin",
+  BONK: "bonk",
+  FLOKI: "floki",
+  ARB: "arbitrum",
+  MATIC: "matic-network",
+};
+
 class RealMarketPricing {
   constructor() {
     this.priceCache = {};
@@ -353,20 +367,8 @@ class RealMarketPricing {
   }
 
   getPrice(token) {
-    const tokenMap = {
-      ETH: "ethereum",
-      BTC: "bitcoin",
-      SOL: "solana",
-      DOGE: "dogecoin",
-      PEPE: "pepe",
-      WIF: "dogwifcoin",
-      BONK: "bonk",
-      FLOKI: "floki",
-      ARB: "arbitrum",
-      MATIC: "matic-network",
-    };
-
-    const id = tokenMap[token] || token.toLowerCase();
+    // ⚡ Bolt Optimization: Use MARKET_TOKEN_MAP constant instead of local object allocation
+    const id = MARKET_TOKEN_MAP[token] || token.toLowerCase();
     const price = this.priceCache[id]?.usd;
     return price || null;
   }
