@@ -36,7 +36,7 @@ export const PrivyWalletHeader = () => {
 
   /**
    * SENIOR WEB3 PATTERN: Isolated Embedded Wallet Hook
-   * We specifically target the 'privy' client type to ensure the Arena interacts
+   * REQUIREMENT 2: We specifically target the 'privy' client type to ensure the Arena interacts
    * only with the secure, non-custodial embedded wallet, bypassing external EOA interference.
    */
   const embeddedWallet = useMemo(() => {
@@ -47,9 +47,9 @@ export const PrivyWalletHeader = () => {
    * REQUIREMENT 3: Standard Web3 Address Truncation (0x1234...abcd)
    */
   const truncatedAddress = useMemo(() => {
-    if (!embeddedWallet?.address) return 'Connecting...';
-    const addr = embeddedWallet.address;
-    return `${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}`;
+    const addr = embeddedWallet?.address;
+    if (!addr) return '0x...';
+    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   }, [embeddedWallet?.address]);
 
   // Derived user identity for display
@@ -124,8 +124,8 @@ export const PrivyWalletHeader = () => {
     }
   }, [authenticated, user, embeddedWallet]);
 
-  // Loading state: Privy SDK initialization
-  if (!ready) {
+  // Loading state: Privy SDK and Wallets initialization
+  if (!ready || !walletsReady) {
     return (
       <div className="gh-controls">
         <div style={{ fontSize: '10px', color: 'var(--dim)', fontFamily: 'Share Tech Mono' }}>
