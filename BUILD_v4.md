@@ -92,7 +92,7 @@ Trade Arena v4 is a complete redesign focused on **AI-powered multi-bot trading*
 - ✅ Fallback decisions (works without API key)
 - ✅ Google OAuth login
 - ✅ MetaMask wallet connection
-- ✅ Demo mode ($10,000 virtual)
+- ✅ Demo mode ($0.00 virtual)
 - ✅ Live market data (CoinGecko)
 - ✅ 8 trading methods
 - ✅ Auto-trade mode per bot
@@ -276,7 +276,7 @@ function fallbackDecision(bet) {
 ### Main App (After Login)
 ```
 ┌─────────────────────────────────────┐
-│ 👤 PLAYER NAME  $10,000.00 +$50    │ Global header
+│ 👤 PLAYER NAME  $0.00 +$50    │ Global header
 │                                     │
 │ [BOT #1]  [BOT #2]  [BOT #3]       │ Bot grid (responsive)
 │ [$20]     [$15]     [-$5]          │
@@ -496,7 +496,7 @@ See SETUP_v4.md "Troubleshooting" section for common issues.
 
 - [x] index.html loads without errors
 - [x] Login screen displays properly
-- [x] Demo mode works ($10,000 balance)
+- [x] Demo mode works ($0.00 balance)
 - [x] Can create up to 6 bots
 - [x] Spin button animates reels
 - [x] Results display correctly
