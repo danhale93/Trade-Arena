@@ -769,7 +769,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     <div style="flex:1;overflow:hidden;min-width:60px">
       <div id="react-header-root"></div>
       <div class="gh-name" id="ghName" style="display:none">—</div>
-<span style="font-size:9px;padding:1px 6px;border-radius:10px;background:var(--chrome);border:1px solid var(--border);color:var(--dim)" id="ghBadge">DEMO</span>
+<span style="font-size:9px;padding:1px 6px;border-radius:10px;background:var(--chrome);border:1px solid var(--border);color:var(--green)" id="ghBadge">LIVE</span>
       <span style="font-size:8px;padding:1px 5px;border-radius:8px;background:rgba(0,255,231,.08);border:1px solid rgba(0,255,231,.2);color:var(--cyan);display:none" id="ghNetwork">BASE</span>
     </div>
     <div style="margin-right:4px;text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end">
@@ -797,7 +797,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
        <button class="gh-bus-btn" id="fleetViewBtn" onclick="toggleFleetView()" title="Toggle Fleet View (Compact Grid)"><span role="img" aria-hidden="true">📊</span> FLEET</button>
         <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots" aria-expanded="false"><span role="img" aria-hidden="true">⚙</span> BUS</button>
         <button class="gh-bus-btn" id="ghSettingsBtn" onclick="toggleSettingsModal()" title="Settings" aria-expanded="false"><span role="img" aria-hidden="true">⚙</span> SETTINGS</button>
-        <button class="gh-auto-btn" id="liveToggleBtn" onclick="toggleLiveMode()" title="Toggle Live/Demo Mode" style="border-color:var(--gold2);color:var(--gold2)">DEMO</button>
+        <button class="gh-auto-btn" id="liveToggleBtn" onclick="toggleLiveMode()" title="Toggle Live/Demo Mode" style="border-color:var(--green);color:var(--green);box-shadow:0 0 10px rgba(0,255,157,0.3)">LIVE</button>
        <button class="gh-auto-btn" id="ghAutoBtn" onclick="globalAutoToggle()" title="Toggle auto-trading on all bots" aria-pressed="false">AUTO</button>
        <button class="gh-bot-btn" id="ghRemoveBtn" onclick="removeLastBot()" title="Remove last bot" aria-label="Remove last bot" disabled>−</button>
        <button class="gh-bot-btn" id="ghAddTraderBtn" onclick="addBot('TRADER')" title="Add Trading Bot" aria-label="Add new trading bot">🤖</button><button class="gh-bot-btn" id="ghAddWorkerBtn" onclick="addBot('WORKER')" title="Add Worker Bot" aria-label="Add new worker bot">👷</button>
@@ -2593,8 +2593,8 @@ async function runCrucibleV2Batch() {
      showCrucibleResults({
         mode: regime,
         tradesRun: simulatedResults.trades,
-        startBalance: 1000,
-        endBalance: 1000 + simulatedResults.pnl,
+        startBalance: 0,
+        endBalance: 0 + simulatedResults.pnl,
         pnl: simulatedResults.pnl,
         pnlPct: simulatedResults.returnPct.toFixed(2),
         winRate: simulatedResults.winRate,

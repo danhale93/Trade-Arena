@@ -226,7 +226,7 @@ return { action, confidence, size };
             <h4>Equity Curve</h4>
             <div className="equity-chart-placeholder">
               {/* In a real implementation, you would render a chart here */}
-              <p>Equity chart would be displayed here (starting at $10,000)</p>
+              <p>Equity chart would be displayed here (starting at $0)</p>
             </div>
           </div>
         </>
