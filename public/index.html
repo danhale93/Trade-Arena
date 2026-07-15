@@ -1347,6 +1347,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         if (!container) {
           const c = document.createElement('div');
           c.id = 'toastContainer';
+          c.setAttribute('role', 'log');
+          c.setAttribute('aria-live', 'polite');
           c.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;';
           document.body.appendChild(c);
         }
@@ -3497,6 +3499,7 @@ function addBot(type = 'TRADER', silent = false){
     _syncHeaderBotBtns();
     updateMatrix();
     if(window.showToast) showToast(`${type} Bot #${bot.id} commissioned and ready`, 'success');
+    if(typeof scrollToBot === 'function') scrollToBot(bot.id);
   }
 }
 function removeBot(id){
@@ -3599,7 +3602,7 @@ function renderBot(bot){
       </div>
       <div class="m-thinking" id="mthink-${bot.id}">
         <div class="think-spinner"></div><div class="think-label">AI SCANNING</div>
-        <div class="think-step" id="mstep-${bot.id}">Fetching data…</div>
+        <div class="think-step" id="mstep-${bot.id}" aria-live="polite">Fetching data…</div>
       </div>
       <div class="m-result" id="mresult-${bot.id}">
         <div class="m-r-title" id="mrtitle-${bot.id}">WIN!</div>
@@ -3898,16 +3901,16 @@ async function spinBot(id){
   bot.spinning=true;
   try{ if(typeof SFX!=='undefined') SFX.spin(); }catch(e){}
   const spinEl=document.getElementById('mspin-'+id), thinkEl=document.getElementById('mthink-'+id), stepEl=document.getElementById('mstep-'+id);
-  if(spinEl){spinEl.disabled=true;spinEl.classList.add('going');spinEl.textContent='⏳'; spinEl.ariaLabel='Fetching live market data...';}
+  if(spinEl){spinEl.disabled=true;spinEl.classList.add('going');spinEl.textContent='⏳'; spinEl.setAttribute('aria-label', 'Fetching live market data...');}
   if(thinkEl) thinkEl.classList.add('show');
   if(stepEl) stepEl.textContent='📡 Fetching live market data…';
   const market=await getMarketData();
 
-  if(spinEl) spinEl.ariaLabel='Running 5-agent ensemble...';
+  if(spinEl) spinEl.setAttribute('aria-label', 'Running 5-agent ensemble...');
   if(stepEl) stepEl.textContent='🧠 Running 5-agent ensemble…';
   const decision=await callAI(market,bot.bet,id,bot);
 
-  if(spinEl) spinEl.ariaLabel=`Getting real ${decision.token} price...`;
+  if(spinEl) spinEl.setAttribute('aria-label', `Getting real ${decision.token} price...`);
   if(stepEl) stepEl.textContent=`💎 Getting real ${decision.token} price…`;
   let entryPrice=await getLivePrice(decision.token);
   let volumeUsd=1e9, priceChangePct15m=0; // Higher realistic volume for meme coins
@@ -3922,7 +3925,7 @@ async function spinBot(id){
   }
   if(!entryPrice) entryPrice=1;
 
-  if(spinEl) spinEl.ariaLabel='Opening position...';
+  if(spinEl) spinEl.setAttribute('aria-label', 'Opening position...');
   if(stepEl) stepEl.textContent='⚡ Opening position…';
   if(thinkEl) thinkEl.classList.remove('show');
 
@@ -3949,7 +3952,7 @@ async function spinBot(id){
   const tick=document.getElementById('mtick-'+id);
   if(tick) tick.textContent=decision.method==='HOLD'?`🧠 HOLD — ${decision.reasoning}`:`⏱ ${decision.token} ${decision.method} @ $${entryPrice.toFixed(entryPrice<1?4:2)}`;
 
-  if(spinEl){spinEl.disabled=false;spinEl.classList.remove('going');spinEl.textContent='🎰 SPIN'; spinEl.ariaLabel='Spin bot for trade';}
+  if(spinEl){spinEl.disabled=false;spinEl.classList.remove('going');spinEl.textContent='🎰 SPIN'; spinEl.setAttribute('aria-label', 'Spin bot for trade');}
   bot.spinning=false;
 
   // Execute trade (on-chain if connected, else paper)
