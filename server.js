@@ -44,6 +44,13 @@ const maintenanceLogLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false
 });
+const aiProxyLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 50, // limit each IP to 50 AI requests per window
+    message: { error: 'AI rate limit exceeded. Please try again later.' },
+    standardHeaders: true,
+    legacyHeaders: false
+});
 const payoutRoutes = require("./routes/payoutRoutes");
 const { loadUsers, saveUsers } = require('./user_persistence');
 const PORT = process.env.PORT || 3001;
@@ -213,7 +220,8 @@ const ALLOWED_GEMINI_MODELS = new Set([
   'gemini-2.0-flash-exp'
 ]);
 
-app.post('/api/claude', async (req, res) => {
+app.post('/api/claude', aiProxyLimiter, async (req, res) => {
+    let timeout;
     try {
         if (!process.env.ANTHROPIC_API_KEY) {
             return res.status(503).json({ error: 'AI service unavailable' });
@@ -222,6 +230,9 @@ app.post('/api/claude', async (req, res) => {
         if (!ALLOWED_CLAUDE_MODELS.has(model)) {
             return res.status(400).json({ error: 'Invalid or unauthorized model requested' });
         }
+
+        const controller = new AbortController();
+        timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
 
         const response = await fetch('https://api.anthropic.com/v1/messages', {
             method: 'POST',
@@ -239,17 +250,21 @@ app.post('/api/claude', async (req, res) => {
                 top_p,
                 top_k,
                 stop_sequences
-            })
+            }),
+            signal: controller.signal
         });
         const data = await response.json();
         res.status(response.status).json(data);
     } catch (error) {
         console.error('Claude Proxy error:', error);
         res.status(500).json({ error: 'Internal server error' });
+    } finally {
+        if (timeout) clearTimeout(timeout);
     }
 });
 
-app.post('/api/openai', async (req, res) => {
+app.post('/api/openai', aiProxyLimiter, async (req, res) => {
+    let timeout;
     try {
         if (!process.env.OPENAI_API_KEY) {
             return res.status(503).json({ error: 'AI service unavailable' });
@@ -258,6 +273,9 @@ app.post('/api/openai', async (req, res) => {
         if (!ALLOWED_OPENAI_MODELS.has(model)) {
             return res.status(400).json({ error: 'Invalid or unauthorized model requested' });
         }
+
+        const controller = new AbortController();
+        timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
 
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
@@ -274,17 +292,21 @@ app.post('/api/openai', async (req, res) => {
                 frequency_penalty,
                 presence_penalty,
                 stop
-            })
+            }),
+            signal: controller.signal
         });
         const data = await response.json();
         res.status(response.status).json(data);
     } catch (error) {
         console.error('OpenAI Proxy error:', error);
         res.status(500).json({ error: 'Internal server error' });
+    } finally {
+        if (timeout) clearTimeout(timeout);
     }
 });
 
-app.post('/api/gemini', async (req, res) => {
+app.post('/api/gemini', aiProxyLimiter, async (req, res) => {
+    let timeout;
     try {
         if (!process.env.GEMINI_API_KEY) {
             return res.status(503).json({ error: 'AI service unavailable' });
@@ -295,6 +317,10 @@ app.post('/api/gemini', async (req, res) => {
         }
 
         const safeModel = encodeURIComponent(requestedModel);
+
+        const controller = new AbortController();
+        timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
         // Sentinel: Move API key to header to prevent leakage in server/proxy logs
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${safeModel}:generateContent`, {
             method: 'POST',
@@ -305,13 +331,16 @@ app.post('/api/gemini', async (req, res) => {
             body: JSON.stringify({
                 contents: req.body.contents,
                 generationConfig: req.body.generationConfig
-            })
+            }),
+            signal: controller.signal
         });
         const data = await response.json();
         res.status(response.status).json(data);
     } catch (error) {
         console.error('Gemini Proxy error:', error);
         res.status(500).json({ error: 'Internal server error' });
+    } finally {
+        if (timeout) clearTimeout(timeout);
     }
 });
 
@@ -769,7 +798,9 @@ app.get('/api/market/prices', async (req, res) => {
 
         // ⚡ Bolt Optimization: Batch price requests into a single CoinGecko API call to eliminate network waterfall
         const ids = symbols.map(s => coinMap[s]).filter(Boolean);
-        const response = await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${ids.join(',')}&vs_currencies=usd`);
+        const response = await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${ids.join(',')}&vs_currencies=usd`, {
+            timeout: 10000 // 10s timeout
+        });
         const data = response.data || {};
 
         const prices = {};
@@ -852,7 +883,9 @@ async function fetchCoinGeckoPrice(symbol) {
         const coinMap = { 'WETH': 'ethereum', 'USDC': 'usd-coin', 'ARB': 'arbitrum', 'OP': 'optimism' };
         const coinId = coinMap[symbol];
         if (!coinId) return null;
-        const response = await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd`);
+        const response = await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd`, {
+            timeout: 10000 // 10s timeout
+        });
         return response.data[coinId]?.usd || null;
     } catch (e) {
         return null;
