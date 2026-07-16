@@ -24,7 +24,7 @@ const CrucibleRealTrading = {
   
   // Trading state
   tradeState: {
-    currentBalance: 0,  // $50 AUD starting capital
+    currentBalance: 0,  // $0 starting capital
     equity: 0,
     maxEquity: 0,
     minEquity: 0,
@@ -54,7 +54,7 @@ const CrucibleRealTrading = {
   // Configuration
   config: {
     // Trading Parameters
-    startingBalance: 50,       // $50 AUD
+    startingBalance: 0,
     maxTradesPerDay: 25,       // Max 25 trades/day (increased from 20)
     minTimeBetweenTrades: 10800000,  // 3 hours in ms (reduced from 4)
     

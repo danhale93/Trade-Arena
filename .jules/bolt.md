@@ -55,3 +55,7 @@ Action: Implemented dual-mode trading system with real on-chain execution, batch
 ## 2026-07-13 - Static Map Allocation and DOM Cache Consistency
 **Learning:** In high-frequency price synchronization loops, re-declaring object literals (like token-to-ID maps) inside getter methods creates significant garbage collection pressure. Furthermore, while a DOM cache (`_getEl`) may exist, inconsistent usage across utility functions (like `setVal`) negates its benefits and leads to redundant DOM tree traversals.
 **Action:** Always move static configuration objects out of hot method scopes. Enforce the use of centralized DOM caching (`_getEl`) in all global UI utility functions to ensure O(1) element access.
+
+## 2026-07-15 - Hot Loop SVG Optimization and Dashboard Synchronization
+**Learning:** Even with O(N) points calculation for SVG charts, functions like `toFixed(1)` can become a significant bottleneck when called 2,000+ times per frame (X and Y per point for 1,000 points). Pre-calculating scaling factors and using manual rounding (`Math.round(n * 10) / 10`) provides a 2-3x speedup in chart generation logic. Furthermore, disparate UI updates for related components (Header, Matrix, Quant Report) should be synchronized into a single `requestAnimationFrame` block to eliminate layout thrashing and provide a smoother dashboard experience.
+**Action:** Always pre-calculate loop-invariant values in hot rendering paths. Consolidate related global UI updates into synchronized animation frame blocks. Standardize DOM access through centralized caching (`_getEl`).

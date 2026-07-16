@@ -464,7 +464,7 @@ const CrucibleEntertainment = {
         </div>
         <div class="stats-line">
           <span class="stat-icon">💰</span>
-          <span class="balance-display" id="balance-display">$50.00</span>
+          <span class="balance-display" id="balance-display">$0.00</span>
         </div>
         <div class="stats-line">
           <span class="stat-icon">🔥</span>
