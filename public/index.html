@@ -1858,8 +1858,9 @@ async function openPosition(bot, decision, entryPrice, bet, volumeUsd, priceChan
 
   updateLiveBalance();
   
-  setTimeout(()=>checkExit(pos,bot), EXIT_TIMES[decision.method]);
-  startLivePnlTicker(pos, bot);
+  // ⚡ Bolt Optimization: Individual setTimeout(checkExit) and startLivePnlTicker removed.
+  // Position status, SL/TP checks, and P&L updates are now handled by the consolidated
+  // _tickHeader (500ms) and _tickLivePrices (2000ms) tickers to reduce O(N) timer overhead.
 
   // Sync Matrix Pad state
   const pad = document.getElementById('pad-' + bot.id);
@@ -1871,63 +1872,6 @@ async function openPosition(bot, decision, entryPrice, bet, volumeUsd, priceChan
   return pos;
 }
 
-function startLivePnlTicker(pos, bot) {
-  // Optimization: Cache DOM elements once instead of every tick
-  const pnlEl = document.getElementById('opLivePnl-' + pos.botId);
-  const timerEl = document.getElementById('opTimer-' + pos.botId);
-
-  const tick = async () => {
-    if(pos.status!=='open') return;
-    const p=await getLivePrice(pos.token);
-    if(p){
-      const delta=pos.direction==='long'?(p-pos.entryPrice)/pos.entryPrice:(pos.entryPrice-p)/pos.entryPrice;
-      const net=pos.bet*delta-pos.costs.total;
-      if(pnlEl){ 
-        const pnlStr = (net>=0?'+':'')+'$'+net.toFixed(2);
-        // Optimization: Dirty-check P&L value to avoid redundant DOM writes and animation restarts
-        if (pnlStr !== pos._lastPnlStr) {
-          pnlEl.textContent=pnlStr;
-          pnlEl.className='op-live-pnl '+(net>=0?'pos':'neg');
-          // Add pulse effect for instant visual feedback
-          pnlEl.style.animation='none';
-          setTimeout(()=>{pnlEl.style.animation='pulse 0.4s ease';}, 10);
-          pos._lastPnlStr = pnlStr;
-        }
-      }
-      // Store live unrealised P&L on the position for global display
-      pos.livePnl=net;
-
-      // ── Stop loss / take profit early exit ──
-      // Optimization: Use passed bot reference instead of bots.find(O(N))
-      if(bot && pos.status==='open'){
-        const pct=(net/pos.bet)*100;
-        const sl=bot.stopLossPct||0;
-        const tp=bot.takeProfitPct||0;
-        if(sl>0 && pct<=-sl){
-          pos._earlyExitReason=`SL −${sl}%`;
-          checkExit(pos,bot);
-          return;
-        }
-        if(tp>0 && pct>=tp){
-          pos._earlyExitReason=`TP +${tp}%`;
-          checkExit(pos,bot);
-          return;
-        }
-      }
-    }
-    if(timerEl){
-      const rem=Math.max(0,pos.exitTime-Date.now());
-      const m=Math.floor(rem/60000),s=Math.floor((rem%60000)/1000);
-      // Optimization: Use passed bot reference instead of bots.find(O(N))
-      const slLabel=bot&&(bot.stopLossPct||bot.takeProfitPct)
-        ?` · SL${bot.stopLossPct?` −${bot.stopLossPct}%`:'—'} TP${bot.takeProfitPct?` +${bot.takeProfitPct}%`:'—'}`:'';
-      timerEl.textContent=`Exit in ${m}:${s.toString().padStart(2,'0')}${slLabel}`;
-    }
-    // Optimization: updateLiveBalance() moved to _tickHeader (500ms) to avoid DOM churn when multiple positions tick
-    if(pos.status==='open') setTimeout(tick,2000);  // Increased frequency: 5s → 2s
-  };
-  setTimeout(tick,800);  // Faster initial update: 2s → 800ms
-}
 
 let _balanceUpdatePending = false;
 let _lastDisplayBal = -1, _lastDisplayPnl = -1, _lastUnrealised = -1;
@@ -3597,15 +3541,98 @@ function globalAutoToggle(){
 
 // ── Header countdown + open-trade tally ──
 let _ghTickerInterval=null;
+let _priceTickerInterval=null;
 function _startHeaderTicker(){
   if(_ghTickerInterval) clearInterval(_ghTickerInterval);
   _ghTickerInterval=setInterval(_tickHeader,500);
+
+  if(_priceTickerInterval) clearInterval(_priceTickerInterval);
+  _priceTickerInterval=setInterval(_tickLivePrices, 2000);
+}
+
+/**
+ * ⚡ Bolt Optimization: Batch Price Ticker
+ * Synchronizes price fetches and UI updates for all open positions into a single cycle.
+ * This eliminates O(N) concurrent setTimeout loops and redundant network waterfalls.
+ */
+async function _tickLivePrices() {
+  if (openPositions.length === 0) return;
+
+  // 1. Group unique tokens for batch price fetching
+  const uniqueTokens = Array.from(new Set(openPositions.map(p => p.token)));
+
+  // 2. Fetch all required prices (utilizes getLivePrice's internal batching)
+  const prices = {};
+  await Promise.all(uniqueTokens.map(async (t) => {
+    const p = await getLivePrice(t);
+    if (p) prices[t] = p;
+  }));
+
+  // 3. Process all positions in a single pass
+  const now = Date.now();
+  for (let i = 0; i < openPositions.length; i++) {
+    const pos = openPositions[i];
+    const p = prices[pos.token];
+    if (!p || pos.status !== 'open') continue;
+
+    // Calculate P&L
+    const delta = pos.direction === 'long' ? (p - pos.entryPrice) / pos.entryPrice : (pos.entryPrice - p) / pos.entryPrice;
+    const net = pos.bet * delta - pos.costs.total;
+    pos.livePnl = net;
+
+    // Update UI Card (Overlay)
+    const pnlEl = _getEl('opLivePnl-' + pos.botId);
+    const timerEl = _getEl('opTimer-' + pos.botId);
+    const bot = bots.find(b => b.id === pos.botId);
+
+    if (pnlEl) {
+      const pnlStr = (net >= 0 ? '+' : '') + '$' + net.toFixed(2);
+      if (pnlStr !== pos._lastPnlStr) {
+        pnlEl.textContent = pnlStr;
+        pnlEl.className = 'op-live-pnl ' + (net >= 0 ? 'pos' : 'neg');
+        pos._lastPnlStr = pnlStr;
+      }
+    }
+
+    if (timerEl) {
+      const rem = Math.max(0, pos.exitTime - now);
+      const m = Math.floor(rem / 60000), s = Math.floor((rem % 60000) / 1000);
+      const slLabel = bot && (bot.stopLossPct || bot.takeProfitPct)
+        ? ` · SL${bot.stopLossPct ? ` −${bot.stopLossPct}%` : '—'} TP${bot.takeProfitPct ? ` +${bot.takeProfitPct}%` : '—'}` : '';
+      timerEl.textContent = `Exit in ${m}:${s.toString().padStart(2, '0')}${slLabel}`;
+    }
+
+    // SL/TP Check
+    if (bot) {
+      const pct = (net / pos.bet) * 100;
+      const sl = bot.stopLossPct || 0;
+      const tp = bot.takeProfitPct || 0;
+      if (sl > 0 && pct <= -sl) {
+        pos._earlyExitReason = `SL −${sl}%`;
+        checkExit(pos, bot);
+      } else if (tp > 0 && pct >= tp) {
+        pos._earlyExitReason = `TP +${tp}%`;
+        checkExit(pos, bot);
+      }
+    }
+  }
 }
 function _tickHeader(){
   // ⚡ Bolt Optimization: All header metrics (Balance, P&L, Counts, Countdown)
   // are consolidated into updateLiveBalance() to ensure single-pass O(N) traversal
   // and synchronized DOM updates in a single display frame.
   updateLiveBalance();
+
+  // ⚡ Bolt Optimization: Single-pass check for expired positions (replaces O(N) setTimeouts).
+  const now = Date.now();
+  for (let i = 0; i < openPositions.length; i++) {
+    const pos = openPositions[i];
+    if (pos.status === 'open' && now >= pos.exitTime) {
+      // Find the bot to pass correct reference
+      const bot = bots.find(b => b.id === pos.botId);
+      if (bot) checkExit(pos, bot);
+    }
+  }
 }
 function renderBot(bot){
   const el=document.createElement('div'); el.className='machine'; el.id='bot-'+bot.id;
