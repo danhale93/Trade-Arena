@@ -10,7 +10,7 @@
 ```
 1. Open: c:\Users\admi\New folder\index.html in your browser
 2. Click: 🎮 DEMO MODE
-3. You're in! $10,000 virtual balance ready
+3. You're in! $0.00 virtual balance ready
 ```
 
 ### 2. Create & Trade
@@ -235,7 +235,7 @@ Each bot card shows:
 ```
 👤 USERNAME          👤 Avatar
 DEMO / 🔵 GOOGLE    Session badge
-$10,000.00          Your current balance
+$0.00          Your current balance
 +$50.00 today       Today's total profit
 + ADD BOT           Create new bot
 ```

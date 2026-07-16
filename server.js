@@ -652,13 +652,17 @@ app.post('/api/faucet/claim', async (req, res) => {
             return res.status(429).json({ success: false, error: 'Faucet already claimed from this IP' });
         }
 
-        const payout = await sendPayout(userAddress || 'demo', 5, 'ETH');
+        if (!userAddress || userAddress === 'demo') {
+            return res.status(400).json({ success: false, error: 'Valid wallet address required for mainnet faucet' });
+        }
+
+        const payout = await sendPayout(userAddress, 0.005, 'ETH');
 
         const deployment = queueBotDeployment({
             source: 'faucet',
-            amount: 50,
+            amount: 0.05,
             currency: 'ETH',
-            userAddress: userAddress || 'demo',
+            userAddress: userAddress,
             confirmedAt: Date.now(),
             payout
         });
@@ -713,10 +717,14 @@ app.post('/api/tasks/claim', taskClaimLimiter, async (req, res) => {
                 payout = { onChainAuth: true, authPayload };
             } catch (e) {
                 console.error('[Payout] On-chain auth failed, falling back to direct transfer:', e.message);
-                payout = await sendPayout(userAddress || 'demo', payoutAmount, 'ETH');
+                if (!userAddress || userAddress === 'demo') throw new Error('Invalid address');
+                payout = await sendPayout(userAddress, payoutAmount, 'ETH');
             }
         } else {
-            payout = await sendPayout(userAddress || 'demo', payoutAmount, 'ETH');
+            if (!userAddress || userAddress === 'demo') {
+                return res.status(400).json({ success: false, error: 'Valid wallet address required for reward payout' });
+            }
+            payout = await sendPayout(userAddress, payoutAmount, 'ETH');
         }
 
         const deployment = queueBotDeployment({
