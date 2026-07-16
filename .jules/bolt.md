@@ -55,3 +55,7 @@ Action: Implemented dual-mode trading system with real on-chain execution, batch
 ## 2026-07-13 - Static Map Allocation and DOM Cache Consistency
 **Learning:** In high-frequency price synchronization loops, re-declaring object literals (like token-to-ID maps) inside getter methods creates significant garbage collection pressure. Furthermore, while a DOM cache (`_getEl`) may exist, inconsistent usage across utility functions (like `setVal`) negates its benefits and leads to redundant DOM tree traversals.
 **Action:** Always move static configuration objects out of hot method scopes. Enforce the use of centralized DOM caching (`_getEl`) in all global UI utility functions to ensure O(1) element access.
+
+## 2026-07-16 - Consolidated Position Management and Reporting Math
+**Learning:** Running individual timers for dozens of active positions creates significant CPU overhead and unsynchronized UI churn. Consolidating status checks, exits, and P&L updates into coordinated global cycles reduces timer overhead from O(N) to O(1). Additionally, frequent numeric-to-string formatting (like toFixed) in SVG path generation adds measurable overhead compared to manual rounding.
+**Action:** Consolidate per-position timers into global tickers (_tickHeader, _tickLivePrices). Replace toFixed(1) with manual Math.round logic in high-frequency SVG generation loops.
