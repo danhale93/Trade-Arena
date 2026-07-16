@@ -2003,6 +2003,16 @@ function updateLiveBalance(){
     // Consolidated: Global metric card for open positions
     setVal('mv-open', count);
 
+    // Consolidated: Update total trade count label in Quant Report
+    const qCountEl = _getEl('qTradeCount');
+    if (qCountEl) {
+      const n = closedTrades.length;
+      qCountEl.textContent = n + ' closed trades';
+    }
+
+    // Consolidated: Update Matrix if visible
+    if (count !== _lastConsolidatedCount) updateMatrix();
+
     // Consolidated: Run breakers alongside balance changes
     if (typeof checkGlobalBreakers === 'function') checkGlobalBreakers();
 
@@ -2238,8 +2248,6 @@ function _runUpdateQuantReport() {
     }
   }
 
-  document.getElementById('qTradeCount').textContent=n+' closed trades';
-
   // Sig ladder
   [20,50,100,200,300].forEach(thresh=>{
     const el=document.getElementById('sig-'+thresh);
@@ -2320,11 +2328,16 @@ function drawEquityCurve(preMin, preMax) {
   // This approach is more efficient for larger datasets like the 1000-point equity history.
   const len = equityHistory.length;
   const ptsArr = new Array(len);
+  // ⚡ Bolt Optimization: Pre-calculate scaling factors to reduce operations in hot loop
+  const xStep = W / (len - 1);
+  const yFactor = (H - 6) / range;
+  const yBase = H - 3;
+
   for (let i = 0; i < len; i++) {
-    const v = equityHistory[i];
-    const x = (i / (len - 1)) * W;
-    const y = H - ((v - min) / range) * (H - 6) - 3;
-    ptsArr[i] = x.toFixed(1) + "," + y.toFixed(1);
+    const x = i * xStep;
+    const y = yBase - (equityHistory[i] - min) * yFactor;
+    // ⚡ Bolt Optimization: Use manual rounding instead of toFixed(1) for faster string building
+    ptsArr[i] = (Math.round(x * 10) / 10) + "," + (Math.round(y * 10) / 10);
   }
   const pts = ptsArr.join(" ");
   line.setAttribute('points',pts); fill.setAttribute('points',pts+` ${W},${H} 0,${H}`);
@@ -2332,9 +2345,9 @@ function drawEquityCurve(preMin, preMax) {
   line.setAttribute('stroke',isUp?'var(--green)':'var(--hot)');
   fill.setAttribute('fill',isUp?'rgba(57,255,20,.05)':'rgba(255,45,120,.05)');
   // baseline
-  const baseY=H-((startBalance-min)/range)*(H-6)-3;
+  const baseY = yBase - (startBalance - min) * yFactor;
   const bl = _getEl('eqBaseline');
-  if(bl){ bl.setAttribute('y1',baseY.toFixed(1)); bl.setAttribute('y2',baseY.toFixed(1)); }
+  if(bl){ bl.setAttribute('y1', (Math.round(baseY * 10) / 10)); bl.setAttribute('y2', (Math.round(baseY * 10) / 10)); }
 }
 
 function drawBaselines(n, claudePnl, winRate, baselinePnls, baselineWins, claudeAvg) {
@@ -3158,13 +3171,13 @@ function updateBreakers() {
   checkGlobalBreakers();
 }
 function updateGasDisplay() {
-  currentGas=parseInt(document.getElementById('gasSlider')?.value||18);
-  const el=document.getElementById('gasCurrentVal'); if(!el) return;
+  currentGas=parseInt(_getEl('gasSlider')?.value||18);
+  const el=_getEl('gasCurrentVal'); if(!el) return;
   const over=currentGas>gasHardCeiling;
   el.textContent=currentGas+' gwei '+(over?'⚠️ ABOVE CEILING':'✓ OK'); el.style.color=over?'var(--hot)':'var(--green)';
   checkGlobalBreakers();
   bots.forEach(b=>{
-    const card=document.getElementById('bot-'+b.id), badge=document.getElementById('mstatus-'+b.id);
+    const card=_getEl('bot-'+b.id), badge=_getEl('mstatus-'+b.id);
     if(!card||!badge) return;
     card.classList.toggle('gas-paused',currentGas>gasHardCeiling&&!b.cooling);
     badge.className='m-status-badge'+(currentGas>gasHardCeiling?' gas':(b.cooling?' cool':''));
@@ -3459,12 +3472,12 @@ function setupApp({name,avatar,badge,address}){
 // BALANCE
 // ══════════════════════════════════════════════════════
 function updateBotPnl(bot){
-  const el=document.getElementById('mpnl-'+bot.id); if(!el) return;
+  const el=_getEl('mpnl-'+bot.id); if(!el) return;
   el.textContent=(bot.pnl>=0?'+':'')+'$'+bot.pnl.toFixed(2);
   el.className='m-pnl '+(bot.pnl>=0?'pos':'neg');
 
   // Sync P&L on Matrix Pad
-  const padPnl = document.getElementById('pad-pnl-' + bot.id);
+  const padPnl = _getEl('pad-pnl-' + bot.id);
   if (padPnl) {
     padPnl.textContent = (bot.pnl >= 0 ? '+' : '') + '$' + bot.pnl.toFixed(2);
     padPnl.className = 'pad-pnl ' + (bot.pnl >= 0 ? 'pnl-pos' : 'pnl-neg');
@@ -5566,7 +5579,10 @@ function updateMatrix() {
     botsWithOpen.add(openPositions[i].botId);
   }
 
-  grid.innerHTML = bots.map((bot, i) => {
+  let html = '';
+  const botCount = bots.length;
+  for (let i = 0; i < botCount; i++) {
+    const bot = bots[i];
     const agentId = String(bot.id).padStart(2, '0');
     const pnl = bot.pnl || 0;
     const pnlClass = pnl >= 0 ? 'pnl-pos' : 'pnl-neg';
@@ -5583,7 +5599,7 @@ function updateMatrix() {
 
     const botIcon = bot.type === "WORKER" ? "👷" : "🤖";
     const botLabel = bot.type === "WORKER" ? "Worker Bot" : "Trader Bot";
-    return `
+    html += `
       <div class="pad ${padState}" id="pad-${bot.id}"
            role="button" tabindex="0"
            onclick="scrollToBot(${escapeHTML(JSON.stringify(bot.id))})"
@@ -5592,10 +5608,11 @@ function updateMatrix() {
         <span class="pad-agent-id"><span role="img" aria-label="${botLabel}">${botIcon}</span> AG-${agentId}</span>
         <span class="pad-pnl ${pnlClass}" id="pad-pnl-${bot.id}">${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}</span>
       </div>`;
-  }).join('');
+  }
+  grid.innerHTML = html;
 
-  const count = document.getElementById('matrixCount');
-  if (count) count.textContent = bots.length + ' ACTIVE';
+  const count = _getEl('matrixCount');
+  if (count) count.textContent = botCount + ' ACTIVE';
 }
 
 /**
