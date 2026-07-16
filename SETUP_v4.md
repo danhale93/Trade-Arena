@@ -272,7 +272,7 @@ $0.00          Your current balance
 
 ### Edit .env File
 ```
-INITIAL_BALANCE=10000        ← Starting virtual $
+INITIAL_BALANCE=0        ← Starting virtual $
 MIN_BET=1                    ← Minimum bet size
 MAX_BET=500                  ← Maximum bet size
 MAX_BOTS=6                   ← Maximum bot count

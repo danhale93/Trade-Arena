@@ -161,7 +161,7 @@ cd c:\Users\admi\New folder
 
 **Trading Limits**
 ```env
-INITIAL_BALANCE=10000      # Demo mode starting balance
+INITIAL_BALANCE=0      # Demo mode starting balance
 MIN_BET=1                  # Smallest allowed bet
 MAX_BET=500               # Largest allowed bet
 MAX_BOTS=6                # Maximum bot count

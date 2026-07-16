@@ -743,7 +743,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     <div class=login-card-hd>SECURE WALLET ENTRY</div>
     <div class=login-card-bd>
       <!-- MetaMask Priority -->
-      <button class=g-btn onclick="window.ethereum?.request({ method: 'eth_requestAccounts' }).then(() => { location.reload(); })" style="height:44px; font-size:12px; background: #f6851b; color: #fff; border: none; margin-bottom: 8px;">
+      <button id="mmConnectBtn" class="g-btn" onclick="handleMetaMaskConnect()" style="height:44px; font-size:12px; background: #f6851b; color: #fff; border: none; margin-bottom: 8px;">
         <span style="font-family:'Bungee'; letter-spacing:1px">CONNECT METAMASK (RECOMMENDED)</span>
       </button>
 
@@ -1414,6 +1414,53 @@ function escapeHTML(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+/**
+ * Handle MetaMask connection reactively without page reload
+ */
+async function handleMetaMaskConnect() {
+  if (!window.ethereum) {
+    showToast('MetaMask not found. Please install the extension.', 'error');
+    return;
+  }
+  const btn = document.getElementById('mmConnectBtn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'CONNECTING...';
+  }
+  try {
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    if (accounts.length > 0) {
+      const address = accounts[0];
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+
+      // Update global walletState
+      if (!window.walletState) window.walletState = { isConnected: false };
+      window.walletState.isConnected = true;
+      window.walletState.address = address;
+      window.walletState.provider = provider;
+      window.walletState.signer = signer;
+
+      showToast(`Connected: ${address.slice(0,6)}...${address.slice(-4)}`, 'success');
+
+      // Transition to main app
+      document.getElementById('connectScreen').style.display = 'none';
+      document.getElementById('mainApp').style.display = 'flex';
+
+      // Trigger balance refresh and UI updates
+      if (typeof updateLiveBalance === 'function') updateLiveBalance();
+      if (typeof updateMatrix === 'function') updateMatrix();
+      if (typeof refreshSettingsUI === 'function') refreshSettingsUI();
+    }
+  } catch (err) {
+    showToast(err.message, 'error');
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'CONNECT METAMASK (RECOMMENDED)';
+    }
+  }
 }
 
 /**
@@ -6357,7 +6404,7 @@ function updateSettingsVolume(val) {
             <div style="display:flex;gap:8px">
               <button onclick="toggleVisibility('s_cfg_ts', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
               <button onclick="copyToClipboard('s_cfg_ts', this)" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
-              <span style="color:var(--amber)">Secure Server Auth</span>
+              <a href="https://trade-arena.com/keys" target="_blank" style="color:var(--cyan); text-decoration:none;">GET SECRET →</a>
             </div>
           </div>
           <input type="password" id="s_cfg_ts" placeholder="Enter payout validation secret..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">

@@ -22,7 +22,7 @@ Now:
 
 ```javascript
 config: {
-  paperBalance: 10000,        // Starting balance
+  paperBalance: 0,        // Starting balance
   tradeCount: 10,             // Number of trades
   tradeInterval: 2000,        // ms between trades
   
