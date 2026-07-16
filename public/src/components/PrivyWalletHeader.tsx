@@ -1,130 +1,125 @@
 import React, { useEffect, useRef, useMemo } from 'react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 
-// Extend Window interface for TypeScript bridge with legacy environment
+// Define the global bridge interface for synchronization with the Arena's legacy JavaScript engine
 declare global {
   interface Window {
     privyUser: any;
     privyWalletAddress: string | null;
     privyConnected: boolean;
     privyProvider: any;
-    onPrivyLoginSuccess: () => void;
-    onPrivyReady: (user: any, address: string | null) => void;
-    updateWalletUI: () => void;
     privyInit: () => void;
     privyLogin: () => void;
-    privyLoginGoogle: () => void;
-    privyLoginApple: () => void;
     privyLogout: () => void;
     isPrivyConnected: () => boolean;
     getPrivyAddress: () => string | null;
+    privySignMessage: (message: string) => Promise<string>;
+    onPrivyLoginSuccess?: () => void;
+    onPrivyReady?: (user: any, address: string | null) => void;
+    updateWalletUI?: () => void;
   }
 }
 
 /**
- * PrivyWalletHeader Component
+ * Senior Web3 Component: PrivyWalletHeader
  *
- * Handles Privy authentication, isolates the embedded wallet for the Trade Arena,
- * and synchronizes state with the legacy JavaScript environment.
+ * This component manages the Privy authentication lifecycle and specifically isolates
+ * the embedded wallet for secure Trade Arena interactions.
  */
 export const PrivyWalletHeader = () => {
   const { authenticated, user, login, logout, ready } = usePrivy();
   const { wallets, ready: walletsReady } = useWallets();
 
   const hasTriggeredSuccess = useRef(false);
-  const lastKnownAddress = useRef<string | null>(null);
+  const lastSyncAddress = useRef<string | null>(null);
 
   /**
-   * SENIOR WEB3 PATTERN: Isolated Embedded Wallet Hook
-   * REQUIREMENT 2: We specifically target the 'privy' client type to ensure the Arena interacts
-   * only with the secure, non-custodial embedded wallet, bypassing external EOA interference.
+   * REQUIREMENT 2: Isolated Embedded Wallet
+   * We specifically target the 'privy' client type to ensure the Arena interacts
+   * only with the secure, non-custodial embedded wallet.
    */
-  const embeddedWallet = useMemo(() => {
+  const arenaWallet = useMemo(() => {
     return wallets.find((w) => w.walletClientType === 'privy') || null;
   }, [wallets]);
 
   /**
-   * REQUIREMENT 3: Standard Web3 Address Truncation (0x1234...abcd)
+   * REQUIREMENT 3: Truncated Address Format
+   * Clean string formatting (0x1234...abcd) for UI display.
    */
-  const truncatedAddress = useMemo(() => {
-    const addr = embeddedWallet?.address;
+  const displayAddress = useMemo(() => {
+    const addr = arenaWallet?.address;
     if (!addr) return '0x...';
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-  }, [embeddedWallet?.address]);
+  }, [arenaWallet?.address]);
 
-  // Derived user identity for display
-  const userIdentifier = useMemo(() => {
+  // Derived user identity
+  const userLabel = useMemo(() => {
     return user?.google?.email || user?.email?.address || 'Arena Trader';
   }, [user]);
 
-  // Expose bridge functions to the global scope for legacy JavaScript environment synchronization
-  useEffect(() => {
-    window.privyInit = () => console.log('🎨 Palette: Trade Arena bridge activated');
-    window.privyLogin = () => login({ loginMethod: 'google' });
-    window.privyLoginGoogle = () => login({ loginMethod: 'google' });
-    window.privyLoginApple = () => login({ loginMethod: 'apple' });
-    window.privyLogout = logout;
-    window.isPrivyConnected = () => authenticated && !!embeddedWallet;
-    window.getPrivyAddress = () => embeddedWallet?.address || null;
-  }, [login, logout, authenticated, !!embeddedWallet]);
-
-  // Handle session cleanup upon logout
-  useEffect(() => {
-    if (!authenticated && ready) {
-      hasTriggeredSuccess.current = false;
-      lastKnownAddress.current = null;
-      window.privyUser = null;
-      window.privyWalletAddress = null;
-      window.privyConnected = false;
-      window.privyProvider = null;
-    }
-  }, [authenticated, ready]);
-
   /**
-   * REQUIREMENT 5: Synchronize authentication state with the legacy Arena engine.
-   * This bridge ensures that non-React trading logic can access the Privy wallet and provider.
+   * REQUIREMENT 5: Legacy JavaScript Bridge
+   * Synchronizes authentication state and providers with the execution engine.
    */
   useEffect(() => {
-    if (authenticated && user && embeddedWallet) {
+    // Expose control functions
+    window.privyInit = () => console.log('🎨 Palette: Trade Arena bridge activated');
+    window.privyLogin = () => login({ loginMethod: 'google' });
+    window.privyLogout = logout;
+    window.isPrivyConnected = () => authenticated && !!arenaWallet;
+    window.getPrivyAddress = () => arenaWallet?.address || null;
+
+    // Implementation of signing bridge for execution-engine.js
+    window.privySignMessage = async (message: string) => {
+      if (!arenaWallet) throw new Error('No arena wallet available for signing');
+      return arenaWallet.signMessage(message);
+    };
+  }, [login, logout, authenticated, arenaWallet]);
+
+  // Bridge state synchronization
+  useEffect(() => {
+    if (authenticated && user && arenaWallet) {
       window.privyUser = user;
-      window.privyWalletAddress = embeddedWallet.address;
+      window.privyWalletAddress = arenaWallet.address;
       window.privyConnected = true;
 
-      // Inject an ethers-compatible provider bridge for the Arena's execution engine
+      // Inject Ethers-compatible provider for legacy execution
       window.privyProvider = {
-        ...embeddedWallet,
+        ...arenaWallet,
         getEthersProvider: async () => {
-          const provider = await embeddedWallet.getEthereumProvider();
+          const provider = await arenaWallet.getEthereumProvider();
           const ethersLib = (window as any).ethers;
-          // Support for both Ethers v5 and v6 environments
+          // Support for both Ethers v5 and v6 environments used in the Arena
           return ethersLib.BrowserProvider
             ? new ethersLib.BrowserProvider(provider)
             : new ethersLib.providers.Web3Provider(provider);
         }
       };
 
-      // Trigger legacy initialization callbacks on address change
-      if (embeddedWallet.address !== lastKnownAddress.current) {
-        lastKnownAddress.current = embeddedWallet.address;
-
-        if (typeof window.onPrivyReady === 'function') {
-          window.onPrivyReady(user, embeddedWallet.address);
-        }
-
-        if (typeof window.updateWalletUI === 'function') {
-          window.updateWalletUI();
-        }
+      // Trigger legacy initialization callbacks
+      if (arenaWallet.address !== lastSyncAddress.current) {
+        lastSyncAddress.current = arenaWallet.address;
+        window.onPrivyReady?.(user, arenaWallet.address);
+        window.updateWalletUI?.();
       }
 
-      // Signal successful Arena entry to the legacy lifecycle manager
+      // Signal successful entry to the lifecycle manager
       if (!hasTriggeredSuccess.current && typeof window.onPrivyLoginSuccess === 'function') {
         window.onPrivyLoginSuccess();
         hasTriggeredSuccess.current = true;
       }
+    } else if (!authenticated && ready) {
+      // Cleanup on logout
+      hasTriggeredSuccess.current = false;
+      lastSyncAddress.current = null;
+      window.privyUser = null;
+      window.privyWalletAddress = null;
+      window.privyConnected = false;
+      window.privyProvider = null;
     }
-  }, [authenticated, user, embeddedWallet]);
+  }, [authenticated, user, arenaWallet, ready]);
 
-  // Loading state: Privy SDK and Wallets initialization
+  // Loading state: SDK Initialization
   if (!ready || !walletsReady) {
     return (
       <div className="gh-controls">
@@ -135,7 +130,7 @@ export const PrivyWalletHeader = () => {
     );
   }
 
-  // Unauthenticated state: Primary login CTA
+  // Unauthenticated: Login Trigger
   if (!authenticated) {
     return (
       <div className="gh-controls">
@@ -151,13 +146,13 @@ export const PrivyWalletHeader = () => {
   }
 
   /**
-   * REQUIREMENT 4: Graceful loading state for wallet provisioning.
+   * REQUIREMENT 4: Graceful provisioning state
    */
-  if (authenticated && !embeddedWallet) {
+  if (authenticated && !arenaWallet) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '0 4px' }}>
         <div className="gh-name" style={{ fontSize: '10px', color: 'var(--cyan)', whiteSpace: 'nowrap' }}>
-          {userIdentifier}
+          {userLabel}
         </div>
         <div style={{ fontSize: '8px', color: 'var(--amber)', fontFamily: 'Share Tech Mono', letterSpacing: '0.5px' }}>
           Initializing arena wallet...
@@ -167,16 +162,16 @@ export const PrivyWalletHeader = () => {
   }
 
   /**
-   * REQUIREMENT 3 (UI): Display the active Privy wallet address.
+   * REQUIREMENT 3 (UI): Truncated Address Display
    */
   return (
     <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '0 4px' }}>
       <div className="gh-name" style={{ fontSize: '10px', color: 'var(--cyan)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-        {userIdentifier}
+        {userLabel}
       </div>
       <div style={{ fontSize: '9px', color: 'var(--dim)', fontFamily: 'Share Tech Mono', display: 'flex', alignItems: 'center' }}>
         <span style={{ color: 'var(--gold)', marginRight: '4px' }} role="img" aria-label="wallet">💳</span>
-        <span>{truncatedAddress}</span>
+        <span>{displayAddress}</span>
       </div>
     </div>
   );
