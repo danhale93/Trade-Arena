@@ -352,13 +352,19 @@ app.post('/api/maintenance/log', maintenanceLogLimiter, (req, res) => {
     const { agent, message, level } = req.body;
     if (!agent || !message) return res.status(400).json({ error: 'Missing agent or message' });
 
+    // Sentinel: Sanitize inputs to prevent log injection/spoofing
+    const sanitize = (s) => String(s || '').replace(/[\n\r]/g, ' ').substring(0, 500);
+    const safeAgent = sanitize(agent).substring(0, 100);
+    const safeLevel = sanitize(level || 'INFO').substring(0, 20);
+    const safeMessage = sanitize(message);
+
     const logDir = path.join(__dirname, '.jules');
     if (!fs.existsSync(logDir)) fs.mkdirSync(logDir);
 
-    const logFile = agent === 'SENTINEL' ? 'sentinel.md' : 'maintenance.md';
+    const logFile = safeAgent === 'SENTINEL' ? 'sentinel.md' : 'maintenance.md';
     const logPath = path.join(logDir, logFile);
 
-    const entry = `\n## ${new Date().toISOString()} - [${level || 'INFO'}] ${agent}\n${message}\n`;
+    const entry = `\n## ${new Date().toISOString()} - [${safeLevel}] ${safeAgent}\n${safeMessage}\n`;
     fs.appendFileSync(logPath, entry);
     res.json({ success: true });
 });
