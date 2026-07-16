@@ -189,7 +189,7 @@ making real trades based on real market prices and fees etc"
 
   Check System Status:
     TradeArenaApp.getSystemStatus()
-    // Returns: {master: "ON", balance: 10000, online: true, version: "v4.2"}
+    // Returns: {master: "ON", balance: 0, online: true, version: "v4.2"}
   
   Check Balance:
     TradeArenaApp.getBalance()

@@ -72,7 +72,7 @@ When you run `runCrucibleTest(5)`, you'll see:
 ```
 🔬 CRUCIBLE TEST INITIALIZED
 Session ID: crucible-1694729402155
-Paper Balance: $10000
+Paper Balance: $0
 Test Duration: 5 trades × 2000ms
 
 🚀 CRUCIBLE TEST STARTED
@@ -82,7 +82,7 @@ Test Duration: 5 trades × 2000ms
   ARBITRAGE · BTC
   Entry: $42,156.23 → Exit: $42,315.89
 ✅ WIN +$159.66 (1.60%)
-  Balance: $10000.00 → $10159.66
+  Balance: $0.00 → $10159.66
   Edge: 0.38% | Confidence: 75% | P(Win): 62%
 
 [TRADE 2/5]

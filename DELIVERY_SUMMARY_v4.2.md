@@ -204,7 +204,7 @@ Run these in browser console to verify everything works:
 ```javascript
 // 1. Check system status
 TradeArenaApp.getSystemStatus()
-// Should show: {master: "ON", balance: 10000+, online: true, version: "v4.2"}
+// Should show: {master: "ON", balance: 0+, online: true, version: "v4.2"}
 
 // 2. Test master switch
 TradeArenaApp.toggleMaster()

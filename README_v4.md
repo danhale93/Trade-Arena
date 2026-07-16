@@ -146,7 +146,7 @@ Edit `.env` file to customize:
 
 ```env
 # Balance & Bet Limits
-INITIAL_BALANCE=10000        # Starting virtual balance
+INITIAL_BALANCE=0        # Starting virtual balance
 MIN_BET=1                    # Minimum bet size
 MAX_BET=500                  # Maximum bet size
 MAX_BOTS=6                   # Max bots allowed

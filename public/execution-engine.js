@@ -92,6 +92,9 @@ async function executeOnChainTrade(tradeRequest) {
         updateExecutionUI(botId, 'QUOTING');
         const quote = await getSwapQuote(buyToken, sellToken, amountWei, userAddress);
 
+        // Security: Validate Chain ID before signing (strictly Base Mainnet 8453)
+        const expectedChainId = 8453;
+
         updateExecutionUI(botId, 'SIGNING');
 
         let txHash;
@@ -109,6 +112,10 @@ async function executeOnChainTrade(tradeRequest) {
         } else if (window.ethereum) {
             // Execute via MetaMask/Injected
             const provider = new ethers.providers.Web3Provider(window.ethereum);
+            const network = await provider.getNetwork();
+            if (network.chainId !== expectedChainId) {
+                throw new Error(`Incorrect Network: Expected Base Mainnet (8453), but got ${network.chainId}. Please switch networks.`);
+            }
             const signer = provider.getSigner();
             const tx = await signer.sendTransaction({
                 to: quote.to,
