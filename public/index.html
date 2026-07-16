@@ -740,10 +740,15 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     <span>5 AI agents · Real prices · Self-learning · Politician filings</span>
   </div>
 <div class="login-card">
-    <div class=login-card-hd>UNIFIED SECURE LOGIN</div>
+    <div class=login-card-hd>SECURE WALLET ENTRY</div>
     <div class=login-card-bd>
-      <button class=g-btn onclick="if(typeof privyInit==='function') privyInit(); if(window.privyLogin) window.privyLogin();" style="height:54px; font-size:14px; background: linear-gradient(90deg, var(--cyan), var(--hot)); color: #000; border: none; box-shadow: 0 0 20px rgba(0,255,231,0.3)">
-        <span style="font-family:'Bungee'; letter-spacing:1px">ENTER ARENA →</span>
+      <!-- MetaMask Priority -->
+      <button class=g-btn onclick="window.ethereum?.request({ method: 'eth_requestAccounts' }).then(() => { location.reload(); })" style="height:44px; font-size:12px; background: #f6851b; color: #fff; border: none; margin-bottom: 8px;">
+        <span style="font-family:'Bungee'; letter-spacing:1px">CONNECT METAMASK (RECOMMENDED)</span>
+      </button>
+
+      <button class=g-btn onclick="if(typeof privyInit==='function') privyInit(); if(window.privyLogin) window.privyLogin();" style="height:44px; font-size:12px; background: linear-gradient(90deg, var(--cyan), var(--hot)); color: #000; border: none;">
+        <span style="font-family:'Bungee'; letter-spacing:1px">PRIVY / SOCIAL LOGIN</span>
       </button>
 
       <div style="margin-top:12px; display:flex; gap:8px;">
@@ -752,8 +757,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       </div>
 
       <p style="font-size:9px; color:var(--dim); text-align:center; margin-top:8px; line-height:1.4">
-        Powered by Privy • Secure Multi-Chain Authentication<br>
-        <span style="color:var(--cyan)">Base Mainnet Protocol</span>
+        Secure Multi-Chain Authentication<br>
+        <span style="color:var(--green)">✓ Mainnet Ready</span> • <span style="color:var(--green)">✓ EIP-712 Secure Payouts</span>
       </p>
     </div>
   </div>
@@ -812,7 +817,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
       <!-- Trade Amount -->
       <div class="bus-section">
-        <div class="bus-section-title"><span>💰</span> TRADE AMOUNT — ALL BOTS</div>
+        <div class="bus-section-title"><span role="img" aria-label="Trade Amount">💰</span> TRADE AMOUNT — ALL BOTS</div>
         <div class="bus-presets" id="busAmtPresets">
           <button class="bus-preset" onclick="busSetAmount(0.10)" aria-pressed="false" title="Set all bots to $0.10">$0.10</button>
           <button class="bus-preset" onclick="busSetAmount(0.25)" aria-pressed="false" title="Set all bots to $0.25">$0.25</button>
@@ -832,7 +837,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
       <!-- Personality -->
       <div class="bus-section">
-        <div class="bus-section-title"><span>🧠</span> PERSONALITY — ALL BOTS</div>
+        <div class="bus-section-title"><span role="img" aria-label="Personality">🧠</span> PERSONALITY — ALL BOTS</div>
         <div class="bus-presets" id="busPersonalityPresets">
           <button class="bus-preset" onclick="busSetPersonality('AGGRESSIVE')" aria-pressed="false" title="Set all bots to Aggressive">🔥 Aggressive</button>
           <button class="bus-preset" onclick="busSetPersonality('CONSERVATIVE')" aria-pressed="false" title="Set all bots to Conservative">🛡️ Conservative</button>
@@ -846,7 +851,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
       <!-- Auto Delay -->
       <div class="bus-section">
-        <div class="bus-section-title"><span>⏱️</span> AUTO DELAY — ALL BOTS</div>
+        <div class="bus-section-title"><span role="img" aria-label="Auto Delay">⏱️</span> AUTO DELAY — ALL BOTS</div>
         <div class="bus-presets" id="busDelayPresets">
           <button class="bus-preset" onclick="busSetDelay(2000)" aria-pressed="false" title="Set all bots to 2s auto-delay">Fast 2s</button>
           <button class="bus-preset" onclick="busSetDelay(5000)" aria-pressed="false" title="Set all bots to 5s auto-delay">Normal 5s</button>
@@ -857,7 +862,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
       <!-- Risk Controls -->
       <div class="bus-section">
-        <div class="bus-section-title"><span>🛡️</span> RISK — ALL BOTS</div>
+        <div class="bus-section-title"><span role="img" aria-label="Risk">🛡️</span> RISK — ALL BOTS</div>
         <div style="display:flex;gap:8px">
           <div style="flex:1">
             <div style="font-size:7px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Stop Loss</div>
@@ -1163,7 +1168,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
   <div class="cpanel" id="staffPanel">
     <div class="cpanel-hd" id="staffHd" onclick="togglePanel('staff')" style="background:linear-gradient(90deg,rgba(0,255,231,.06),transparent)" role="button" tabindex="0">
       <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:14px" role="img" aria-hidden="true">👷</span>
+        <span style="font-size:14px" role="img" aria-label="Staff Operations">👷</span>
         <span class="cpanel-title" style="color:var(--cyan)">STAFF OPERATIONS</span>
         <span style="font-size:9px;color:var(--dim)">Maintenance & Customer Service</span>
       </div>
@@ -1173,19 +1178,19 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:10px; margin-bottom:15px;">
         <!-- Agent Status Cards -->
         <div style="background:var(--chrome); border:1px solid var(--border); border-radius:8px; padding:10px;">
-          <div style="font-size:10px; color:var(--cyan); font-family:'Bungee'; margin-bottom:5px;">🛡️ SENTINEL</div>
+          <div style="font-size:10px; color:var(--cyan); font-family:'Bungee'; margin-bottom:5px;"><span role="img" aria-label="Sentinel Agent">🛡️</span> SENTINEL</div>
           <div id="sentinelStatus" style="font-size:9px; color:var(--dim);">Security scan active...</div>
         </div>
         <div style="background:var(--chrome); border:1px solid var(--border); border-radius:8px; padding:10px;">
-          <div style="font-size:10px; color:var(--gold); font-family:'Bungee'; margin-bottom:5px;">🏛️ ARCHITECT</div>
+          <div style="font-size:10px; color:var(--gold); font-family:'Bungee'; margin-bottom:5px;"><span role="img" aria-label="Architect Agent">🏛️</span> ARCHITECT</div>
           <div id="architectStatus" style="font-size:9px; color:var(--dim);">RPC Health: 42ms</div>
         </div>
         <div style="background:var(--chrome); border:1px solid var(--border); border-radius:8px; padding:10px;">
-          <div style="font-size:10px; color:var(--green); font-family:'Bungee'; margin-bottom:5px;">🧹 JANITOR</div>
+          <div style="font-size:10px; color:var(--green); font-family:'Bungee'; margin-bottom:5px;"><span role="img" aria-label="Janitor Agent">🧹</span> JANITOR</div>
           <div id="janitorStatus" style="font-size:9px; color:var(--dim);">Cache optimized</div>
         </div>
         <div style="background:var(--chrome); border:1px solid var(--border); border-radius:8px; padding:10px;">
-          <div style="font-size:10px; color:var(--purple); font-family:'Bungee'; margin-bottom:5px;">👨‍💻 DEVELOPER</div>
+          <div style="font-size:10px; color:var(--purple); font-family:'Bungee'; margin-bottom:5px;"><span role="img" aria-label="Developer Agent">👨‍💻</span> DEVELOPER</div>
           <div id="developerStatus" style="font-size:9px; color:var(--dim);">Self-healing ready</div>
         </div>
       </div>
@@ -1923,6 +1928,12 @@ function updateLiveBalance(){
       pnlEl.className = 'gh-pnl ' + (displayPnl >= 0 ? 'pnl-pos' : 'pnl-neg');
     }
 
+    // Show claim button if realized balance >= $1.00
+    const claimBtn = _getEl('ghClaimBtn');
+    if (claimBtn) {
+      claimBtn.style.display = balance >= 1.0 ? 'inline-block' : 'none';
+    }
+
     // Consolidated: Handle Open Positions count and Queue Wrap visibility
     const qWrap = _getEl('ghQueueWrap');
     const qNum = _getEl('ghQueueNum');
@@ -1940,6 +1951,16 @@ function updateLiveBalance(){
 
     // Consolidated: Global metric card for open positions
     setVal('mv-open', count);
+
+    // Consolidated: Update total trade count label in Quant Report
+    const qCountEl = _getEl('qTradeCount');
+    if (qCountEl) {
+      const n = closedTrades.length;
+      qCountEl.textContent = n + ' closed trades';
+    }
+
+    // Consolidated: Update Matrix if visible
+    if (count !== _lastConsolidatedCount) updateMatrix();
 
     // Consolidated: Run breakers alongside balance changes
     if (typeof checkGlobalBreakers === 'function') checkGlobalBreakers();
@@ -2104,6 +2125,15 @@ function showExitResult(pos, bot) {
       if(card) FX.shake(card);
     }
   }
+
+  // Localized P&L fly-up
+  if(window.FX && window.FX.pnlFlyUp) {
+    const card = document.getElementById('bot-' + pos.botId);
+    if(card) {
+      const rect = card.getBoundingClientRect();
+      FX.pnlFlyUp(pos.netPnl, rect.left + rect.width / 2, rect.top + rect.height / 2);
+    }
+  }
 }
 
 // ══════════════════════════════════════════════════════
@@ -2166,8 +2196,6 @@ function _runUpdateQuantReport() {
       if (t.baselines.momentum > 0) baselineWins.momentum++;
     }
   }
-
-  document.getElementById('qTradeCount').textContent=n+' closed trades';
 
   // Sig ladder
   [20,50,100,200,300].forEach(thresh=>{
@@ -2249,12 +2277,15 @@ function drawEquityCurve(preMin, preMax) {
   // This approach is more efficient for larger datasets like the 1000-point equity history.
   const len = equityHistory.length;
   const ptsArr = new Array(len);
+  // ⚡ Bolt Optimization: Pre-calculate scaling factors to reduce operations in hot loop
+  const xStep = W / (len - 1);
+  const yFactor = (H - 6) / range;
+  const yBase = H - 3;
+
   for (let i = 0; i < len; i++) {
-    const v = equityHistory[i];
-    const x = (i / (len - 1)) * W;
-    const y = H - ((v - min) / range) * (H - 6) - 3;
-    // ⚡ Bolt Optimization: Use manual rounding instead of toFixed(1) to avoid
-    // the overhead of Number-to-String formatting in the high-frequency reporting loop.
+    const x = i * xStep;
+    const y = yBase - (equityHistory[i] - min) * yFactor;
+    // ⚡ Bolt Optimization: Use manual rounding instead of toFixed(1) for faster string building
     ptsArr[i] = (Math.round(x * 10) / 10) + "," + (Math.round(y * 10) / 10);
   }
   const pts = ptsArr.join(" ");
@@ -2263,13 +2294,9 @@ function drawEquityCurve(preMin, preMax) {
   line.setAttribute('stroke',isUp?'var(--green)':'var(--hot)');
   fill.setAttribute('fill',isUp?'rgba(57,255,20,.05)':'rgba(255,45,120,.05)');
   // baseline
-  const baseY=H-((startBalance-min)/range)*(H-6)-3;
+  const baseY = yBase - (startBalance - min) * yFactor;
   const bl = _getEl('eqBaseline');
-  if(bl){
-    const roundedY = Math.round(baseY * 10) / 10;
-    bl.setAttribute('y1', roundedY);
-    bl.setAttribute('y2', roundedY);
-  }
+  if(bl){ bl.setAttribute('y1', (Math.round(baseY * 10) / 10)); bl.setAttribute('y2', (Math.round(baseY * 10) / 10)); }
 }
 
 function drawBaselines(n, claudePnl, winRate, baselinePnls, baselineWins, claudeAvg) {
@@ -2849,24 +2876,25 @@ function updateConnectionDashboard() {
         const isMissing = conn.status === 'MISSING';
 
         let keyEntryHtml = '';
-        if ((isAiKey || isSecret) && isMissing) {
+        if (isAiKey || isSecret) {
           const keyGenLinks = {
             'ANTHROPIC_API_KEY': 'https://console.anthropic.com',
             'OPENAI_API_KEY': 'https://platform.openai.com/api-keys',
             'GEMINI_API_KEY': 'https://aistudio.google.com/app/apikey',
-            '0x_API_KEY': 'https://dashboard.0x.org'
+            '0x_API_KEY': 'https://dashboard.0x.org',
+            'TASK_CLAIM_SECRET': 'https://trade-arena.com/keys'
           };
           const genUrl = keyGenLinks[conn.name] || '#';
-          const label = isSecret ? 'FILL MISSING SECRET' : 'FILL MISSING KEY';
+          const label = isMissing ? (isSecret ? 'FILL MISSING SECRET' : 'FILL MISSING KEY') : 'UPDATE KEY/SECRET';
 
           keyEntryHtml = `
             <div style="margin-top:8px; border-top:1px solid var(--border); padding-top:8px;">
               <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-                <span style="font-size:8px; color:var(--dim);">${label}</span>
-                ${!isSecret ? `<a href="${genUrl}" target="_blank" style="font-size:8px; color:var(--cyan); text-decoration:none;">GET KEY →</a>` : ''}
+                <span style="font-size:8px; color:var(--dim);">${label} — ${escapeHTML(conn.name.replace(/_/g, ' '))}</span>
+                <a href="${genUrl}" target="_blank" style="font-size:8px; color:var(--cyan); text-decoration:none;">GET KEY →</a>
               </div>
               <div style="display:flex; gap:4px;">
-                <input type="password" id="d_cfg_${conn.name}" placeholder="Paste here..."
+                <input type="password" id="d_cfg_${conn.name}" placeholder="Enter ${escapeHTML(conn.name.replace(/_/g, ' '))}..."
                   style="flex:1; padding:4px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px;">
                 <button onclick="saveApiKeyFromDashboard('${conn.name}')"
                   style="padding:4px 8px; background:var(--green); color:black; border:none; border-radius:4px; font-family:'Bungee'; font-size:8px; cursor:pointer;">
@@ -3093,13 +3121,13 @@ function updateBreakers() {
   checkGlobalBreakers();
 }
 function updateGasDisplay() {
-  currentGas=parseInt(document.getElementById('gasSlider')?.value||18);
-  const el=document.getElementById('gasCurrentVal'); if(!el) return;
+  currentGas=parseInt(_getEl('gasSlider')?.value||18);
+  const el=_getEl('gasCurrentVal'); if(!el) return;
   const over=currentGas>gasHardCeiling;
   el.textContent=currentGas+' gwei '+(over?'⚠️ ABOVE CEILING':'✓ OK'); el.style.color=over?'var(--hot)':'var(--green)';
   checkGlobalBreakers();
   bots.forEach(b=>{
-    const card=document.getElementById('bot-'+b.id), badge=document.getElementById('mstatus-'+b.id);
+    const card=_getEl('bot-'+b.id), badge=_getEl('mstatus-'+b.id);
     if(!card||!badge) return;
     card.classList.toggle('gas-paused',currentGas>gasHardCeiling&&!b.cooling);
     badge.className='m-status-badge'+(currentGas>gasHardCeiling?' gas':(b.cooling?' cool':''));
@@ -3394,12 +3422,12 @@ function setupApp({name,avatar,badge,address}){
 // BALANCE
 // ══════════════════════════════════════════════════════
 function updateBotPnl(bot){
-  const el=document.getElementById('mpnl-'+bot.id); if(!el) return;
+  const el=_getEl('mpnl-'+bot.id); if(!el) return;
   el.textContent=(bot.pnl>=0?'+':'')+'$'+bot.pnl.toFixed(2);
   el.className='m-pnl '+(bot.pnl>=0?'pos':'neg');
 
   // Sync P&L on Matrix Pad
-  const padPnl = document.getElementById('pad-pnl-' + bot.id);
+  const padPnl = _getEl('pad-pnl-' + bot.id);
   if (padPnl) {
     padPnl.textContent = (bot.pnl >= 0 ? '+' : '') + '$' + bot.pnl.toFixed(2);
     padPnl.className = 'pad-pnl ' + (bot.pnl >= 0 ? 'pnl-pos' : 'pnl-neg');
@@ -5584,7 +5612,10 @@ function updateMatrix() {
     botsWithOpen.add(openPositions[i].botId);
   }
 
-  grid.innerHTML = bots.map((bot, i) => {
+  let html = '';
+  const botCount = bots.length;
+  for (let i = 0; i < botCount; i++) {
+    const bot = bots[i];
     const agentId = String(bot.id).padStart(2, '0');
     const pnl = bot.pnl || 0;
     const pnlClass = pnl >= 0 ? 'pnl-pos' : 'pnl-neg';
@@ -5601,7 +5632,7 @@ function updateMatrix() {
 
     const botIcon = bot.type === "WORKER" ? "👷" : "🤖";
     const botLabel = bot.type === "WORKER" ? "Worker Bot" : "Trader Bot";
-    return `
+    html += `
       <div class="pad ${padState}" id="pad-${bot.id}"
            role="button" tabindex="0"
            onclick="scrollToBot(${escapeHTML(JSON.stringify(bot.id))})"
@@ -5610,10 +5641,11 @@ function updateMatrix() {
         <span class="pad-agent-id"><span role="img" aria-label="${botLabel}">${botIcon}</span> AG-${agentId}</span>
         <span class="pad-pnl ${pnlClass}" id="pad-pnl-${bot.id}">${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}</span>
       </div>`;
-  }).join('');
+  }
+  grid.innerHTML = html;
 
-  const count = document.getElementById('matrixCount');
-  if (count) count.textContent = bots.length + ' ACTIVE';
+  const count = _getEl('matrixCount');
+  if (count) count.textContent = botCount + ' ACTIVE';
 }
 
 /**
@@ -6289,7 +6321,8 @@ function updateSettingsVolume(val) {
         <div class="settings-section-title">💳 Wallet Connection</div>
         <div id="settingsWalletStatus" style="font-size:10px;color:var(--dim);margin-bottom:8px">🔴 Not connected</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <button class="mm-btn" onclick="if(window.privyLogin) window.privyLogin()" style="flex:1;min-width:120px;padding:8px;font-size:10px">Connect MetaMask</button>
+          <button class="mm-btn" onclick="window.ethereum?.request({ method: 'eth_requestAccounts' }).then(() => { location.reload(); })" style="flex:1;min-width:120px;padding:8px;font-size:10px;background:#f6851b;color:#fff;border:none">Connect MetaMask</button>
+          <button class="onramp-btn" onclick="if(window.privyLogin) window.privyLogin()" style="flex:1;min-width:120px;padding:8px;font-size:10px">Other Wallets (Privy)</button>
         </div>
       </div>
       <div class="settings-section">

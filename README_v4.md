@@ -33,7 +33,7 @@ A cutting-edge, visually stunning DeFi trading platform with AI-powered bot mana
 ### Login Options
 - **📱 Google OAuth** - One-click sign-in (optional)
 - **🦊 MetaMask** - Connect real wallet to Base network
-- **🎮 Demo Mode** - Start with $10,000 virtual balance (no setup!)
+- **🎮 Demo Mode** - Start with $0.00 virtual balance (no setup!)
 
 ### Live Market Data
 - **CoinGecko Integration** - Free real-time market prices & volume
