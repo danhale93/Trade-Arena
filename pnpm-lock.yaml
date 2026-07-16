@@ -29,9 +29,6 @@ importers:
       dotenv:
         specifier: 17.4.2
         version: 17.4.2
-      esbuild:
-        specifier: ^0.28.1
-        version: 0.28.1
       ethers:
         specifier: 6.17.0
         version: 6.17.0(bufferutil@4.1.0)(utf-8-validate@5.0.10)
@@ -60,6 +57,9 @@ importers:
       concurrently:
         specifier: ^10.0.3
         version: 10.0.3
+      esbuild:
+        specifier: ^0.28.1
+        version: 0.28.1
       playwright:
         specifier: ^1.61.1
         version: 1.61.1
