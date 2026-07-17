@@ -203,13 +203,19 @@ const CrucibleRealTrading = {
     let rsi = 100 - (100 / (1 + rs));
     if (isNaN(rsi)) rsi = 50; // Default to neutral if calculation fails
     
-    // Volatility (Standard Deviation of returns)
-    const returns = [];
+    // ⚡ Bolt Optimization: Single-pass O(N) volatility calculation with O(1) space complexity.
+    // Calculates sum and sum-of-squares of returns simultaneously to compute variance
+    // without intermediate array allocations or redundant iterations.
+    let sum = 0;
+    let sumSq = 0;
+    const n = closes.length - 1;
     for (let i = 1; i < closes.length; i++) {
-      returns.push((closes[i] - closes[i-1]) / (closes[i-1] || 1));
+      const r = (closes[i] - closes[i-1]) / (closes[i-1] || 1);
+      sum += r;
+      sumSq += r * r;
     }
-    const avgReturn = returns.reduce((a, b) => a + b, 0) / Math.max(1, returns.length);
-    const variance = returns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / Math.max(1, returns.length);
+    const mean = n > 0 ? sum / n : 0;
+    const variance = n > 0 ? Math.max(0, (sumSq / n) - (mean * mean)) : 0;
     let volatility = Math.sqrt(variance) * 100; // Convert to percentage
     if (isNaN(volatility) || volatility === 0) volatility = 0.5; // Default if NaN
     
