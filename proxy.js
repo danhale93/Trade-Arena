@@ -194,17 +194,30 @@ app.post('/api/maintenance/log', (req, res) => {
   res.json({ success: true });
 });
 
+// Security: Strict path whitelist for patching matching main server.js
+const ALLOWED_PATCH_FILES = [
+  'public/index.html',
+  'public/staff-engine.js',
+  'public/ai-api.js',
+  'public/ai-arena.js'
+];
+
 app.post('/api/maintenance/patch', async (req, res) => {
   const { filepath, patch, description } = req.body;
   try {
-    // Security: Prevent path traversal by resolving and validating path
-    const resolvedPath = path.resolve(__dirname, filepath);
-    const rootPath = path.resolve(__dirname) + path.sep;
-    if (!resolvedPath.startsWith(rootPath) && resolvedPath !== path.resolve(__dirname)) {
-      return res.status(403).json({ error: 'Unauthorized path access' });
+    if (!filepath || typeof filepath !== 'string') {
+      return res.status(400).json({ error: 'Invalid or missing filepath' });
     }
 
-    if (!fs.existsSync(resolvedPath)) throw new Error('File not found');
+    // Security: Check against absolute whitelist to prevent path traversal & unauthorized patching
+    if (!ALLOWED_PATCH_FILES.includes(filepath)) {
+      return res.status(403).json({ error: 'Unauthorized file for patching' });
+    }
+
+    const resolvedPath = path.resolve(__dirname, filepath);
+    if (!fs.existsSync(resolvedPath)) {
+      return res.status(404).json({ error: 'File not found' });
+    }
 
     // In a real self-healing system, we would validate the patch
     // For this implementation, we log the intent and could apply it
