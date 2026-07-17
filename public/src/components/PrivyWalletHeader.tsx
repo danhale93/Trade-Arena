@@ -27,8 +27,18 @@ declare global {
  * the embedded wallet for secure Trade Arena interactions.
  */
 export const PrivyWalletHeader = () => {
-  const { authenticated, user, login, logout, ready } = usePrivy();
-  const { wallets, ready: walletsReady } = useWallets();
+  let { authenticated, user, login, logout, ready } = usePrivy();
+  let { wallets, ready: walletsReady } = useWallets();
+
+  // Support frontend verification mocking
+  if (typeof window !== 'undefined' && (window as any).__mockPrivy) {
+    const mock = (window as any).__mockPrivy;
+    if (mock.authenticated !== undefined) authenticated = mock.authenticated;
+    if (mock.user !== undefined) user = mock.user;
+    if (mock.ready !== undefined) ready = mock.ready;
+    if (mock.wallets !== undefined) wallets = mock.wallets;
+    if (mock.walletsReady !== undefined) walletsReady = mock.walletsReady;
+  }
 
   const hasTriggeredSuccess = useRef(false);
   const lastSyncAddress = useRef<string | null>(null);
