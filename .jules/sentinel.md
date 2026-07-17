@@ -59,129 +59,6 @@ Running security audit across localStorage and active config...
 ## 2026-07-07T08:37:47.936Z - [SUCCESS] SENTINEL
 Security audit complete. All encryption layers intact.
 
-## 2026-07-07T08:40:06.742Z - [INFO] SENTINEL
-Running security audit across localStorage and active config...
-
-## 2026-07-07T08:40:10.723Z - [SUCCESS] SENTINEL
-Security audit complete. All encryption layers intact.
-
-## 2026-07-07T08:43:23.198Z - [INFO] SENTINEL
-Running security audit across localStorage and active config...
-
-## 2026-07-07T08:43:27.179Z - [SUCCESS] SENTINEL
-Security audit complete. All encryption layers intact.
-
-## 2026-07-08T11:05:13.372Z - [INFO] SENTINEL
-Running security audit across localStorage and active config...
-
-## 2026-07-08T11:11:48.176Z - [INFO] SENTINEL
-Running security audit across localStorage and active config...
-
-## 2026-07-08T11:11:52.177Z - [SUCCESS] SENTINEL
-Security audit complete. All encryption layers intact.
-
-## 2026-07-08T11:18:39.928Z - [INFO] SENTINEL
-Running security audit across localStorage and active config...
-
-## 2026-07-08T11:20:54.524Z - [INFO] SENTINEL
-Running security audit across localStorage and active config...
-
-## 2026-07-08T11:20:58.526Z - [SUCCESS] SENTINEL
-Security audit complete. All encryption layers intact.
-
-## 2026-07-08T11:23:25.288Z - [INFO] SENTINEL
-Running security audit across localStorage and active config...
-
-## 2026-07-08T11:25:26.972Z - [INFO] SENTINEL
-Running security audit across localStorage and active config...
-
-## 2026-07-08T23:11:27.274Z - [INFO] SENTINEL
-Running security audit across localStorage and active config...
-
-## 2026-07-08T23:12:16.500Z - [INFO] SENTINEL
-Running security audit across localStorage and active config...
-
-## 2026-07-08T23:12:20.499Z - [SUCCESS] SENTINEL
-Security audit complete. All encryption layers intact.
-
-## 2026-07-08T23:14:11.527Z - [INFO] SENTINEL
-Running security audit across localStorage and active config...
-
-## 2026-07-08T23:14:15.527Z - [SUCCESS] SENTINEL
-Security audit complete. All encryption layers intact.
-
-## 2026-07-08T23:15:54.048Z - [INFO] SENTINEL
-Running security audit across localStorage and active config...
-
-## 2026-07-08T23:18:09.875Z - [INFO] SENTINEL
-Running security audit across localStorage and active config...
-
-## 2026-07-08T23:18:57.149Z - [INFO] SENTINEL
-Running security audit across localStorage and active config...
-
-## 2026-07-08T23:19:01.150Z - [SUCCESS] SENTINEL
-Security audit complete. All encryption layers intact.
-
-## 2026-07-09T13:17:54.324Z - [INFO] SENTINEL
-Running security audit across localStorage and active config...
-
-## 2026-07-09T13:17:58.303Z - [SUCCESS] SENTINEL
-Security audit complete. All encryption layers intact.
-
-## 2026-07-09T13:22:06.324Z - [INFO] SENTINEL
-Running security audit across localStorage and active config...
-
-## 2026-07-09T13:24:51.404Z - [INFO] SENTINEL
-Running security audit across localStorage and active config...
-
-## 2026-07-09T13:24:55.389Z - [SUCCESS] SENTINEL
-Security audit complete. All encryption layers intact.
-
-## 2026-07-09T13:26:18.075Z - [INFO] SENTINEL
-Running security audit across localStorage and active config...
-
-## 2026-07-09T13:26:22.059Z - [SUCCESS] SENTINEL
-Security audit complete. All encryption layers intact.
-
-## 2026-07-09T13:27:22.051Z - [INFO] SENTINEL
-Running security audit across localStorage and active config...
-
-## 2026-07-09T13:28:39.158Z - [INFO] SENTINEL
-Running security audit across localStorage and active config...
-
-## 2026-07-09T13:28:43.143Z - [SUCCESS] SENTINEL
-Security audit complete. All encryption layers intact.
-
-## 2026-07-09T13:29:30.893Z - [INFO] SENTINEL
-Running security audit across localStorage and active config...
-
-## 2026-07-09T13:29:34.869Z - [SUCCESS] SENTINEL
-Security audit complete. All encryption layers intact.
-
-## 2026-07-09T23:13:15.600Z - [INFO] SENTINEL
-Running security audit across localStorage and active config...
-
-## 2026-07-09T23:13:19.584Z - [SUCCESS] SENTINEL
-Security audit complete. All encryption layers intact.
-
-## 2026-07-10T15:32:01.946Z - [INFO] SENTINEL
-Running security audit across localStorage and active config...
-
-## 2026-07-10T15:32:05.929Z - [SUCCESS] SENTINEL
-Security audit complete. All encryption layers intact.
-
-## 2026-07-10T15:33:32.351Z - [INFO] SENTINEL
-Running security audit across localStorage and active config...
-
-## 2026-07-10T15:33:36.353Z - [SUCCESS] SENTINEL
-Security audit complete. All encryption layers intact.
-
-## 2026-07-10T22:47:46.947Z - [INFO] SENTINEL
-Running security audit across localStorage and active config...
-
-## 2026-07-10T22:47:50.929Z - [SUCCESS] SENTINEL
-Security audit complete. All encryption layers intact.
-
 ## 2026-07-10T22:48:28.801Z - [INFO] SENTINEL
 Running security audit across localStorage and active config...
 
@@ -215,3 +92,8 @@ Running security audit across localStorage and active config...
 **Vulnerability:** Directory traversal and arbitrary file write / overwrite vulnerability in `/api/maintenance/patch` endpoint of `proxy.js`.
 **Learning:** General path verification using `resolvedPath.startsWith(rootPath)` is insufficient if it permits overwriting any repository-internal code (such as configuration files or backend source code), allowing unauthorized modifications or remote code execution.
 **Prevention:** Implement strict absolute file whitelists (`ALLOWED_PATCH_FILES`) to heavily restrict the target subset of mutable files on any dynamic update endpoints, preventing general directory structure manipulation.
+
+## 2026-07-17 - Referrer Header Information Leakage & Dependency Loading Alignment
+**Vulnerability:** Information leakage via the referrer header in `proxy.js` requests and potential service outage due to duplicate variable declarations crashing the express server.
+**Learning:** Even if main application servers are fully hardened, secondary proxies or service runners may lack identical headers (such as `Referrer-Policy`). Additionally, duplicate declaration in module scope crashes startup, completely disabling rate limiting defenses.
+**Prevention:** Keep middleware security configurations synchronized across both primary servers and proxies. Always verify syntax using `node -c` or local start before deployment, and ensure `Referrer-Policy` is explicitly set to `no-referrer` to prevent URL context leakage.
