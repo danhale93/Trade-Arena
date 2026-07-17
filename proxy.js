@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const rateLimit = require('express-rate-limit');
 const app = express();
 
 // Sentinel: Security hardening
@@ -186,7 +187,14 @@ app.post('/api/gemini', aiProxyLimiter, async (req, res) => {
 const fs = require('fs');
 const path = require('path');
 
-app.post('/api/maintenance/log', (req, res) => {
+const maintenanceLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 60, // limit each IP to 60 requests per window
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+app.post('/api/maintenance/log', maintenanceLimiter, (req, res) => {
   const { agent, message, level } = req.body;
   if (!agent || !message) return res.status(400).json({ error: 'Missing agent or message' });
 
@@ -216,7 +224,7 @@ const ALLOWED_PATCH_FILES = [
   'public/ai-arena.js'
 ];
 
-app.post('/api/maintenance/patch', async (req, res) => {
+app.post('/api/maintenance/patch', maintenanceLimiter, async (req, res) => {
   const { filepath, patch, description } = req.body;
   try {
     if (!filepath || typeof filepath !== 'string') {
