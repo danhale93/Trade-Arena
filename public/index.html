@@ -5987,6 +5987,24 @@ document.addEventListener('keydown', function(e) {
       target.click();
     }
   }
+  if (e.key === 'Escape') {
+    const settingsModal = document.getElementById('settingsModal');
+    if (settingsModal && settingsModal.style.display === 'flex') {
+      toggleSettingsModal();
+    }
+    const withdrawModal = document.getElementById('withdrawModal');
+    if (withdrawModal && withdrawModal.style.display === 'flex') {
+      closeWithdrawModal();
+    }
+    const voiceAgentModal = document.getElementById('voiceAgentModal');
+    if (voiceAgentModal && voiceAgentModal.classList.contains('open')) {
+      toggleVoiceAgent();
+    }
+    const crucibleResults = document.getElementById('crucibleResultsModal');
+    if (crucibleResults && crucibleResults.parentElement) {
+      crucibleResults.parentElement.remove();
+    }
+  }
 });
 
 </script>

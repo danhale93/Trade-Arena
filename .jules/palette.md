@@ -25,3 +25,7 @@ Action: Integrated payout claim logic directly into the header for high visibili
 ## 2026-07-13 - Multi-Modal Delight Feedback
 **Learning:** For a high-density trading dashboard, visual feedback should be localized to the point of action (e.g., shaking a bot card on loss) as well as global (confetti) to provide immediate sensory confirmation without breaking the user's focus on specific agents.
 **Action:** Use localized effects like `FX.shake(el)` for individual bot events and global effects like `FX.confetti` for high-stakes wins or system-level successes.
+
+## 2026-07-17 - Keyboard-Accessible Modal Escapes
+**Learning:** Overlays and modals (e.g. Settings, Withdraw, Voice Agent, Crucible results) that intercept layout interaction must provide immediate keyboard-accessible escape mechanisms (the `Escape` key) to satisfy accessibility (WCAG) standard and improve navigation speed for keyboard-only users.
+**Action:** Implement a global keydown handler targeting active modal elements to safely close or remove overlays when `Escape` is pressed.
