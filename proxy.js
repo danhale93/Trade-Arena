@@ -18,7 +18,21 @@ app.use((req, res, next) => {
 
 // Sentinel: Limit JSON payload size to prevent DoS attacks
 app.use(express.json({ limit: '100kb' }));
-app.use(cors({ origin: '*' }));
+
+// Sentinel: Restrictive CORS policy (allowlist)
+const ALLOWED_ORIGINS = new Set([
+  'https://your-frontend.example.com',
+  'https://app.your-frontend.example.com'
+]);
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow non-browser or same-origin requests with no Origin header
+    if (!origin) return callback(null, true);
+    if (ALLOWED_ORIGINS.has(origin)) return callback(null, true);
+    return callback(new Error('Not allowed by CORS'));
+  }
+}));
 
 const rateLimit = require('express-rate-limit');
 const aiProxyLimiter = rateLimit({
