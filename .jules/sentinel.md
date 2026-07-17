@@ -210,3 +210,8 @@ Running security audit across localStorage and active config...
 **Vulnerability:** Information disclosure in `proxy.js` (X-Powered-By) and potential timing attacks on reward claim validation tokens. Gemini API key leakage in URL query parameters.
 **Learning:** Secondary proxy servers often lag behind main servers in security posture. Sensitive validation tokens compared with `!==` are vulnerable to timing-based side-channel attacks.
 **Prevention:** Align security headers across all entry points. Use `crypto.timingSafeEqual` for all secret/token comparisons. Prefer header-based authentication for third-party AI APIs (like Gemini) over URL parameters.
+
+## 2026-07-16 - Directory Traversal and Arbitrary Overwrite Hardening
+**Vulnerability:** Directory traversal and arbitrary file write / overwrite vulnerability in `/api/maintenance/patch` endpoint of `proxy.js`.
+**Learning:** General path verification using `resolvedPath.startsWith(rootPath)` is insufficient if it permits overwriting any repository-internal code (such as configuration files or backend source code), allowing unauthorized modifications or remote code execution.
+**Prevention:** Implement strict absolute file whitelists (`ALLOWED_PATCH_FILES`) to heavily restrict the target subset of mutable files on any dynamic update endpoints, preventing general directory structure manipulation.
