@@ -31,7 +31,7 @@ router.post('/claim', payoutLimiter, async (req, res) => {
         }
 
         // Sentinel: Use timing-safe comparison to prevent timing attacks on validation tokens
-        const isValidToken = validationToken &&
+        const isValidToken = typeof validationToken === 'string' &&
                            validationToken.length === CLAIM_SECRET.length &&
                            crypto.timingSafeEqual(Buffer.from(validationToken), Buffer.from(CLAIM_SECRET));
 

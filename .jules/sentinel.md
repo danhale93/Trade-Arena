@@ -97,3 +97,8 @@ Running security audit across localStorage and active config...
 **Vulnerability:** Information leakage via the referrer header in `proxy.js` requests and potential service outage due to duplicate variable declarations crashing the express server.
 **Learning:** Even if main application servers are fully hardened, secondary proxies or service runners may lack identical headers (such as `Referrer-Policy`). Additionally, duplicate declaration in module scope crashes startup, completely disabling rate limiting defenses.
 **Prevention:** Keep middleware security configurations synchronized across both primary servers and proxies. Always verify syntax using `node -c` or local start before deployment, and ensure `Referrer-Policy` is explicitly set to `no-referrer` to prevent URL context leakage.
+
+## 2026-07-18 - Type-Confusion and Crash-based DoS in Cryptographic Validation
+**Vulnerability:** Type confusion when validating incoming request parameters (such as `validationToken` and `userId`) allowing non-string or array-like values to bypass string checks, causing unhandled `TypeError` exceptions inside `Buffer.from()` and crashing the request/server thread.
+**Learning:** Simple existence checks (e.g. `validationToken && ...`) are insufficient when cryptographic or payload functions assume a string. Passing non-string objects to native Node.js/V8 APIs can crash the handler and leak system internal state or cause localized Denial of Service.
+**Prevention:** Always enforce strict `typeof` verification for sensitive values or token inputs prior to passing them to functions that expect string-like inputs (such as `crypto.timingSafeEqual`, `Buffer.from`, or Object prototype property lookups).
