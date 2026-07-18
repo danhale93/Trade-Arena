@@ -33,3 +33,7 @@ Action: Integrated payout claim logic directly into the header for high visibili
 ## 2026-07-17 - Standardize Modal Close and Toggle Accessibility
 **Learning:** Unbalanced HTML tags (e.g. duplicated opening divs) break DOM parsing, which can nest separate modals inside each other and trigger selector collisions in integration tests. Standardizing close buttons using a shared class (`.m-close`) and consistent symbol (`✕`) along with dynamic aria states (e.g. `aria-pressed` on show/hide) makes complex dashboards incredibly robust, uniform, and compliant.
 **Action:** Always validate HTML tag balance when layout anomalies occur, and align modal control patterns using unified styles and dynamic ARIA state bindings.
+
+## 2026-07-24 - Interactive Clipboard Feedback and Audio-Visual Synchronization
+**Learning:** Copying addresses to the clipboard is a common utility but often feels static and unconfirmed when users are deep in high-velocity trading workflows. Combining localized canvas-based confetti at the trigger's coordinates, standardized audio ticks (`window.SFX`), and accessible system notifications (`window.showToast`) ensures multi-modal confirmation that works across visual, keyboard, and screen-reader users alike.
+**Action:** Always coordinate local sensory (confetti/sound) and global layout feedback (toast) when adding interactive shortcuts on high-utility read-only indicators.
