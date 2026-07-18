@@ -29,3 +29,7 @@ Action: Integrated payout claim logic directly into the header for high visibili
 ## 2026-07-17 - Keyboard-Accessible Modal Escapes
 **Learning:** Overlays and modals (e.g. Settings, Withdraw, Voice Agent, Crucible results) that intercept layout interaction must provide immediate keyboard-accessible escape mechanisms (the `Escape` key) to satisfy accessibility (WCAG) standard and improve navigation speed for keyboard-only users.
 **Action:** Implement a global keydown handler targeting active modal elements to safely close or remove overlays when `Escape` is pressed.
+
+## 2026-07-17 - Standardize Modal Close and Toggle Accessibility
+**Learning:** Unbalanced HTML tags (e.g. duplicated opening divs) break DOM parsing, which can nest separate modals inside each other and trigger selector collisions in integration tests. Standardizing close buttons using a shared class (`.m-close`) and consistent symbol (`✕`) along with dynamic aria states (e.g. `aria-pressed` on show/hide) makes complex dashboards incredibly robust, uniform, and compliant.
+**Action:** Always validate HTML tag balance when layout anomalies occur, and align modal control patterns using unified styles and dynamic ARIA state bindings.
