@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const rateLimit = require('express-rate-limit');
+const rateLimit = require('express-rate-limit'); // Sentinel: Imported once here for all limiters
 const app = express();
 
 // Sentinel: Security hardening
@@ -13,6 +13,7 @@ app.use((req, res, next) => {
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  res.setHeader('Referrer-Policy', 'no-referrer');
   res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https:; frame-src 'self' https://auth.privy.io https://newassets.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com; child-src 'self' https://auth.privy.io https://newassets.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com;");
   next();
 });
@@ -35,7 +36,6 @@ app.use(cors({
   }
 }));
 
-const rateLimit = require('express-rate-limit');
 const aiProxyLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 50, // limit each IP to 50 AI requests per window
