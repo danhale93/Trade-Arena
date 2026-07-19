@@ -489,8 +489,8 @@ app.post('/api/user/login', (req, res) => {
         const { email, address, name, provider, avatar } = req.body;
         const userId = email || address;
 
-        if (!userId) {
-            return res.status(400).json({ success: false, error: 'Missing userId (email or address)' });
+        if (!userId || typeof userId !== 'string') {
+            return res.status(400).json({ success: false, error: 'Missing or invalid userId (email or address)' });
         }
 
         // Sentinel: Prevent Prototype Pollution by blocking dangerous property names
@@ -687,7 +687,7 @@ app.post('/api/tasks/claim', taskClaimLimiter, async (req, res) => {
         }
 
         // Sentinel: Use timing-safe comparison to prevent timing attacks on validation tokens
-        const isValidToken = validationToken &&
+        const isValidToken = typeof validationToken === 'string' &&
                            validationToken.length === taskSecret.length &&
                            crypto.timingSafeEqual(Buffer.from(validationToken), Buffer.from(taskSecret));
 
