@@ -652,7 +652,8 @@ app.post('/api/faucet/claim', async (req, res) => {
             return res.status(429).json({ success: false, error: 'Faucet already claimed from this IP' });
         }
 
-        if (!userAddress || userAddress === 'demo') {
+        // Sentinel: Ensure userAddress is a valid string and passes strict Ethereum address validation
+        if (!userAddress || typeof userAddress !== 'string' || !ethers.isAddress(userAddress)) {
             return res.status(400).json({ success: false, error: 'Valid wallet address required for mainnet faucet' });
         }
 
@@ -695,8 +696,17 @@ app.post('/api/tasks/claim', taskClaimLimiter, async (req, res) => {
             return res.status(401).json({ success: false, error: 'Invalid or missing validation token' });
         }
 
-        if (!taskId || typeof reward !== 'number') {
-            return res.status(400).json({ success: false, error: 'Missing taskId or reward' });
+        // Sentinel: Enforce strict input validation on taskId, reward, and userAddress
+        if (!taskId || typeof taskId !== 'string' || taskId.length > 100) {
+            return res.status(400).json({ success: false, error: 'Invalid or missing taskId' });
+        }
+
+        if (typeof reward !== 'number' || isNaN(reward) || !isFinite(reward) || reward <= 0 || reward > 100) {
+            return res.status(400).json({ success: false, error: 'Invalid or missing reward' });
+        }
+
+        if (!userAddress || typeof userAddress !== 'string' || !ethers.isAddress(userAddress)) {
+            return res.status(400).json({ success: false, error: 'Valid wallet address required for reward payout' });
         }
 
         const payoutAmount = reward <= 10 ? 0.01 : reward <= 25 ? 0.025 : 0.05;

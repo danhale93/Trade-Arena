@@ -952,6 +952,27 @@ describe("escapeHTML - XSS Prevention (index.html:1304)", () => {
   });
 });
 
+describe("Server Input Validation - Sentinel Hardening", () => {
+  it("validates Ethereum addresses correctly using ethers.isAddress", () => {
+    const { ethers } = require("ethers");
+    expect(ethers.isAddress("0x9F407b7f793555c35c33aC64bd6901759470736D")).toBe(true);
+    expect(ethers.isAddress("invalid-address")).toBe(false);
+    expect(ethers.isAddress("")).toBe(false);
+  });
+
+  it("checks numeric validation logic used for reward", () => {
+    const isValidReward = (reward) => {
+      return typeof reward === 'number' && !isNaN(reward) && isFinite(reward) && reward > 0 && reward <= 100;
+    };
+    expect(isValidReward(10)).toBe(true);
+    expect(isValidReward(-5)).toBe(false);
+    expect(isValidReward(NaN)).toBe(false);
+    expect(isValidReward(Infinity)).toBe(false);
+    expect(isValidReward(101)).toBe(false);
+    expect(isValidReward("10")).toBe(false);
+  });
+});
+
 async function run() {
   let lastSuite = null;
 
