@@ -6039,6 +6039,10 @@ document.addEventListener('keydown', function(e) {
 document.addEventListener('DOMContentLoaded', function() {
   // checkAutoLogin(); // Legacy removed
   // privyInit(); // Lazy loaded on interaction now
+  const savedTheme = localStorage.getItem('ta_theme') || 'default';
+  if (typeof applyTheme === 'function') {
+    applyTheme(savedTheme, false);
+  }
 });
 </script>
 <!-- VOICE AGENT MODAL -->
@@ -6270,7 +6274,8 @@ function refreshSettingsUI() {
     if (b2) { b2.classList.toggle('active', voiceOn); b2.setAttribute('aria-pressed', voiceOn.toString()); }
     if (b3) { b3.classList.toggle('active', audioOn); b3.setAttribute('aria-pressed', audioOn.toString()); }
 }
-function applyTheme(theme) {
+function applyTheme(theme, isUserClick = false) {
+    const currentTheme = localStorage.getItem('ta_theme') || 'default';
     const root = document.documentElement;
     const themes = {
         default: {'--bg':'#06030a','--panel':'#0e0914','--chrome':'#160f1e','--border':'#241830','--dim':'#6a5878','--gold':'#ffd700','--gold2':'#ffaa00','--hot':'#ff2d78','--cyan':'#00ffe7','--green':'#39ff14','--amber':'#ffb300','--blue':'#4488ff','--purple':'#bf5fff'},
@@ -6286,6 +6291,18 @@ function applyTheme(theme) {
         btn.classList.toggle('active', isActive);
         btn.setAttribute('aria-pressed', isActive.toString());
     });
+
+    if (isUserClick && theme !== currentTheme) {
+        if (typeof SFX !== 'undefined' && window.SFX && window.SFX.tick) {
+            window.SFX.tick();
+        }
+        if (window.FX && window.FX.flash) {
+            window.FX.flash('rgba(0,255,231,0.08)', 200);
+        }
+        if (typeof showToast === 'function') {
+            showToast(`Theme calibrated: ${theme.toUpperCase()}`, 'info');
+        }
+    }
 }
 // ── Secure Storage Helpers ──
 // Mitigate CodeQL clear-text storage alerts via Base64 obfuscation
@@ -6498,10 +6515,10 @@ function updateSettingsVolume(val) {
       <div class="settings-section">
         <div class="settings-section-title">🎨 Colour Theme</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <button class="theme-preset active" onclick="applyTheme('default')" data-theme="default">Cyberpunk</button>
-          <button class="theme-preset" onclick="applyTheme('matrix')" data-theme="matrix">Matrix</button>
-          <button class="theme-preset" onclick="applyTheme('sunset')" data-theme="sunset">Sunset</button>
-          <button class="theme-preset" onclick="applyTheme('ocean')" data-theme="ocean">Ocean</button>
+          <button class="theme-preset active" onclick="applyTheme('default', true)" data-theme="default">Cyberpunk</button>
+          <button class="theme-preset" onclick="applyTheme('matrix', true)" data-theme="matrix">Matrix</button>
+          <button class="theme-preset" onclick="applyTheme('sunset', true)" data-theme="sunset">Sunset</button>
+          <button class="theme-preset" onclick="applyTheme('ocean', true)" data-theme="ocean">Ocean</button>
         </div>
       </div>
       <div class="settings-section">
