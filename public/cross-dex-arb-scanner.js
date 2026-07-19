@@ -76,78 +76,88 @@ async function scanCrossDexFlashArb({
   }
 
   const cfg = { ...DEFAULT_FLASH_ARB_CONFIG, ...config };
-  const opportunities = [];
   const routes = buildRoutes(tokens, dexes);
+  const tasks = [];
 
   for (const route of routes) {
     for (const borrowAmountUSD of borrowAmountsUSD) {
       if (borrowAmountUSD > cfg.maxBorrowUSD) continue;
 
-      const buyQuote = await quoteProvider({
-        dex: route.buyDex,
-        tokenIn: route.borrowToken,
-        tokenOut: route.intermediateToken,
-        amountIn: borrowAmountUSD,
-        side: "buy",
-      });
-      if (!quoteIsFresh(buyQuote, now, cfg.maxQuoteAgeMs)) continue;
+      // ⚡ Bolt Optimization: Process each route & borrow amount combination concurrently
+      tasks.push((async () => {
+        try {
+          const buyQuote = await quoteProvider({
+            dex: route.buyDex,
+            tokenIn: route.borrowToken,
+            tokenOut: route.intermediateToken,
+            amountIn: borrowAmountUSD,
+            side: "buy",
+          });
+          if (!quoteIsFresh(buyQuote, now, cfg.maxQuoteAgeMs)) return null;
 
-      const sellQuote = await quoteProvider({
-        dex: route.sellDex,
-        tokenIn: route.intermediateToken,
-        tokenOut: route.borrowToken,
-        amountIn: buyQuote.amountOut,
-        side: "sell",
-      });
-      if (!quoteIsFresh(sellQuote, now, cfg.maxQuoteAgeMs)) continue;
+          const sellQuote = await quoteProvider({
+            dex: route.sellDex,
+            tokenIn: route.intermediateToken,
+            tokenOut: route.borrowToken,
+            amountIn: buyQuote.amountOut,
+            side: "sell",
+          });
+          if (!quoteIsFresh(sellQuote, now, cfg.maxQuoteAgeMs)) return null;
 
-      const minLiquidity = Math.min(
-        Number(buyQuote.liquidityUSD || Infinity),
-        Number(sellQuote.liquidityUSD || Infinity),
-      );
-      const economics = calculateFlashLoanArb({ borrowAmountUSD, buyQuote, sellQuote, config: cfg });
-      const opportunity = {
-        id: `flash-${route.borrowToken.symbol}-${route.intermediateToken.symbol}-${route.buyDex}-${route.sellDex}-${borrowAmountUSD}`,
-        type: "FLASH_LOAN_DEX_ARB",
-        strategy: "CROSS_DEX_FLASH_LOAN_ARB",
-        chain: cfg.chain || "base",
-        borrowToken: route.borrowToken.symbol,
-        intermediateToken: route.intermediateToken.symbol,
-        borrowAmountUSD,
-        route: [
-          `${route.borrowToken.symbol} -> ${route.intermediateToken.symbol} on ${route.buyDex}`,
-          `${route.intermediateToken.symbol} -> ${route.borrowToken.symbol} on ${route.sellDex}`,
-        ],
-        buyDex: route.buyDex,
-        sellDex: route.sellDex,
-        liquidityUSD: Number.isFinite(minLiquidity) ? minLiquidity : 0,
-        netEdge: economics.roi,
-        recommendedSizeUSD: borrowAmountUSD,
-        executionMode: "FLASH_LOAN",
-        dryRunOnly: true,
-        ...economics,
-      };
+          const minLiquidity = Math.min(
+            Number(buyQuote.liquidityUSD || Infinity),
+            Number(sellQuote.liquidityUSD || Infinity),
+          );
+          const economics = calculateFlashLoanArb({ borrowAmountUSD, buyQuote, sellQuote, config: cfg });
+          const opportunity = {
+            id: `flash-${route.borrowToken.symbol}-${route.intermediateToken.symbol}-${route.buyDex}-${route.sellDex}-${borrowAmountUSD}`,
+            type: "FLASH_LOAN_DEX_ARB",
+            strategy: "CROSS_DEX_FLASH_LOAN_ARB",
+            chain: cfg.chain || "base",
+            borrowToken: route.borrowToken.symbol,
+            intermediateToken: route.intermediateToken.symbol,
+            borrowAmountUSD,
+            route: [
+              `${route.borrowToken.symbol} -> ${route.intermediateToken.symbol} on ${route.buyDex}`,
+              `${route.intermediateToken.symbol} -> ${route.borrowToken.symbol} on ${route.sellDex}`,
+            ],
+            buyDex: route.buyDex,
+            sellDex: route.sellDex,
+            liquidityUSD: Number.isFinite(minLiquidity) ? minLiquidity : 0,
+            netEdge: economics.roi,
+            recommendedSizeUSD: borrowAmountUSD,
+            executionMode: "FLASH_LOAN",
+            dryRunOnly: true,
+            ...economics,
+          };
 
-      const risk = riskState
-        ? applyRiskControls(
-            opportunity,
-            riskState,
-            { minNetProfitUSD: cfg.minNetProfitUSD, minNetEdge: cfg.minROI },
-            now,
-          )
-        : { approved: economics.isViable, reasons: [] };
+          const risk = riskState
+            ? applyRiskControls(
+                opportunity,
+                riskState,
+                { minNetProfitUSD: cfg.minNetProfitUSD, minNetEdge: cfg.minROI },
+                now,
+              )
+            : { approved: economics.isViable, reasons: [] };
 
-      opportunity.risk = risk;
-      opportunity.status = risk.approved && economics.isViable ? "CANDIDATE" : "REJECTED";
-      if (opportunity.liquidityUSD && opportunity.liquidityUSD < cfg.minLiquidityUSD) {
-        opportunity.status = "REJECTED";
-        opportunity.risk.reasons = [...(opportunity.risk.reasons || []), "liquidity_below_minimum"];
-      }
+          opportunity.risk = risk;
+          opportunity.status = risk.approved && economics.isViable ? "CANDIDATE" : "REJECTED";
+          if (opportunity.liquidityUSD && opportunity.liquidityUSD < cfg.minLiquidityUSD) {
+            opportunity.status = "REJECTED";
+            opportunity.risk.reasons = [...(opportunity.risk.reasons || []), "liquidity_below_minimum"];
+          }
 
-      opportunities.push(opportunity);
+          return opportunity;
+        } catch (error) {
+          console.error(`Error processing path ${route.borrowToken.symbol} -> ${route.intermediateToken.symbol}:`, error);
+          return null;
+        }
+      })());
     }
   }
 
+  const results = await Promise.all(tasks);
+  const opportunities = results.filter(Boolean);
   return opportunities.sort((a, b) => b.netProfitUSD - a.netProfitUSD);
 }
 
