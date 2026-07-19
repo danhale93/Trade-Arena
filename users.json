@@ -22,5 +22,17 @@
     "bots": [],
     "trades": [],
     "created": 1784266062906
+  },
+  "palette@trade-arena.com": {
+    "id": "palette@trade-arena.com",
+    "name": "Arena Trader",
+    "email": "palette@trade-arena.com",
+    "address": "0xABC1234567890abcdef1234567890ABCDEF1234",
+    "provider": "privy",
+    "avatar": null,
+    "balance": 0,
+    "bots": [],
+    "trades": [],
+    "created": 1784414909205
   }
 }

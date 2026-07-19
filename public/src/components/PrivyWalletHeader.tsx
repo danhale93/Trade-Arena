@@ -172,14 +172,92 @@ export const PrivyWalletHeader = () => {
   }
 
   /**
-   * REQUIREMENT 3 (UI): Truncated Address Display
+   * Handle copying the full wallet address with rich visual and audio delight
+   */
+  const handleCopy = (e: React.MouseEvent<HTMLDivElement> | React.KeyboardEvent<HTMLDivElement>) => {
+    if (!arenaWallet?.address) return;
+
+    if ('key' in e && e.key !== 'Enter' && e.key !== ' ') {
+      return;
+    }
+
+    e.preventDefault();
+
+    navigator.clipboard.writeText(arenaWallet.address).then(() => {
+      // 1. Subtle auditory feedback
+      if (typeof window !== 'undefined' && (window as any).SFX && (window as any).SFX.tick) {
+        try { (window as any).SFX.tick(); } catch (err) {}
+      }
+
+      // 2. Localized visual delight (confetti burst right at user action point)
+      if (typeof window !== 'undefined' && (window as any).FX && (window as any).FX.confetti) {
+        let x = window.innerWidth / 2;
+        let y = window.innerHeight / 2;
+
+        if ('clientX' in e && e.clientX && e.clientY) {
+          x = e.clientX;
+          y = e.clientY;
+        } else {
+          // For keyboard, emit at the element's center
+          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+          x = rect.left + rect.width / 2;
+          y = rect.top + rect.height / 2;
+        }
+
+        try { (window as any).FX.confetti(x, y, 10); } catch (err) {}
+      }
+
+      // 3. System confirmation toast
+      if (typeof window !== 'undefined' && (window as any).showToast) {
+        (window as any).showToast('Wallet address copied!', 'success');
+      }
+    }).catch(err => {
+      console.error('Copy wallet address failed:', err);
+    });
+  };
+
+  /**
+   * REQUIREMENT 3 (UI): Truncated Address Display with Click-to-Copy UX and Accessibility
    */
   return (
     <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '0 4px' }}>
       <div className="gh-name" style={{ fontSize: '10px', color: 'var(--cyan)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
         {userLabel}
       </div>
-      <div style={{ fontSize: '9px', color: 'var(--dim)', fontFamily: 'Share Tech Mono', display: 'flex', alignItems: 'center' }}>
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={handleCopy}
+        onKeyDown={handleCopy}
+        title="Copy wallet address to clipboard"
+        aria-label={`Copy wallet address ${displayAddress} to clipboard`}
+        style={{
+          fontSize: '9px',
+          color: 'var(--dim)',
+          fontFamily: 'Share Tech Mono',
+          display: 'flex',
+          alignItems: 'center',
+          cursor: 'pointer',
+          borderRadius: '4px',
+          outline: 'none',
+          userSelect: 'none',
+          transition: 'color 0.15s ease, box-shadow 0.15s ease',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.color = 'var(--cyan)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.color = 'var(--dim)';
+        }}
+        onFocus={(e) => {
+          e.currentTarget.style.color = 'var(--cyan)';
+          e.currentTarget.style.boxShadow = '0 0 0 1px var(--cyan)';
+        }}
+        onBlur={(e) => {
+          e.currentTarget.style.color = 'var(--dim)';
+          e.currentTarget.style.boxShadow = 'none';
+        }}
+      >
         <span style={{ color: 'var(--gold)', marginRight: '4px' }} role="img" aria-label="wallet">💳</span>
         <span>{displayAddress}</span>
       </div>
