@@ -1292,7 +1292,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     <div class="cpanel-body" id="breakerBody">
       <div class="breaker-grid">
         <div class="b-control"><label for="gasHard">⛽ Gas Hard Ceiling (gwei)</label><input type="number" id="gasHard" value="50" min="1" max="500" onchange="updateBreakers()"><div class="b-val" id="gasHardVal">Hard stop at 50 gwei</div></div>
-        <div class="b-control"><label for="drawdownPct">📊 Daily Drawdown Kill (%)</label><input type="number" id="drawdownPct" value="10" min="1" max="50" onchange="updateBreakers()"><div class="b-val" id="drawdownVal">Stop if -$1,000.00 today</div></div>
+        <div class="b-control"><label for="drawdownPct">📊 Daily Drawdown Kill (%)</label><input type="number" id="drawdownPct" value="10" min="1" max="50" onchange="updateBreakers()"><div class="b-val" id="drawdownVal">Stop if -$0.00 today</div></div>
         <div class="b-control" style="grid-column:1/-1">
           <label for="aggrSlider">🎯 Aggression Level — how hard the agents chase trades</label>
           <input type="range" id="aggrSlider" min="1" max="10" value="8" oninput="updateAggrDisplay()">
@@ -1445,9 +1445,39 @@ async function handleMetaMaskConnect() {
 
       showToast(`Connected: ${address.slice(0,6)}...${address.slice(-4)}`, 'success');
 
-      // Transition to main app
-      document.getElementById('connectScreen').style.display = 'none';
-      document.getElementById('mainApp').style.display = 'flex';
+      // Call API to sync or create user session
+      const userData = {
+        name: 'MetaMask Trader',
+        email: null,
+        address: address,
+        provider: 'metamask',
+        badge: '🦊 METAMASK'
+      };
+
+      // Transition to main app immediately so UI does not block if API is slow or fails
+      const cs = document.getElementById('connectScreen');
+      const app = document.getElementById('mainApp');
+      if (cs) cs.style.display = 'none';
+      if (app) { app.style.display = 'flex'; app.style.flexDirection = 'column'; }
+
+      try {
+        const res = await fetch('/api/user/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(userData)
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (typeof balance !== 'undefined') balance = data.user.balance || 0;
+          if (typeof setupApp === 'function') setupApp({ ...userData, ...data.user });
+        } else {
+          // Fallback if API response is unsuccessful
+          if (typeof setupApp === 'function') setupApp(userData);
+        }
+      } catch (apiErr) {
+        console.warn('API login error, proceeding with fallback:', apiErr);
+        if (typeof setupApp === 'function') setupApp(userData);
+      }
 
       // Trigger balance refresh and UI updates
       if (typeof updateLiveBalance === 'function') updateLiveBalance();
@@ -2939,7 +2969,7 @@ function updateConnectionDashboard() {
             <div style="margin-top:8px; border-top:1px solid var(--border); padding-top:8px;">
               <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
                 <span style="font-size:8px; color:var(--dim);">${label} — ${escapeHTML(conn.name.replace(/_/g, ' '))}</span>
-                <a href="${genUrl}" target="_blank" style="font-size:8px; color:var(--cyan); text-decoration:none;">GET KEY →</a>
+                <a href="${genUrl}" target="_blank" rel="noopener noreferrer" style="font-size:8px; color:var(--cyan); text-decoration:none;">GET KEY →</a>
               </div>
               <div style="display:flex; gap:4px;">
                 <input type="password" id="d_cfg_${conn.name}" placeholder="Enter ${escapeHTML(conn.name.replace(/_/g, ' '))}..."
@@ -3424,6 +3454,7 @@ function setupApp({name,avatar,badge,address}){
     if(app){ app.style.display='flex'; app.style.flexDirection='column'; }
     try{ setVal('ghName',name); setVal('ghBadge',badge); }catch(e){}
     if(avatar){ try{ const a=document.getElementById('ghAvatar'); if(a){ a.innerHTML=''; const img=document.createElement('img'); img.src=avatar; img.alt='User avatar'; img.style.cssText='width:26px;height:26px;border-radius:50%;object-fit:cover'; img.onerror=function(){ a.innerHTML='👤'; }; a.appendChild(img); } }catch(e){} }
+    startBalance = balance;
     equityHistory=[balance];
     try{ updateLiveBalance(); }catch(e){ console.warn('balance:',e); }
     try{ updateBreakers(); }catch(e){ console.warn('breakers:',e); }
@@ -6419,7 +6450,7 @@ function updateSettingsVolume(val) {
             <div style="display:flex;gap:8px">
               <button onclick="toggleVisibility('s_cfg_ant', this)" aria-label="Toggle Anthropic API Key visibility" aria-pressed="false" aria-controls="s_cfg_ant" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
               <button onclick="copyToClipboard('s_cfg_ant', this)" aria-label="Copy Anthropic API Key" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
-              <a href="https://console.anthropic.com" target="_blank" style="color:var(--cyan)">Get Key →</a>
+              <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer" style="color:var(--cyan)">Get Key →</a>
             </div>
           </div>
           <input type="password" id="s_cfg_ant" placeholder="sk-ant-..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
@@ -6431,7 +6462,7 @@ function updateSettingsVolume(val) {
             <div style="display:flex;gap:8px">
               <button onclick="toggleVisibility('s_cfg_oa', this)" aria-label="Toggle OpenAI API Key visibility" aria-pressed="false" aria-controls="s_cfg_oa" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
               <button onclick="copyToClipboard('s_cfg_oa', this)" aria-label="Copy OpenAI API Key" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
-              <a href="https://platform.openai.com/api-keys" target="_blank" style="color:var(--cyan)">Get Key →</a>
+              <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" style="color:var(--cyan)">Get Key →</a>
             </div>
           </div>
           <input type="password" id="s_cfg_oa" placeholder="sk-..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
@@ -6443,7 +6474,7 @@ function updateSettingsVolume(val) {
             <div style="display:flex;gap:8px">
               <button onclick="toggleVisibility('s_cfg_gem', this)" aria-label="Toggle Google Gemini API Key visibility" aria-pressed="false" aria-controls="s_cfg_gem" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
               <button onclick="copyToClipboard('s_cfg_gem', this)" aria-label="Copy Google Gemini API Key" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
-              <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--cyan)">Get Key →</a>
+              <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" style="color:var(--cyan)">Get Key →</a>
             </div>
           </div>
           <input type="password" id="s_cfg_gem" placeholder="AIza..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
@@ -6455,7 +6486,7 @@ function updateSettingsVolume(val) {
             <div style="display:flex;gap:8px">
               <button onclick="toggleVisibility('s_cfg_zx', this)" aria-label="Toggle 0x API Key visibility" aria-pressed="false" aria-controls="s_cfg_zx" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
               <button onclick="copyToClipboard('s_cfg_zx', this)" aria-label="Copy 0x API Key" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
-              <a href="https://dashboard.0x.org" target="_blank" style="color:var(--cyan)">Get Key →</a>
+              <a href="https://dashboard.0x.org" target="_blank" rel="noopener noreferrer" style="color:var(--cyan)">Get Key →</a>
             </div>
           </div>
           <input type="password" id="s_cfg_zx" placeholder="0x-api-key-..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
@@ -6467,7 +6498,7 @@ function updateSettingsVolume(val) {
             <div style="display:flex;gap:8px">
               <button onclick="toggleVisibility('s_cfg_ts', this)" aria-label="Toggle Task Reward Secret visibility" aria-pressed="false" aria-controls="s_cfg_ts" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
               <button onclick="copyToClipboard('s_cfg_ts', this)" aria-label="Copy Task Reward Secret" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
-              <a href="https://trade-arena.com/keys" target="_blank" style="color:var(--cyan); text-decoration:none;">GET SECRET →</a>
+              <a href="https://trade-arena.com/keys" target="_blank" rel="noopener noreferrer" style="color:var(--cyan); text-decoration:none;">GET SECRET →</a>
             </div>
           </div>
           <input type="password" id="s_cfg_ts" placeholder="Enter payout validation secret..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
