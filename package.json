@@ -17,7 +17,7 @@
     "@biconomy/account": "^4.5.7",
     "@privy-io/react-auth": "^3.35.0",
     "axios": "1.18.1",
-    "ccxt": "^4.5.64",
+    "ccxt": "^4.5.66",
     "cors": "^2.8.5",
     "dotenv": "17.4.2",
     "ethers": "6.17.0",
