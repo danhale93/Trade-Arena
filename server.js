@@ -679,6 +679,11 @@ app.post('/api/tasks/claim', taskClaimLimiter, async (req, res) => {
     try {
         const { taskId, reward, userAddress, validationToken } = req.body;
 
+        // Early Validation: Ensure a valid Ethereum address is provided and reject 'demo'
+        if (!userAddress || userAddress === 'demo' || !/0x[a-fA-F0-9]{40}/.test(userAddress)) {
+            return res.status(400).json({ success: false, error: 'Valid Ethereum address required for reward payout' });
+        }
+
         // Sentinel: Ensure a validation token is provided and matches the server secret
         const taskSecret = process.env.TASK_CLAIM_SECRET;
         if (!taskSecret) {

@@ -24,6 +24,11 @@ router.post('/claim', payoutLimiter, async (req, res) => {
     try {
         const { userAddress, taskId, proofOfWork, validationToken } = req.body;
 
+        // Early Validation: Ensure a valid Ethereum address is provided and reject 'demo'
+        if (!userAddress || userAddress === 'demo' || !/0x[a-fA-F0-9]{40}/.test(userAddress)) {
+            return res.status(400).json({ error: 'Valid Ethereum address required for payout claim' });
+        }
+
         // Security: Validate the claim secret to prevent unauthorized signature requests
         const CLAIM_SECRET = process.env.TASK_CLAIM_SECRET;
         if (!CLAIM_SECRET) {
