@@ -52,7 +52,7 @@ class PayoutService {
         if (!taskId || typeof taskId !== 'string' || taskId.length > 100) {
             throw new Error('Invalid taskId');
         }
-        if (!proofOfWork) {
+        if (!proofOfWork || typeof proofOfWork !== 'string' || proofOfWork.length > 1000) {
             throw new Error('Invalid proof of work');
         }
 

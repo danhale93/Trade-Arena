@@ -971,6 +971,28 @@ describe("Server Input Validation - Sentinel Hardening", () => {
     expect(isValidReward(101)).toBe(false);
     expect(isValidReward("10")).toBe(false);
   });
+
+  it("validates taskId format and length correctly", () => {
+    const isValidTaskId = (taskId) => {
+      return !!(taskId && typeof taskId === 'string' && taskId.length <= 100);
+    };
+    expect(isValidTaskId("task-123")).toBe(true);
+    expect(isValidTaskId("")).toBe(false);
+    expect(isValidTaskId(null)).toBe(false);
+    expect(isValidTaskId(123)).toBe(false);
+    expect(isValidTaskId("a".repeat(101))).toBe(false);
+  });
+
+  it("validates proofOfWork format and length correctly", () => {
+    const isValidProofOfWork = (proofOfWork) => {
+      return !!(proofOfWork && typeof proofOfWork === 'string' && proofOfWork.length <= 1000);
+    };
+    expect(isValidProofOfWork("proof-data")).toBe(true);
+    expect(isValidProofOfWork("")).toBe(false);
+    expect(isValidProofOfWork(null)).toBe(false);
+    expect(isValidProofOfWork({})).toBe(false);
+    expect(isValidProofOfWork("a".repeat(1001))).toBe(false);
+  });
 });
 
 async function run() {
