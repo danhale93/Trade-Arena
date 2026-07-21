@@ -164,8 +164,9 @@ export const PrivyWalletHeader = () => {
         <div className="gh-name" style={{ fontSize: '10px', color: 'var(--cyan)', whiteSpace: 'nowrap' }}>
           {userLabel}
         </div>
-        <div style={{ fontSize: '8px', color: 'var(--amber)', fontFamily: 'Share Tech Mono', letterSpacing: '0.5px' }}>
-          Initializing arena wallet...
+        <div style={{ fontSize: '8px', color: 'var(--amber)', fontFamily: 'Share Tech Mono', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <span className="think-spinner" style={{ width: '8px', height: '8px', border: '1px solid var(--border)', borderTopColor: 'var(--amber)', borderRadius: '50%', display: 'inline-block', animation: 'spin 1s linear infinite' }} />
+          <span>Initializing arena wallet...</span>
         </div>
       </div>
     );
