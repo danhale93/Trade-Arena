@@ -184,40 +184,53 @@ const CrucibleRealTrading = {
   calculateIndicators(candles) {
     if (!candles || candles.length < 5) return null;
     
+    // ⚡ Bolt Optimization: Only map 'closes', completely removing unused 'highs' and 'lows' array mappings.
     const closes = candles.map(c => c.close);
-    const highs = candles.map(c => c.high);
-    const lows = candles.map(c => c.low);
+    const len = closes.length;
+    const n = len - 1;
     
-    // Simple Moving Averages
-    const sma5 = closes.slice(-5).reduce((a, b) => a + b, 0) / 5;
-    const sma10 = closes.slice(-10).reduce((a, b) => a + b, 0) / Math.min(10, closes.length);
-    
-    // RSI (Relative Strength Index) - simplified
-    const changes = [];
-    for (let i = 1; i < closes.length; i++) {
-      changes.push(closes[i] - closes[i-1]);
+    // ⚡ Bolt Optimization: Replace SMA slice/reduce allocations with O(1) memory manual loops
+    let s5 = 0;
+    for (let i = len - 5; i < len; i++) {
+      s5 += closes[i];
     }
-    const gains = changes.filter(c => c > 0).reduce((a, b) => a + b, 0) / Math.max(1, changes.length);
-    const losses = Math.abs(changes.filter(c => c < 0).reduce((a, b) => a + b, 0)) / Math.max(1, changes.length);
-    const rs = (gains || 0.5) / (losses || 0.5);
-    let rsi = 100 - (100 / (1 + rs));
-    if (isNaN(rsi)) rsi = 50; // Default to neutral if calculation fails
+    const sma5 = s5 / 5;
     
-    // ⚡ Bolt Optimization: Single-pass O(N) volatility calculation with O(1) space complexity.
-    // Calculates sum and sum-of-squares of returns simultaneously to compute variance
-    // without intermediate array allocations or redundant iterations.
+    const s10Count = Math.min(10, len);
+    let s10 = 0;
+    for (let i = len - s10Count; i < len; i++) {
+      s10 += closes[i];
+    }
+    const sma10 = s10 / s10Count;
+    
+    // ⚡ Bolt Optimization: Consolidate RSI & volatility calculations into a single allocation-free loop over 'closes'
+    let sumGains = 0;
+    let sumLosses = 0;
     let sum = 0;
     let sumSq = 0;
-    const n = closes.length - 1;
-    for (let i = 1; i < closes.length; i++) {
-      const r = (closes[i] - closes[i-1]) / (closes[i-1] || 1);
+
+    for (let i = 1; i < len; i++) {
+      const change = closes[i] - closes[i - 1];
+      if (change > 0) {
+        sumGains += change;
+      } else {
+        sumLosses += -change;
+      }
+
+      const r = change / (closes[i - 1] || 1);
       sum += r;
       sumSq += r * r;
     }
+
+    const denom = Math.max(1, n);
+    const rs = (sumGains / denom || 0.5) / (sumLosses / denom || 0.5);
+    let rsi = 100 - (100 / (1 + rs));
+    if (isNaN(rsi)) rsi = 50;
+
     const mean = n > 0 ? sum / n : 0;
     const variance = n > 0 ? Math.max(0, (sumSq / n) - (mean * mean)) : 0;
-    let volatility = Math.sqrt(variance) * 100; // Convert to percentage
-    if (isNaN(volatility) || volatility === 0) volatility = 0.5; // Default if NaN
+    let volatility = Math.sqrt(variance) * 100;
+    if (isNaN(volatility) || volatility === 0) volatility = 0.5;
     
     // Trend Direction (price vs SMA)
     const currentPrice = closes[closes.length - 1];
@@ -225,11 +238,11 @@ const CrucibleRealTrading = {
     if (isNaN(trendStrength)) trendStrength = 0;
     
     // Momentum (Rate of Change)
-    const lookback = Math.min(5, closes.length - 1);
-    let momentum = ((currentPrice - closes[closes.length - 1 - lookback]) / (closes[closes.length - 1 - lookback] || 1)) * 100;
+    const lookback = Math.min(5, n);
+    let momentum = ((currentPrice - closes[n - lookback]) / (closes[n - lookback] || 1)) * 100;
     if (isNaN(momentum)) momentum = 0;
     
-    const indicators = {
+    return {
       currentPrice,
       sma5,
       sma10,
@@ -239,8 +252,6 @@ const CrucibleRealTrading = {
       trendStrength,
       trend: trendStrength > 0 ? 'UP' : 'DOWN',
     };
-    
-    return indicators;
   },
   
   // ════════════════════════════════════════════════════════════════
