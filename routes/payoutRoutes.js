@@ -29,6 +29,15 @@ router.post('/claim', payoutLimiter, async (req, res) => {
             return res.status(400).json({ error: 'Valid Ethereum address required for payout claim' });
         }
 
+        // Sentinel: Enforce strict input validation on taskId and proofOfWork to prevent DoS/Type Confusion
+        if (!taskId || typeof taskId !== 'string' || taskId.length > 100) {
+            return res.status(400).json({ error: 'Invalid or missing taskId' });
+        }
+
+        if (!proofOfWork || typeof proofOfWork !== 'string' || proofOfWork.length > 1000) {
+            return res.status(400).json({ error: 'Invalid or missing proofOfWork' });
+        }
+
         // Security: Validate the claim secret to prevent unauthorized signature requests
         const CLAIM_SECRET = process.env.TASK_CLAIM_SECRET;
         if (!CLAIM_SECRET) {
