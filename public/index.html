@@ -5880,11 +5880,14 @@ function _busHighlight(containerId, matchFn) {
 }
 
 // ── Amount ──
-function busSetAmount(amt) {
-  if (!bots.length) { _busStatus('No bots active', false); return; }
+function busSetAmount(amt, silent = false) {
+  if (!bots.length) { if (!silent) _busStatus('No bots active', false); return; }
   bots.forEach(b => setBet(b.id, amt));
   _busHighlight('busAmtPresets', b => parseFloat(b.textContent.replace('$','')) === amt);
-  _busStatus(`All ${bots.length} bots → $${amt} per trade`);
+  if (!silent) {
+    if (typeof SFX !== 'undefined' && SFX.tick) try { SFX.tick(); } catch(e){}
+    _busStatus(`All ${bots.length} bots → $${amt} per trade`);
+  }
 }
 function busSetCustomAmount() {
   const inp = document.getElementById('busCustomAmt');
@@ -5896,12 +5899,13 @@ function busSetCustomAmount() {
     b.classList.remove('active');
     b.setAttribute('aria-pressed', 'false');
   });
+  if (typeof SFX !== 'undefined' && SFX.tick) try { SFX.tick(); } catch(e){}
   _busStatus(`All ${bots.length} bots → $${val.toFixed(2)} per trade`);
 }
 
 // ── Personality ──
-function busSetPersonality(val) {
-  if (!bots.length) { _busStatus('No bots active', false); return; }
+function busSetPersonality(val, silent = false) {
+  if (!bots.length) { if (!silent) _busStatus('No bots active', false); return; }
   const SPREAD = ['AGGRESSIVE','CONSERVATIVE','MOMENTUM','CONTRARIAN','BALANCED'];
   // Optimized: pick best personality per bot based on learning win rates
   const getOptimized = (idx) => {
@@ -5924,12 +5928,15 @@ function busSetPersonality(val) {
     if (sel) sel.value = p;
   });
   _busHighlight('busPersonalityPresets', b => b.textContent.includes(val === 'RANDOM' ? 'Random' : val === 'OPTIMIZED' ? 'Optimized' : val.charAt(0).toUpperCase() + val.slice(1).toLowerCase()));
-  _busStatus(val === 'RANDOM' ? `Random spread applied to ${bots.length} bots` : val === 'OPTIMIZED' ? `Optimized spread applied to ${bots.length} bots` : `All ${bots.length} bots → ${val}`);
+  if (!silent) {
+    if (typeof SFX !== 'undefined' && SFX.tick) try { SFX.tick(); } catch(e){}
+    _busStatus(val === 'RANDOM' ? `Random spread applied to ${bots.length} bots` : val === 'OPTIMIZED' ? `Optimized spread applied to ${bots.length} bots` : `All ${bots.length} bots → ${val}`);
+  }
 }
 
 // ── Delay ──
-function busSetDelay(ms) {
-  if (!bots.length) { _busStatus('No bots active', false); return; }
+function busSetDelay(ms, silent = false) {
+  if (!bots.length) { if (!silent) _busStatus('No bots active', false); return; }
   bots.forEach(b => {
     b.autoDelay = ms;
     const sel = document.getElementById('mdelay-' + b.id);
@@ -5937,31 +5944,40 @@ function busSetDelay(ms) {
   });
   const label = ms < 3000 ? 'Fast 2s' : ms < 10000 ? 'Normal 5s' : ms < 30000 ? 'Slow 15s' : 'Patient 1m';
   _busHighlight('busDelayPresets', b => b.textContent.trim() === label);
-  _busStatus(`All ${bots.length} bots → ${label} delay`);
+  if (!silent) {
+    if (typeof SFX !== 'undefined' && SFX.tick) try { SFX.tick(); } catch(e){}
+    _busStatus(`All ${bots.length} bots → ${label} delay`);
+  }
 }
 
 // ── Stop Loss ──
-function busSetSL(pct) {
-  if (!bots.length) { _busStatus('No bots active', false); return; }
+function busSetSL(pct, silent = false) {
+  if (!bots.length) { if (!silent) _busStatus('No bots active', false); return; }
   bots.forEach(b => {
     b.stopLossPct = pct;
     const sel = document.getElementById('mstoploss-' + b.id);
     if (sel) sel.value = String(pct);
   });
   _busHighlight('busSLPresets', b => b.textContent.trim() === (pct === 0 ? 'None' : `−${pct}%`));
-  _busStatus(pct === 0 ? 'Stop loss disabled on all bots' : `All ${bots.length} bots → SL −${pct}%`);
+  if (!silent) {
+    if (typeof SFX !== 'undefined' && SFX.tick) try { SFX.tick(); } catch(e){}
+    _busStatus(pct === 0 ? 'Stop loss disabled on all bots' : `All ${bots.length} bots → SL −${pct}%`);
+  }
 }
 
 // ── Take Profit ──
-function busSetTP(pct) {
-  if (!bots.length) { _busStatus('No bots active', false); return; }
+function busSetTP(pct, silent = false) {
+  if (!bots.length) { if (!silent) _busStatus('No bots active', false); return; }
   bots.forEach(b => {
     b.takeProfitPct = pct;
     const sel = document.getElementById('mtakeprofit-' + b.id);
     if (sel) sel.value = String(pct);
   });
   _busHighlight('busTPPresets', b => b.textContent.trim() === (pct === 0 ? 'None' : `+${pct}%`));
-  _busStatus(pct === 0 ? 'Take profit disabled on all bots' : `All ${bots.length} bots → TP +${pct}%`);
+  if (!silent) {
+    if (typeof SFX !== 'undefined' && SFX.tick) try { SFX.tick(); } catch(e){}
+    _busStatus(pct === 0 ? 'Take profit disabled on all bots' : `All ${bots.length} bots → TP +${pct}%`);
+  }
 }
 
 // ── Quick presets ──
@@ -5975,12 +5991,21 @@ function busApplyPreset(name) {
     reset:        { amt:1,    personality:'RANDOM',        delay:5000,  sl:0,  tp:0   },
   };
   const p = presets[name]; if (!p) return;
-  busSetAmount(p.amt);
-  busSetPersonality(p.personality);
-  busSetDelay(p.delay);
-  busSetSL(p.sl);
-  busSetTP(p.tp);
+  busSetAmount(p.amt, true);
+  busSetPersonality(p.personality, true);
+  busSetDelay(p.delay, true);
+  busSetSL(p.sl, true);
+  busSetTP(p.tp, true);
   const labels = { conservative:'🛡️ Safe Mode', balanced:'⚖️ Balanced', aggressive:'🔥 Degen Mode', optimized:'⚡ Optimized', reset:'↺ Reset' };
+
+  if (typeof SFX !== 'undefined' && SFX.tick) try { SFX.tick(); } catch(e){}
+  if (window.FX && window.FX.confetti) {
+    try { window.FX.confetti(window.innerWidth / 2, window.innerHeight / 2, 15); } catch(e){}
+  }
+  if (window.FX && window.FX.flash) {
+    try { window.FX.flash('rgba(0, 255, 231, 0.15)', 400); } catch(e){}
+  }
+
   _busStatus(`${labels[name]} applied to ${bots.length} bots`);
 }
 
