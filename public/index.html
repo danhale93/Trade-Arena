@@ -3675,12 +3675,7 @@ async function _tickLivePrices() {
   if (openPositions.length === 0) return;
 
   // 1. Group unique tokens for batch price fetching
-  // ⚡ Bolt Optimization: Avoid intermediate array allocation from map() by using a manual single-pass for loop
-  const uniqueTokensSet = new Set();
-  for (let i = 0; i < openPositions.length; i++) {
-    uniqueTokensSet.add(openPositions[i].token);
-  }
-  const uniqueTokens = Array.from(uniqueTokensSet);
+  const uniqueTokens = Array.from(new Set(openPositions.map(p => p.token)));
 
   // 2. Fetch all required prices (utilizes getLivePrice's internal batching)
   const prices = {};
@@ -3691,12 +3686,6 @@ async function _tickLivePrices() {
 
   // 3. Process all positions in a single pass
   const now = Date.now();
-  // ⚡ Bolt Optimization: Pre-calculate O(1) bots map to avoid O(N * M) nested find inside the loop
-  const botsMap = {};
-  for (let j = 0; j < bots.length; j++) {
-    botsMap[bots[j].id] = bots[j];
-  }
-
   for (let i = 0; i < openPositions.length; i++) {
     const pos = openPositions[i];
     const p = prices[pos.token];
@@ -3710,7 +3699,7 @@ async function _tickLivePrices() {
     // Update UI Card (Overlay)
     const pnlEl = _getEl('opLivePnl-' + pos.botId);
     const timerEl = _getEl('opTimer-' + pos.botId);
-    const bot = botsMap[pos.botId];
+    const bot = bots.find(b => b.id === pos.botId);
 
     if (pnlEl) {
       const pnlStr = (net >= 0 ? '+' : '') + '$' + net.toFixed(2);
@@ -3752,17 +3741,11 @@ function _tickHeader(){
 
   // ⚡ Bolt Optimization: Single-pass check for expired positions (replaces O(N) setTimeouts).
   const now = Date.now();
-  // ⚡ Bolt Optimization: Pre-calculate O(1) bots map to avoid O(N * M) nested find inside the loop
-  const botsMap = {};
-  for (let j = 0; j < bots.length; j++) {
-    botsMap[bots[j].id] = bots[j];
-  }
-
   for (let i = 0; i < openPositions.length; i++) {
     const pos = openPositions[i];
     if (pos.status === 'open' && now >= pos.exitTime) {
-      // Find the bot to pass correct reference in O(1)
-      const bot = botsMap[pos.botId];
+      // Find the bot to pass correct reference
+      const bot = bots.find(b => b.id === pos.botId);
       if (bot) checkExit(pos, bot);
     }
   }
