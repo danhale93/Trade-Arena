@@ -811,6 +811,20 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     <span id="apiBreakerBadge" style="display:none"></span>
   </div>
 
+  <!-- ★ MISSING KEYS ALERT BANNER ★ -->
+  <div id="missingKeysBanner" style="display:none; background:rgba(255,45,120,0.12); border:1px solid var(--hot); border-radius:10px; margin:12px 14px 4px; padding:10px 14px; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; font-family:'Share Tech Mono',monospace; box-shadow:0 4px 20px rgba(255,45,120,0.15);">
+    <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:280px;">
+      <span style="font-size:16px; color:var(--hot);" role="img" aria-label="warning">⚠️</span>
+      <div style="font-size:11px; line-height:1.4">
+        <span style="color:var(--hot); font-family:'Bungee'; font-size:10px; letter-spacing:1px; display:block; margin-bottom:2px;">MISSING API KEYS / SECRETS</span>
+        <span id="missingKeysList" style="color:#fff;">...</span>
+      </div>
+    </div>
+    <div style="display:flex; gap:8px; flex-shrink:0;">
+      <button onclick="toggleSettingsModal()" style="padding:6px 12px; background:var(--chrome); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Bungee'; font-size:9px; cursor:pointer; transition:all 0.15s;" onmouseover="this.style.borderColor='var(--cyan)'" onmouseout="this.style.borderColor='var(--border)'">CONFIGURE NOW</button>
+    </div>
+  </div>
+
   <!-- ══ BUS SETTINGS PANEL ══ -->
   <div class="bus-panel" id="busPanel">
     <div class="bus-grid">
@@ -2911,6 +2925,29 @@ function updateConnectionDashboard() {
   fetch('/api/status/connections')
     .then(res => res.json())
     .then(data => {
+      // Update Missing Keys Alert Banner dynamically
+      const keyGenLinks = {
+        'ANTHROPIC_API_KEY': { label: 'Anthropic', url: 'https://console.anthropic.com' },
+        'OPENAI_API_KEY': { label: 'OpenAI', url: 'https://platform.openai.com/api-keys' },
+        'GEMINI_API_KEY': { label: 'Gemini', url: 'https://aistudio.google.com/app/apikey' },
+        '0x_API_KEY': { label: '0x API', url: 'https://dashboard.0x.org' },
+        'TASK_CLAIM_SECRET': { label: 'Task Secret', url: 'https://trade-arena.com/keys' }
+      };
+
+      const missing = data.connections.filter(c => (c.type === 'AI' || c.type === 'SECRET') && c.status === 'MISSING');
+      const banner = document.getElementById('missingKeysBanner');
+      const keysListEl = document.getElementById('missingKeysList');
+
+      if (missing.length > 0 && banner && keysListEl) {
+        banner.style.display = 'flex';
+        keysListEl.innerHTML = 'Inactive required systems: ' + missing.map(c => {
+          const info = keyGenLinks[c.name] || { label: c.name.replace(/_/g, ' '), url: '#' };
+          return `<a href="${info.url}" target="_blank" style="color:var(--cyan); text-decoration:underline; font-weight:bold; margin:0 4px;">${info.label} (GET KEY →)</a>`;
+        }).join(', ');
+      } else if (banner) {
+        banner.style.display = 'none';
+      }
+
       list.innerHTML = '';
       data.connections.forEach(conn => {
         const card = document.createElement('div');
@@ -3607,12 +3644,7 @@ async function _tickLivePrices() {
   if (openPositions.length === 0) return;
 
   // 1. Group unique tokens for batch price fetching
-  // ⚡ Bolt Optimization: Avoid intermediate array allocation from map() by using a manual single-pass for loop
-  const uniqueTokensSet = new Set();
-  for (let i = 0; i < openPositions.length; i++) {
-    uniqueTokensSet.add(openPositions[i].token);
-  }
-  const uniqueTokens = Array.from(uniqueTokensSet);
+  const uniqueTokens = Array.from(new Set(openPositions.map(p => p.token)));
 
   // 2. Fetch all required prices (utilizes getLivePrice's internal batching)
   const prices = {};
@@ -3623,12 +3655,6 @@ async function _tickLivePrices() {
 
   // 3. Process all positions in a single pass
   const now = Date.now();
-  // ⚡ Bolt Optimization: Pre-calculate O(1) bots map to avoid O(N * M) nested find inside the loop
-  const botsMap = {};
-  for (let j = 0; j < bots.length; j++) {
-    botsMap[bots[j].id] = bots[j];
-  }
-
   for (let i = 0; i < openPositions.length; i++) {
     const pos = openPositions[i];
     const p = prices[pos.token];
@@ -3642,7 +3668,7 @@ async function _tickLivePrices() {
     // Update UI Card (Overlay)
     const pnlEl = _getEl('opLivePnl-' + pos.botId);
     const timerEl = _getEl('opTimer-' + pos.botId);
-    const bot = botsMap[pos.botId];
+    const bot = bots.find(b => b.id === pos.botId);
 
     if (pnlEl) {
       const pnlStr = (net >= 0 ? '+' : '') + '$' + net.toFixed(2);
@@ -3684,17 +3710,11 @@ function _tickHeader(){
 
   // ⚡ Bolt Optimization: Single-pass check for expired positions (replaces O(N) setTimeouts).
   const now = Date.now();
-  // ⚡ Bolt Optimization: Pre-calculate O(1) bots map to avoid O(N * M) nested find inside the loop
-  const botsMap = {};
-  for (let j = 0; j < bots.length; j++) {
-    botsMap[bots[j].id] = bots[j];
-  }
-
   for (let i = 0; i < openPositions.length; i++) {
     const pos = openPositions[i];
     if (pos.status === 'open' && now >= pos.exitTime) {
-      // Find the bot to pass correct reference in O(1)
-      const bot = botsMap[pos.botId];
+      // Find the bot to pass correct reference
+      const bot = bots.find(b => b.id === pos.botId);
       if (bot) checkExit(pos, bot);
     }
   }
