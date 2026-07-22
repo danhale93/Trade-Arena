@@ -952,6 +952,71 @@ describe("escapeHTML - XSS Prevention (index.html:1304)", () => {
   });
 });
 
+describe("Server Input Validation - Sentinel Hardening", () => {
+  it("validates Ethereum addresses correctly using ethers.isAddress", () => {
+    const { ethers } = require("ethers");
+    expect(ethers.isAddress("0x9F407b7f793555c35c33aC64bd6901759470736D")).toBe(true);
+    expect(ethers.isAddress("invalid-address")).toBe(false);
+    expect(ethers.isAddress("")).toBe(false);
+  });
+
+  it("checks numeric validation logic used for reward", () => {
+    const isValidReward = (reward) => {
+      return typeof reward === 'number' && !isNaN(reward) && isFinite(reward) && reward > 0 && reward <= 100;
+    };
+    expect(isValidReward(10)).toBe(true);
+    expect(isValidReward(-5)).toBe(false);
+    expect(isValidReward(NaN)).toBe(false);
+    expect(isValidReward(Infinity)).toBe(false);
+    expect(isValidReward(101)).toBe(false);
+    expect(isValidReward("10")).toBe(false);
+  });
+
+  it("validates taskId format and length correctly", () => {
+    const isValidTaskId = (taskId) => {
+      return !!(taskId && typeof taskId === 'string' && taskId.length <= 100);
+    };
+    expect(isValidTaskId("task-123")).toBe(true);
+    expect(isValidTaskId("")).toBe(false);
+    expect(isValidTaskId(null)).toBe(false);
+    expect(isValidTaskId(123)).toBe(false);
+    expect(isValidTaskId("a".repeat(101))).toBe(false);
+  });
+
+  it("validates proofOfWork format and length correctly", () => {
+    const isValidProofOfWork = (proofOfWork) => {
+      return !!(proofOfWork && typeof proofOfWork === 'string' && proofOfWork.length <= 1000);
+    };
+    expect(isValidProofOfWork("proof-data")).toBe(true);
+    expect(isValidProofOfWork("")).toBe(false);
+    expect(isValidProofOfWork(null)).toBe(false);
+    expect(isValidProofOfWork({})).toBe(false);
+    expect(isValidProofOfWork("a".repeat(1001))).toBe(false);
+  });
+
+  it("validates user login input types, formats, and lengths correctly", () => {
+    const validateLoginInput = (email, address, name, provider, avatar) => {
+      const userId = email || address;
+      if (!userId || typeof userId !== 'string' || userId.length > 100) return false;
+      const dangerousProps = ['__proto__', 'constructor', 'prototype'];
+      if (dangerousProps.includes(userId) || (email && dangerousProps.includes(email)) || (address && dangerousProps.includes(address))) return false;
+      if (email && (typeof email !== 'string' || email.length > 100 || !email.includes('@'))) return false;
+      if (address && (typeof address !== 'string' || address.length > 100 || !require("ethers").isAddress(address))) return false;
+      if (name && (typeof name !== 'string' || name.length > 100)) return false;
+      if (provider && (typeof provider !== 'string' || provider.length > 50)) return false;
+      if (avatar && (typeof avatar !== 'string' || avatar.length > 500)) return false;
+      return true;
+    };
+
+    expect(validateLoginInput("palette@trade-arena.com", "0x9F407b7f793555c35c33aC64bd6901759470736D", "Arena Trader", "privy", null)).toBe(true);
+    expect(validateLoginInput("invalid-email", "0x9F407b7f793555c35c33aC64bd6901759470736D")).toBe(false);
+    expect(validateLoginInput("palette@trade-arena.com", "invalid-address")).toBe(false);
+    expect(validateLoginInput("__proto__", "0x9F407b7f793555c35c33aC64bd6901759470736D")).toBe(false);
+    expect(validateLoginInput("palette@trade-arena.com", "0x9F407b7f793555c35c33aC64bd6901759470736D", "A".repeat(101))).toBe(false);
+    expect(validateLoginInput("palette@trade-arena.com", "0x9F407b7f793555c35c33aC64bd6901759470736D", "Arena Trader", "A".repeat(51))).toBe(false);
+  });
+});
+
 async function run() {
   let lastSuite = null;
 

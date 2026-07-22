@@ -489,14 +489,31 @@ app.post('/api/user/login', (req, res) => {
         const { email, address, name, provider, avatar } = req.body;
         const userId = email || address;
 
-        if (!userId) {
-            return res.status(400).json({ success: false, error: 'Missing userId (email or address)' });
+        if (!userId || typeof userId !== 'string' || userId.length > 100) {
+            return res.status(400).json({ success: false, error: 'Missing or invalid userId' });
         }
 
         // Sentinel: Prevent Prototype Pollution by blocking dangerous property names
         const dangerousProps = ['__proto__', 'constructor', 'prototype'];
-        if (dangerousProps.includes(userId)) {
-            return res.status(400).json({ success: false, error: 'Invalid userId' });
+        if (dangerousProps.includes(userId) || (email && dangerousProps.includes(email)) || (address && dangerousProps.includes(address))) {
+            return res.status(400).json({ success: false, error: 'Invalid credentials' });
+        }
+
+        // Sentinel: Type and length validation for all login fields
+        if (email && (typeof email !== 'string' || email.length > 100 || !email.includes('@'))) {
+            return res.status(400).json({ success: false, error: 'Invalid email' });
+        }
+        if (address && (typeof address !== 'string' || address.length > 100 || !ethers.isAddress(address))) {
+            return res.status(400).json({ success: false, error: 'Invalid address' });
+        }
+        if (name && (typeof name !== 'string' || name.length > 100)) {
+            return res.status(400).json({ success: false, error: 'Invalid name' });
+        }
+        if (provider && (typeof provider !== 'string' || provider.length > 50)) {
+            return res.status(400).json({ success: false, error: 'Invalid provider' });
+        }
+        if (avatar && (typeof avatar !== 'string' || avatar.length > 500)) {
+            return res.status(400).json({ success: false, error: 'Invalid avatar' });
         }
 
         const users = loadUsers();
@@ -652,7 +669,8 @@ app.post('/api/faucet/claim', async (req, res) => {
             return res.status(429).json({ success: false, error: 'Faucet already claimed from this IP' });
         }
 
-        if (!userAddress || userAddress === 'demo') {
+        // Sentinel: Ensure userAddress is a valid string and passes strict Ethereum address validation
+        if (!userAddress || typeof userAddress !== 'string' || !ethers.isAddress(userAddress)) {
             return res.status(400).json({ success: false, error: 'Valid wallet address required for mainnet faucet' });
         }
 
@@ -679,6 +697,11 @@ app.post('/api/tasks/claim', taskClaimLimiter, async (req, res) => {
     try {
         const { taskId, reward, userAddress, validationToken } = req.body;
 
+        // Early Validation: Ensure a valid Ethereum address is provided and reject 'demo'
+        if (!userAddress || userAddress === 'demo' || !/0x[a-fA-F0-9]{40}/.test(userAddress)) {
+            return res.status(400).json({ success: false, error: 'Valid Ethereum address required for reward payout' });
+        }
+
         // Sentinel: Ensure a validation token is provided and matches the server secret
         const taskSecret = process.env.TASK_CLAIM_SECRET;
         if (!taskSecret) {
@@ -687,7 +710,7 @@ app.post('/api/tasks/claim', taskClaimLimiter, async (req, res) => {
         }
 
         // Sentinel: Use timing-safe comparison to prevent timing attacks on validation tokens
-        const isValidToken = validationToken &&
+        const isValidToken = typeof validationToken === 'string' &&
                            validationToken.length === taskSecret.length &&
                            crypto.timingSafeEqual(Buffer.from(validationToken), Buffer.from(taskSecret));
 
@@ -695,8 +718,17 @@ app.post('/api/tasks/claim', taskClaimLimiter, async (req, res) => {
             return res.status(401).json({ success: false, error: 'Invalid or missing validation token' });
         }
 
-        if (!taskId || typeof reward !== 'number') {
-            return res.status(400).json({ success: false, error: 'Missing taskId or reward' });
+        // Sentinel: Enforce strict input validation on taskId, reward, and userAddress
+        if (!taskId || typeof taskId !== 'string' || taskId.length > 100) {
+            return res.status(400).json({ success: false, error: 'Invalid or missing taskId' });
+        }
+
+        if (typeof reward !== 'number' || isNaN(reward) || !isFinite(reward) || reward <= 0 || reward > 100) {
+            return res.status(400).json({ success: false, error: 'Invalid or missing reward' });
+        }
+
+        if (!userAddress || typeof userAddress !== 'string' || !ethers.isAddress(userAddress)) {
+            return res.status(400).json({ success: false, error: 'Valid wallet address required for reward payout' });
         }
 
         const payoutAmount = reward <= 10 ? 0.01 : reward <= 25 ? 0.025 : 0.05;

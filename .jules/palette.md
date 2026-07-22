@@ -33,3 +33,15 @@ Action: Integrated payout claim logic directly into the header for high visibili
 ## 2026-07-17 - Standardize Modal Close and Toggle Accessibility
 **Learning:** Unbalanced HTML tags (e.g. duplicated opening divs) break DOM parsing, which can nest separate modals inside each other and trigger selector collisions in integration tests. Standardizing close buttons using a shared class (`.m-close`) and consistent symbol (`✕`) along with dynamic aria states (e.g. `aria-pressed` on show/hide) makes complex dashboards incredibly robust, uniform, and compliant.
 **Action:** Always validate HTML tag balance when layout anomalies occur, and align modal control patterns using unified styles and dynamic ARIA state bindings.
+
+## 2026-07-24 - Interactive Clipboard Feedback and Audio-Visual Synchronization
+**Learning:** Copying addresses to the clipboard is a common utility but often feels static and unconfirmed when users are deep in high-velocity trading workflows. Combining localized canvas-based confetti at the trigger's coordinates, standardized audio ticks (`window.SFX`), and accessible system notifications (`window.showToast`) ensures multi-modal confirmation that works across visual, keyboard, and screen-reader users alike.
+**Action:** Always coordinate local sensory (confetti/sound) and global layout feedback (toast) when adding interactive shortcuts on high-utility read-only indicators.
+
+## 2026-07-19 - Persistent Theme and Multi-Modal Calibration Feedback
+**Learning:** Selecting color themes in dashboards must persist across application reloads, but static CSS properties are often not read/loaded on startup, leading to a visual discrepancy. Applying the saved theme during `DOMContentLoaded` ensures absolute consistency, sets accessible ARIA-pressed states on initialization, and provides a tactile transition. Coupling interactive theme changes with coordinate-free visual/auditory cues (such as a full-screen flash, audio ticks, and an accessibility toast) provides clear confirmation that the system-wide colors have calibrated successfully.
+**Action:** Always load and apply saved styling/theme configurations during application DOM startup, and use global multi-sensenseory feedback to emphasize configuration success.
+
+## 2026-07-20 - Batch Configuration Audio-Visual De-duplication and Multi-sensory Confirmation
+**Learning:** Applying quick preset configurations to high-density bot arrays can easily cause visual/auditory spam if individual property changes trigger overlapping audio ticks and separate status messages in rapid succession. De-duplicating these events by adding a `silent` parameter to individual setters and triggering a single coordinated multi-sensory confirmation (localized canvas confetti, subtle screen tint flash, and a single audio tick) at the end of the batch operation significantly improves the aesthetic appeal, usability, and accessibility of settings orchestration.
+**Action:** Always support a `silent` flag on individual state-mutating actions when they can be orchestrated inside batch presets, and emit a single cohesive multi-sensory celebration upon successful bulk state transitions.
