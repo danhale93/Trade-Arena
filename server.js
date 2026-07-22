@@ -489,14 +489,31 @@ app.post('/api/user/login', (req, res) => {
         const { email, address, name, provider, avatar } = req.body;
         const userId = email || address;
 
-        if (!userId || typeof userId !== 'string') {
-            return res.status(400).json({ success: false, error: 'Missing or invalid userId (email or address)' });
+        if (!userId || typeof userId !== 'string' || userId.length > 100) {
+            return res.status(400).json({ success: false, error: 'Missing or invalid userId' });
         }
 
         // Sentinel: Prevent Prototype Pollution by blocking dangerous property names
         const dangerousProps = ['__proto__', 'constructor', 'prototype'];
-        if (dangerousProps.includes(userId)) {
-            return res.status(400).json({ success: false, error: 'Invalid userId' });
+        if (dangerousProps.includes(userId) || (email && dangerousProps.includes(email)) || (address && dangerousProps.includes(address))) {
+            return res.status(400).json({ success: false, error: 'Invalid credentials' });
+        }
+
+        // Sentinel: Type and length validation for all login fields
+        if (email && (typeof email !== 'string' || email.length > 100 || !email.includes('@'))) {
+            return res.status(400).json({ success: false, error: 'Invalid email' });
+        }
+        if (address && (typeof address !== 'string' || address.length > 100 || !ethers.isAddress(address))) {
+            return res.status(400).json({ success: false, error: 'Invalid address' });
+        }
+        if (name && (typeof name !== 'string' || name.length > 100)) {
+            return res.status(400).json({ success: false, error: 'Invalid name' });
+        }
+        if (provider && (typeof provider !== 'string' || provider.length > 50)) {
+            return res.status(400).json({ success: false, error: 'Invalid provider' });
+        }
+        if (avatar && (typeof avatar !== 'string' || avatar.length > 500)) {
+            return res.status(400).json({ success: false, error: 'Invalid avatar' });
         }
 
         const users = loadUsers();
