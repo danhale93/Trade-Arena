@@ -1015,6 +1015,42 @@ describe("Server Input Validation - Sentinel Hardening", () => {
     expect(validateLoginInput("palette@trade-arena.com", "0x9F407b7f793555c35c33aC64bd6901759470736D", "A".repeat(101))).toBe(false);
     expect(validateLoginInput("palette@trade-arena.com", "0x9F407b7f793555c35c33aC64bd6901759470736D", "Arena Trader", "A".repeat(51))).toBe(false);
   });
+
+  it("validates swap parameters correctly", () => {
+    const isValidSwapInput = (fromToken, toToken, amount, slippage) => {
+      if (!fromToken || typeof fromToken !== 'string' || fromToken.length > 100) return false;
+      if (!toToken || typeof toToken !== 'string' || toToken.length > 100) return false;
+      if (typeof amount !== 'number' || isNaN(amount) || !isFinite(amount) || amount <= 0) return false;
+      if (slippage !== undefined) {
+        if (typeof slippage !== 'number' || isNaN(slippage) || !isFinite(slippage) || slippage < 0 || slippage > 1) return false;
+      }
+      return true;
+    };
+
+    expect(isValidSwapInput("USDC", "WETH", 100)).toBe(true);
+    expect(isValidSwapInput("0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", 100)).toBe(true); // Contract addresses
+    expect(isValidSwapInput("USDC", "WETH", 100, 0.005)).toBe(true);
+    expect(isValidSwapInput("USDC", "WETH", 100, 0)).toBe(true);
+
+    // Invalid fromToken/toToken
+    expect(isValidSwapInput(123, "WETH", 100)).toBe(false);
+    expect(isValidSwapInput("USDC", "", 100)).toBe(false);
+    expect(isValidSwapInput("USDC", "WETH".repeat(30), 100)).toBe(false);
+
+    // Invalid amount
+    expect(isValidSwapInput("USDC", "WETH", "100")).toBe(false);
+    expect(isValidSwapInput("USDC", "WETH", 0)).toBe(false);
+    expect(isValidSwapInput("USDC", "WETH", -10)).toBe(false);
+    expect(isValidSwapInput("USDC", "WETH", NaN)).toBe(false);
+    expect(isValidSwapInput("USDC", "WETH", Infinity)).toBe(false);
+
+    // Invalid slippage
+    expect(isValidSwapInput("USDC", "WETH", 100, "0.01")).toBe(false);
+    expect(isValidSwapInput("USDC", "WETH", 100, -0.01)).toBe(false);
+    expect(isValidSwapInput("USDC", "WETH", 100, 1.05)).toBe(false);
+    expect(isValidSwapInput("USDC", "WETH", 100, NaN)).toBe(false);
+    expect(isValidSwapInput("USDC", "WETH", 100, Infinity)).toBe(false);
+  });
 });
 
 async function run() {
