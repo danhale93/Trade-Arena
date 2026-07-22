@@ -1529,28 +1529,50 @@ function toggleVisibility(inputId, btn) {
 }
 
 /**
- * Copy text from an input field to the clipboard
+ * Copy text from an input field to the clipboard with multi-sensory feedback and accessibility toasts
  */
 function copyToClipboard(inputId, btn) {
   const input = document.getElementById(inputId);
   if (!input || !input.value) return;
   navigator.clipboard.writeText(input.value).then(() => {
-    const originalText = btn.textContent;
-    btn.textContent = 'COPIED!';
-    btn.style.color = 'var(--green)';
-
-    // Accessibility: Announce to screen readers via loginStatus live region
-    const status = document.getElementById('loginStatus');
-    if (status) {
-      const originalStatus = status.textContent;
-      status.textContent = 'Copied to clipboard!';
-      setTimeout(() => { status.textContent = originalStatus; }, 2000);
+    const originalText = btn ? btn.textContent : 'COPY';
+    if (btn) {
+      btn.textContent = 'COPIED!';
+      btn.style.color = 'var(--green)';
     }
 
-    setTimeout(() => {
-      btn.textContent = originalText;
-      btn.style.color = '';
-    }, 2000);
+    // 1. Subtle auditory feedback
+    if (typeof SFX !== 'undefined' && SFX.tick) {
+      try { SFX.tick(); } catch(e) {}
+    }
+
+    // 2. Localized visual delight (confetti burst right at user action point)
+    if (window.FX && window.FX.confetti && btn) {
+      const rect = btn.getBoundingClientRect();
+      const x = rect.left + rect.width / 2;
+      const y = rect.top + rect.height / 2;
+      try { window.FX.confetti(x, y, 6); } catch(e) {}
+    }
+
+    // 3. System confirmation toast with dynamic label name
+    let labelText = '';
+    const label = document.querySelector(`label[for="${inputId}"]`);
+    if (label) {
+      labelText = label.textContent.trim().replace(/\s+/g, ' ');
+    } else if (btn && btn.getAttribute('aria-label')) {
+      labelText = btn.getAttribute('aria-label').replace(/^Copy\s+/, '').replace(/\s+to\s+clipboard$/, '').trim();
+    }
+    const displayMsg = labelText ? `Copied ${labelText} to clipboard!` : 'Copied to clipboard!';
+    if (typeof showToast === 'function') {
+      showToast(displayMsg, 'success');
+    }
+
+    if (btn) {
+      setTimeout(() => {
+        btn.textContent = originalText;
+        btn.style.color = '';
+      }, 2000);
+    }
   }).catch(err => {
     console.error('Copy failed:', err);
   });
