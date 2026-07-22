@@ -15,8 +15,8 @@ importers:
         specifier: ^4.5.7
         version: 4.5.7(typescript@5.9.3)(viem@2.55.2(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))
       '@privy-io/react-auth':
-        specifier: ^3.35.0
-        version: 3.35.0(@solana-program/system@0.10.0(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)))(@solana-program/token@0.9.0(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)))(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10))(@solana/sysvars@5.5.1(typescript@5.9.3))(@tanstack/query-core@5.101.2)(@tanstack/react-query@5.101.2(react@19.2.7))(@types/react@19.2.17)(bufferutil@4.1.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3)(use-sync-external-store@1.4.0(react@19.2.7))(utf-8-validate@5.0.10)(zod@3.25.76)
+        specifier: ^3.35.1
+        version: 3.35.1(@solana-program/system@0.10.0(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)))(@solana-program/token@0.9.0(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)))(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10))(@solana/sysvars@5.5.1(typescript@5.9.3))(@tanstack/query-core@5.101.2)(@tanstack/react-query@5.101.2(react@19.2.7))(@types/react@19.2.17)(bufferutil@4.1.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3)(use-sync-external-store@1.4.0(react@19.2.7))(utf-8-validate@5.0.10)(zod@3.25.76)
       axios:
         specifier: 1.18.1
         version: 1.18.1
@@ -123,8 +123,22 @@ packages:
       typescript: ^5.5.3
       viem: ^2
 
-  '@coinbase/cdp-sdk@1.52.0':
-    resolution: {integrity: sha512-3R42LCxGQy/xy7EdeiAvabAESFMRTNNN8Nm1U4AxSPs8fMwazTulLy0NprsW+vuvIMhO2Ih8XInHiXD3DKx6Fw==}
+  '@coinbase/cdp-sdk@1.53.0':
+    resolution: {integrity: sha512-SO8pgoYXepohi18DE4XXpFuf0Tuetkus4zBpZ7tOZeJGIkaIdAkoMJXiX/rCPMfCVLObovw+213vpWkZtbNFfw==}
+    peerDependencies:
+      '@x402/core': ^2.16.0
+      '@x402/evm': ^2.16.0
+      '@x402/extensions': ^2.17.0
+      '@x402/svm': ^2.16.0
+    peerDependenciesMeta:
+      '@x402/core':
+        optional: true
+      '@x402/evm':
+        optional: true
+      '@x402/extensions':
+        optional: true
+      '@x402/svm':
+        optional: true
 
   '@coinbase/wallet-sdk@3.9.3':
     resolution: {integrity: sha512-N/A2DRIf0Y3PHc1XAMvbBUu4zisna6qAdqABMZwBMNEfWrXpAwx16pZGkYCLGE+Rvv1edbcB2LYDRnACNcmCiw==}
@@ -345,8 +359,8 @@ packages:
     peerDependencies:
       viem: '>=2.0.0'
 
-  '@hcaptcha/loader@2.3.0':
-    resolution: {integrity: sha512-i4lnNxKBe+COf3R1nFZEWaZoHIoJjvDgWqvcNrdZq8ehoSNMN6KVZ56dcQ02qKie2h3+BkbkwlJA9DOIuLlK/g==}
+  '@hcaptcha/loader@2.4.2':
+    resolution: {integrity: sha512-+Pf0Vin6iJlJj5u/mq6XMgbJT1mi/Sg5LWHxxqO4YHt2YvdZgecp5V2sbC6vRaNPJUqQGk2HOu1K/i12mqs5vw==}
 
   '@hcaptcha/react-hcaptcha@1.17.4':
     resolution: {integrity: sha512-rIvgesG1N7SS9sAYYHFoWm+nXqRrxq7RcA9z2pKkDWV+S1GdfmrTNYA1aPyVWVe3eowphTCwyDJvl97Swwy0mw==}
@@ -481,8 +495,8 @@ packages:
     resolution: {integrity: sha512-1mcOQVGr9rSrVcbKPNVzbZ8eCl1K0FATsYH3WJ/MH4WcZDWGECWrXJPNMZoEAkLxWiMe8jOQBumg2pmcDa9zpQ==}
     deprecated: No longer maintained, superseded by https://docs.metamask.io/metamask-connect
 
-  '@metamask/superstruct@3.3.0':
-    resolution: {integrity: sha512-P/MwKoAIHGgMz7gnfIV9jP0wG8f/bCHooy5LPfYWzoyV9FrcHB/9Ai/spIOa6jRmoSr+R6etWvulTakDfwCbrA==}
+  '@metamask/superstruct@3.4.1':
+    resolution: {integrity: sha512-caTaaBUcwBGbUNf3r0uT48upX4nECRbKhQ9pPOfW4sIkfcIUUDV4S9DZxq/5fuNPVt5KWpyd5xIIz0sP+iWLlg==}
     engines: {node: '>=16.0.0'}
 
   '@metamask/superstruct@3.4.1':
@@ -585,11 +599,11 @@ packages:
   '@phosphor-icons/webcomponents@2.1.5':
     resolution: {integrity: sha512-JcvQkZxvcX2jK+QCclm8+e8HXqtdFW9xV4/kk2aL9Y3dJA2oQVt+pzbv1orkumz3rfx4K9mn9fDoMr1He1yr7Q==}
 
-  '@privy-io/api-base@1.9.3':
-    resolution: {integrity: sha512-MDUNJ/BQvQlzRPB/uA6B9LTWgdENUeJCnil0YcXFGkAYN66ZnBzm+iGYi1Excx8YABZN/ujSgJpaEC/1yKeGlA==}
+  '@privy-io/api-base@1.9.4':
+    resolution: {integrity: sha512-ENB36v7HeZZmINZLe2p4M6Ipx9S0INxzO65eXdfVKU53wcVsBQMRBJNnaBWkyJNtTI0uDmSMiNnh93/chiSD2Q==}
 
-  '@privy-io/api-types@0.16.0':
-    resolution: {integrity: sha512-yysnTVux0SMzbuu6doEIVlWvf3YyL/Tg+WTRacPft2wFVtDQLBMol/XbeMJeTfsbC5FQI+l2ncQxPfonVzYo+g==}
+  '@privy-io/api-types@0.17.0':
+    resolution: {integrity: sha512-d2N+99mMTz4q16cPG4QKxSuE6yF2196rddp2KMSdiUqP4LuWfXcw2ltirO7wm/3w/jWCBDDbzrTpw45+58WTOQ==}
 
   '@privy-io/are-addresses-equal@0.0.9':
     resolution: {integrity: sha512-mLBv7cde8ilPYUBjHl6ke+0H3v2hoa5bdShNT0/wm7NYZByvH7/inNN+iK5nTv7D0Ti2rqcfW3UXNxub9eVOpg==}
@@ -605,8 +619,8 @@ packages:
     peerDependencies:
       viem: 2.52.0
 
-  '@privy-io/js-sdk-core@0.68.2':
-    resolution: {integrity: sha512-q/wKojtE5XX3ovOETUoIY5VSCErn5wsOxic3UoLkVjgT4QeFjIvRKYXCBKkUIiWXXjkFJMqyr3nAe5juBMf1mg==}
+  '@privy-io/js-sdk-core@0.68.3':
+    resolution: {integrity: sha512-fQbPx38H2Xuh3P0IVKSCR1iekReKHmmZRKzuq/ykxMEcfvCVgRlW8BdT1D2mN+OHixYo1AVTWXNbrX2CtjZbqA==}
     peerDependencies:
       permissionless: ^0.2.47
       viem: 2.52.0
@@ -619,8 +633,8 @@ packages:
   '@privy-io/popup@0.0.4':
     resolution: {integrity: sha512-Lk5BqB//F9naVOR9tkHbrcGs55fM4ILS50tdsgIQ76Kr9i7Og4Ob5IRGIKb75P11f5hXTwAjMezRmWM/7uAsrw==}
 
-  '@privy-io/react-auth@3.35.0':
-    resolution: {integrity: sha512-nehIdRbrP0KrLPadynC8MQ3H9FPlzXocz+PaAJ7d+8WjP9LBqYMkHb2boLIgh9/WreAczXFp2kK5AvEVm5kKkg==}
+  '@privy-io/react-auth@3.35.1':
+    resolution: {integrity: sha512-5qD+N9/p/rnAqTH4xdKhxLW3wAwYIx1eE2sSCdUZCscQ3TFXdrnWHmID/ytRCJ+R8FacTE1M2nph/3R+1HZp5g==}
     peerDependencies:
       '@abstract-foundation/agw-client': ^1.0.0
       '@farcaster/mini-app-solana': ^1.0.0
@@ -650,8 +664,8 @@ packages:
       permissionless:
         optional: true
 
-  '@privy-io/routes@0.2.6':
-    resolution: {integrity: sha512-E4oV2gszUqyStdXZOrr9ae0QXhl6tRETQGR64A4uRGSx27MUd45aADa3BMQyZWUV6MfbF8C5Ny0/dxPMy4g03g==}
+  '@privy-io/routes@0.2.7':
+    resolution: {integrity: sha512-4GWP4JAEnqk+udpW6p2NaLwERpNtPQbmlQzGJ416tbxHLyygrddtm2LZvD9RLYWw3If5mtPBAiqFUjY7rvn0ng==}
 
   '@privy-io/urls@0.0.4':
     resolution: {integrity: sha512-YYLt3zD4GlMgVm+VkdMF8BnRYlUrfkcchF7fVTPwdP8ljPytCP295yxi26iOsbJfT/xy3+sLsvvrDthjpk6ERA==}
@@ -1430,6 +1444,17 @@ packages:
       zod:
         optional: true
 
+  abitype@1.3.0:
+    resolution: {integrity: sha512-fk6Te+bojIFrMvMZrnOO+SxCB+RUksTGOzq/60ZRvs1L+BVzvi2bqt9L3W/17ZLdZsyM1FuYf65P5nlmoiH1Bg==}
+    peerDependencies:
+      typescript: '>=5.0.4'
+      zod: ^3.22.0 || ^4.0.0
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+      zod:
+        optional: true
+
   abort-controller@3.0.0:
     resolution: {integrity: sha512-h8lQ8tacZYnR3vNQTgibj+tODHI5/+l06Au2Pcriv/Gmet0eaj4TwWH41sO9wnHDiQsEj19q0drzdWdeAHtweg==}
     engines: {node: '>=6.5'}
@@ -2009,8 +2034,8 @@ packages:
   help-me@5.0.0:
     resolution: {integrity: sha512-7xgomUX6ADmcYzFik0HzAxh/73YlKR9bmFzf51CZwR+b6YtzU2m0u49hQCqV6SvlqIqsaxovfwdvbnsw3b/zpg==}
 
-  hono@4.12.30:
-    resolution: {integrity: sha512-emn+JoJjrN9YTpRDS5it/UI2SO9BAE37T6I3d963RxcZ81G9A4pr2SZTEiiaiKbzx+NKRg5BZ89fCL7gCJCUog==}
+  hono@4.12.31:
+    resolution: {integrity: sha512-zJIHFrl6bq3RDd2YusFNCDlM8qUprxKswyi/OPzPyzKDdyBXDqWx8bZlZ7R+saTdSTatUmb3O7K4SspGPaEOQg==}
     engines: {node: '>=16.9.0'}
 
   http-errors@2.0.1:
@@ -2132,8 +2157,8 @@ packages:
   keyvaluestorage-interface@1.0.0:
     resolution: {integrity: sha512-8t6Q3TclQ4uZynJY9IGr2+SsIGwK9JHcO6ootkHCGA0CrQCRy+VkouYNO2xicET6b9al7QKzpebNow+gkpCL8g==}
 
-  libphonenumber-js@1.13.8:
-    resolution: {integrity: sha512-80xal1m93rADejw2pMp2MSzFhHCPLEspjHxnH2UtqI+DgAmElsbmLMiqk9niwH9NWAfjsRtaJI+qBrOEmRx9nQ==}
+  libphonenumber-js@1.13.9:
+    resolution: {integrity: sha512-VNS5vWMM7r0P66BYv+TQJATxExEgLxN+34hfHDVhDkUsGAE4cRg0shCNSLTXNKm7nIUscC7AfB51TjxEeF7msQ==}
 
   lit-element@4.2.2:
     resolution: {integrity: sha512-aFKhNToWxoyhkNDmWZwEva2SlQia+jfG0fjIWV//YeTaWrVnOxD89dPKfigCUspXFmjzOEUQpOkejH5Ly6sG0w==}
@@ -2688,8 +2713,8 @@ packages:
     resolution: {integrity: sha512-uP0bpjWrjQmUt5DTHq9RuoCBdFJF10cdX9X+a368j/Ft0wmaVgxlrjvK3kjvgCODOMMOz9lcaRzxmso0bTWZ/g==}
     engines: {node: '>=10.0.0'}
 
-  socket.io-parser@4.2.6:
-    resolution: {integrity: sha512-asJqbVBDsBCJx0pTqw3WfesSY0iRX+2xzWEWzrpcH7L6fLzrhyF8WPI8UaeM4YCuDfpwA/cgsdugMsmtz8EJeg==}
+  socket.io-parser@4.2.7:
+    resolution: {integrity: sha512-IH/iSeO9T6gz1KkFleGDWkG9N3dl4jXVYUtMhIqH10Md0ttMer8nUNWiP1DKuNrybD2xBrixLJdCC9J6ECoYkg==}
     engines: {node: '>=10.0.0'}
 
   solady@0.0.235:
@@ -2749,8 +2774,8 @@ packages:
     resolution: {integrity: sha512-6fPc+R4ihwqP6N/aIv2f1gMH8lOVtWQHoqC4yK6oSDVVocumAsfCqjkXnqiYMhmMwS/mEHLp7Vehlt3ql6lEig==}
     engines: {node: '>=8'}
 
-  styled-components@6.4.3:
-    resolution: {integrity: sha512-wYXrhu+JmDjZ1Tv7O0OopGTfztbzun43Pjjhh2H+xc0h5A09dwpZ5FJbrifJDcL8g5TA9btpWOX2+iSRuJTExw==}
+  styled-components@6.4.4:
+    resolution: {integrity: sha512-tJk5CmKUPMDoTsZQ8m0hHInBk9HFKUPSusqmbBuefDX+yUbMBWea2Ob/wdXFyHW8XZqXkprJscysAdKeGWNqlA==}
     engines: {node: '>= 16'}
     peerDependencies:
       css-to-react-native: '>= 3.2.0'
@@ -3272,7 +3297,7 @@ snapshots:
 
   '@base-org/account@2.4.0(@types/react@19.2.17)(bufferutil@4.1.0)(react@19.2.7)(typescript@5.9.3)(use-sync-external-store@1.4.0(react@19.2.7))(utf-8-validate@5.0.10)(zod@3.25.76)':
     dependencies:
-      '@coinbase/cdp-sdk': 1.52.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)
+      '@coinbase/cdp-sdk': 1.53.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)
       '@noble/hashes': 1.4.0
       clsx: 1.2.1
       eventemitter3: 5.0.1
@@ -3283,6 +3308,10 @@ snapshots:
       zustand: 5.0.3(@types/react@19.2.17)(react@19.2.7)(use-sync-external-store@1.4.0(react@19.2.7))
     transitivePeerDependencies:
       - '@types/react'
+      - '@x402/core'
+      - '@x402/evm'
+      - '@x402/extensions'
+      - '@x402/svm'
       - bufferutil
       - debug
       - fastestsmallesttextencoderdecoder
@@ -3332,7 +3361,7 @@ snapshots:
       typescript: 5.9.3
       viem: 2.55.2(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
 
-  '@coinbase/cdp-sdk@1.52.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)':
+  '@coinbase/cdp-sdk@1.53.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)':
     dependencies:
       '@solana-program/system': 0.10.0(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10))
       '@solana-program/token': 0.9.0(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10))
@@ -3538,12 +3567,12 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@hcaptcha/loader@2.3.0': {}
+  '@hcaptcha/loader@2.4.2': {}
 
   '@hcaptcha/react-hcaptcha@1.17.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
       '@babel/runtime': 7.29.7
-      '@hcaptcha/loader': 2.3.0
+      '@hcaptcha/loader': 2.4.2
       react: 19.2.7
       react-dom: 19.2.7(react@19.2.7)
 
@@ -3742,14 +3771,14 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@metamask/superstruct@3.3.0': {}
+  '@metamask/superstruct@3.4.1': {}
 
   '@metamask/superstruct@3.4.1': {}
 
   '@metamask/utils@11.11.0':
     dependencies:
       '@ethereumjs/tx': 4.2.0
-      '@metamask/superstruct': 3.3.0
+      '@metamask/superstruct': 3.4.1
       '@noble/hashes': 1.8.0
       '@scure/base': 1.2.6
       '@types/debug': 4.1.13
@@ -3775,7 +3804,7 @@ snapshots:
   '@metamask/utils@8.5.0':
     dependencies:
       '@ethereumjs/tx': 4.2.0
-      '@metamask/superstruct': 3.3.0
+      '@metamask/superstruct': 3.4.1
       '@noble/hashes': 1.8.0
       '@scure/base': 1.2.6
       '@types/debug': 4.1.13
@@ -3789,7 +3818,7 @@ snapshots:
   '@metamask/utils@9.3.0':
     dependencies:
       '@ethereumjs/tx': 4.2.0
-      '@metamask/superstruct': 3.3.0
+      '@metamask/superstruct': 3.4.1
       '@noble/hashes': 1.8.0
       '@scure/base': 1.2.6
       '@types/debug': 4.1.13
@@ -3867,11 +3896,11 @@ snapshots:
     dependencies:
       lit: 3.3.0
 
-  '@privy-io/api-base@1.9.3':
+  '@privy-io/api-base@1.9.4':
     dependencies:
       zod: 3.25.76
 
-  '@privy-io/api-types@0.16.0': {}
+  '@privy-io/api-types@0.17.0': {}
 
   '@privy-io/are-addresses-equal@0.0.9(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)':
     dependencies:
@@ -3892,27 +3921,27 @@ snapshots:
     dependencies:
       viem: 2.52.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
 
-  '@privy-io/js-sdk-core@0.68.2(viem@2.52.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))':
+  '@privy-io/js-sdk-core@0.68.3(viem@2.52.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))':
     dependencies:
-      '@privy-io/api-base': 1.9.3
-      '@privy-io/api-types': 0.16.0
+      '@privy-io/api-base': 1.9.4
+      '@privy-io/api-types': 0.17.0
       '@privy-io/chains': 0.5.0
       '@privy-io/encoding': 0.2.1
       '@privy-io/ethereum': 0.2.0(viem@2.52.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))
-      '@privy-io/routes': 0.2.6
+      '@privy-io/routes': 0.2.7
       canonicalize: 2.1.0
       eventemitter3: 5.0.4
       fetch-retry: 6.0.0
       jose: 4.15.9
       js-cookie: 3.0.8
-      libphonenumber-js: 1.13.8
+      libphonenumber-js: 1.13.9
       set-cookie-parser: 2.7.2
     optionalDependencies:
       viem: 2.52.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
 
   '@privy-io/popup@0.0.4': {}
 
-  '@privy-io/react-auth@3.35.0(@solana-program/system@0.10.0(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)))(@solana-program/token@0.9.0(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)))(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10))(@solana/sysvars@5.5.1(typescript@5.9.3))(@tanstack/query-core@5.101.2)(@tanstack/react-query@5.101.2(react@19.2.7))(@types/react@19.2.17)(bufferutil@4.1.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3)(use-sync-external-store@1.4.0(react@19.2.7))(utf-8-validate@5.0.10)(zod@3.25.76)':
+  '@privy-io/react-auth@3.35.1(@solana-program/system@0.10.0(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)))(@solana-program/token@0.9.0(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)))(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10))(@solana/sysvars@5.5.1(typescript@5.9.3))(@tanstack/query-core@5.101.2)(@tanstack/react-query@5.101.2(react@19.2.7))(@types/react@19.2.17)(bufferutil@4.1.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3)(use-sync-external-store@1.4.0(react@19.2.7))(utf-8-validate@5.0.10)(zod@3.25.76)':
     dependencies:
       '@base-org/account': 1.1.1(@types/react@19.2.17)(bufferutil@4.1.0)(react@19.2.7)(typescript@5.9.3)(use-sync-external-store@1.4.0(react@19.2.7))(utf-8-validate@5.0.10)(zod@3.25.76)
       '@base-ui/react': 1.6.0(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -3922,15 +3951,15 @@ snapshots:
       '@headlessui/react': 2.2.10(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@heroicons/react': 2.2.0(react@19.2.7)
       '@marsidev/react-turnstile': 1.5.3(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@privy-io/api-base': 1.9.3
-      '@privy-io/api-types': 0.16.0
+      '@privy-io/api-base': 1.9.4
+      '@privy-io/api-types': 0.17.0
       '@privy-io/are-addresses-equal': 0.0.9(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@privy-io/chains': 0.5.0
       '@privy-io/encoding': 0.2.1
       '@privy-io/ethereum': 0.2.0(viem@2.52.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))
-      '@privy-io/js-sdk-core': 0.68.2(viem@2.52.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))
+      '@privy-io/js-sdk-core': 0.68.3(viem@2.52.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))
       '@privy-io/popup': 0.0.4
-      '@privy-io/routes': 0.2.6
+      '@privy-io/routes': 0.2.7
       '@privy-io/urls': 0.0.4
       '@scure/base': 1.2.6
       '@simplewebauthn/browser': 13.3.0
@@ -3951,7 +3980,7 @@ snapshots:
       react-device-detect: 2.2.3(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       react-dom: 19.2.7(react@19.2.7)
       secure-password-utilities: 0.2.1
-      styled-components: 6.4.3(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      styled-components: 6.4.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       stylis: 4.4.0
       tinycolor2: 1.6.0
       viem: 2.52.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
@@ -3982,6 +4011,10 @@ snapshots:
       - '@vercel/blob'
       - '@vercel/functions'
       - '@vercel/kv'
+      - '@x402/core'
+      - '@x402/evm'
+      - '@x402/extensions'
+      - '@x402/svm'
       - aws4fetch
       - bufferutil
       - css-to-react-native
@@ -4004,9 +4037,9 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@privy-io/routes@0.2.6':
+  '@privy-io/routes@0.2.7':
     dependencies:
-      '@privy-io/api-types': 0.16.0
+      '@privy-io/api-types': 0.17.0
 
   '@privy-io/urls@0.0.4': {}
 
@@ -5155,6 +5188,10 @@ snapshots:
       - '@vercel/blob'
       - '@vercel/functions'
       - '@vercel/kv'
+      - '@x402/core'
+      - '@x402/evm'
+      - '@x402/extensions'
+      - '@x402/svm'
       - aws4fetch
       - bufferutil
       - db0
@@ -6867,7 +6904,7 @@ snapshots:
 
   help-me@5.0.0: {}
 
-  hono@4.12.30: {}
+  hono@4.12.31: {}
 
   http-errors@2.0.1:
     dependencies:
@@ -6983,7 +7020,7 @@ snapshots:
 
   keyvaluestorage-interface@1.0.0: {}
 
-  libphonenumber-js@1.13.8: {}
+  libphonenumber-js@1.13.9: {}
 
   lit-element@4.2.2:
     dependencies:
@@ -7608,13 +7645,13 @@ snapshots:
       '@socket.io/component-emitter': 3.1.2
       debug: 4.4.3
       engine.io-client: 6.6.6(bufferutil@4.1.0)(utf-8-validate@5.0.10)
-      socket.io-parser: 4.2.6
+      socket.io-parser: 4.2.7
     transitivePeerDependencies:
       - bufferutil
       - supports-color
       - utf-8-validate
 
-  socket.io-parser@4.2.6:
+  socket.io-parser@4.2.7:
     dependencies:
       '@socket.io/component-emitter': 3.1.2
       debug: 4.4.3
@@ -7675,7 +7712,7 @@ snapshots:
 
   strip-json-comments@3.1.1: {}
 
-  styled-components@6.4.3(react-dom@19.2.7(react@19.2.7))(react@19.2.7):
+  styled-components@6.4.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7):
     dependencies:
       '@emotion/is-prop-valid': 1.4.0
       csstype: 3.2.3
@@ -7940,6 +7977,10 @@ snapshots:
       - '@vercel/blob'
       - '@vercel/functions'
       - '@vercel/kv'
+      - '@x402/core'
+      - '@x402/evm'
+      - '@x402/extensions'
+      - '@x402/svm'
       - aws4fetch
       - bufferutil
       - db0
@@ -8074,6 +8115,10 @@ snapshots:
       - '@vercel/blob'
       - '@vercel/functions'
       - '@vercel/kv'
+      - '@x402/core'
+      - '@x402/evm'
+      - '@x402/extensions'
+      - '@x402/svm'
       - aws4fetch
       - bufferutil
       - db0
