@@ -25,7 +25,7 @@
     "express-rate-limit": "^8.6.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "viem": "^2.55.1",
+    "viem": "^2.55.2",
     "websocket": "^1.0.35",
     "zod": "3.25.76"
   },
