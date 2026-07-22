@@ -664,6 +664,48 @@ async function callAIModel(marketData, bet, botId) {
 // MODEL SELECTION STRATEGIES
 // ════════════════════════════════════════════════════════════════════════════════
 
+// ⚡ Bolt Optimization: Pre-calculated static model selection caches to achieve O(1) time and space complexity.
+// This completely avoids allocating intermediate arrays, traversing nested objects, mapping, and sorting on every call.
+
+// ⚡ Cache 1: ELO-weighted list of models (Strategy 2)
+const _cachedEloWeightedModels = (() => {
+  const list = [];
+  for (const tier in LM_ARENA_MODELS) {
+    Object.entries(LM_ARENA_MODELS[tier]).forEach(([name, config]) => {
+      const weight = Math.floor(config.elo / 100);
+      for (let i = 0; i < weight; i++) {
+        list.push(name);
+      }
+    });
+  }
+  return list;
+})();
+
+// ⚡ Cache 2: Top 5 Cost-efficient models (Strategy 5)
+const _cachedCostEfficientTop5 = (() => {
+  const candidates = [];
+  for (const tier in LM_ARENA_MODELS) {
+    Object.entries(LM_ARENA_MODELS[tier]).forEach(([name, config]) => {
+      const eloPerCost = config.elo / config.costPer1kTokens;
+      candidates.push({ name, score: eloPerCost });
+    });
+  }
+  candidates.sort((a, b) => b.score - a.score);
+  return candidates.slice(0, 5).map(c => c.name);
+})();
+
+// ⚡ Cache 3: Top 5 Fastest models (Strategy 6)
+const _cachedSpeedOptimalTop5 = (() => {
+  const candidates = [];
+  for (const tier in LM_ARENA_MODELS) {
+    Object.entries(LM_ARENA_MODELS[tier]).forEach(([name, config]) => {
+      candidates.push({ name, speed: config.speedMs });
+    });
+  }
+  candidates.sort((a, b) => a.speed - b.speed);
+  return candidates.slice(0, 5).map(c => c.name);
+})();
+
 const MODEL_SELECTION = {
   // Strategy 1: Round-robin through tiers
   roundRobin: (() => {
@@ -678,20 +720,9 @@ const MODEL_SELECTION = {
   })(),
 
   // Strategy 2: ELO-based selection (higher ELO more likely)
+  // ⚡ Bolt Optimization: Uses pre-calculated _cachedEloWeightedModels array to run in O(1) time/space with 0 allocations.
   eloWeighted: () => {
-    const allModels = [];
-    
-    for (const tier in LM_ARENA_MODELS) {
-      Object.entries(LM_ARENA_MODELS[tier]).forEach(([name, config]) => {
-        // Add multiple times based on ELO (higher ELO = more likely)
-        const weight = Math.floor(config.elo / 100);
-        for (let i = 0; i < weight; i++) {
-          allModels.push(name);
-        }
-      });
-    }
-    
-    return allModels[Math.floor(Math.random() * allModels.length)];
+    return _cachedEloWeightedModels[Math.floor(Math.random() * _cachedEloWeightedModels.length)];
   },
 
   // Strategy 3: Profile-optimal selection
@@ -711,36 +742,15 @@ const MODEL_SELECTION = {
   })(),
 
   // Strategy 5: Cost-efficient selection (good bang for buck)
+  // ⚡ Bolt Optimization: Uses pre-calculated _cachedCostEfficientTop5 array to run in O(1) time/space with 0 allocations.
   costEfficient: () => {
-    const candidates = [];
-    
-    for (const tier in LM_ARENA_MODELS) {
-      Object.entries(LM_ARENA_MODELS[tier]).forEach(([name, config]) => {
-        const eloPerCost = config.elo / config.costPer1kTokens;
-        candidates.push({ name, score: eloPerCost });
-      });
-    }
-    
-    // Pick from top 5 cost-efficient
-    candidates.sort((a, b) => b.score - a.score);
-    const top5 = candidates.slice(0, 5);
-    return top5[Math.floor(Math.random() * top5.length)].name;
+    return _cachedCostEfficientTop5[Math.floor(Math.random() * _cachedCostEfficientTop5.length)];
   },
 
   // Strategy 6: Speed-based selection
+  // ⚡ Bolt Optimization: Uses pre-calculated _cachedSpeedOptimalTop5 array to run in O(1) time/space with 0 allocations.
   speedOptimal: () => {
-    const candidates = [];
-    
-    for (const tier in LM_ARENA_MODELS) {
-      Object.entries(LM_ARENA_MODELS[tier]).forEach(([name, config]) => {
-        candidates.push({ name, speed: config.speedMs });
-      });
-    }
-    
-    // Pick from fastest 5
-    candidates.sort((a, b) => a.speed - b.speed);
-    const fastest5 = candidates.slice(0, 5);
-    return fastest5[Math.floor(Math.random() * fastest5.length)].name;
+    return _cachedSpeedOptimalTop5[Math.floor(Math.random() * _cachedSpeedOptimalTop5.length)];
   }
 };
 

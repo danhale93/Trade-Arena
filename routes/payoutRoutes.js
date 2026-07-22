@@ -24,6 +24,20 @@ router.post('/claim', payoutLimiter, async (req, res) => {
     try {
         const { userAddress, taskId, proofOfWork, validationToken } = req.body;
 
+        // Early Validation: Ensure a valid Ethereum address is provided and reject 'demo'
+        if (!userAddress || userAddress === 'demo' || !/0x[a-fA-F0-9]{40}/.test(userAddress)) {
+            return res.status(400).json({ error: 'Valid Ethereum address required for payout claim' });
+        }
+
+        // Sentinel: Enforce strict input validation on taskId and proofOfWork to prevent DoS/Type Confusion
+        if (!taskId || typeof taskId !== 'string' || taskId.length > 100) {
+            return res.status(400).json({ error: 'Invalid or missing taskId' });
+        }
+
+        if (!proofOfWork || typeof proofOfWork !== 'string' || proofOfWork.length > 1000) {
+            return res.status(400).json({ error: 'Invalid or missing proofOfWork' });
+        }
+
         // Security: Validate the claim secret to prevent unauthorized signature requests
         const CLAIM_SECRET = process.env.TASK_CLAIM_SECRET;
         if (!CLAIM_SECRET) {
@@ -31,7 +45,7 @@ router.post('/claim', payoutLimiter, async (req, res) => {
         }
 
         // Sentinel: Use timing-safe comparison to prevent timing attacks on validation tokens
-        const isValidToken = validationToken &&
+        const isValidToken = typeof validationToken === 'string' &&
                            validationToken.length === CLAIM_SECRET.length &&
                            crypto.timingSafeEqual(Buffer.from(validationToken), Buffer.from(CLAIM_SECRET));
 
