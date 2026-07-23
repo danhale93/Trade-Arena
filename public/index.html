@@ -1305,19 +1305,19 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     </div>
     <div class="cpanel-body" id="breakerBody">
       <div class="breaker-grid">
-        <div class="b-control"><label for="gasHard">⛽ Gas Hard Ceiling (gwei)</label><input type="number" id="gasHard" value="50" min="1" max="500" onchange="updateBreakers()"><div class="b-val" id="gasHardVal">Hard stop at 50 gwei</div></div>
-        <div class="b-control"><label for="drawdownPct">📊 Daily Drawdown Kill (%)</label><input type="number" id="drawdownPct" value="10" min="1" max="50" onchange="updateBreakers()"><div class="b-val" id="drawdownVal">Stop if -$0.00 today</div></div>
+        <div class="b-control"><label for="gasHard"><span role="img" aria-label="Gas Pump">⛽</span> Gas Hard Ceiling (gwei)</label><input type="number" id="gasHard" value="50" min="1" max="500" onchange="updateBreakers()"><div class="b-val" id="gasHardVal">Hard stop at 50 gwei</div></div>
+        <div class="b-control"><label for="drawdownPct"><span role="img" aria-label="Bar Chart">📊</span> Daily Drawdown Kill (%)</label><input type="number" id="drawdownPct" value="10" min="1" max="50" onchange="updateBreakers()"><div class="b-val" id="drawdownVal">Stop if -$0.00 today</div></div>
         <div class="b-control" style="grid-column:1/-1">
-          <label for="aggrSlider">🎯 Aggression Level — how hard the agents chase trades</label>
-          <input type="range" id="aggrSlider" min="1" max="10" value="8" oninput="updateAggrDisplay()">
+          <label for="aggrSlider"><span role="img" aria-label="Target Dart">🎯</span> Aggression Level — how hard the agents chase trades</label>
+          <input type="range" id="aggrSlider" min="1" max="10" value="8" aria-valuemin="1" aria-valuemax="10" aria-valuenow="8" oninput="updateAggrDisplay()">
           <div class="b-val" id="aggrVal" style="color:var(--hot)">Level 8 / 10 — AGGRESSIVE</div>
         </div>
         <div class="b-control" style="grid-column:1/-1">
-          <label for="consensusSlider">⚡ Consensus Threshold — agents needed to trigger a trade</label>
-          <input type="range" id="consensusSlider" min="1" max="4" value="2" oninput="updateConsensusDisplay()">
+          <label for="consensusSlider"><span role="img" aria-label="High Voltage">⚡</span> Consensus Threshold — agents needed to trigger a trade</label>
+          <input type="range" id="consensusSlider" min="1" max="4" value="2" aria-valuemin="1" aria-valuemax="4" aria-valuenow="2" oninput="updateConsensusDisplay()">
           <div class="b-val" id="consensusVal" style="color:var(--amber)">2 / 4 agents must agree</div>
         </div>
-        <div class="b-control" style="grid-column:1/-1"><label for="gasSlider">⛽ Simulated Gas (gwei) — drag to test</label><input type="range" id="gasSlider" min="1" max="200" value="18" oninput="updateGasDisplay()"><div class="b-val" id="gasCurrentVal" style="color:var(--green)">18 gwei ✓ OK</div></div>
+        <div class="b-control" style="grid-column:1/-1"><label for="gasSlider"><span role="img" aria-label="Gas Pump">⛽</span> Simulated Gas (gwei) — drag to test</label><input type="range" id="gasSlider" min="1" max="200" value="18" aria-valuemin="1" aria-valuemax="200" aria-valuenow="18" oninput="updateGasDisplay()"><div class="b-val" id="gasCurrentVal" style="color:var(--green)">18 gwei ✓ OK</div></div>
       </div>
       <table class="cooldown-table" id="cooldownTable">
         <tr><th>Trigger</th><th>Cooldown</th><th>Rationale</th></tr>
@@ -1325,7 +1325,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         <tr id="cd-row-1"><td>3 more after resume</td><td>60 minutes</td><td>Strategy mismatched</td></tr>
         <tr id="cd-row-2"><td>Another streak</td><td>24 hrs — manual reset</td><td>Something is wrong</td></tr>
       </table>
-      <button class="global-kill-btn" id="killBtn" onclick="globalKill()">🔴 EMERGENCY STOP ALL BOTS</button>
+      <button class="global-kill-btn" id="killBtn" onclick="globalKill()"><span role="img" aria-label="Red Circle Stop">🔴</span> EMERGENCY STOP ALL BOTS</button>
     </div>
   </div>
 
@@ -3258,7 +3258,9 @@ function updateBreakers() {
   checkGlobalBreakers();
 }
 function updateGasDisplay() {
-  currentGas=parseInt(_getEl('gasSlider')?.value||18);
+  const slider = _getEl('gasSlider');
+  currentGas=parseInt(slider?.value||18);
+  if(slider) slider.setAttribute('aria-valuenow', currentGas.toString());
   const el=_getEl('gasCurrentVal'); if(!el) return;
   const over=currentGas>gasHardCeiling;
   el.textContent=currentGas+' gwei '+(over?'⚠️ ABOVE CEILING':'✓ OK'); el.style.color=over?'var(--hot)':'var(--green)';
@@ -4200,14 +4202,18 @@ async function spinBot(id){
 // DATABRICKS GENIE CONFIG
 // ══════════════════════════════════════════════════════
 function updateAggrDisplay(){
-  const v=parseInt(document.getElementById('aggrSlider')?.value||8);
+  const slider = document.getElementById('aggrSlider');
+  const v=parseInt(slider?.value||8);
+  if(slider) slider.setAttribute('aria-valuenow', v.toString());
   const el=document.getElementById('aggrVal');
   const labels={1:'1 — Ultra Cautious',2:'2 — Conservative',3:'3 — Careful',4:'4 — Moderate',5:'5 — Balanced',6:'6 — Active',7:'7 — Bold',8:'8 — AGGRESSIVE',9:'9 — HIGH RISK',10:'10 — FULL DEGEN'};
   const colors={1:'var(--green)',2:'var(--green)',3:'var(--green)',4:'var(--amber)',5:'var(--amber)',6:'var(--amber)',7:'var(--hot)',8:'var(--hot)',9:'var(--hot)',10:'#ff0044'};
   if(el){el.textContent='Level '+v+' / 10 — '+(labels[v]||'');el.style.color=colors[v]||'var(--hot)';}
 }
 function updateConsensusDisplay(){
-  const v=parseInt(document.getElementById('consensusSlider')?.value||2);
+  const slider = document.getElementById('consensusSlider');
+  const v=parseInt(slider?.value||2);
+  if(slider) slider.setAttribute('aria-valuenow', v.toString());
   const el=document.getElementById('consensusVal');
   const descs={1:'1 / 4 — any single agent triggers trade (max trades)',2:'2 / 4 — moderate filter',3:'3 / 4 — cautious',4:'4 / 4 — all agents must agree (fewest trades)'};
   if(el) el.textContent=descs[v]||v+' / 4 agents must agree';
