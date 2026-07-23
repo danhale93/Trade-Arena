@@ -3525,6 +3525,7 @@ function setupApp({name,avatar,badge,address}){
       try{ if(typeof startDeploymentPolling === 'function') startDeploymentPolling(); }catch(e){}
       try{ if(typeof initMarketplaceUI === 'function') initMarketplaceUI(); }catch(e){}
       try{ updateAuditSummaryBadge(); }catch(e){}
+      try{ if(typeof updateConnectionDashboard === 'function') updateConnectionDashboard(); }catch(e){}
       // ⚡ Bolt Optimization: Batch initial bot additions and trigger a single UI update
       try{
         addBot('TRADER', true);
@@ -6179,6 +6180,9 @@ document.addEventListener('DOMContentLoaded', function() {
   if (typeof applyTheme === 'function') {
     applyTheme(savedTheme, false);
   }
+  if (typeof updateConnectionDashboard === 'function') {
+    updateConnectionDashboard();
+  }
 });
 </script>
 <!-- VOICE AGENT MODAL -->
@@ -6443,8 +6447,12 @@ function applyTheme(theme, isUserClick = false) {
 }
 // ── Secure Storage Helpers ──
 // Mitigate CodeQL clear-text storage alerts via Base64 obfuscation
-const _cfg_e = (s) => { try { return s ? btoa(s) : ''; } catch(e) { return s; } };
-const _cfg_d = (s) => { try { return s ? atob(s) : ''; } catch(e) { return s; } };
+if (typeof _cfg_e === 'undefined') {
+  window._cfg_e = (s) => { try { return s ? btoa(s) : ''; } catch(e) { return s; } };
+}
+if (typeof _cfg_d === 'undefined') {
+  window._cfg_d = (s) => { try { return s ? atob(s) : ''; } catch(e) { return s; } };
+}
 
 function reinitializeConfigs() {
     console.log("[Arena] Re-initializing configurations...");
