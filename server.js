@@ -884,6 +884,23 @@ app.post('/api/bot/create', async (req, res) => {
 app.post('/api/execute/swap', async (req, res) => {
     try {
         const { fromToken, toToken, amount, slippage } = req.body;
+
+        // Sentinel: Enforce strict input validation on swap parameters to prevent Type Confusion, NaN crashes & DoS
+        if (!fromToken || typeof fromToken !== 'string' || fromToken.length > 100) {
+            return res.status(400).json({ success: false, error: 'Invalid or missing fromToken' });
+        }
+        if (!toToken || typeof toToken !== 'string' || toToken.length > 100) {
+            return res.status(400).json({ success: false, error: 'Invalid or missing toToken' });
+        }
+        if (typeof amount !== 'number' || isNaN(amount) || !isFinite(amount) || amount <= 0) {
+            return res.status(400).json({ success: false, error: 'Invalid or missing amount' });
+        }
+        if (slippage !== undefined) {
+            if (typeof slippage !== 'number' || isNaN(slippage) || !isFinite(slippage) || slippage < 0 || slippage > 1) {
+                return res.status(400).json({ success: false, error: 'Invalid slippage' });
+            }
+        }
+
         const expectedOutput = amount * (1 - (slippage || 0.005));
         const gasUsed = Math.random() * 150000 + 50000;
         const gasCost = gasUsed * 0.001;
