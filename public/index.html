@@ -3696,8 +3696,12 @@ function _startHeaderTicker(){
 async function _tickLivePrices() {
   if (openPositions.length === 0) return;
 
-  // 1. Group unique tokens for batch price fetching
-  const uniqueTokens = Array.from(new Set(openPositions.map(p => p.token)));
+  // 1. Group unique tokens for batch price fetching (Bolt single-pass Set population)
+  const uniqueTokensSet = new Set();
+  for (let i = 0; i < openPositions.length; i++) {
+    uniqueTokensSet.add(openPositions[i].token);
+  }
+  const uniqueTokens = Array.from(uniqueTokensSet);
 
   // 2. Fetch all required prices (utilizes getLivePrice's internal batching)
   const prices = {};
@@ -3705,6 +3709,12 @@ async function _tickLivePrices() {
     const p = await getLivePrice(t);
     if (p) prices[t] = p;
   }));
+
+  // Create flat O(1) lookup map of bots for nested scan optimization
+  const botsMap = {};
+  for (let j = 0; j < bots.length; j++) {
+    botsMap[bots[j].id] = bots[j];
+  }
 
   // 3. Process all positions in a single pass
   const now = Date.now();
@@ -3721,7 +3731,7 @@ async function _tickLivePrices() {
     // Update UI Card (Overlay)
     const pnlEl = _getEl('opLivePnl-' + pos.botId);
     const timerEl = _getEl('opTimer-' + pos.botId);
-    const bot = bots.find(b => b.id === pos.botId);
+    const bot = botsMap[pos.botId];
 
     if (pnlEl) {
       const pnlStr = (net >= 0 ? '+' : '') + '$' + net.toFixed(2);
@@ -3761,13 +3771,19 @@ function _tickHeader(){
   // and synchronized DOM updates in a single display frame.
   updateLiveBalance();
 
+  // Create flat O(1) lookup map of bots for nested scan optimization
+  const botsMap = {};
+  for (let j = 0; j < bots.length; j++) {
+    botsMap[bots[j].id] = bots[j];
+  }
+
   // ⚡ Bolt Optimization: Single-pass check for expired positions (replaces O(N) setTimeouts).
   const now = Date.now();
   for (let i = 0; i < openPositions.length; i++) {
     const pos = openPositions[i];
     if (pos.status === 'open' && now >= pos.exitTime) {
       // Find the bot to pass correct reference
-      const bot = bots.find(b => b.id === pos.botId);
+      const bot = botsMap[pos.botId];
       if (bot) checkExit(pos, bot);
     }
   }
