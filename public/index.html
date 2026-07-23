@@ -1317,7 +1317,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
           <input type="range" id="consensusSlider" min="1" max="4" value="2" oninput="updateConsensusDisplay()">
           <div class="b-val" id="consensusVal" style="color:var(--amber)">2 / 4 agents must agree</div>
         </div>
-        <div class="b-control" style="grid-column:1/-1"><label>⛽ Simulated Gas (gwei) — drag to test</label><input type="range" id="gasSlider" min="1" max="200" value="18" oninput="updateGasDisplay()"><div class="b-val" id="gasCurrentVal" style="color:var(--green)">18 gwei ✓ OK</div></div>
+        <div class="b-control" style="grid-column:1/-1"><label for="gasSlider">⛽ Simulated Gas (gwei) — drag to test</label><input type="range" id="gasSlider" min="1" max="200" value="18" oninput="updateGasDisplay()"><div class="b-val" id="gasCurrentVal" style="color:var(--green)">18 gwei ✓ OK</div></div>
       </div>
       <table class="cooldown-table" id="cooldownTable">
         <tr><th>Trigger</th><th>Cooldown</th><th>Rationale</th></tr>
@@ -6397,6 +6397,7 @@ function refreshSettingsUI() {
         const cfg = (typeof ACOUSTIC !== 'undefined') ? ACOUSTIC.getConfig() : null;
         const sfxVol = cfg ? Math.round(cfg.sfx.volume * 100) : 50;
         vol.value = sfxVol;
+        vol.setAttribute('aria-valuenow', sfxVol.toString());
         if (volLabel) volLabel.textContent = sfxVol + '%';
     }
     const cfg = (typeof ACOUSTIC !== 'undefined') ? ACOUSTIC.getConfig() : null;
@@ -6537,6 +6538,10 @@ function toggleSettingsAudio() {
 }
 function updateSettingsVolume(val) {
     const vol = parseInt(val, 10);
+    const slider = document.getElementById('settingsVolume');
+    if (slider) {
+        slider.setAttribute('aria-valuenow', val);
+    }
     if (typeof ACOUSTIC !== 'undefined') {
         ACOUSTIC.getConfig().sfx.volume = vol / 100;
         if (window.SFX && window.SFX.setVolume) window.SFX.setVolume(vol / 100);
@@ -6660,8 +6665,8 @@ function updateSettingsVolume(val) {
       <div class="settings-section">
         <div class="settings-section-title">🔊 Sound Preferences</div>
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-          <span style="font-size:9px;color:var(--dim);min-width:48px">Volume</span>
-          <input type="range" id="settingsVolume" min="0" max="100" value="50" style="flex:1" oninput="document.getElementById('settingsVolumeLabel').textContent=this.value+'%';updateSettingsVolume(this.value)">
+          <label for="settingsVolume" style="font-size:9px;color:var(--dim);min-width:48px;cursor:pointer">Volume</label>
+          <input type="range" id="settingsVolume" min="0" max="100" value="50" style="flex:1" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50" oninput="document.getElementById('settingsVolumeLabel').textContent=this.value+'%';updateSettingsVolume(this.value)" onchange="if(window.SFX && window.SFX.tick) { try { window.SFX.tick(); } catch(e){} }">
           <span id="settingsVolumeLabel" style="font-size:9px;color:var(--dim);min-width:32px;text-align:right">50%</span>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
