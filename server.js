@@ -865,6 +865,26 @@ app.get('/api/market/prices', async (req, res) => {
 app.post('/api/bot/create', async (req, res) => {
     try {
         const { name, strategy, riskLevel, initialCapital, userAddress } = req.body;
+
+        // Sentinel: Enforce strict type-safety, length limits, and bounds on bot creation inputs
+        if (!name || typeof name !== 'string' || name.length > 100) {
+            return res.status(400).json({ success: false, error: 'Invalid or missing name' });
+        }
+        if (!strategy || typeof strategy !== 'string' || strategy.length > 100) {
+            return res.status(400).json({ success: false, error: 'Invalid or missing strategy' });
+        }
+        if (!riskLevel || typeof riskLevel !== 'string' || riskLevel.length > 100) {
+            return res.status(400).json({ success: false, error: 'Invalid or missing riskLevel' });
+        }
+        if (typeof initialCapital !== 'number' || isNaN(initialCapital) || !isFinite(initialCapital) || initialCapital < 0 || initialCapital > 1000000000) {
+            return res.status(400).json({ success: false, error: 'Invalid or missing initialCapital' });
+        }
+        if (userAddress !== undefined && userAddress !== null) {
+            if (typeof userAddress !== 'string' || userAddress.length > 100 || (userAddress !== 'demo' && !ethers.isAddress(userAddress))) {
+                return res.status(400).json({ success: false, error: 'Invalid userAddress' });
+            }
+        }
+
         const bot = {
             id: generateId(),
             name, strategy, riskLevel, initialCapital, userAddress,
