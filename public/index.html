@@ -2994,7 +2994,7 @@ function updateConnectionDashboard() {
         banner.style.display = 'flex';
         keysListEl.innerHTML = 'Inactive required systems: ' + missing.map(c => {
           const info = keyGenLinks[c.name] || { label: c.name.replace(/_/g, ' '), url: '#' };
-          return `<a href="${info.url}" target="_blank" style="color:var(--cyan); text-decoration:underline; font-weight:bold; margin:0 4px;">${info.label} (GET KEY →)</a>`;
+          return `<a href="${info.url}" target="_blank" rel="noopener noreferrer" style="color:var(--cyan); text-decoration:underline; font-weight:bold; margin:0 4px;">${info.label} (GET KEY →)</a>`;
         }).join(', ');
       } else if (banner) {
         banner.style.display = 'none';
