@@ -1051,6 +1051,40 @@ describe("Server Input Validation - Sentinel Hardening", () => {
     expect(isValidSwapInput("USDC", "WETH", 100, NaN)).toBe(false);
     expect(isValidSwapInput("USDC", "WETH", 100, Infinity)).toBe(false);
   });
+
+  it("validates bot creation parameters correctly", () => {
+    const isValidBotInput = (name, strategy, riskLevel, initialCapital, userAddress) => {
+      if (!name || typeof name !== 'string' || name.length > 100) return false;
+      if (!strategy || typeof strategy !== 'string' || strategy.length > 100) return false;
+      if (!riskLevel || typeof riskLevel !== 'string' || riskLevel.length > 100) return false;
+      if (typeof initialCapital !== 'number' || isNaN(initialCapital) || !isFinite(initialCapital) || initialCapital < 0 || initialCapital > 1000000000) return false;
+      if (userAddress !== undefined && userAddress !== null) {
+        if (typeof userAddress !== 'string' || userAddress.length > 100 || (userAddress !== 'demo' && !require("ethers").isAddress(userAddress))) return false;
+      }
+      return true;
+    };
+
+    expect(isValidBotInput("My Arbitrage Bot", "Arbitrage Detection", "Conservative (2x leverage)", 1000)).toBe(true);
+    expect(isValidBotInput("My Arbitrage Bot", "Arbitrage Detection", "Conservative (2x leverage)", 1000, "0x9F407b7f793555c35c33aC64bd6901759470736D")).toBe(true);
+    expect(isValidBotInput("My Arbitrage Bot", "Arbitrage Detection", "Conservative (2x leverage)", 1000, "demo")).toBe(true);
+
+    // Invalid string fields
+    expect(isValidBotInput("", "Arbitrage Detection", "Conservative (2x leverage)", 1000)).toBe(false);
+    expect(isValidBotInput("My Arbitrage Bot", "", "Conservative (2x leverage)", 1000)).toBe(false);
+    expect(isValidBotInput("My Arbitrage Bot", "Arbitrage Detection", "", 1000)).toBe(false);
+    expect(isValidBotInput("A".repeat(101), "Arbitrage Detection", "Conservative (2x leverage)", 1000)).toBe(false);
+
+    // Invalid initialCapital
+    expect(isValidBotInput("My Bot", "Arbitrage Detection", "Conservative (2x leverage)", "1000")).toBe(false);
+    expect(isValidBotInput("My Bot", "Arbitrage Detection", "Conservative (2x leverage)", -10)).toBe(false);
+    expect(isValidBotInput("My Bot", "Arbitrage Detection", "Conservative (2x leverage)", NaN)).toBe(false);
+    expect(isValidBotInput("My Bot", "Arbitrage Detection", "Conservative (2x leverage)", Infinity)).toBe(false);
+
+    // Invalid userAddress
+    expect(isValidBotInput("My Bot", "Arbitrage Detection", "Conservative (2x leverage)", 1000, "invalid-address")).toBe(false);
+    expect(isValidBotInput("My Bot", "Arbitrage Detection", "Conservative (2x leverage)", 1000, 123)).toBe(false);
+    expect(isValidBotInput("My Bot", "Arbitrage Detection", "Conservative (2x leverage)", 1000, "a".repeat(101))).toBe(false);
+  });
 });
 
 async function run() {
