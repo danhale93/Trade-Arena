@@ -46,5 +46,17 @@
     "bots": [],
     "trades": [],
     "created": 1784610379505
+  },
+  "senior_web3_coder@gmail.com": {
+    "id": "senior_web3_coder@gmail.com",
+    "name": "Senior Web3 Coder",
+    "email": "senior_web3_coder@gmail.com",
+    "address": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+    "provider": "privy",
+    "avatar": null,
+    "balance": 0,
+    "bots": [],
+    "trades": [],
+    "created": 1784870421287
   }
 }

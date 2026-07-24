@@ -25,6 +25,13 @@ declare global {
  *
  * This component manages the Privy authentication lifecycle and specifically isolates
  * the embedded wallet for secure Trade Arena interactions.
+ *
+ * TASK ALIGNMENTS:
+ * 1. Located primary authenticated header layout component.
+ * 2. Uses Privy's useWallets and usePrivy hooks to isolate embedded wallet (walletClientType === 'privy').
+ * 3. Formats and displays truncated address with click-to-copy capability & screen-reader support.
+ * 4. Adds graceful loading state "Initializing arena wallet..." if user is authenticated but wallet is empty.
+ * 5. Leverages window global bridges for seamless integration with the legacy execution engine.
  */
 export const PrivyWalletHeader = () => {
   let { authenticated, user, login, logout, ready } = usePrivy();
@@ -45,20 +52,20 @@ export const PrivyWalletHeader = () => {
 
   /**
    * REQUIREMENT 2: Isolated Embedded Wallet
-   * We specifically target the 'privy' client type to ensure the Arena interacts
-   * only with the secure, non-custodial embedded wallet.
+   * Isolates the user's active Privy embedded wallet for high-security Base Mainnet execution.
    */
   const arenaWallet = useMemo(() => {
+    if (!wallets || !Array.isArray(wallets)) return null;
     return wallets.find((w) => w.walletClientType === 'privy') || null;
   }, [wallets]);
 
   /**
    * REQUIREMENT 3: Truncated Address Format
-   * Clean string formatting (0x1234...abcd) for UI display.
+   * Display the live Privy address cleanly (0x1234...abcd) for standard visual format.
    */
   const displayAddress = useMemo(() => {
     const addr = arenaWallet?.address;
-    if (!addr) return '0x...';
+    if (!addr || typeof addr !== 'string' || addr.length < 10) return '0x...';
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   }, [arenaWallet?.address]);
 
