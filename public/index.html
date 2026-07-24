@@ -1481,15 +1481,48 @@ async function handleMetaMaskConnect() {
           body: JSON.stringify(userData)
         });
         const data = await res.json();
+
+        let mergedUser = { ...userData };
         if (data.success) {
-          if (typeof balance !== 'undefined') balance = data.user.balance || 0;
-          if (typeof setupApp === 'function') setupApp({ ...userData, ...data.user });
-        } else {
-          // Fallback if API response is unsuccessful
-          if (typeof setupApp === 'function') setupApp(userData);
+          mergedUser = { ...userData, ...data.user };
         }
+
+        // Fetch live on-chain balance from MetaMask and sync it
+        if (window.getWalletBalanceUSD) {
+          try {
+            const liveBalance = await window.getWalletBalanceUSD();
+            if (liveBalance !== undefined && liveBalance !== null) {
+              balance = liveBalance;
+            } else {
+              balance = data.success ? data.user.balance || 0 : 0;
+            }
+          } catch (balErr) {
+            console.warn('[MetaMask] Failed to fetch live wallet balance:', balErr);
+            balance = data.success ? data.user.balance || 0 : 0;
+          }
+        } else {
+          balance = data.success ? data.user.balance || 0 : 0;
+        }
+
+        if (typeof setupApp === 'function') setupApp(mergedUser);
       } catch (apiErr) {
         console.warn('API login error, proceeding with fallback:', apiErr);
+        // Fetch live on-chain balance on fallback too
+        if (window.getWalletBalanceUSD) {
+          try {
+            const liveBalance = await window.getWalletBalanceUSD();
+            if (liveBalance !== undefined && liveBalance !== null) {
+              balance = liveBalance;
+            } else {
+              balance = 0;
+            }
+          } catch (balErr) {
+            console.warn('[MetaMask] Failed to fetch live wallet balance on fallback:', balErr);
+            balance = 0;
+          }
+        } else {
+          balance = 0;
+        }
         if (typeof setupApp === 'function') setupApp(userData);
       }
 
@@ -3792,7 +3825,21 @@ async function _tickLivePrices() {
     }
   }
 }
+let _lastWalletBalancePoll = 0;
 function _tickHeader(){
+  // Periodic poll of live on-chain MetaMask balance (every 15s)
+  const nowTime = Date.now();
+  if (window.walletState && window.walletState.isConnected && (nowTime - _lastWalletBalancePoll > 15000)) {
+    _lastWalletBalancePoll = nowTime;
+    if (window.getWalletBalanceUSD) {
+      window.getWalletBalanceUSD().then(liveBalance => {
+        if (liveBalance !== undefined && liveBalance !== null) {
+          balance = liveBalance;
+        }
+      }).catch(err => console.warn('Periodic balance poll failed:', err));
+    }
+  }
+
   // ⚡ Bolt Optimization: All header metrics (Balance, P&L, Counts, Countdown)
   // are consolidated into updateLiveBalance() to ensure single-pass O(N) traversal
   // and synchronized DOM updates in a single display frame.
@@ -6213,6 +6260,16 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   if (typeof updateConnectionDashboard === 'function') {
     updateConnectionDashboard();
+  }
+  // Auto-connect MetaMask if already connected and authorized
+  if (window.ethereum) {
+    window.ethereum.request({ method: 'eth_accounts' })
+      .then(accounts => {
+        if (accounts && accounts.length > 0) {
+          handleMetaMaskConnect();
+        }
+      })
+      .catch(err => console.warn('[MetaMask] Auto-connect check failed:', err));
   }
 });
 </script>
