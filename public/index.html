@@ -1711,6 +1711,30 @@ const CRUCIBLE_METHODS = ['SPOT LONG','SPOT SHORT','HOLD'];
 // preventing redundant O(N) localStorage parsing and state assignments every 10 seconds.
 var balance=0, startBalance=0, totalPnl=0;
 var closedTrades=[], openPositions=[], equityHistory=[0];
+
+// ⚡ Bolt Optimization: Non-allocating O(N) single-pass counter to retrieve
+// non-HOLD trade count without creating an intermediate temporary array.
+function getNonHoldTradesCount() {
+  let count = 0;
+  const len = closedTrades.length;
+  for (let i = 0; i < len; i++) {
+    if (closedTrades[i].method !== 'HOLD') count++;
+  }
+  return count;
+}
+
+// ⚡ Bolt Optimization: Single-pass O(limit) backwards loop to extract recent non-HOLD trades,
+// completely bypassing full array traversal and allocation.
+function getRecentNonHoldTrades(limit = 20) {
+  const result = [];
+  for (let i = closedTrades.length - 1; i >= 0 && result.length < limit; i--) {
+    if (closedTrades[i].method !== 'HOLD') {
+      result.push(closedTrades[i]);
+    }
+  }
+  return result.reverse();
+}
+
 var _lastClosedCount = -1;
 var _lastLogRenderCount = -1;
 var _lastLogTradeCount = -1;
@@ -4981,7 +5005,7 @@ function learnFromTrade(pos) {
   if (won) strategyRegimeMatrix[strat][regime].w++;
 
   // 3. Every LEARN_INTERVAL trades: update weights + possibly adapt consensus
-  const totalTrades = closedTrades.filter(t => t.method !== 'HOLD').length;
+  const totalTrades = getNonHoldTradesCount();
   if (totalTrades > 0 && totalTrades % LEARN_INTERVAL === 0) {
     updateAgentWeights(totalTrades);
   }
@@ -5087,7 +5111,8 @@ function syncToGlobalBrain() {
 
 function adaptConsensusThreshold(totalTrades) {
   // Look at last 20 trades win rate
-  const recent = closedTrades.filter(t => t.method !== 'HOLD').slice(-20);
+  // ⚡ Bolt Optimization: Use O(1) space and O(limit) time backwards loop
+  const recent = getRecentNonHoldTrades(20);
   if (recent.length < 10) return;
   const recentWr = recent.filter(t => t.isWin).length / recent.length;
   const current = getLiveConsensus();
@@ -5328,7 +5353,7 @@ function getSuspendWindow()    { return parseInt(document.getElementById('suspen
 
 // ── Main audit trigger — called from learnFromTrade ──
 function maybeRunAudit() {
-  const n = closedTrades.filter(t => t.method !== 'HOLD').length;
+  const n = getNonHoldTradesCount();
   if (n - lastAuditAt >= getAuditInterval()) {
     lastAuditAt = n;
     runAudit(n, false);
@@ -5338,7 +5363,7 @@ function maybeRunAudit() {
 }
 
 function runManualAudit() {
-  const n = closedTrades.filter(t => t.method !== 'HOLD').length;
+  const n = getNonHoldTradesCount();
   if (n < 5) { logAudit('Need at least 5 closed trades to audit.', 'audit'); return; }
   runAudit(n, true);
 }
@@ -5510,7 +5535,7 @@ function renderAuditPanel() {
   if (body && !body.classList.contains('open')) return;
 
   const container = document.getElementById('auditAgentRows'); if (!container) return;
-  const totalTrades = closedTrades.filter(t => t.method !== 'HOLD').length;
+  const totalTrades = getNonHoldTradesCount();
   const threshold = getNoticeThreshold();
 
   container.innerHTML = AGENT_KEYS.map(key => {
