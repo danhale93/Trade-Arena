@@ -114,7 +114,7 @@ setInterval(() => {
     for (const [ip, record] of rateLimitMap.entries()) {
         if (now > record.resetAt) rateLimitMap.delete(ip);
     }
-}, 5 * 60 * 1000);
+}, 5 * 60 * 1000).unref();
 
 // Security: Serve static files from public directory (Exempt from rate limit)
 const publicDir = path.join(__dirname, "public");
@@ -541,9 +541,25 @@ app.post('/api/user/login', (req, res) => {
     }
 });
 
+// Sentinel: Cache for connection status health checks to prevent RPC rate-limit/quota exhaustion Denial of Service (DoS)
+let connectionStatusCache = null;
+let connectionStatusCacheTime = 0;
+const CONNECTION_STATUS_CACHE_TTL = 30000; // 30 seconds
+
 app.get('/api/status/connections', async (req, res) => {
+    const now = Date.now();
+    if (connectionStatusCache && (now - connectionStatusCacheTime < CONNECTION_STATUS_CACHE_TTL)) {
+        // Return cached results but refresh the top-level timestamp for display freshliness
+        const cachedResults = {
+            ...connectionStatusCache,
+            timestamp: now,
+            _cached: true // Helper for testing verification
+        };
+        return res.json(cachedResults);
+    }
+
     const results = {
-        timestamp: Date.now(),
+        timestamp: now,
         connections: []
     };
 
@@ -648,6 +664,10 @@ app.get('/api/status/connections', async (req, res) => {
             });
         }
     }
+
+    // Save to memory cache
+    connectionStatusCache = results;
+    connectionStatusCacheTime = now;
 
     res.json(results);
 });

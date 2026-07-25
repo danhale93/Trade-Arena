@@ -1087,6 +1087,45 @@ describe("Server Input Validation - Sentinel Hardening", () => {
   });
 });
 
+describe("Server Endpoint Caching - Sentinel Hardening", () => {
+  it("caches /api/status/connections results to prevent RPC spam", async () => {
+    const originalPort = process.env.PORT;
+    process.env.PORT = "0";
+
+    // Mock Express listen to capture the server instance and close it later
+    const express = require('express');
+    const originalListen = express.application.listen;
+    let activeServer = null;
+    express.application.listen = function(...args) {
+      activeServer = originalListen.apply(this, args);
+      return activeServer;
+    };
+
+    require("./server.js");
+
+    try {
+      const port = activeServer.address().port;
+
+      // First request - should hit actual RPC checks and not be cached
+      const res1 = await fetch(`http://localhost:${port}/api/status/connections`);
+      const firstResult = await res1.json();
+      expect(firstResult._cached).toBe(undefined);
+
+      // Second request - should be served from memory cache immediately
+      const res2 = await fetch(`http://localhost:${port}/api/status/connections`);
+      const secondResult = await res2.json();
+      expect(secondResult._cached).toBe(true);
+    } finally {
+      // Restore listen and close server to prevent open handles from hanging tests
+      express.application.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+    }
+  });
+});
+
 async function run() {
   let lastSuite = null;
 
