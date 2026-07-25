@@ -30,23 +30,34 @@ function oddsToProbability(odds, format = "american") {
   return americanToProbability(odds);
 }
 
+// ⚡ Bolt Optimization: Consolidate multiple map/filter/reduce allocations into a single-pass loop with safe shallow copying
 function removeVig(outcomes) {
-  const implied = outcomes
-    .map((outcome) => ({
-      ...outcome,
-      impliedProbability:
-        outcome.impliedProbability ?? oddsToProbability(outcome.price, outcome.format || "american"),
-    }))
-    .filter((outcome) => Number.isFinite(outcome.impliedProbability) && outcome.impliedProbability > 0);
+  const len = outcomes.length;
+  const implied = [];
+  let overround = 0;
 
-  const overround = implied.reduce((sum, outcome) => sum + outcome.impliedProbability, 0);
+  for (let i = 0; i < len; i++) {
+    const outcome = outcomes[i];
+    const prob = outcome.impliedProbability ?? oddsToProbability(outcome.price, outcome.format || "american");
+    if (Number.isFinite(prob) && prob > 0) {
+      implied.push({
+        ...outcome,
+        impliedProbability: prob,
+      });
+      overround += prob;
+    }
+  }
+
   if (overround <= 0) return [];
 
-  return implied.map((outcome) => ({
-    ...outcome,
-    fairProbability: outcome.impliedProbability / overround,
-    overround,
-  }));
+  const impliedLen = implied.length;
+  for (let i = 0; i < impliedLen; i++) {
+    const outcome = implied[i];
+    outcome.fairProbability = outcome.impliedProbability / overround;
+    outcome.overround = overround;
+  }
+
+  return implied;
 }
 
 function normalizeSportsbookEvent(event, marketKey = "h2h", oddsFormat = "american") {
@@ -116,6 +127,7 @@ function calculatePredictionMarketEdge(fairProbability, market, config = {}) {
   };
 }
 
+// ⚡ Bolt Optimization: Consolidate normalizedEvents array allocation and double-mapping Map creation into a single-pass loop
 function findSportsPredictionEdges({
   sportsbookEvents = [],
   predictionMarkets = [],
@@ -126,10 +138,12 @@ function findSportsPredictionEdges({
   now = Date.now(),
 } = {}) {
   const cfg = { ...DEFAULT_SPORTS_ARB_CONFIG, ...config };
-  const normalizedEvents = sportsbookEvents.map((event) =>
-    normalizeSportsbookEvent(event, marketKey, oddsFormat),
-  );
-  const eventById = new Map(normalizedEvents.map((event) => [event.eventId, event]));
+  const eventById = new Map();
+  const len = sportsbookEvents.length;
+  for (let i = 0; i < len; i++) {
+    const event = normalizeSportsbookEvent(sportsbookEvents[i], marketKey, oddsFormat);
+    eventById.set(event.eventId, event);
+  }
   const opportunities = [];
 
   for (const market of predictionMarkets) {
