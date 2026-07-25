@@ -87,3 +87,7 @@ Action: Implemented dual-mode trading system with real on-chain execution, batch
 ## 2026-07-24 - Allocation-Free Sports Arbitrage Calculations
 **Learning:** Consolidating multiple functional array transformations (like nested `.map()`, `.filter()`, and `.reduce()`) into a single-pass `for` loop significantly reduces memory footprint and garbage collection overhead in active sports prediction/arbitrage loops. When doing so, object inputs must be shallow-copied (e.g. `{ ...outcome }`) rather than mutated directly to avoid state-pollution bugs.
 **Action:** Replace multiple-iteration pipeline chains with single-pass accumulation loops that perform non-mutating shallow object copying.
+
+## 2026-07-25 - Static Set Pre-Allocation and O(1) Filtering
+**Learning:** Frequently called utility functions (like `isStablecoin` and `isStablecoinQuoteOk` checking filters) that construct intermediate array literals and perform O(N) lookup scans (using `.includes()`) on every single invocation introduce garbage collection pressure and CPU overhead in active loops. Wrapping lookups into static, module-scoped `Set` objects enables O(1) checks and completely eliminates array reallocation.
+**Action:** Always pre-allocate static `Set` structures at the module scope for fixed blocklists or lookups, rather than re-declaring arrays locally in hot paths.

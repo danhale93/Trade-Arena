@@ -3,6 +3,9 @@
  * Contains contract addresses, ABIs, and interaction utilities
  */
 
+// ⚡ Bolt Optimization: Pre-allocated static Set for O(1) checks to avoid O(N) array scans and garbage collection overhead
+const _STABLECOIN_SET = new Set(["USDC", "USDT", "DAI", "USDbC", "FRAX"]);
+
 const BASE_SEPOLIA_CONFIG = {
   chainId: 84532,
   name: "Base Sepolia",
@@ -217,9 +220,9 @@ class ContractHelper {
     return await tx.wait();
   }
 
+  // ⚡ Bolt Optimization: Pre-allocated static Set for O(1) checks to avoid O(N) array scans and garbage collection overhead
   isStablecoin(tokenSymbol) {
-    const stablecoins = ["USDC", "USDT", "DAI", "USDbC", "FRAX"];
-    return stablecoins.includes(tokenSymbol);
+    return _STABLECOIN_SET.has(tokenSymbol);
   }
 
   getTokenDetails(tokenAddress) {
@@ -237,8 +240,7 @@ class ContractHelper {
  */
 class SecurityHelper {
   static isStablecoin(tokenSymbol) {
-    const stablecoins = ["USDC", "USDT", "DAI", "USDbC", "FRAX"];
-    return stablecoins.includes(tokenSymbol);
+    return _STABLECOIN_SET.has(tokenSymbol);
   }
   static analyzeMEVRisk(swapDetails) {
     const largeSwapThreshold = 10;
