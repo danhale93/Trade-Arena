@@ -21,7 +21,7 @@ importers:
         specifier: 1.18.1
         version: 1.18.1
       ccxt:
-        specifier: ^4.5.66
+        specifier: ^4.5.68
         version: 4.5.68(utf-8-validate@5.0.10)
       cors:
         specifier: ^2.8.5
