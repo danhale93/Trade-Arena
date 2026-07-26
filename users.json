@@ -58,5 +58,17 @@
     "bots": [],
     "trades": [],
     "created": 1784870421287
+  },
+  "trader@arena.com": {
+    "id": "trader@arena.com",
+    "name": "trader@arena.com",
+    "email": "trader@arena.com",
+    "address": "0x1234567890abcdef1234567890abcdef1234abcd",
+    "provider": "privy",
+    "avatar": null,
+    "balance": 0,
+    "bots": [],
+    "trades": [],
+    "created": 1785042562163
   }
 }
