@@ -81,7 +81,7 @@ export const PrivyWalletHeader = () => {
   useEffect(() => {
     // Expose control functions
     window.privyInit = () => console.log('🎨 Palette: Trade Arena bridge activated');
-    window.privyLogin = () => login({ loginMethod: 'google' });
+    window.privyLogin = (options?: any) => login(options);
     window.privyLogout = logout;
     window.isPrivyConnected = () => authenticated && !!arenaWallet;
     window.getPrivyAddress = () => arenaWallet?.address || null;
@@ -150,13 +150,20 @@ export const PrivyWalletHeader = () => {
   // Unauthenticated: Login Trigger
   if (!authenticated) {
     return (
-      <div className="gh-controls">
+      <div className="gh-controls" style={{ display: 'flex', gap: '4px' }}>
         <button
           className="gh-auto-btn"
-          onClick={() => login({ loginMethod: 'google' })}
+          onClick={() => login()}
           style={{ border: '1px solid var(--cyan)', color: 'var(--cyan)', cursor: 'pointer', background: 'transparent' }}
         >
           LOGIN
+        </button>
+        <button
+          className="gh-auto-btn"
+          onClick={() => login({ loginMethod: 'wallet' })}
+          style={{ border: '1px solid var(--gold)', color: 'var(--gold)', cursor: 'pointer', background: 'transparent' }}
+        >
+          CONNECT WALLET
         </button>
       </div>
     );

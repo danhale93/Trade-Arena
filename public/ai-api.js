@@ -3,7 +3,7 @@
  */
 
 // ── Secure Storage Decoder ──
-const _cfg_d = (s) => { try { return s ? atob(s) : ''; } catch(e) { return s; } };
+var _cfg_d = (s) => { try { return s ? atob(s) : ''; } catch(e) { return s; } };
 
 const AI_CONFIG = {
   apiKey: _cfg_d(localStorage.getItem('ta_api_key')) || null,
