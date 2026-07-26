@@ -79,3 +79,6 @@ Latency spike (72ms). Rerouting from Primary (Base) to Base RPC.
 
 ## 2026-07-13T02:55:55.732Z - [WARN] ARCHITECT
 Latency spike (77ms). Rerouting from Primary (Base) to Ankr.
+
+## 2026-07-26T06:33:57.302Z - [WARN] ARCHITECT
+Latency spike (91ms). Rerouting from Primary (Base) to Alchemy.
