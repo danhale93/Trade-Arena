@@ -509,6 +509,71 @@ describe("Multi-AI Arena Global Weights", () => {
   });
 });
 
+describe("Server Endpoint Rate Limiting - Sentinel Hardening", () => {
+  it("enforces strict rate limiting on the /api/user/login endpoint", async () => {
+    const originalPort = process.env.PORT;
+    process.env.PORT = "0";
+
+    const express = require('express');
+    const originalListen = express.application.listen;
+    let activeServer = null;
+    express.application.listen = function(...args) {
+      activeServer = originalListen.apply(this, args);
+      return activeServer;
+    };
+
+    // Back up users.json to ensure no database pollution
+    const fs = require('fs');
+    const path = require('path');
+    const usersFilePath = path.join(__dirname, 'users.json');
+    let usersBackup = null;
+    try {
+      if (fs.existsSync(usersFilePath)) {
+        usersBackup = fs.readFileSync(usersFilePath, 'utf8');
+      }
+    } catch (e) {}
+
+    // Clear require cache for server.js to ensure a fresh load
+    delete require.cache[require.resolve("./server.js")];
+    require("./server.js");
+
+    try {
+      const port = activeServer.address().port;
+
+      // Make 15 successful or validation-failed login requests (max is 15)
+      // The 16th request should be blocked with 429
+      let lastStatus = 0;
+      for (let i = 0; i < 16; i++) {
+        const res = await fetch(`http://localhost:${port}/api/user/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: "test-rate-limit@example.com" })
+        });
+        lastStatus = res.status;
+        if (lastStatus === 429) {
+          break;
+        }
+      }
+      expect(lastStatus).toBe(429);
+    } finally {
+      express.application.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+
+      // Restore users.json backup
+      try {
+        if (usersBackup !== null) {
+          fs.writeFileSync(usersFilePath, usersBackup, 'utf8');
+        } else if (fs.existsSync(usersFilePath)) {
+          fs.unlinkSync(usersFilePath);
+        }
+      } catch (e) {}
+    }
+  });
+});
+
 describe("Live-Data Trade Logic Safety & Self-Correction", () => {
   it("resets real-trading session state before each run", async () => {
     await CrucibleRealTrading.init({ startingBalance: 75, enableAILearning: true });
@@ -1101,6 +1166,7 @@ describe("Server Endpoint Caching - Sentinel Hardening", () => {
       return activeServer;
     };
 
+    delete require.cache[require.resolve("./server.js")];
     require("./server.js");
 
     try {
