@@ -164,10 +164,11 @@ export const PrivyWalletHeader = () => {
 
   /**
    * REQUIREMENT 4: Graceful provisioning state
+   * Added extra visual clarity to support seamless embedded wallet provisioning
    */
   if (authenticated && !arenaWallet) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '0 4px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '0 4px' }} className="gh-wallet-initializing">
         <div className="gh-name" style={{ fontSize: '10px', color: 'var(--cyan)', whiteSpace: 'nowrap' }}>
           {userLabel}
         </div>
@@ -229,7 +230,7 @@ export const PrivyWalletHeader = () => {
    */
   return (
     <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '0 4px' }}>
-      <div className="gh-name" style={{ fontSize: '10px', color: 'var(--cyan)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+      <div className="gh-name" style={{ fontSize: '10px', color: 'var(--cyan)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }} title={userLabel}>
         {userLabel}
       </div>
       <div
@@ -237,7 +238,7 @@ export const PrivyWalletHeader = () => {
         tabIndex={0}
         onClick={handleCopy}
         onKeyDown={handleCopy}
-        title="Copy wallet address to clipboard"
+        title={`Copy Privy wallet address (${arenaWallet?.address || ''}) to clipboard`}
         aria-label={`Copy wallet address ${displayAddress} to clipboard`}
         style={{
           fontSize: '9px',
