@@ -1,3 +1,7 @@
+## 2026-07-26 - Interactive Focus States and Explicit ARIA States in Web3 Headers
+**Learning:** Standard inline-styled authentication buttons inside the React PrivyWalletHeader component lacked dynamic focus and hover state styles in the legacy integration, leaving keyboard and screen-reader users without interactive visual cues during authentication transitions. Adding explicit ARIA labels and inline event handlers for focus/hover provides a highly tactile and accessible transition.
+**Action:** Always verify focus-visible state indicators and apply interactive hover effects to inline-styled controls, and explicitly declare starting state aria attributes (such as `aria-pressed="false"`) on page-level toggle buttons.
+
 ## 2026-06-29 - Payout Header Integration
 Learning: Header real-estate is limited; used a compact 'CLAIM' button next to the balance to maintain UI balance.
 Action: Integrated payout claim logic directly into the header for high visibility.
