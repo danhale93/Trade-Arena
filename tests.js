@@ -810,6 +810,85 @@ describe("Payout Service - Robustness & Security", () => {
   });
 });
 
+describe("Biconomy Nexus - Robustness & Security", () => {
+  const BiconomyNexus = require('./services/payouts/biconomyNexus');
+  const nexus = new BiconomyNexus({ payoutManagerAddress: "0x1234567890123456789012345678901234567890" });
+
+  it("rejects missing or non-object payload", () => {
+    try {
+      nexus.encodeClaimReward(null);
+      throw new Error("Should have thrown");
+    } catch (e) {
+      expect(e.message).toBe("Invalid or missing payoutData");
+    }
+  });
+
+  it("rejects malformed user addresses", () => {
+    try {
+      nexus.encodeClaimReward({ user: "0xInvalidAddress", taskId: "task-1", amount: 10, nonce: 1, signature: "0xabc" });
+      throw new Error("Should have thrown");
+    } catch (e) {
+      expect(e.message).toBe("Invalid user address");
+    }
+  });
+
+  it("rejects malformed taskIds", () => {
+    try {
+      nexus.encodeClaimReward({ user: "0x26fE35d19F481F376e862Aa70688a18Ae0237be5", taskId: "a".repeat(101), amount: 10, nonce: 1, signature: "0xabc" });
+      throw new Error("Should have thrown");
+    } catch (e) {
+      expect(e.message).toBe("Invalid taskId");
+    }
+  });
+
+  it("rejects malformed amounts", () => {
+    try {
+      nexus.encodeClaimReward({ user: "0x26fE35d19F481F376e862Aa70688a18Ae0237be5", taskId: "task-1", amount: "not-a-number", nonce: 1, signature: "0xabc" });
+      throw new Error("Should have thrown");
+    } catch (e) {
+      expect(e.message).toBe("Invalid amount");
+    }
+
+    try {
+      nexus.encodeClaimReward({ user: "0x26fE35d19F481F376e862Aa70688a18Ae0237be5", taskId: "task-1", amount: -50, nonce: 1, signature: "0xabc" });
+      throw new Error("Should have thrown");
+    } catch (e) {
+      expect(e.message).toBe("Invalid amount");
+    }
+  });
+
+  it("rejects malformed nonces", () => {
+    try {
+      nexus.encodeClaimReward({ user: "0x26fE35d19F481F376e862Aa70688a18Ae0237be5", taskId: "task-1", amount: "1000", nonce: "abc", signature: "0xabc" });
+      throw new Error("Should have thrown");
+    } catch (e) {
+      expect(e.message).toBe("Invalid nonce");
+    }
+  });
+
+  it("rejects malformed signature format", () => {
+    try {
+      nexus.encodeClaimReward({ user: "0x26fE35d19F481F376e862Aa70688a18Ae0237be5", taskId: "task-1", amount: "1000", nonce: "12345", signature: "not-0x-hex" });
+      throw new Error("Should have thrown");
+    } catch (e) {
+      expect(e.message).toBe("Invalid signature format");
+    }
+  });
+
+  it("passes and encodes valid payloads", () => {
+    const data = {
+      user: "0x26fE35d19F481F376e862Aa70688a18Ae0237be5",
+      taskId: "task-1",
+      amount: "1000",
+      nonce: "12345",
+      signature: "0xabcdef1234567890"
+    };
+    const callData = nexus.encodeClaimReward(data);
+    expect(typeof callData).toBe("string");
+    expect(callData.startsWith("0x")).toBe(true);
+  });
+});
+
 describe("MoonPay Webhook - Security Verification", () => {
   const verifyMoonPaySignature = (body, signature, secret) => {
     try {

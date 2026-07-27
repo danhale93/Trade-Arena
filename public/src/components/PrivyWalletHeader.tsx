@@ -82,8 +82,7 @@ export const PrivyWalletHeader = () => {
   useEffect(() => {
     // Expose control functions
     window.privyInit = () => console.log('🎨 Palette: Trade Arena bridge activated');
-    // FIXED: Do not force Google; open default login modal to support email, apple, and other wallets!
-    window.privyLogin = () => login();
+    window.privyLogin = (options?: any) => login(options);
     window.privyLogout = logout;
     window.isPrivyConnected = () => authenticated && !!arenaWallet;
     window.getPrivyAddress = () => arenaWallet?.address || null;
@@ -171,13 +170,68 @@ export const PrivyWalletHeader = () => {
   // Unauthenticated: Login Trigger
   if (!authenticated) {
     return (
-      <div className="gh-controls">
+      <div className="gh-controls" style={{ display: 'flex', gap: '4px' }}>
         <button
           className="gh-auto-btn"
           onClick={() => login()}
-          style={{ border: '1px solid var(--cyan)', color: 'var(--cyan)', cursor: 'pointer', background: 'transparent' }}
+          aria-label="Login with social, email, or passkey via Privy"
+          style={{
+            border: '1px solid var(--cyan)',
+            color: 'var(--cyan)',
+            cursor: 'pointer',
+            background: 'transparent',
+            outline: 'none',
+            transition: 'all 0.15s ease-in-out'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(0, 240, 255, 0.1)';
+            e.currentTarget.style.boxShadow = '0 0 8px rgba(0, 240, 255, 0.4)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.boxShadow = 'none';
+          }}
+          onFocus={(e) => {
+            e.currentTarget.style.background = 'rgba(0, 240, 255, 0.15)';
+            e.currentTarget.style.boxShadow = '0 0 0 2px var(--cyan)';
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.boxShadow = 'none';
+          }}
         >
           LOGIN
+        </button>
+        <button
+          className="gh-auto-btn"
+          onClick={() => login({ loginMethod: 'wallet' })}
+          aria-label="Connect an external Web3 wallet via Privy"
+          style={{
+            border: '1px solid var(--gold)',
+            color: 'var(--gold)',
+            cursor: 'pointer',
+            background: 'transparent',
+            outline: 'none',
+            transition: 'all 0.15s ease-in-out'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(246, 133, 27, 0.1)';
+            e.currentTarget.style.boxShadow = '0 0 8px rgba(246, 133, 27, 0.4)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.boxShadow = 'none';
+          }}
+          onFocus={(e) => {
+            e.currentTarget.style.background = 'rgba(246, 133, 27, 0.15)';
+            e.currentTarget.style.boxShadow = '0 0 0 2px var(--gold)';
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.boxShadow = 'none';
+          }}
+        >
+          CONNECT WALLET
         </button>
       </div>
     );
@@ -185,10 +239,11 @@ export const PrivyWalletHeader = () => {
 
   /**
    * REQUIREMENT 4: Graceful provisioning state
+   * Added extra visual clarity to support seamless embedded wallet provisioning
    */
   if (authenticated && !arenaWallet) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '0 4px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '0 4px' }} className="gh-wallet-initializing">
         <div className="gh-name" style={{ fontSize: '10px', color: 'var(--cyan)', whiteSpace: 'nowrap' }}>
           {userLabel}
         </div>
@@ -250,7 +305,7 @@ export const PrivyWalletHeader = () => {
    */
   return (
     <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '0 4px' }}>
-      <div className="gh-name" style={{ fontSize: '10px', color: 'var(--cyan)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+      <div className="gh-name" style={{ fontSize: '10px', color: 'var(--cyan)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }} title={userLabel}>
         {userLabel}
       </div>
       <div
@@ -258,7 +313,7 @@ export const PrivyWalletHeader = () => {
         tabIndex={0}
         onClick={handleCopy}
         onKeyDown={handleCopy}
-        title="Copy wallet address to clipboard"
+        title={`Copy Privy wallet address (${arenaWallet?.address || ''}) to clipboard`}
         aria-label={`Copy wallet address ${displayAddress} to clipboard`}
         style={{
           fontSize: '9px',

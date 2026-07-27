@@ -155,7 +155,7 @@ async function submitTaskToBackend(quest) {
             return;
         }
         // ── Secure Storage Decoder ──
-        const _cfg_d = (s) => { try { return s ? atob(s) : ''; } catch(e) { return s; } };
+        var _cfg_d = (s) => { try { return s ? atob(s) : ''; } catch(e) { return s; } };
 
         const resp = await fetch(`${API_BASE}/api/tasks/claim`, {
             method: 'POST',

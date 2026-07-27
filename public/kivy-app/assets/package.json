@@ -12,6 +12,6 @@
   "devDependencies": {
     "express": "^5.2.1",
     "cors": "^2.8.5",
-    "concurrently": "^10.0.3"
+    "concurrently": "^10.0.4"
   }
 }

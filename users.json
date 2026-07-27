@@ -59,16 +59,16 @@
     "trades": [],
     "created": 1784870421287
   },
-  "jules@trade-arena.com": {
-    "id": "jules@trade-arena.com",
-    "name": "jules@trade-arena.com",
-    "email": "jules@trade-arena.com",
-    "address": "0x9F407b7f793555c35c33aC64bd6901759470736D",
+  "trader@arena.com": {
+    "id": "trader@arena.com",
+    "name": "trader@arena.com",
+    "email": "trader@arena.com",
+    "address": "0x1234567890abcdef1234567890abcdef1234abcd",
     "provider": "privy",
     "avatar": null,
     "balance": 0,
     "bots": [],
     "trades": [],
-    "created": 1785162926163
+    "created": 1785042562163
   }
 }
