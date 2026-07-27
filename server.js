@@ -869,17 +869,14 @@ app.get('/api/market/prices', async (req, res) => {
             return res.json({ success: true, prices: {}, timestamp: Date.now() });
         }
 
-        // ⚡ Bolt Optimization: Batch price requests into a single CoinGecko API call to eliminate network waterfall
+        // ⚡ Bolt Optimization: Batch and cache price requests using central backend CoinGecko price cache
         const ids = symbols.map(s => coinMap[s]).filter(Boolean);
-        const response = await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${ids.join(',')}&vs_currencies=usd`, {
-            timeout: 10000 // 10s timeout
-        });
-        const data = response.data || {};
+        const data = await getCachedCoinGeckoPrices(ids);
 
         const prices = {};
         symbols.forEach(s => {
             const id = coinMap[s];
-            if (data[id]?.usd) prices[s] = data[id].usd;
+            if (data[id] !== undefined) prices[s] = data[id];
         });
 
         res.json({ success: true, prices, timestamp: Date.now() });
@@ -988,15 +985,57 @@ function verifyMoonPaySignature(body, signature, secret) {
     }
 }
 
+// ⚡ Bolt Optimization: Backend CoinGecko Price Caching
+const coinGeckoPriceCache = {}; // id -> { price, timestamp }
+const COINGECKO_CACHE_TTL = 10000; // 10 seconds cache TTL
+
+async function getCachedCoinGeckoPrices(coinIds) {
+    const now = Date.now();
+    const prices = {};
+    const missingIds = [];
+
+    coinIds.forEach(id => {
+        const cached = coinGeckoPriceCache[id];
+        if (cached && (now - cached.timestamp < COINGECKO_CACHE_TTL)) {
+            prices[id] = cached.price;
+        } else {
+            missingIds.push(id);
+        }
+    });
+
+    if (missingIds.length > 0) {
+        try {
+            const response = await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${missingIds.join(',')}&vs_currencies=usd`, {
+                timeout: 10000
+            });
+            const data = response.data || {};
+            missingIds.forEach(id => {
+                const price = data[id]?.usd;
+                if (price !== undefined) {
+                    coinGeckoPriceCache[id] = { price, timestamp: now };
+                    prices[id] = price;
+                } else if (coinGeckoPriceCache[id]) {
+                    prices[id] = coinGeckoPriceCache[id].price; // Expired fallback
+                }
+            });
+        } catch (error) {
+            console.error('[Market API Cache] Failed to fetch missing prices:', error.message);
+            // Fallback to expired cache values if available
+            missingIds.forEach(id => {
+                if (coinGeckoPriceCache[id]) prices[id] = coinGeckoPriceCache[id].price;
+            });
+        }
+    }
+    return prices;
+}
+
 async function fetchCoinGeckoPrice(symbol) {
     try {
         const coinMap = { 'WETH': 'ethereum', 'USDC': 'usd-coin', 'ARB': 'arbitrum', 'OP': 'optimism' };
         const coinId = coinMap[symbol];
         if (!coinId) return null;
-        const response = await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd`, {
-            timeout: 10000 // 10s timeout
-        });
-        return response.data[coinId]?.usd || null;
+        const prices = await getCachedCoinGeckoPrices([coinId]);
+        return prices[coinId] || null;
     } catch (e) {
         return null;
     }
