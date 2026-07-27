@@ -3539,14 +3539,17 @@ function openOskoRamp(type) {
 
 
 
-window.onPrivyLoginSuccess = function() {
+window.onPrivyLoginSuccess = function(customUser, customAddress) {
   const s = document.getElementById('loginStatus');
   if(s) s.textContent = '✅ Privy Authorized! Syncing Arena instance...';
 
+  const u = customUser || window.privyUser;
+  const addr = customAddress || window.privyWalletAddress;
+
   const userData = {
-    name: window.privyUser?.google?.name || window.privyUser?.email?.address || 'Arena Trader',
-    email: window.privyUser?.email?.address || window.privyUser?.google?.email,
-    address: window.privyWalletAddress,
+    name: u?.google?.name || u?.email?.address || 'Arena Trader',
+    email: u?.email?.address || u?.google?.email,
+    address: addr,
     provider: 'privy',
     badge: '💠 PRIVY'
   };
@@ -6696,7 +6699,7 @@ function updateSettingsVolume(val) {
         <div class="settings-section-title">💳 Wallet Connection</div>
         <div id="settingsWalletStatus" style="font-size:10px;color:var(--dim);margin-bottom:8px">🔴 Not connected</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <button class="mm-btn" onclick="window.ethereum?.request({ method: 'eth_requestAccounts' }).then(() => { location.reload(); })" style="flex:1;min-width:120px;padding:8px;font-size:10px;background:#f6851b;color:#fff;border:none">Connect MetaMask</button>
+          <button class="mm-btn" onclick="handleMetaMaskConnect()" style="flex:1;min-width:120px;padding:8px;font-size:10px;background:#f6851b;color:#fff;border:none">Connect MetaMask</button>
           <button class="onramp-btn" onclick="if(window.privyLogin) window.privyLogin()" style="flex:1;min-width:120px;padding:8px;font-size:10px">Other Wallets (Privy)</button>
         </div>
       </div>

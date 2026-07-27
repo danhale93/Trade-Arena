@@ -14,9 +14,10 @@ declare global {
     isPrivyConnected: () => boolean;
     getPrivyAddress: () => string | null;
     privySignMessage: (message: string) => Promise<string>;
-    onPrivyLoginSuccess?: () => void;
+    onPrivyLoginSuccess?: (user?: any, address?: string | null) => void;
     onPrivyReady?: (user: any, address: string | null) => void;
     updateWalletUI?: () => void;
+    walletState?: any;
   }
 }
 
@@ -101,7 +102,7 @@ export const PrivyWalletHeader = () => {
       window.privyConnected = true;
 
       // Inject Ethers-compatible provider for legacy execution
-      window.privyProvider = {
+      const privyProviderInstance = {
         ...arenaWallet,
         getEthersProvider: async () => {
           const provider = await arenaWallet.getEthereumProvider();
@@ -112,6 +113,19 @@ export const PrivyWalletHeader = () => {
             : new ethersLib.providers.Web3Provider(provider);
         }
       };
+      window.privyProvider = privyProviderInstance;
+
+      // Keep window.walletState fully synchronized with the Privy embedded wallet
+      if (window.walletState) {
+        window.walletState.isConnected = true;
+        window.walletState.address = arenaWallet.address;
+        privyProviderInstance.getEthersProvider().then((provider) => {
+          window.walletState.provider = provider;
+          window.walletState.signer = provider.getSigner();
+        }).catch((err) => {
+          console.error('[Privy] Failed to initialize provider in walletState:', err);
+        });
+      }
 
       // Trigger legacy initialization callbacks
       if (arenaWallet.address !== lastSyncAddress.current) {
@@ -122,7 +136,7 @@ export const PrivyWalletHeader = () => {
 
       // Signal successful entry to the lifecycle manager
       if (!hasTriggeredSuccess.current && typeof window.onPrivyLoginSuccess === 'function') {
-        window.onPrivyLoginSuccess();
+        window.onPrivyLoginSuccess(user, arenaWallet.address);
         hasTriggeredSuccess.current = true;
       }
     } else if (!authenticated && ready) {
@@ -133,6 +147,12 @@ export const PrivyWalletHeader = () => {
       window.privyWalletAddress = null;
       window.privyConnected = false;
       window.privyProvider = null;
+      if (window.walletState) {
+        window.walletState.isConnected = false;
+        window.walletState.address = null;
+        window.walletState.provider = null;
+        window.walletState.signer = null;
+      }
     }
   }, [authenticated, user, arenaWallet, ready]);
 
