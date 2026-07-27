@@ -154,14 +154,62 @@ export const PrivyWalletHeader = () => {
         <button
           className="gh-auto-btn"
           onClick={() => login()}
-          style={{ border: '1px solid var(--cyan)', color: 'var(--cyan)', cursor: 'pointer', background: 'transparent' }}
+          aria-label="Login with social, email, or passkey via Privy"
+          style={{
+            border: '1px solid var(--cyan)',
+            color: 'var(--cyan)',
+            cursor: 'pointer',
+            background: 'transparent',
+            outline: 'none',
+            transition: 'all 0.15s ease-in-out'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(0, 240, 255, 0.1)';
+            e.currentTarget.style.boxShadow = '0 0 8px rgba(0, 240, 255, 0.4)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.boxShadow = 'none';
+          }}
+          onFocus={(e) => {
+            e.currentTarget.style.background = 'rgba(0, 240, 255, 0.15)';
+            e.currentTarget.style.boxShadow = '0 0 0 2px var(--cyan)';
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.boxShadow = 'none';
+          }}
         >
           LOGIN
         </button>
         <button
           className="gh-auto-btn"
           onClick={() => login({ loginMethod: 'wallet' })}
-          style={{ border: '1px solid var(--gold)', color: 'var(--gold)', cursor: 'pointer', background: 'transparent' }}
+          aria-label="Connect an external Web3 wallet via Privy"
+          style={{
+            border: '1px solid var(--gold)',
+            color: 'var(--gold)',
+            cursor: 'pointer',
+            background: 'transparent',
+            outline: 'none',
+            transition: 'all 0.15s ease-in-out'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(246, 133, 27, 0.1)';
+            e.currentTarget.style.boxShadow = '0 0 8px rgba(246, 133, 27, 0.4)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.boxShadow = 'none';
+          }}
+          onFocus={(e) => {
+            e.currentTarget.style.background = 'rgba(246, 133, 27, 0.15)';
+            e.currentTarget.style.boxShadow = '0 0 0 2px var(--gold)';
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.boxShadow = 'none';
+          }}
         >
           CONNECT WALLET
         </button>
