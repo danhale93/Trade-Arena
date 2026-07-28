@@ -3034,6 +3034,34 @@ function updateConnectionDashboard() {
   fetch('/api/status/connections')
     .then(res => res.json())
     .then(data => {
+      // Helper function to mask key securely
+      const maskKey = (key) => {
+        if (!key) return null;
+        if (key.length <= 8) return '********';
+        return key.substring(0, 4) + '****' + key.substring(key.length - 4);
+      };
+
+      // Apply client-side localStorage overrides for non-custodial API key status
+      data.connections = data.connections.map(conn => {
+        let localKey = null;
+        if (conn.name === 'ANTHROPIC_API_KEY') localKey = localStorage.getItem('ta_api_key');
+        else if (conn.name === 'OPENAI_API_KEY') localKey = localStorage.getItem('ta_openai_key');
+        else if (conn.name === 'GEMINI_API_KEY') localKey = localStorage.getItem('ta_gemini_key');
+        else if (conn.name === '0x_API_KEY') localKey = localStorage.getItem('ta_0x_api_key');
+        else if (conn.name === 'TASK_CLAIM_SECRET') localKey = localStorage.getItem('ta_task_secret');
+
+        if (localKey) {
+          try {
+            const dec = _cfg_d(localKey);
+            if (dec && dec.trim()) {
+              conn.status = 'CONFIGURED';
+              conn.value = maskKey(dec);
+            }
+          } catch(e) {}
+        }
+        return conn;
+      });
+
       // Update Missing Keys Alert Banner dynamically
       const keyGenLinks = {
         'ANTHROPIC_API_KEY': { label: 'Anthropic', url: 'https://console.anthropic.com' },
@@ -3051,8 +3079,11 @@ function updateConnectionDashboard() {
         banner.style.display = 'flex';
         keysListEl.innerHTML = 'Inactive required systems: ' + missing.map(c => {
           const info = keyGenLinks[c.name] || { label: c.name.replace(/_/g, ' '), url: '#' };
-          return `<a href="${info.url}" target="_blank" rel="noopener noreferrer" style="color:var(--cyan); text-decoration:underline; font-weight:bold; margin:0 4px;">${info.label} (GET KEY →)</a>`;
-        }).join(', ');
+          return `<span style="margin-right:12px; display:inline-block;">
+                    <a href="${info.url}" target="_blank" rel="noopener noreferrer" style="color:var(--cyan); text-decoration:underline; font-weight:bold;">${info.label} (GET KEY →)</a>
+                    <button onclick="focusKeyInSettings('${c.name}')" style="background:none; border:none; color:var(--gold); font-family:'Share Tech Mono',monospace; font-size:10px; text-decoration:underline; cursor:pointer; margin-left:4px; padding:0;">[CONFIGURE]</button>
+                  </span>`;
+        }).join(' ');
       } else if (banner) {
         banner.style.display = 'none';
       }
@@ -3067,7 +3098,6 @@ function updateConnectionDashboard() {
 
         const isAiKey = conn.type === 'AI';
         const isSecret = conn.type === 'SECRET';
-        const isMissing = conn.status === 'MISSING';
 
         let keyEntryHtml = '';
         if (isAiKey || isSecret) {
@@ -3079,6 +3109,24 @@ function updateConnectionDashboard() {
             'TASK_CLAIM_SECRET': 'https://trade-arena.com/keys'
           };
           const genUrl = keyGenLinks[conn.name] || '#';
+
+          // Check local storage for pre-filling dashboard forms
+          let localKey = null;
+          if (conn.name === 'ANTHROPIC_API_KEY') localKey = localStorage.getItem('ta_api_key');
+          else if (conn.name === 'OPENAI_API_KEY') localKey = localStorage.getItem('ta_openai_key');
+          else if (conn.name === 'GEMINI_API_KEY') localKey = localStorage.getItem('ta_gemini_key');
+          else if (conn.name === '0x_API_KEY') localKey = localStorage.getItem('ta_0x_api_key');
+          else if (conn.name === 'TASK_CLAIM_SECRET') localKey = localStorage.getItem('ta_task_secret');
+
+          let localVal = '';
+          if (localKey) {
+            try {
+              localVal = _cfg_d(localKey) || '';
+            } catch (e) {
+              console.warn("Failed to decrypt local key:", e);
+            }
+          }
+          const isMissing = !localVal;
           const label = isMissing ? (isSecret ? 'FILL MISSING SECRET' : 'FILL MISSING KEY') : 'UPDATE KEY/SECRET';
 
           keyEntryHtml = `
@@ -3088,7 +3136,7 @@ function updateConnectionDashboard() {
                 <a href="${genUrl}" target="_blank" rel="noopener noreferrer" style="font-size:8px; color:var(--cyan); text-decoration:none;">GET KEY →</a>
               </div>
               <div style="display:flex; gap:4px;">
-                <input type="password" id="d_cfg_${conn.name}" placeholder="Enter ${escapeHTML(conn.name.replace(/_/g, ' '))}..."
+                <input type="password" id="d_cfg_${conn.name}" value="${escapeHTML(localVal)}" placeholder="Enter ${escapeHTML(conn.name.replace(/_/g, ' '))}..."
                   style="flex:1; padding:4px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px;">
                 <button onclick="saveApiKeyFromDashboard('${conn.name}')"
                   style="padding:4px 8px; background:var(--green); color:black; border:none; border-radius:4px; font-family:'Bungee'; font-size:8px; cursor:pointer;">
@@ -3120,6 +3168,41 @@ function updateConnectionDashboard() {
     .catch(err => {
       list.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; padding:20px; color:var(--hot)">❌ Failed to fetch connection status: ${escapeHTML(err.message)}</div>`;
     });
+}
+
+function focusKeyInSettings(keyName) {
+  if (typeof toggleSettingsModal === 'function') {
+    const modal = document.getElementById('settingsModal');
+    if (modal && (modal.style.display === 'none' || modal.style.display === '')) {
+      toggleSettingsModal();
+    }
+  }
+
+  const keyMap = {
+    'ANTHROPIC_API_KEY': 's_cfg_ant',
+    'OPENAI_API_KEY': 's_cfg_oa',
+    'GEMINI_API_KEY': 's_cfg_gem',
+    '0x_API_KEY': 's_cfg_zx',
+    'TASK_CLAIM_SECRET': 's_cfg_ts'
+  };
+
+  const id = keyMap[keyName];
+  if (id) {
+    const input = document.getElementById(id);
+    if (input) {
+      setTimeout(() => {
+        input.focus();
+        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const origBorder = input.style.borderColor;
+        input.style.borderColor = 'var(--cyan)';
+        input.style.boxShadow = '0 0 10px var(--cyan)';
+        setTimeout(() => {
+          input.style.borderColor = origBorder;
+          input.style.boxShadow = 'none';
+        }, 1500);
+      }, 100);
+    }
+  }
 }
 
 function saveApiKeyFromDashboard(keyName) {
