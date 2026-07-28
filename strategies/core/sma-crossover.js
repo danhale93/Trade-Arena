@@ -24,8 +24,12 @@ const info = {
 function calculateSMA(data, period) {
   if (!data || data.length < period) return null;
   
-  const closes = data.slice(-period).map(candle => candle.close);
-  const sum = closes.reduce((acc, price) => acc + price, 0);
+  // ⚡ Bolt Optimization: Single-pass manual loop over candles with O(1) space complexity to avoid intermediate array allocations (.slice and .map)
+  let sum = 0;
+  const start = data.length - period;
+  for (let i = start; i < data.length; i++) {
+    sum += data[i].close;
+  }
   return sum / period;
 }
 
