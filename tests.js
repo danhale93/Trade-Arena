@@ -1229,6 +1229,20 @@ describe("Server Input Validation - Sentinel Hardening", () => {
     expect(isValidBotInput("My Bot", "Arbitrage Detection", "Conservative (2x leverage)", 1000, 123)).toBe(false);
     expect(isValidBotInput("My Bot", "Arbitrage Detection", "Conservative (2x leverage)", 1000, "a".repeat(101))).toBe(false);
   });
+
+  it("validates task claim and payout userAddress with type safety and anchored regex", () => {
+    const isValidEarlyAddress = (userAddress) => {
+      return !!(userAddress && typeof userAddress === 'string' && userAddress !== 'demo' && /^0x[a-fA-F0-9]{40}$/.test(userAddress));
+    };
+
+    expect(isValidEarlyAddress("0x9F407b7f793555c35c33aC64bd6901759470736D")).toBe(true);
+    expect(isValidEarlyAddress("demo")).toBe(false);
+    expect(isValidEarlyAddress("0x9F407b7f793555c35c33aC64bd6901759470736D.evil.com")).toBe(false);
+    expect(isValidEarlyAddress(["0x9F407b7f793555c35c33aC64bd6901759470736D"])).toBe(false);
+    expect(isValidEarlyAddress(null)).toBe(false);
+    expect(isValidEarlyAddress(undefined)).toBe(false);
+    expect(isValidEarlyAddress(123)).toBe(false);
+  });
 });
 
 describe("Server Endpoint Caching - Sentinel Hardening", () => {

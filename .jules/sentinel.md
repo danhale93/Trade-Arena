@@ -158,3 +158,8 @@ Running security audit across localStorage and active config...
 
 ## 2026-07-28T09:52:46.425Z - [SUCCESS] SENTINEL
 Security audit complete. All encryption layers intact.
+
+## 2026-07-28 - Regex Anchoring & Type-Safety Hardening on User Wallet Addresses
+**Vulnerability:** Unanchored Ethereum address regex tests and missing `typeof === 'string'` checks in early validation blocks allowed type-coerced inputs (such as arrays containing an address) and trailing malicious string payloads (such as subdomains) to bypass early checks on task claim and payout routes.
+**Learning:** Checking parameter existence and executing non-anchored regex matchers on input values allows complex JavaScript objects to coerce into matching strings. Always check types explicitly and anchor the pattern with `^` and `$` to guarantee complete, exact matching.
+**Prevention:** Enforce `typeof userAddress === 'string'` and validate using anchored pattern `/^0x[a-fA-F0-9]{40}$/` on any early validation logic.
