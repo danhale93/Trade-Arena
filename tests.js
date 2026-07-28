@@ -1232,6 +1232,39 @@ describe("Server Input Validation - Sentinel Hardening", () => {
 });
 
 describe("Server Endpoint Caching - Sentinel Hardening", () => {
+  it("validates that /api/market/prices handles symbols query parameter type pollution gracefully", async () => {
+    const originalPort = process.env.PORT;
+    process.env.PORT = "0";
+
+    const express = require('express');
+    const originalListen = express.application.listen;
+    let activeServer = null;
+    express.application.listen = function(...args) {
+      activeServer = originalListen.apply(this, args);
+      return activeServer;
+    };
+
+    delete require.cache[require.resolve("./server.js")];
+    require("./server.js");
+
+    try {
+      const port = activeServer.address().port;
+
+      // Passing multiple symbols parameter triggers query parameter pollution / array representation
+      const res = await fetch(`http://localhost:${port}/api/market/prices?symbols=WETH&symbols=USDC`);
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.success).toBe(false);
+      expect(data.error).toBe('Invalid symbols parameter type');
+    } finally {
+      express.application.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+    }
+  });
+
   it("caches /api/status/connections results to prevent RPC spam", async () => {
     const originalPort = process.env.PORT;
     process.env.PORT = "0";

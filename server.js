@@ -861,7 +861,13 @@ app.get('/api/market/prices', async (req, res) => {
         const allowedSymbols = new Set(['WETH', 'USDC', 'ARB', 'OP']);
         const coinMap = { 'WETH': 'ethereum', 'USDC': 'usd-coin', 'ARB': 'arbitrum', 'OP': 'optimism' };
 
-        const symbols = (req.query.symbols?.split(',') || ['WETH', 'USDC', 'ARB'])
+        // Sentinel: Prevent type confusion crashes (e.g. if query contains ?symbols=a&symbols=b, Express parses it as an array)
+        let rawSymbols = req.query.symbols;
+        if (rawSymbols !== undefined && typeof rawSymbols !== 'string') {
+            return res.status(400).json({ success: false, error: 'Invalid symbols parameter type' });
+        }
+
+        const symbols = (rawSymbols?.split(',') || ['WETH', 'USDC', 'ARB'])
             .map(s => s.trim().toUpperCase())
             .filter(s => allowedSymbols.has(s));
 
