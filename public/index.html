@@ -1325,7 +1325,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         <tr id="cd-row-1"><td>3 more after resume</td><td>60 minutes</td><td>Strategy mismatched</td></tr>
         <tr id="cd-row-2"><td>Another streak</td><td>24 hrs — manual reset</td><td>Something is wrong</td></tr>
       </table>
-      <button class="global-kill-btn" id="killBtn" onclick="globalKill()"><span role="img" aria-label="Red Circle Stop">🔴</span> EMERGENCY STOP ALL BOTS</button>
+      <button class="global-kill-btn" id="killBtn" onclick="globalKill()" aria-pressed="false" aria-label="Emergency Stop all active trading bots"><span role="img" aria-label="Red Circle Stop">🔴</span> EMERGENCY STOP ALL BOTS</button>
     </div>
   </div>
 
@@ -3442,6 +3442,7 @@ function globalKill() {
   globalKilled=true;
   if(window.FX && window.FX.flash) FX.flash('var(--hot)', 500);
   if(window.showToast) showToast('EMERGENCY STOP TRIGGERED', 'error');
+  if(window.SFX && window.SFX.loss) { try { window.SFX.loss(); } catch(e) {} }
   bots.forEach(b=>{ b.auto=false; if(b.autoTimer) clearTimeout(b.autoTimer);
     const btn=document.getElementById('mauto-'+b.id), card=document.getElementById('bot-'+b.id);
     if(btn){btn.textContent='AUTO';btn.classList.remove('on');} if(card) card.classList.remove('auto-on'); });
@@ -3452,15 +3453,28 @@ function globalKill() {
   document.getElementById('breakerBody')?.classList.add('open');
   document.getElementById('breakerHd')?.classList.add('open');
   const kb=document.getElementById('killBtn');
-  if(kb){kb.textContent='🟢 RESET — RESUME TRADING';kb.onclick=resetKill;kb.style.background='linear-gradient(180deg,#004020,#002010)';}
+  if(kb){
+    kb.textContent='🟢 RESET — RESUME TRADING';
+    kb.onclick=resetKill;
+    kb.style.background='linear-gradient(180deg,#004020,#002010)';
+    kb.setAttribute('aria-pressed', 'true');
+    kb.setAttribute('aria-label', 'Reset Emergency Stop and resume trading');
+  }
 }
 function resetKill(){
   globalKilled=false;
   if(window.showToast) showToast('Emergency Stop Reset', 'success');
   if(window.FX && window.FX.flash) FX.flash('var(--green)', 500);
   if(window.FX && window.FX.confetti) FX.confetti(window.innerWidth / 2, window.innerHeight / 2);
+  if(window.SFX && window.SFX.tick) { try { window.SFX.tick(); } catch(e) {} }
   const kb=document.getElementById('killBtn');
-  if(kb){kb.textContent='🔴 EMERGENCY STOP ALL BOTS';kb.onclick=globalKill;kb.style.background='';}
+  if(kb){
+    kb.textContent='🔴 EMERGENCY STOP ALL BOTS';
+    kb.onclick=globalKill;
+    kb.style.background='';
+    kb.setAttribute('aria-pressed', 'false');
+    kb.setAttribute('aria-label', 'Emergency Stop all active trading bots');
+  }
   checkGlobalBreakers();
 }
 

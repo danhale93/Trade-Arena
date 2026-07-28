@@ -1,3 +1,7 @@
+## 2026-07-28 - Dynamic ARIA States and Sensory Feedback for High-Stakes Emergency Controls
+**Learning:** High-stakes interactive controls (such as the global Emergency Stop button) require clear, synchronized accessibility labels (`aria-label`) and state markers (`aria-pressed`) to prevent keyboard and screen-reader users from losing system context. Coupling these transitions with distinct sensory audio-visual validation (e.g. standard success ticks and descending loss tones) reinforces user action and system-level confidence without dashboard distraction.
+**Action:** Always provide dynamic `aria-label` and `aria-pressed` synchronization for multi-state toggle elements, and enrich toggle state changes with contextual, non-blocking auditory signals to complete the multi-sensory feedback loop.
+
 ## 2026-07-26 - Interactive Focus States and Explicit ARIA States in Web3 Headers
 **Learning:** Standard inline-styled authentication buttons inside the React PrivyWalletHeader component lacked dynamic focus and hover state styles in the legacy integration, leaving keyboard and screen-reader users without interactive visual cues during authentication transitions. Adding explicit ARIA labels and inline event handlers for focus/hover provides a highly tactile and accessible transition.
 **Action:** Always verify focus-visible state indicators and apply interactive hover effects to inline-styled controls, and explicitly declare starting state aria attributes (such as `aria-pressed="false"`) on page-level toggle buttons.
