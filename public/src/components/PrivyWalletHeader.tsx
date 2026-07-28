@@ -52,8 +52,9 @@ export const PrivyWalletHeader = () => {
   const lastSyncAddress = useRef<string | null>(null);
 
   /**
-   * REQUIREMENT 2: Isolated Embedded Wallet
-   * Isolates the user's active Privy embedded wallet for high-security Base Mainnet execution.
+   * SENIOR WEB3 CORE IMPLEMENTATION - TASK 2
+   * Isolate the user's active Privy embedded wallet (where walletClientType === 'privy')
+   * to immediately enable secure trading interactions within the Trade Arena.
    */
   const arenaWallet = useMemo(() => {
     if (!wallets || !Array.isArray(wallets)) return null;
@@ -61,8 +62,9 @@ export const PrivyWalletHeader = () => {
   }, [wallets]);
 
   /**
-   * REQUIREMENT 3: Truncated Address Format
-   * Display the live Privy address cleanly (0x1234...abcd) for standard visual format.
+   * SENIOR WEB3 CORE IMPLEMENTATION - TASK 3
+   * Format the live authenticated embedded wallet address using a clean, truncated string format (0x1234...abcd)
+   * for clear visual identification with minimum horizontal header footprint.
    */
   const displayAddress = useMemo(() => {
     const addr = arenaWallet?.address;
@@ -169,11 +171,25 @@ export const PrivyWalletHeader = () => {
 
   // Unauthenticated: Login Trigger
   if (!authenticated) {
+    const handleLoginClick = () => {
+      if (typeof window !== 'undefined' && (window as any).SFX?.tick) {
+        try { (window as any).SFX.tick(); } catch (err) {}
+      }
+      login();
+    };
+
+    const handleConnectClick = () => {
+      if (typeof window !== 'undefined' && (window as any).SFX?.tick) {
+        try { (window as any).SFX.tick(); } catch (err) {}
+      }
+      login({ loginMethod: 'wallet' });
+    };
+
     return (
       <div className="gh-controls" style={{ display: 'flex', gap: '4px' }}>
         <button
           className="gh-auto-btn"
-          onClick={() => login()}
+          onClick={handleLoginClick}
           aria-label="Login with social, email, or passkey via Privy"
           style={{
             border: '1px solid var(--cyan)',
@@ -204,7 +220,7 @@ export const PrivyWalletHeader = () => {
         </button>
         <button
           className="gh-auto-btn"
-          onClick={() => login({ loginMethod: 'wallet' })}
+          onClick={handleConnectClick}
           aria-label="Connect an external Web3 wallet via Privy"
           style={{
             border: '1px solid var(--gold)',
@@ -238,8 +254,8 @@ export const PrivyWalletHeader = () => {
   }
 
   /**
-   * REQUIREMENT 4: Graceful provisioning state
-   * Added extra visual clarity to support seamless embedded wallet provisioning
+   * SENIOR WEB3 CORE IMPLEMENTATION - TASK 4
+   * Graceful loading / provisioning state shown if user is authenticated but the embedded wallet array is empty.
    */
   if (authenticated && !arenaWallet) {
     return (
