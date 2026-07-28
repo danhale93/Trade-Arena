@@ -3686,6 +3686,15 @@ function removeBot(id){
   if(!confirm(`Are you sure you want to decommission Bot #${id}?`)) return;
   const bot=bots.find(b=>b.id===id);
   if(bot){if(bot.autoTimer)clearTimeout(bot.autoTimer);if(bot.tickerTimer)clearTimeout(bot.tickerTimer);}
+
+  // Coordinated multi-sensory feedback before card removal
+  if(typeof spawnParticles === 'function') {
+    try { spawnParticles(false, id); } catch(e){}
+  }
+  if(typeof SFX !== 'undefined' && SFX.loss) {
+    try { SFX.loss(); } catch(e){}
+  }
+
   bots=bots.filter(b=>b.id!==id);
   document.getElementById('bot-'+id)?.remove();
   _syncHeaderBotBtns();

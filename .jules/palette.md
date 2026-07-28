@@ -61,3 +61,7 @@ Action: Integrated payout claim logic directly into the header for high visibili
 ## 2026-07-24 - WAI-ARIA Keyboard Navigation for Dashboard Tabs
 **Learning:** Simple CSS/display-toggle tab components often fall short of meeting W3C WAI-ARIA standards for accessibility because they lack keyboard Arrow, Home, and End key navigation and fail to dynamically update `tabindex` constraints, leaving assistive screen reader users blind to active/inactive layout states.
 **Action:** Always structure role="tablist" layouts with role="tab" elements containing explicitly managed and dynamically synchronized `tabindex` and `aria-selected` attributes, and bind robust Arrow and boundary-key listeners to the parent tablist container to enable fully compliant keyboard-only focus transitions.
+
+## 2026-07-27 - Coordinated Multi-Sensory Decommissioning Feedback
+**Learning:** Destructive actions like decommissioning/removing a bot should not only ask for confirmation but should also receive immediate coordinated sensory validation upon execution. Emitting themed particles (`spawnParticles(false, id)`) directly from the card's coordinates and playing a subtle descending audio loss tone (`SFX.loss()`) before removing the element from the DOM reinforces the finality of the action in a delightful and highly accessible way.
+**Action:** Coordinate localized visual particles/animations and custom contextual auditory cues prior to modifying layout structures during destructive or state-terminating transitions.
