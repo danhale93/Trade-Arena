@@ -2846,7 +2846,7 @@ console.log('Or: runCrucibleReal({ maxTradesPerDay: 10 }) // Custom config');
  */
 
 // ── Secure Storage Decoder ──
-const _cfg_d = (s) => { try { return s ? atob(s) : ''; } catch(e) { return s; } };
+var _cfg_d = (s) => { try { return s ? atob(s) : ''; } catch(e) { return s; } };
 
 const EXECUTION_CONFIG = {
     // 0x API for Base network

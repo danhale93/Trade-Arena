@@ -150,7 +150,15 @@ export const PrivyWalletHeader = () => {
   // Unauthenticated: Login Trigger
   if (!authenticated) {
     return (
-      <div className="gh-controls">
+      <div className="gh-controls" style={{ display: 'flex', gap: '6px' }}>
+        <button
+          className="gh-auto-btn"
+          onClick={() => login({ loginMethod: 'wallet' })}
+          style={{ border: '1px solid var(--gold)', color: 'var(--gold)', cursor: 'pointer', background: 'transparent' }}
+          title="Connect MetaMask or another browser wallet"
+        >
+          CONNECT WALLET
+        </button>
         <button
           className="gh-auto-btn"
           onClick={() => login({ loginMethod: 'google' })}
