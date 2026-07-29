@@ -103,3 +103,7 @@ Action: Implemented dual-mode trading system with real on-chain execution, batch
 ## 2026-07-28 - O(1) Space Indicator and Double Array Allocation Prevention
 **Learning:** Sequential transformations on arrays of objects (like calling `.slice().map().reduce()` on candle arrays) within high-frequency mathematical indicators like `calculateSMA` allocate multiple intermediate arrays on the heap. This causes high garbage collection pressure during rapid backtesting or regime-checking loops. Replacing these chains with direct, single-pass manual `for` loops achieves O(1) auxiliary space and keeps calculations entirely allocation-free.
 **Action:** Replace high-frequency array slice-and-map pipelines with targeted, manual `for` loops that read required attributes directly from elements in-place.
+
+## 2026-07-29 - O(1) Space Sliding-Window Financial Indicators
+**Learning:** Sliding-window computations on historical candlesticks (e.g., computing ATR volatility over the last 14 periods, or calculating standard deviation of returns over 20 periods) are frequently implemented using expensive pipeline chains such as `.slice(-14).map().reduce()`. These allocate intermediate garbage arrays on every invocation, causing significant heap churn during continuous backtesting cycles.
+**Action:** Extract slice boundaries mathematically using `Math.max()` and loop directly over the source arrays within single-pass manual accumulators, keeping operations allocation-free and O(1) auxiliary space.
