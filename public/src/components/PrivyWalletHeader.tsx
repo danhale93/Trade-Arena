@@ -72,9 +72,15 @@ export const PrivyWalletHeader = () => {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   }, [arenaWallet?.address]);
 
-  // Derived user identity
+  // Derived user identity supporting Google, Email, and fallback socials like GitHub/Discord
   const userLabel = useMemo(() => {
-    return user?.google?.email || user?.email?.address || 'Arena Trader';
+    return (
+      user?.google?.email ||
+      user?.email?.address ||
+      user?.github?.username ||
+      user?.discord?.username ||
+      'Arena Trader'
+    );
   }, [user]);
 
   /**
