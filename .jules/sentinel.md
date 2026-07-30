@@ -165,7 +165,14 @@ Running security audit across localStorage and active config...
 ## 2026-07-29T05:50:35.426Z - [INFO] SENTINEL
 Running security audit across localStorage and active config...
 
-## 2026-07-29 - Global Error-Handling and Information Disclosure Hardening
-**Vulnerability:** Information disclosure via default Express v5 verbose HTML/text error pages on unhandled routing exceptions, exposing directory structure and system stack traces.
-**Learning:** Even with strict CORS, body limits, and headers, individual endpoints can encounter unforeseen runtime exceptions. Express's default error responder outputs verbose HTML error screens in development/standard modes, leaking stack traces.
-**Prevention:** Always register a secure, JSON-based centralized error-handling middleware (`app.use((err, req, res, next) => { ... })`) at the very end of the routing stack in both primary and proxy servers to capture all unhandled async/sync errors and return a clean, generic, secure JSON error format.
+## 2026-07-29T23:03:17.505Z - [INFO] SENTINEL
+Running security audit across localStorage and active config...
+
+## 2026-07-29T23:03:21.507Z - [SUCCESS] SENTINEL
+Security audit complete. All encryption layers intact.
+
+## 2026-07-29T23:04:12.958Z - [INFO] SENTINEL
+Running security audit across localStorage and active config...
+
+## 2026-07-29T23:04:16.959Z - [SUCCESS] SENTINEL
+Security audit complete. All encryption layers intact.

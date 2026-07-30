@@ -787,6 +787,24 @@ function toggleLiveMode() {
         badge.style.color = window.isLiveMode ? 'var(--green)' : 'var(--dim)';
     }
 
+    // Play tactile tick sound
+    if (typeof SFX !== 'undefined' && SFX.tick) {
+        try { SFX.tick(); } catch (e) {}
+    }
+
+    // Trigger visual confetti at button coordinates for tactile delight
+    if (window.FX && window.FX.confetti && btn) {
+        const rect = btn.getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        const y = rect.top + rect.height / 2;
+        try { window.FX.confetti(x, y, 6); } catch (e) {}
+    }
+
+    // Show accessible confirmation toast
+    if (typeof showToast === 'function') {
+        showToast(window.isLiveMode ? 'Switched to LIVE mainnet trading mode!' : 'Switched to DEMO paper trading mode.', window.isLiveMode ? 'success' : 'info');
+    }
+
     console.log('[App] Mode changed to:', window.isLiveMode ? 'LIVE' : 'DEMO');
 }
 
