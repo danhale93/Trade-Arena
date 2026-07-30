@@ -58,9 +58,10 @@ Below is the concrete, ticket-sized task breakdown assigned to key roles: SRE (S
     2.  Check `slippage` is explicitly defined and capped (e.g., max 1% for standard pairs, 3% for highly volatile pools).
     3.  Verify gas estimate is non-zero and falls under a sane gas ceiling (e.g., `gasPrice < 150 Gwei` on Base).
     4.  Compare incoming DEX token prices against a multi-feed price sanity oracle (Chainlink/Pyth SDKs) before initiating swaps.
-*   **Owner:** Dev
+*   **Owner:** Dev (Sam Chen)
 *   **Estimate:** 8 hours
 *   **Priority:** High
+*   **Dependencies:** None
 
 #### Ticket T-002: Add Hardcoded Risk Controls (Daily Caps & Global Kill-Switch)
 *   **Description:** Introduce global and per-bot limits in memory and persisting in database configurations.
@@ -69,9 +70,10 @@ Below is the concrete, ticket-sized task breakdown assigned to key roles: SRE (S
     2.  Enforce a maximum single-trade size (e.g., capped at 0.05 ETH).
     3.  Define forced unwind thresholds: if a bot's loss exceeds 10% of its initial capital, trigger immediate position closure and bot pausing.
     4.  Build a `/api/admin/kill-switch` endpoint that pauses all active loops immediately. Implement UI controls displaying these limits.
-*   **Owner:** Dev
+*   **Owner:** Dev (Sam Chen)
 *   **Estimate:** 12 hours
 *   **Priority:** High
+*   **Dependencies:** None
 
 ---
 
@@ -80,12 +82,13 @@ Below is the concrete, ticket-sized task breakdown assigned to key roles: SRE (S
 #### Ticket T-101: GitHub Actions Mainnet-Fork Integration Test
 *   **Description:** Configure `.github/workflows/ci.yml` to run advanced mainnet-fork integration tests using Hardhat or Anvil when secrets are available.
 *   **Implementation Steps:**
-    1.  Integrate `scripts/fork-test.js` into the CI suite.
+    1.  Integrate `scripts/rpc-check.js` and `scripts/fork-test.js` into the CI suite.
     2.  Configure conditional execution: only run fork tests if `ALCHEMY_MAINNET_URL` is set in the environment.
     3.  Mock external ERC-20 tokens (USDC, WETH) to isolate test coverage.
-*   **Owner:** SRE
+*   **Owner:** SRE (Alex Rivers)
 *   **Estimate:** 6 hours
 *   **Priority:** High
+*   **Dependencies:** None
 
 #### Ticket T-102: Setup Isolated Staging Render Service
 *   **Description:** Spin up `trade-arena-staging` on Render, completely isolated from production.
@@ -93,9 +96,10 @@ Below is the concrete, ticket-sized task breakdown assigned to key roles: SRE (S
     1.  Create the Render web service `trade-arena-staging`.
     2.  Configure secrets via Render console (using separate RPC endpoints and mock keys).
     3.  Map the staging service ID to `RENDER_SERVICE_ID_STAGING` for automated dev deploys.
-*   **Owner:** SRE
+*   **Owner:** SRE (Alex Rivers)
 *   **Estimate:** 4 hours
 *   **Priority:** Medium
+*   **Dependencies:** None
 
 #### Ticket T-103: 14-Day Continuous Paper-Trading Log Validation
 *   **Description:** Run all trading bots in dry-run/paper-trading mode on staging to verify system stability.
@@ -103,9 +107,10 @@ Below is the concrete, ticket-sized task breakdown assigned to key roles: SRE (S
     1.  Set up bots on staging utilizing real CoinGecko price tickers.
     2.  Write a script to aggregate performance logs and look for unhandled exceptions or WebSocket dropouts.
     3.  Generate a 14-day dry-run summary report tracking hypothetical P&L, slippage errors, and gas cost projections.
-*   **Owner:** Ops
+*   **Owner:** Ops (Elena Vance)
 *   **Estimate:** 14 days (elapsed time) / 8 hours (active setup/reporting)
 *   **Priority:** Medium
+*   **Dependencies:** T-102
 
 ---
 
@@ -117,18 +122,20 @@ Below is the concrete, ticket-sized task breakdown assigned to key roles: SRE (S
     1.  Deploy a Gnosis Safe multisig (2-of-3 signature scheme) on Base Mainnet.
     2.  Integrate a relayer service (e.g., Gelato or OpenZeppelin Defender Relayer) to submit transactions.
     3.  Write the backend client to dispatch transaction payloads to the relayer. The relayer forwards transactions to the destination smart contract, charging gas fees to a pre-funded relayer balance.
-*   **Owner:** Sec / Dev
+*   **Owner:** Sec (Elena Vance) / Dev (Sam Chen)
 *   **Estimate:** 20 hours
 *   **Priority:** High
+*   **Dependencies:** T-001
 
 #### Ticket T-202: Pre-Transaction Alchemy/Tenderly Simulations
 *   **Description:** Ensure every transaction is simulated in a sandbox prior to relayer submission.
 *   **Implementation Steps:**
     1.  Integrate the Alchemy Transact API (`alchemy_simulateExecution`) or Tenderly Simulation API inside `payoutService.js` and execution loops.
     2.  If the simulation results in a revert or negative net value, block execution and trigger a high-severity log entry.
-*   **Owner:** Dev
+*   **Owner:** Dev (Sam Chen)
 *   **Estimate:** 10 hours
 *   **Priority:** High
+*   **Dependencies:** T-201
 
 ---
 
@@ -140,18 +147,20 @@ Below is the concrete, ticket-sized task breakdown assigned to key roles: SRE (S
     1.  Prepare contract repository with high test coverage (>95% line coverage).
     2.  Coordinate with selected auditing firm (e.g., Trail of Bits, Halborn, or Spearbit).
     3.  Address and patch all vulnerabilities identified in the draft audit report.
-*   **Owner:** Sec / SRE
+*   **Owner:** Sec (Elena Vance) / SRE (Alex Rivers)
 *   **Estimate:** 40 hours
 *   **Priority:** High
+*   **Dependencies:** None
 
 #### Ticket T-302: Legal Framework and Non-Custodial Compliance Check
 *   **Description:** Verify the platform complies with global KYC/AML laws depending on custody style.
 *   **Implementation Steps:**
     1.  Verify the application architecture remains strictly non-custodial (users authenticate via Privy/MetaMask and retain ultimate key authority; backend only acts as an authorized delegator).
     2.  Draft terms of service explicitly outlining risks, lack of financial advice, and regional restrictions (IP blocking for sanctioned jurisdictions).
-*   **Owner:** Legal
+*   **Owner:** Legal (Jordan Cruz)
 *   **Estimate:** 15 hours
 *   **Priority:** High
+*   **Dependencies:** None
 
 ---
 
@@ -163,9 +172,10 @@ Below is the concrete, ticket-sized task breakdown assigned to key roles: SRE (S
     1.  Expose an `/actuator/prometheus` or `/metrics` endpoint in `server.js`.
     2.  Track metrics: P&L per bot, gas spend, pending transactions, failed transaction rate, RPC latency, and wallet balances.
     3.  Set up Grafana dashboards and link Slack/PagerDuty hooks for alerts (e.g., alert if wallet balance < 0.05 ETH or error rate > 5%).
-*   **Owner:** SRE
+*   **Owner:** SRE (Alex Rivers)
 *   **Estimate:** 12 hours
 *   **Priority:** High
+*   **Dependencies:** T-102
 
 #### Ticket T-402: Production Deployment and Live Dry-Run (v0.1.0)
 *   **Description:** Cut over to production environment with strict, conservative parameters.
@@ -173,9 +183,10 @@ Below is the concrete, ticket-sized task breakdown assigned to key roles: SRE (S
     1.  Configure production Render service with live, production-grade secrets.
     2.  Run live dry-run checks with minimal capital (e.g., 0.01 ETH).
     3.  Execute a "Game Day" test: manually trigger the "Pause all bots" and "Drain funds" runbooks to verify on-chain reaction times.
-*   **Owner:** Ops / SRE
+*   **Owner:** Ops (Elena Vance) / SRE (Alex Rivers)
 *   **Estimate:** 8 hours
 *   **Priority:** High
+*   **Dependencies:** T-201, T-401
 
 ---
 
@@ -211,6 +222,25 @@ Instead of keeping a raw private key on Render, we use a decentralized transacti
 1.  **Gnosis Safe (Safe Contract):** Holds the principal trading capital. Authorized owners are separate offline keys (e.g., Ledger/Trezor devices held by the team).
 2.  **Relayer Service:** We register a relayer (such as Gelato or OpenZeppelin Defender). The relayer has permission to call a specialized execution function on our smart contracts, *but only under strict conditions* (e.g., checked inside our smart contracts: verified target DEX, authorized assets, limited volume).
 3.  **No Server Keys:** The Render server does not hold the master safe private key. If the server is hacked, the attacker cannot withdraw funds directly because the safe contracts only accept transactions that satisfy strict on-chain validation limits.
+
+### Alternatives Considered
+
+*   **Cloud HSM / HashiCorp Vault:** Keep keys inside a cloud HSM (AWS CloudHSM or Google KMS) and allow the backend to sign transactions programmatically via IAM.
+    *   *Pros:* Complete automation support.
+    *   *Cons:* Server compromise can still request unlimited signatures unless strict rate-limiting rules are configured inside the Vault policy.
+*   **Gnosis Safe + Relayer (Recommended):** Use a multi-signature safe as the capital treasury, and authorize a dedicated Smart Contract Executor via a Relayer.
+    *   *Pros:* Capital is kept completely safe inside a multi-signature wallet. Automated execution is restricted to a custom router contract containing strict safety rules.
+
+---
+
+### Nonce Management & Retry Backoff Strategy
+
+To prevent transaction failures due to underpriced gas or out-of-order nonces, the backend uses a robust queue system:
+1. **FIFO Queue:** All transactions are routed through an in-memory queue per hot/relayer account to maintain transaction order.
+2. **Dynamic Gas Escalation:** If a transaction remains unconfirmed for more than 3 blocks, a replacement transaction is dispatched with the same nonce and a 20% increase in `maxFeePerGas` and `maxPriorityFeePerGas`.
+3. **Exponential Backoff:** If the RPC fails with a 429 (rate-limit) or 503 (server error), the backend retries with an exponential backoff formula: $t_{wait} = 2^{attempt} \times 500 \text{ ms} + \text{jitter}$.
+
+---
 
 ### Proof-of-Concept Integration Code (Ethers.js + Safe Protocol)
 
@@ -324,7 +354,7 @@ We follow a multi-layered testing pyramid to guarantee mainnet safety.
 ├─────────────────────────────────────────┤
 │             Mainnet Fork                │  <-- Anvil/Hardhat network fork tests
 ├─────────────────────────────────────────┤
-│              Integration                │  <-- Express API routes & database state tests
+│             Integration                │  <-- Express API routes & database state tests
 ├─────────────────────────────────────────┤
 │                 Unit                    │  <-- Math formulas, Kelly Criterion, RSI/SMA indicators
 └─────────────────────────────────────────┘
@@ -332,7 +362,7 @@ We follow a multi-layered testing pyramid to guarantee mainnet safety.
 
 1.  **Unit Tests:** Verify indicator calculations (RSI, SMA, EWMA) in `public/crucible-real-trading.js` and `strategies/core/sma-crossover.js`. Run on every push.
 2.  **Integration Tests:** Verify that database states, rate limiters, user log persistence, and API endpoints run correctly. Run on every push.
-3.  **Mainnet-Fork Tests:** Spin up a local Fork of Base Mainnet (block pinning via Alchemy) to test real flash loan transactions against active Uniswap/Aave liquidity. Run automatically in CI on pull requests.
+3.  **Mainnet-Fork Tests:** Spin up a local Fork of Base Mainnet (block pinning via Alchemy) to test real flash loan transactions against active Uniswap/Aave liquidity. Run automatically in CI on pull requests when `ALCHEMY_MAINNET_URL` is set.
 4.  **Simulation & Paper-Trading:** Execute identical logic against a read-only staging node for 14 calendar days, recording virtual profits/losses, slippage, and latency reports.
 
 ---
@@ -384,6 +414,18 @@ In a crisis, clear instructions save money. These step-by-step procedures must b
     2.  Create a transaction to transfer the entire balance of ETH and ERC-20 tokens (USDC, WETH) from the Safe Address to the pre-configured Secure Cold Wallet address.
     3.  Confirm transaction on two hardware wallets.
     4.  Verify balance reduction on the staging/production trackers to confirm the assets are safe.
+
+### Runbook C: Respond to Exploit / Node Compromise
+*   **Trigger Condition:** Unexpected external transaction signatures detected, database or UI showing unauthorized actions, or anomalous gas spikes indicating a hot-wallet leak.
+*   **Procedure:**
+    1.  Trigger Runbook A immediately (Global Kill-Switch).
+    2.  Initiate Runbook B to transfer all remaining treasury funds to the secure cold wallet.
+    3.  Shut down the production Render instance completely to block further server-side api requests:
+        ```bash
+        curl -X POST -H "Authorization: Bearer $RENDER_API_KEY" https://api.render.com/v1/services/$RENDER_SERVICE_ID/suspend
+        ```
+    4.  Revoke all environment secrets and regenerate API keys (e.g., Alchemy keys, CoinGecko tokens).
+    5.  Collect and archive server logs for forensic auditing.
 
 ### Escalation Contact Matrix
 
@@ -460,7 +502,7 @@ Day 5:   Deploy code to Staging environment and launch 14-day paper-trading dry 
 ```
 
 *   **Deliverable:** Pre-execution safety code complete and Staging dry run successfully launched.
-*   **Owner:** Dev / SRE
+*   **Owner:** Dev (Sam Chen) / SRE (Alex Rivers)
 
 ### One-Month Timeline (Medium-Term Actions)
 
@@ -471,11 +513,20 @@ Week 4:   Deploy Gnosis Safe multisig & secure Gelato relayer signing interface 
 ```
 
 *   **Deliverable:** 14-day dry-run performance report; external audit draft completed; secure multisig/relayer interface verified.
-*   **Owner:** Sec / SRE / Dev
+*   **Owner:** Sec (Elena Vance) / SRE (Alex Rivers) / Dev (Sam Chen)
 
 ---
 
-## 13. Meeting Proposal & Kickoff
+## 13. Backups & Disaster Recovery (DR) Plan
+
+To prevent data loss and ensure rapid service restoration in the event of hardware or host provider failures:
+1. **DB Backups Schedule:** For SQLite or PostgreSQL databases on Render/AWS, configure automated nightly snapshots retained for 30 calendar days.
+2. **Backup Integrity Verification:** Run weekly automated restore simulation scripts in the staging pipeline to verify backup viability.
+3. **Secrets Rotation Policy:** Force rotate all system API keys and secrets every 90 days, or immediately following any team credential change.
+
+---
+
+## 14. Meeting Proposal & Kickoff
 
 *   **Objective:** Finalize priorities, assign tasks, and establish exact budget caps for audits/gas.
 *   **Duration:** 45 minutes.
@@ -486,7 +537,7 @@ Week 4:   Deploy Gnosis Safe multisig & secure Gelato relayer signing interface 
 
 ---
 
-## 14. Recommended Hires & External Services
+## 15. Recommended Hires & External Services
 
 1.  **Sherlock Smart Contract Audit:** Professional crowd-sourced audit to find edge cases.
     *   *Est. Cost:* $15,000 - $25,000 (fixed cost).
