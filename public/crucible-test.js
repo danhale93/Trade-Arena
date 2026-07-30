@@ -868,7 +868,12 @@ function calculateATR(highs, lows, closes, period = 14) {
 function calculateSMA(prices, period = 20) {
   if (prices.length < period) return prices[prices.length - 1]; // Return latest if not enough data
 
-  const sum = prices.slice(-period).reduce((sum, price) => sum + price, 0);
+  // ⚡ Bolt Optimization: Single-pass manual loop over prices with O(1) space complexity to avoid intermediate array allocation
+  let sum = 0;
+  const start = prices.length - period;
+  for (let i = start; i < prices.length; i++) {
+    sum += prices[i];
+  }
   return sum / period;
 }
 

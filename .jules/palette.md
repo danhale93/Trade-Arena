@@ -1,3 +1,15 @@
+## 2026-07-29 - Multi-Sensory Mode Calibration with Audio-Visual and Toast Confirmation Feedback
+**Learning:** Transitioning between system-critical states (such as switching from paper simulation DEMO mode to real capital LIVE mode) is a high-impact operation that warrants explicit multi-sensory validation. Supplementing state toggles with dynamic accessibility toasts (`showToast`), localized canvas-based interactive confirmation (confetti bursts), and clear auditory cues (playTone click ticks) provides a definitive tactile feedback loop that eliminates user ambiguity and prevents accidental real-money trades.
+**Action:** Always wrap high-stakes state toggles in coordinated auditory (ticks), visual (confetti), and readable confirmation (toasts) notifications to securely anchor intent and support user confidence.
+
+## 2026-07-28 - Dynamic ARIA States and Sensory Feedback for High-Stakes Emergency Controls
+**Learning:** High-stakes interactive controls (such as the global Emergency Stop button) require clear, synchronized accessibility labels (`aria-label`) and state markers (`aria-pressed`) to prevent keyboard and screen-reader users from losing system context. Coupling these transitions with distinct sensory audio-visual validation (e.g. standard success ticks and descending loss tones) reinforces user action and system-level confidence without dashboard distraction.
+**Action:** Always provide dynamic `aria-label` and `aria-pressed` synchronization for multi-state toggle elements, and enrich toggle state changes with contextual, non-blocking auditory signals to complete the multi-sensory feedback loop.
+
+## 2026-07-26 - Interactive Focus States and Explicit ARIA States in Web3 Headers
+**Learning:** Standard inline-styled authentication authentication buttons inside the React PrivyWalletHeader component lacked dynamic focus and hover state styles in the legacy integration, leaving keyboard and screen-reader users without interactive visual cues during authentication transitions. Adding explicit ARIA labels and inline event handlers for focus/hover provides a highly tactile and accessible transition.
+**Action:** Always verify focus-visible state indicators and apply interactive hover effects to inline-styled controls, and explicitly declare starting state aria attributes (such as `aria-pressed="false"`) on page-level toggle buttons.
+
 ## 2026-06-29 - Payout Header Integration
 Learning: Header real-estate is limited; used a compact 'CLAIM' button next to the balance to maintain UI balance.
 Action: Integrated payout claim logic directly into the header for high visibility.
@@ -57,3 +69,7 @@ Action: Integrated payout claim logic directly into the header for high visibili
 ## 2026-07-24 - WAI-ARIA Keyboard Navigation for Dashboard Tabs
 **Learning:** Simple CSS/display-toggle tab components often fall short of meeting W3C WAI-ARIA standards for accessibility because they lack keyboard Arrow, Home, and End key navigation and fail to dynamically update `tabindex` constraints, leaving assistive screen reader users blind to active/inactive layout states.
 **Action:** Always structure role="tablist" layouts with role="tab" elements containing explicitly managed and dynamically synchronized `tabindex` and `aria-selected` attributes, and bind robust Arrow and boundary-key listeners to the parent tablist container to enable fully compliant keyboard-only focus transitions.
+
+## 2026-07-27 - Coordinated Multi-Sensory Decommissioning Feedback
+**Learning:** Destructive actions like decommissioning/removing a bot should not only ask for confirmation but should also receive immediate coordinated sensory validation upon execution. Emitting themed particles (`spawnParticles(false, id)`) directly from the card's coordinates and playing a subtle descending audio loss tone (`SFX.loss()`) before removing the element from the DOM reinforces the finality of the action in a delightful and highly accessible way.
+**Action:** Coordinate localized visual particles/animations and custom contextual auditory cues prior to modifying layout structures during destructive or state-terminating transitions.

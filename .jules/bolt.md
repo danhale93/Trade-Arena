@@ -91,3 +91,19 @@ Action: Implemented dual-mode trading system with real on-chain execution, batch
 ## 2026-07-25 - Static Set Pre-Allocation and O(1) Filtering
 **Learning:** Frequently called utility functions (like `isStablecoin` and `isStablecoinQuoteOk` checking filters) that construct intermediate array literals and perform O(N) lookup scans (using `.includes()`) on every single invocation introduce garbage collection pressure and CPU overhead in active loops. Wrapping lookups into static, module-scoped `Set` objects enables O(1) checks and completely eliminates array reallocation.
 **Action:** Always pre-allocate static `Set` structures at the module scope for fixed blocklists or lookups, rather than re-declaring arrays locally in hot paths.
+
+## 2026-07-27 - Single-Pass Statistics Accumulation and O(1) Running Counters
+**Learning:** Monolithic reporting functions that calculate sub-metrics (such as executed, win, and loss statistics) using multiple sequential `.filter()` and `.reduce()` operations allocate multiple temporary arrays and run multiple $O(N)$ full-array traversals. Consolidating these into a single manual pass over the array achieves $O(N)$ complexity and $O(1)$ space, drastically reducing garbage collection overhead. Furthermore, high-frequency metrics in loops should read pre-calculated running properties (like `tradeState.totalTrades`) rather than re-filtering the entire list to query length.
+**Action:** Replace sequential filter/reduce reporting pipelines with single-pass manual loop accumulations. Avoid filtering arrays in hot trade loops to get a count, and prefer reading pre-calculated running counters instead.
+
+## 2026-07-28 - Backend CoinGecko Price Caching & Failure Fallback
+**Learning:** Repetitive external API queries (such as CoinGecko simple price endpoints) triggered by multiple independent client-side connections or backend routines introduce excessive latency waterfalls and easily trigger API rate-limit errors (429). An in-memory cache with a 10s TTL, coupled with batch retrieval for only uncached items and a fallback mechanism to return expired cache records under API failure or rate limit, ensures sub-millisecond execution times and robust service availability.
+**Action:** Centralize external price fetching into a batch-oriented caching layer `getCachedCoinGeckoPrices` on the backend. Always implement graceful expired-cache fallback to preserve system operation even when rate limits are exceeded.
+
+## 2026-07-28 - O(1) Space Indicator and Double Array Allocation Prevention
+**Learning:** Sequential transformations on arrays of objects (like calling `.slice().map().reduce()` on candle arrays) within high-frequency mathematical indicators like `calculateSMA` allocate multiple intermediate arrays on the heap. This causes high garbage collection pressure during rapid backtesting or regime-checking loops. Replacing these chains with direct, single-pass manual `for` loops achieves O(1) auxiliary space and keeps calculations entirely allocation-free.
+**Action:** Replace high-frequency array slice-and-map pipelines with targeted, manual `for` loops that read required attributes directly from elements in-place.
+
+## 2026-07-29 - O(1) Space Sliding-Window Financial Indicators
+**Learning:** Sliding-window computations on historical candlesticks (e.g., computing ATR volatility over the last 14 periods, or calculating standard deviation of returns over 20 periods) are frequently implemented using expensive pipeline chains such as `.slice(-14).map().reduce()`. These allocate intermediate garbage arrays on every invocation, causing significant heap churn during continuous backtesting cycles.
+**Action:** Extract slice boundaries mathematically using `Math.max()` and loop directly over the source arrays within single-pass manual accumulators, keeping operations allocation-free and O(1) auxiliary space.

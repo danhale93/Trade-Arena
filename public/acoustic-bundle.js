@@ -141,6 +141,13 @@ class SFXEngine {
     this.playTone(660, 0.08, 'square', 0.1);
   }
 
+  // Tick sound - short subtle click
+  async tick() {
+    await this.ensure();
+    if (!this.ctx || this.muted) return;
+    this.playTone(1200, 0.04, 'sine', 0.1);
+  }
+
   // Mute/unmute
   setMuted(muted) {
     this.muted = muted;

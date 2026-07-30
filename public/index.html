@@ -799,7 +799,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
        <button class="gh-bus-btn" id="ghTaskBtn" onclick="togglePanel('task')" title="Earn Trade Credits" aria-expanded="false"><span role="img" aria-hidden="true">💰</span> EARN</button>
        <button class="gh-bus-btn" id="ghEloBtn" onclick="togglePanel('elo')" title="ELO Arena - Recursive Improvement" aria-expanded="false"><span role="img" aria-hidden="true">🏆</span> ARENA</button>
        <button class="gh-bus-btn" id="voiceAgentBtn" onclick="toggleVoiceAgent()" title="AI Floor Manager (Voice Chat)" aria-expanded="false"><span role="img" aria-hidden="true">🎙️</span> AGENT</button>
-       <button class="gh-bus-btn" id="fleetViewBtn" onclick="toggleFleetView()" title="Toggle Fleet View (Compact Grid)"><span role="img" aria-hidden="true">📊</span> FLEET</button>
+       <button class="gh-bus-btn" id="fleetViewBtn" onclick="toggleFleetView()" title="Toggle Fleet View (Compact Grid)" aria-pressed="false"><span role="img" aria-hidden="true">📊</span> FLEET</button>
         <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots" aria-expanded="false"><span role="img" aria-hidden="true">⚙</span> BUS</button>
         <button class="gh-bus-btn" id="ghSettingsBtn" onclick="toggleSettingsModal()" title="Settings" aria-expanded="false"><span role="img" aria-hidden="true">⚙</span> SETTINGS</button>
         <button class="gh-auto-btn" id="liveToggleBtn" onclick="toggleLiveMode()" title="Toggle Live/Demo Mode" style="border-color:var(--green);color:var(--green);box-shadow:0 0 10px rgba(0,255,157,0.3)">LIVE</button>
@@ -1331,7 +1331,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         <tr id="cd-row-1"><td>3 more after resume</td><td>60 minutes</td><td>Strategy mismatched</td></tr>
         <tr id="cd-row-2"><td>Another streak</td><td>24 hrs — manual reset</td><td>Something is wrong</td></tr>
       </table>
-      <button class="global-kill-btn" id="killBtn" onclick="globalKill()"><span role="img" aria-label="Red Circle Stop">🔴</span> EMERGENCY STOP ALL BOTS</button>
+      <button class="global-kill-btn" id="killBtn" onclick="globalKill()" aria-pressed="false" aria-label="Emergency Stop all active trading bots"><span role="img" aria-label="Red Circle Stop">🔴</span> EMERGENCY STOP ALL BOTS</button>
     </div>
   </div>
 
@@ -3040,6 +3040,34 @@ function updateConnectionDashboard() {
   fetch('/api/status/connections')
     .then(res => res.json())
     .then(data => {
+      // Helper function to mask key securely
+      const maskKey = (key) => {
+        if (!key) return null;
+        if (key.length <= 8) return '********';
+        return key.substring(0, 4) + '****' + key.substring(key.length - 4);
+      };
+
+      // Apply client-side localStorage overrides for non-custodial API key status
+      data.connections = data.connections.map(conn => {
+        let localKey = null;
+        if (conn.name === 'ANTHROPIC_API_KEY') localKey = localStorage.getItem('ta_api_key');
+        else if (conn.name === 'OPENAI_API_KEY') localKey = localStorage.getItem('ta_openai_key');
+        else if (conn.name === 'GEMINI_API_KEY') localKey = localStorage.getItem('ta_gemini_key');
+        else if (conn.name === '0x_API_KEY') localKey = localStorage.getItem('ta_0x_api_key');
+        else if (conn.name === 'TASK_CLAIM_SECRET') localKey = localStorage.getItem('ta_task_secret');
+
+        if (localKey) {
+          try {
+            const dec = _cfg_d(localKey);
+            if (dec && dec.trim()) {
+              conn.status = 'CONFIGURED';
+              conn.value = maskKey(dec);
+            }
+          } catch(e) {}
+        }
+        return conn;
+      });
+
       // Update Missing Keys Alert Banner dynamically
       const keyGenLinks = {
         'ANTHROPIC_API_KEY': { label: 'Anthropic', url: 'https://console.anthropic.com' },
@@ -3057,8 +3085,11 @@ function updateConnectionDashboard() {
         banner.style.display = 'flex';
         keysListEl.innerHTML = 'Inactive required systems: ' + missing.map(c => {
           const info = keyGenLinks[c.name] || { label: c.name.replace(/_/g, ' '), url: '#' };
-          return `<a href="${info.url}" target="_blank" rel="noopener noreferrer" style="color:var(--cyan); text-decoration:underline; font-weight:bold; margin:0 4px;">${info.label} (GET KEY →)</a>`;
-        }).join(', ');
+          return `<span style="margin-right:12px; display:inline-block;">
+                    <a href="${info.url}" target="_blank" rel="noopener noreferrer" style="color:var(--cyan); text-decoration:underline; font-weight:bold;">${info.label} (GET KEY →)</a>
+                    <button onclick="focusKeyInSettings('${c.name}')" style="background:none; border:none; color:var(--gold); font-family:'Share Tech Mono',monospace; font-size:10px; text-decoration:underline; cursor:pointer; margin-left:4px; padding:0;">[CONFIGURE]</button>
+                  </span>`;
+        }).join(' ');
       } else if (banner) {
         banner.style.display = 'none';
       }
@@ -3073,7 +3104,6 @@ function updateConnectionDashboard() {
 
         const isAiKey = conn.type === 'AI';
         const isSecret = conn.type === 'SECRET';
-        const isMissing = conn.status === 'MISSING';
 
         let keyEntryHtml = '';
         if (isAiKey || isSecret) {
@@ -3085,6 +3115,24 @@ function updateConnectionDashboard() {
             'TASK_CLAIM_SECRET': 'https://trade-arena.com/keys'
           };
           const genUrl = keyGenLinks[conn.name] || '#';
+
+          // Check local storage for pre-filling dashboard forms
+          let localKey = null;
+          if (conn.name === 'ANTHROPIC_API_KEY') localKey = localStorage.getItem('ta_api_key');
+          else if (conn.name === 'OPENAI_API_KEY') localKey = localStorage.getItem('ta_openai_key');
+          else if (conn.name === 'GEMINI_API_KEY') localKey = localStorage.getItem('ta_gemini_key');
+          else if (conn.name === '0x_API_KEY') localKey = localStorage.getItem('ta_0x_api_key');
+          else if (conn.name === 'TASK_CLAIM_SECRET') localKey = localStorage.getItem('ta_task_secret');
+
+          let localVal = '';
+          if (localKey) {
+            try {
+              localVal = _cfg_d(localKey) || '';
+            } catch (e) {
+              console.warn("Failed to decrypt local key:", e);
+            }
+          }
+          const isMissing = !localVal;
           const label = isMissing ? (isSecret ? 'FILL MISSING SECRET' : 'FILL MISSING KEY') : 'UPDATE KEY/SECRET';
 
           keyEntryHtml = `
@@ -3094,7 +3142,7 @@ function updateConnectionDashboard() {
                 <a href="${genUrl}" target="_blank" rel="noopener noreferrer" style="font-size:8px; color:var(--cyan); text-decoration:none;">GET KEY →</a>
               </div>
               <div style="display:flex; gap:4px;">
-                <input type="password" id="d_cfg_${conn.name}" placeholder="Enter ${escapeHTML(conn.name.replace(/_/g, ' '))}..."
+                <input type="password" id="d_cfg_${conn.name}" value="${escapeHTML(localVal)}" placeholder="Enter ${escapeHTML(conn.name.replace(/_/g, ' '))}..."
                   style="flex:1; padding:4px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px;">
                 <button onclick="saveApiKeyFromDashboard('${conn.name}')"
                   style="padding:4px 8px; background:var(--green); color:black; border:none; border-radius:4px; font-family:'Bungee'; font-size:8px; cursor:pointer;">
@@ -3126,6 +3174,41 @@ function updateConnectionDashboard() {
     .catch(err => {
       list.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; padding:20px; color:var(--hot)">❌ Failed to fetch connection status: ${escapeHTML(err.message)}</div>`;
     });
+}
+
+function focusKeyInSettings(keyName) {
+  if (typeof toggleSettingsModal === 'function') {
+    const modal = document.getElementById('settingsModal');
+    if (modal && (modal.style.display === 'none' || modal.style.display === '')) {
+      toggleSettingsModal();
+    }
+  }
+
+  const keyMap = {
+    'ANTHROPIC_API_KEY': 's_cfg_ant',
+    'OPENAI_API_KEY': 's_cfg_oa',
+    'GEMINI_API_KEY': 's_cfg_gem',
+    '0x_API_KEY': 's_cfg_zx',
+    'TASK_CLAIM_SECRET': 's_cfg_ts'
+  };
+
+  const id = keyMap[keyName];
+  if (id) {
+    const input = document.getElementById(id);
+    if (input) {
+      setTimeout(() => {
+        input.focus();
+        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const origBorder = input.style.borderColor;
+        input.style.borderColor = 'var(--cyan)';
+        input.style.boxShadow = '0 0 10px var(--cyan)';
+        setTimeout(() => {
+          input.style.borderColor = origBorder;
+          input.style.boxShadow = 'none';
+        }, 1500);
+      }, 100);
+    }
+  }
 }
 
 function saveApiKeyFromDashboard(keyName) {
@@ -3366,6 +3449,7 @@ function globalKill() {
   globalKilled=true;
   if(window.FX && window.FX.flash) FX.flash('var(--hot)', 500);
   if(window.showToast) showToast('EMERGENCY STOP TRIGGERED', 'error');
+  if(window.SFX && window.SFX.loss) { try { window.SFX.loss(); } catch(e) {} }
   bots.forEach(b=>{ b.auto=false; if(b.autoTimer) clearTimeout(b.autoTimer);
     const btn=document.getElementById('mauto-'+b.id), card=document.getElementById('bot-'+b.id);
     if(btn){btn.textContent='AUTO';btn.classList.remove('on');} if(card) card.classList.remove('auto-on'); });
@@ -3376,15 +3460,28 @@ function globalKill() {
   document.getElementById('breakerBody')?.classList.add('open');
   document.getElementById('breakerHd')?.classList.add('open');
   const kb=document.getElementById('killBtn');
-  if(kb){kb.textContent='🟢 RESET — RESUME TRADING';kb.onclick=resetKill;kb.style.background='linear-gradient(180deg,#004020,#002010)';}
+  if(kb){
+    kb.textContent='🟢 RESET — RESUME TRADING';
+    kb.onclick=resetKill;
+    kb.style.background='linear-gradient(180deg,#004020,#002010)';
+    kb.setAttribute('aria-pressed', 'true');
+    kb.setAttribute('aria-label', 'Reset Emergency Stop and resume trading');
+  }
 }
 function resetKill(){
   globalKilled=false;
   if(window.showToast) showToast('Emergency Stop Reset', 'success');
   if(window.FX && window.FX.flash) FX.flash('var(--green)', 500);
   if(window.FX && window.FX.confetti) FX.confetti(window.innerWidth / 2, window.innerHeight / 2);
+  if(window.SFX && window.SFX.tick) { try { window.SFX.tick(); } catch(e) {} }
   const kb=document.getElementById('killBtn');
-  if(kb){kb.textContent='🔴 EMERGENCY STOP ALL BOTS';kb.onclick=globalKill;kb.style.background='';}
+  if(kb){
+    kb.textContent='🔴 EMERGENCY STOP ALL BOTS';
+    kb.onclick=globalKill;
+    kb.style.background='';
+    kb.setAttribute('aria-pressed', 'false');
+    kb.setAttribute('aria-label', 'Emergency Stop all active trading bots');
+  }
   checkGlobalBreakers();
 }
 
@@ -3546,14 +3643,17 @@ function openOskoRamp(type) {
 
 
 
-window.onPrivyLoginSuccess = function() {
+window.onPrivyLoginSuccess = function(customUser, customAddress) {
   const s = document.getElementById('loginStatus');
   if(s) s.textContent = '✅ Privy Authorized! Syncing Arena instance...';
 
+  const u = customUser || window.privyUser;
+  const addr = customAddress || window.privyWalletAddress;
+
   const userData = {
-    name: window.privyUser?.google?.name || window.privyUser?.email?.address || 'Arena Trader',
-    email: window.privyUser?.email?.address || window.privyUser?.google?.email,
-    address: window.privyWalletAddress,
+    name: u?.google?.name || u?.email?.address || 'Arena Trader',
+    email: u?.email?.address || u?.google?.email,
+    address: addr,
     provider: 'privy',
     badge: '💠 PRIVY'
   };
@@ -3690,6 +3790,15 @@ function removeBot(id){
   if(!confirm(`Are you sure you want to decommission Bot #${id}?`)) return;
   const bot=bots.find(b=>b.id===id);
   if(bot){if(bot.autoTimer)clearTimeout(bot.autoTimer);if(bot.tickerTimer)clearTimeout(bot.tickerTimer);}
+
+  // Coordinated multi-sensory feedback before card removal
+  if(typeof spawnParticles === 'function') {
+    try { spawnParticles(false, id); } catch(e){}
+  }
+  if(typeof SFX !== 'undefined' && SFX.loss) {
+    try { SFX.loss(); } catch(e){}
+  }
+
   bots=bots.filter(b=>b.id!==id);
   document.getElementById('bot-'+id)?.remove();
   _syncHeaderBotBtns();
@@ -6704,7 +6813,7 @@ function updateSettingsVolume(val) {
         <div class="settings-section-title">💳 Wallet Connection</div>
         <div id="settingsWalletStatus" style="font-size:10px;color:var(--dim);margin-bottom:8px">🔴 Not connected</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <button class="mm-btn" onclick="window.ethereum?.request({ method: 'eth_requestAccounts' }).then(() => { location.reload(); })" style="flex:1;min-width:120px;padding:8px;font-size:10px;background:#f6851b;color:#fff;border:none">Connect MetaMask</button>
+          <button class="mm-btn" onclick="handleMetaMaskConnect()" style="flex:1;min-width:120px;padding:8px;font-size:10px;background:#f6851b;color:#fff;border:none">Connect MetaMask</button>
           <button class="onramp-btn" onclick="if(window.privyLogin) window.privyLogin()" style="flex:1;min-width:120px;padding:8px;font-size:10px">Other Wallets (Privy)</button>
         </div>
       </div>

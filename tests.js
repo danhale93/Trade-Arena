@@ -810,6 +810,85 @@ describe("Payout Service - Robustness & Security", () => {
   });
 });
 
+describe("Biconomy Nexus - Robustness & Security", () => {
+  const BiconomyNexus = require('./services/payouts/biconomyNexus');
+  const nexus = new BiconomyNexus({ payoutManagerAddress: "0x1234567890123456789012345678901234567890" });
+
+  it("rejects missing or non-object payload", () => {
+    try {
+      nexus.encodeClaimReward(null);
+      throw new Error("Should have thrown");
+    } catch (e) {
+      expect(e.message).toBe("Invalid or missing payoutData");
+    }
+  });
+
+  it("rejects malformed user addresses", () => {
+    try {
+      nexus.encodeClaimReward({ user: "0xInvalidAddress", taskId: "task-1", amount: 10, nonce: 1, signature: "0xabc" });
+      throw new Error("Should have thrown");
+    } catch (e) {
+      expect(e.message).toBe("Invalid user address");
+    }
+  });
+
+  it("rejects malformed taskIds", () => {
+    try {
+      nexus.encodeClaimReward({ user: "0x26fE35d19F481F376e862Aa70688a18Ae0237be5", taskId: "a".repeat(101), amount: 10, nonce: 1, signature: "0xabc" });
+      throw new Error("Should have thrown");
+    } catch (e) {
+      expect(e.message).toBe("Invalid taskId");
+    }
+  });
+
+  it("rejects malformed amounts", () => {
+    try {
+      nexus.encodeClaimReward({ user: "0x26fE35d19F481F376e862Aa70688a18Ae0237be5", taskId: "task-1", amount: "not-a-number", nonce: 1, signature: "0xabc" });
+      throw new Error("Should have thrown");
+    } catch (e) {
+      expect(e.message).toBe("Invalid amount");
+    }
+
+    try {
+      nexus.encodeClaimReward({ user: "0x26fE35d19F481F376e862Aa70688a18Ae0237be5", taskId: "task-1", amount: -50, nonce: 1, signature: "0xabc" });
+      throw new Error("Should have thrown");
+    } catch (e) {
+      expect(e.message).toBe("Invalid amount");
+    }
+  });
+
+  it("rejects malformed nonces", () => {
+    try {
+      nexus.encodeClaimReward({ user: "0x26fE35d19F481F376e862Aa70688a18Ae0237be5", taskId: "task-1", amount: "1000", nonce: "abc", signature: "0xabc" });
+      throw new Error("Should have thrown");
+    } catch (e) {
+      expect(e.message).toBe("Invalid nonce");
+    }
+  });
+
+  it("rejects malformed signature format", () => {
+    try {
+      nexus.encodeClaimReward({ user: "0x26fE35d19F481F376e862Aa70688a18Ae0237be5", taskId: "task-1", amount: "1000", nonce: "12345", signature: "not-0x-hex" });
+      throw new Error("Should have thrown");
+    } catch (e) {
+      expect(e.message).toBe("Invalid signature format");
+    }
+  });
+
+  it("passes and encodes valid payloads", () => {
+    const data = {
+      user: "0x26fE35d19F481F376e862Aa70688a18Ae0237be5",
+      taskId: "task-1",
+      amount: "1000",
+      nonce: "12345",
+      signature: "0xabcdef1234567890"
+    };
+    const callData = nexus.encodeClaimReward(data);
+    expect(typeof callData).toBe("string");
+    expect(callData.startsWith("0x")).toBe(true);
+  });
+});
+
 describe("MoonPay Webhook - Security Verification", () => {
   const verifyMoonPaySignature = (body, signature, secret) => {
     try {
@@ -1150,9 +1229,56 @@ describe("Server Input Validation - Sentinel Hardening", () => {
     expect(isValidBotInput("My Bot", "Arbitrage Detection", "Conservative (2x leverage)", 1000, 123)).toBe(false);
     expect(isValidBotInput("My Bot", "Arbitrage Detection", "Conservative (2x leverage)", 1000, "a".repeat(101))).toBe(false);
   });
+
+  it("validates task claim and payout userAddress with type safety and anchored regex", () => {
+    const isValidEarlyAddress = (userAddress) => {
+      return !!(userAddress && typeof userAddress === 'string' && userAddress !== 'demo' && /^0x[a-fA-F0-9]{40}$/.test(userAddress));
+    };
+
+    expect(isValidEarlyAddress("0x9F407b7f793555c35c33aC64bd6901759470736D")).toBe(true);
+    expect(isValidEarlyAddress("demo")).toBe(false);
+    expect(isValidEarlyAddress("0x9F407b7f793555c35c33aC64bd6901759470736D.evil.com")).toBe(false);
+    expect(isValidEarlyAddress(["0x9F407b7f793555c35c33aC64bd6901759470736D"])).toBe(false);
+    expect(isValidEarlyAddress(null)).toBe(false);
+    expect(isValidEarlyAddress(undefined)).toBe(false);
+    expect(isValidEarlyAddress(123)).toBe(false);
+  });
 });
 
 describe("Server Endpoint Caching - Sentinel Hardening", () => {
+  it("validates that /api/market/prices handles symbols query parameter type pollution gracefully", async () => {
+    const originalPort = process.env.PORT;
+    process.env.PORT = "0";
+
+    const express = require('express');
+    const originalListen = express.application.listen;
+    let activeServer = null;
+    express.application.listen = function(...args) {
+      activeServer = originalListen.apply(this, args);
+      return activeServer;
+    };
+
+    delete require.cache[require.resolve("./server.js")];
+    require("./server.js");
+
+    try {
+      const port = activeServer.address().port;
+
+      // Passing multiple symbols parameter triggers query parameter pollution / array representation
+      const res = await fetch(`http://localhost:${port}/api/market/prices?symbols=WETH&symbols=USDC`);
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.success).toBe(false);
+      expect(data.error).toBe('Invalid symbols parameter type');
+    } finally {
+      express.application.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+    }
+  });
+
   it("caches /api/status/connections results to prevent RPC spam", async () => {
     const originalPort = process.env.PORT;
     process.env.PORT = "0";

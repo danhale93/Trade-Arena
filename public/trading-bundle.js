@@ -787,6 +787,24 @@ function toggleLiveMode() {
         badge.style.color = window.isLiveMode ? 'var(--green)' : 'var(--dim)';
     }
 
+    // Play tactile tick sound
+    if (typeof SFX !== 'undefined' && SFX.tick) {
+        try { SFX.tick(); } catch (e) {}
+    }
+
+    // Trigger visual confetti at button coordinates for tactile delight
+    if (window.FX && window.FX.confetti && btn) {
+        const rect = btn.getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        const y = rect.top + rect.height / 2;
+        try { window.FX.confetti(x, y, 6); } catch (e) {}
+    }
+
+    // Show accessible confirmation toast
+    if (typeof showToast === 'function') {
+        showToast(window.isLiveMode ? 'Switched to LIVE mainnet trading mode!' : 'Switched to DEMO paper trading mode.', window.isLiveMode ? 'success' : 'info');
+    }
+
     console.log('[App] Mode changed to:', window.isLiveMode ? 'LIVE' : 'DEMO');
 }
 
@@ -2380,7 +2398,8 @@ const CrucibleRealTrading = {
           ent.playSound('loss');
           ent.playSynthLoss?.();
         }
-        ent.ticker?.updateTradeCount(this.trades.filter(t => t.executed).length);
+        // ⚡ Bolt Optimization: Use pre-calculated tradeState.totalTrades to avoid O(N) filtering of this.trades
+        ent.ticker?.updateTradeCount(this.tradeState.totalTrades);
       }
 
       return trade;
@@ -2724,15 +2743,33 @@ const CrucibleRealTrading = {
   },
 
   async generateReport() {
-    const executedTrades = this.trades.filter(t => t.executed);
-    const winTrades = executedTrades.filter(t => t.isWin);
-    const lossTrades = executedTrades.filter(t => !t.isWin);
+    // ⚡ Bolt Optimization: Single-pass manual loop replaces 3 separate filter calls and 3 reduce calls.
+    // This achieves O(N) complexity in a single pass with O(1) auxiliary space, eliminating garbage collection overhead.
+    let totalPnL = 0, winPnL = 0, lossPnL = 0;
+    let executedTradesCount = 0, winTradesCount = 0, lossTradesCount = 0;
+    const executedTrades = [], winTrades = [], lossTrades = [];
 
-    const totalPnL = executedTrades.reduce((sum, t) => sum + t.pnlAUD, 0);
-    const avgWin = winTrades.length > 0 ? winTrades.reduce((sum, t) => sum + t.pnlAUD, 0) / winTrades.length : 0;
-    const avgLoss = lossTrades.length > 0 ? lossTrades.reduce((sum, t) => sum + t.pnlAUD, 0) / lossTrades.length : 0;
-    const profitFactor = Math.abs(avgWin) > 0 ? Math.abs(avgWin * winTrades.length) / Math.abs(avgLoss * lossTrades.length) : 0;
-    const winRate = executedTrades.length > 0 ? (winTrades.length / executedTrades.length) * 100 : 0;
+    for (let i = 0; i < this.trades.length; i++) {
+      const t = this.trades[i];
+      if (t.executed) {
+        executedTrades.push(t);
+        executedTradesCount++;
+        totalPnL += t.pnlAUD;
+        if (t.isWin) {
+          winTrades.push(t);
+          winTradesCount++;
+          winPnL += t.pnlAUD;
+        } else {
+          lossTrades.push(t);
+          lossTradesCount++;
+          lossPnL += t.pnlAUD;
+        }
+      }
+    }
+    const avgWin = winTradesCount > 0 ? winPnL / winTradesCount : 0;
+    const avgLoss = lossTradesCount > 0 ? lossPnL / lossTradesCount : 0;
+    const profitFactor = Math.abs(avgWin) > 0 ? Math.abs(winPnL) / Math.abs(lossPnL) : 0;
+    const winRate = executedTradesCount > 0 ? (winTradesCount / executedTradesCount) * 100 : 0;
     const returnPercent = (totalPnL / this.config.startingBalance) * 100;
 
     const duration = (this.endTime - this.startTime) / 1000;

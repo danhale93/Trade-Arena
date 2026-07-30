@@ -14,9 +14,10 @@ declare global {
     isPrivyConnected: () => boolean;
     getPrivyAddress: () => string | null;
     privySignMessage: (message: string) => Promise<string>;
-    onPrivyLoginSuccess?: () => void;
+    onPrivyLoginSuccess?: (user?: any, address?: string | null) => void;
     onPrivyReady?: (user: any, address: string | null) => void;
     updateWalletUI?: () => void;
+    walletState?: any;
   }
 }
 
@@ -51,8 +52,9 @@ export const PrivyWalletHeader = () => {
   const lastSyncAddress = useRef<string | null>(null);
 
   /**
-   * REQUIREMENT 2: Isolated Embedded Wallet
-   * Isolates the user's active Privy embedded wallet for high-security Base Mainnet execution.
+   * SENIOR WEB3 CORE IMPLEMENTATION - TASK 2
+   * Isolate the user's active Privy embedded wallet (where walletClientType === 'privy')
+   * to immediately enable secure trading interactions within the Trade Arena.
    */
   const arenaWallet = useMemo(() => {
     if (!wallets || !Array.isArray(wallets)) return null;
@@ -60,8 +62,9 @@ export const PrivyWalletHeader = () => {
   }, [wallets]);
 
   /**
-   * REQUIREMENT 3: Truncated Address Format
-   * Display the live Privy address cleanly (0x1234...abcd) for standard visual format.
+   * SENIOR WEB3 CORE IMPLEMENTATION - TASK 3
+   * Format the live authenticated embedded wallet address using a clean, truncated string format (0x1234...abcd)
+   * for clear visual identification with minimum horizontal header footprint.
    */
   const displayAddress = useMemo(() => {
     const addr = arenaWallet?.address;
@@ -69,9 +72,15 @@ export const PrivyWalletHeader = () => {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   }, [arenaWallet?.address]);
 
-  // Derived user identity
+  // Derived user identity supporting Google, Email, and fallback socials like GitHub/Discord
   const userLabel = useMemo(() => {
-    return user?.google?.email || user?.email?.address || 'Arena Trader';
+    return (
+      user?.google?.email ||
+      user?.email?.address ||
+      user?.github?.username ||
+      user?.discord?.username ||
+      'Arena Trader'
+    );
   }, [user]);
 
   /**
@@ -81,7 +90,7 @@ export const PrivyWalletHeader = () => {
   useEffect(() => {
     // Expose control functions
     window.privyInit = () => console.log('🎨 Palette: Trade Arena bridge activated');
-    window.privyLogin = () => login({ loginMethod: 'google' });
+    window.privyLogin = (options?: any) => login(options);
     window.privyLogout = logout;
     window.isPrivyConnected = () => authenticated && !!arenaWallet;
     window.getPrivyAddress = () => arenaWallet?.address || null;
@@ -101,7 +110,7 @@ export const PrivyWalletHeader = () => {
       window.privyConnected = true;
 
       // Inject Ethers-compatible provider for legacy execution
-      window.privyProvider = {
+      const privyProviderInstance = {
         ...arenaWallet,
         getEthersProvider: async () => {
           const provider = await arenaWallet.getEthereumProvider();
@@ -112,6 +121,19 @@ export const PrivyWalletHeader = () => {
             : new ethersLib.providers.Web3Provider(provider);
         }
       };
+      window.privyProvider = privyProviderInstance;
+
+      // Keep window.walletState fully synchronized with the Privy embedded wallet
+      if (window.walletState) {
+        window.walletState.isConnected = true;
+        window.walletState.address = arenaWallet.address;
+        privyProviderInstance.getEthersProvider().then((provider) => {
+          window.walletState.provider = provider;
+          window.walletState.signer = provider.getSigner();
+        }).catch((err) => {
+          console.error('[Privy] Failed to initialize provider in walletState:', err);
+        });
+      }
 
       // Trigger legacy initialization callbacks
       if (arenaWallet.address !== lastSyncAddress.current) {
@@ -122,7 +144,7 @@ export const PrivyWalletHeader = () => {
 
       // Signal successful entry to the lifecycle manager
       if (!hasTriggeredSuccess.current && typeof window.onPrivyLoginSuccess === 'function') {
-        window.onPrivyLoginSuccess();
+        window.onPrivyLoginSuccess(user, arenaWallet.address);
         hasTriggeredSuccess.current = true;
       }
     } else if (!authenticated && ready) {
@@ -133,6 +155,12 @@ export const PrivyWalletHeader = () => {
       window.privyWalletAddress = null;
       window.privyConnected = false;
       window.privyProvider = null;
+      if (window.walletState) {
+        window.walletState.isConnected = false;
+        window.walletState.address = null;
+        window.walletState.provider = null;
+        window.walletState.signer = null;
+      }
     }
   }, [authenticated, user, arenaWallet, ready]);
 
@@ -149,33 +177,95 @@ export const PrivyWalletHeader = () => {
 
   // Unauthenticated: Login Trigger
   if (!authenticated) {
+    const handleLoginClick = () => {
+      if (typeof window !== 'undefined' && (window as any).SFX?.tick) {
+        try { (window as any).SFX.tick(); } catch (err) {}
+      }
+      login();
+    };
+
+    const handleConnectClick = () => {
+      if (typeof window !== 'undefined' && (window as any).SFX?.tick) {
+        try { (window as any).SFX.tick(); } catch (err) {}
+      }
+      login({ loginMethod: 'wallet' });
+    };
+
     return (
-      <div className="gh-controls" style={{ display: 'flex', gap: '6px' }}>
+      <div className="gh-controls" style={{ display: 'flex', gap: '4px' }}>
         <button
           className="gh-auto-btn"
-          onClick={() => login({ loginMethod: 'wallet' })}
-          style={{ border: '1px solid var(--gold)', color: 'var(--gold)', cursor: 'pointer', background: 'transparent' }}
-          title="Connect MetaMask or another browser wallet"
+          onClick={handleLoginClick}
+          aria-label="Login with social, email, or passkey via Privy"
+          style={{
+            border: '1px solid var(--cyan)',
+            color: 'var(--cyan)',
+            cursor: 'pointer',
+            background: 'transparent',
+            outline: 'none',
+            transition: 'all 0.15s ease-in-out'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(0, 240, 255, 0.1)';
+            e.currentTarget.style.boxShadow = '0 0 8px rgba(0, 240, 255, 0.4)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.boxShadow = 'none';
+          }}
+          onFocus={(e) => {
+            e.currentTarget.style.background = 'rgba(0, 240, 255, 0.15)';
+            e.currentTarget.style.boxShadow = '0 0 0 2px var(--cyan)';
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.boxShadow = 'none';
+          }}
         >
-          CONNECT WALLET
+          LOGIN
         </button>
         <button
           className="gh-auto-btn"
-          onClick={() => login({ loginMethod: 'google' })}
-          style={{ border: '1px solid var(--cyan)', color: 'var(--cyan)', cursor: 'pointer', background: 'transparent' }}
+          onClick={handleConnectClick}
+          aria-label="Connect an external Web3 wallet via Privy"
+          style={{
+            border: '1px solid var(--gold)',
+            color: 'var(--gold)',
+            cursor: 'pointer',
+            background: 'transparent',
+            outline: 'none',
+            transition: 'all 0.15s ease-in-out'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(246, 133, 27, 0.1)';
+            e.currentTarget.style.boxShadow = '0 0 8px rgba(246, 133, 27, 0.4)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.boxShadow = 'none';
+          }}
+          onFocus={(e) => {
+            e.currentTarget.style.background = 'rgba(246, 133, 27, 0.15)';
+            e.currentTarget.style.boxShadow = '0 0 0 2px var(--gold)';
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.boxShadow = 'none';
+          }}
         >
-          LOGIN
+          CONNECT WALLET
         </button>
       </div>
     );
   }
 
   /**
-   * REQUIREMENT 4: Graceful provisioning state
+   * SENIOR WEB3 CORE IMPLEMENTATION - TASK 4
+   * Graceful loading / provisioning state shown if user is authenticated but the embedded wallet array is empty.
    */
   if (authenticated && !arenaWallet) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '0 4px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '0 4px' }} className="gh-wallet-initializing">
         <div className="gh-name" style={{ fontSize: '10px', color: 'var(--cyan)', whiteSpace: 'nowrap' }}>
           {userLabel}
         </div>
@@ -237,7 +327,7 @@ export const PrivyWalletHeader = () => {
    */
   return (
     <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '0 4px' }}>
-      <div className="gh-name" style={{ fontSize: '10px', color: 'var(--cyan)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+      <div className="gh-name" style={{ fontSize: '10px', color: 'var(--cyan)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }} title={userLabel}>
         {userLabel}
       </div>
       <div
@@ -245,7 +335,7 @@ export const PrivyWalletHeader = () => {
         tabIndex={0}
         onClick={handleCopy}
         onKeyDown={handleCopy}
-        title="Copy wallet address to clipboard"
+        title={`Copy Privy wallet address (${arenaWallet?.address || ''}) to clipboard`}
         aria-label={`Copy wallet address ${displayAddress} to clipboard`}
         style={{
           fontSize: '9px',

@@ -725,7 +725,7 @@ app.post('/api/tasks/claim', taskClaimLimiter, async (req, res) => {
         const { taskId, reward, userAddress, validationToken } = req.body;
 
         // Early Validation: Ensure a valid Ethereum address is provided and reject 'demo'
-        if (!userAddress || userAddress === 'demo' || !/0x[a-fA-F0-9]{40}/.test(userAddress)) {
+        if (!userAddress || typeof userAddress !== 'string' || userAddress === 'demo' || !/^0x[a-fA-F0-9]{40}$/.test(userAddress)) {
             return res.status(400).json({ success: false, error: 'Valid Ethereum address required for reward payout' });
         }
 
@@ -861,7 +861,13 @@ app.get('/api/market/prices', async (req, res) => {
         const allowedSymbols = new Set(['WETH', 'USDC', 'ARB', 'OP']);
         const coinMap = { 'WETH': 'ethereum', 'USDC': 'usd-coin', 'ARB': 'arbitrum', 'OP': 'optimism' };
 
-        const symbols = (req.query.symbols?.split(',') || ['WETH', 'USDC', 'ARB'])
+        // Sentinel: Prevent type confusion crashes (e.g. if query contains ?symbols=a&symbols=b, Express parses it as an array)
+        let rawSymbols = req.query.symbols;
+        if (rawSymbols !== undefined && typeof rawSymbols !== 'string') {
+            return res.status(400).json({ success: false, error: 'Invalid symbols parameter type' });
+        }
+
+        const symbols = (rawSymbols?.split(',') || ['WETH', 'USDC', 'ARB'])
             .map(s => s.trim().toUpperCase())
             .filter(s => allowedSymbols.has(s));
 
@@ -869,17 +875,14 @@ app.get('/api/market/prices', async (req, res) => {
             return res.json({ success: true, prices: {}, timestamp: Date.now() });
         }
 
-        // ⚡ Bolt Optimization: Batch price requests into a single CoinGecko API call to eliminate network waterfall
+        // ⚡ Bolt Optimization: Batch and cache price requests using central backend CoinGecko price cache
         const ids = symbols.map(s => coinMap[s]).filter(Boolean);
-        const response = await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${ids.join(',')}&vs_currencies=usd`, {
-            timeout: 10000 // 10s timeout
-        });
-        const data = response.data || {};
+        const data = await getCachedCoinGeckoPrices(ids);
 
         const prices = {};
         symbols.forEach(s => {
             const id = coinMap[s];
-            if (data[id]?.usd) prices[s] = data[id].usd;
+            if (data[id] !== undefined) prices[s] = data[id];
         });
 
         res.json({ success: true, prices, timestamp: Date.now() });
@@ -988,15 +991,57 @@ function verifyMoonPaySignature(body, signature, secret) {
     }
 }
 
+// ⚡ Bolt Optimization: Backend CoinGecko Price Caching
+const coinGeckoPriceCache = {}; // id -> { price, timestamp }
+const COINGECKO_CACHE_TTL = 10000; // 10 seconds cache TTL
+
+async function getCachedCoinGeckoPrices(coinIds) {
+    const now = Date.now();
+    const prices = {};
+    const missingIds = [];
+
+    coinIds.forEach(id => {
+        const cached = coinGeckoPriceCache[id];
+        if (cached && (now - cached.timestamp < COINGECKO_CACHE_TTL)) {
+            prices[id] = cached.price;
+        } else {
+            missingIds.push(id);
+        }
+    });
+
+    if (missingIds.length > 0) {
+        try {
+            const response = await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${missingIds.join(',')}&vs_currencies=usd`, {
+                timeout: 10000
+            });
+            const data = response.data || {};
+            missingIds.forEach(id => {
+                const price = data[id]?.usd;
+                if (price !== undefined) {
+                    coinGeckoPriceCache[id] = { price, timestamp: now };
+                    prices[id] = price;
+                } else if (coinGeckoPriceCache[id]) {
+                    prices[id] = coinGeckoPriceCache[id].price; // Expired fallback
+                }
+            });
+        } catch (error) {
+            console.error('[Market API Cache] Failed to fetch missing prices:', error.message);
+            // Fallback to expired cache values if available
+            missingIds.forEach(id => {
+                if (coinGeckoPriceCache[id]) prices[id] = coinGeckoPriceCache[id].price;
+            });
+        }
+    }
+    return prices;
+}
+
 async function fetchCoinGeckoPrice(symbol) {
     try {
         const coinMap = { 'WETH': 'ethereum', 'USDC': 'usd-coin', 'ARB': 'arbitrum', 'OP': 'optimism' };
         const coinId = coinMap[symbol];
         if (!coinId) return null;
-        const response = await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd`, {
-            timeout: 10000 // 10s timeout
-        });
-        return response.data[coinId]?.usd || null;
+        const prices = await getCachedCoinGeckoPrices([coinId]);
+        return prices[coinId] || null;
     } catch (e) {
         return null;
     }
@@ -1020,6 +1065,12 @@ function generateId() {
     // Sentinel: Use cryptographically secure random values for ID generation
     return Date.now().toString(36) + crypto.randomBytes(8).toString('hex');
 }
+
+// Centralized Sentinel Error Handler to prevent stack traces and internal leakage on unhandled exceptions
+app.use((err, req, res, next) => {
+    console.error('[Sentinel Error Handler]:', err.stack || err);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+});
 
 app.listen(PORT, () => {
     console.log(`🚀 Trade Arena Server running on port ${PORT}`);
