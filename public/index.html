@@ -1261,6 +1261,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
           <button role="tab" class="bus-preset active" id="tab-internal" onclick="switchTaskTab('internal')" aria-selected="true" tabindex="0" aria-controls="task-tab-internal">INTERNAL</button>
           <button role="tab" class="bus-preset" id="tab-identities" onclick="switchTaskTab('identities')" aria-selected="false" tabindex="-1" aria-controls="task-tab-identities">AGENT IDENTITIES</button>
           <button role="tab" class="bus-preset" id="tab-market" onclick="switchTaskTab('market')" aria-selected="false" tabindex="-1" aria-controls="task-tab-market">MARKETPLACE</button>
+          <button role="tab" class="bus-preset" id="tab-gasfund" onclick="switchTaskTab('gasfund')" aria-selected="false" tabindex="-1" aria-controls="task-tab-gasfund">GAS FUND</button>
       </div>
 
       <!-- Tab: Internal Monitor -->
@@ -1289,6 +1290,11 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
               <button onclick="window.MARKETPLACE && window.MARKETPLACE.refreshTasks()" style="padding:2px 8px; background:var(--chrome); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-size:8px; cursor:pointer;">REFRESH</button>
           </div>
           <div id="marketplaceTaskRows"></div>
+      </div>
+
+      <!-- Tab: Gas Fund -->
+      <div id="task-tab-gasfund" style="display:none" role="tabpanel" aria-labelledby="tab-gasfund">
+          <div id="gasFundContainer"></div>
       </div>
     </div>
   </div>
@@ -3245,7 +3251,7 @@ function saveApiKeyFromDashboard(keyName) {
  */
 function switchTaskTab(tab) {
     if(typeof SFX !== 'undefined') window.SFX && window.SFX.tick && window.SFX.tick();
-    ['internal', 'identities', 'market'].forEach(t => {
+    ['internal', 'identities', 'market', 'gasfund'].forEach(t => {
         const content = document.getElementById(`task-tab-${t}`);
         const btn = document.getElementById(`tab-${t}`);
         if (content) content.style.display = (t === tab) ? 'block' : 'none';
@@ -3258,6 +3264,7 @@ function switchTaskTab(tab) {
 
     if (tab === 'identities') renderAgentIdentities();
     if (tab === 'market') renderMarketplaceTasks();
+    if (tab === 'gasfund') window.renderGasFund && window.renderGasFund();
 }
 
 function initMarketplaceUI() {
@@ -6359,6 +6366,7 @@ document.addEventListener('keydown', function(e) {
 <script src="ACOUSTIC_CORE.js" defer></script>
 <script src="trading-bundle.js" defer></script>
 <script src="task-center.js" defer></script>
+<script src="gas-fund.js" defer></script>
 <script src="management-bundle.js" defer></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
