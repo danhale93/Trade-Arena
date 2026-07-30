@@ -255,6 +255,12 @@ app.post('/api/maintenance/patch', maintenanceLimiter, async (req, res) => {
   }
 });
 
+// Centralized Sentinel Error Handler to prevent stack traces and internal leakage on unhandled exceptions
+app.use((err, req, res, next) => {
+  console.error('[Sentinel Error Handler]:', err.stack || err);
+  res.status(500).json({ success: false, error: 'Internal server error' });
+});
+
 const port = 3001;
 app.listen(port, () => {
   console.log(`🚀 Proxy server running at http://localhost:${port}`);

@@ -1066,6 +1066,12 @@ function generateId() {
     return Date.now().toString(36) + crypto.randomBytes(8).toString('hex');
 }
 
+// Centralized Sentinel Error Handler to prevent stack traces and internal leakage on unhandled exceptions
+app.use((err, req, res, next) => {
+    console.error('[Sentinel Error Handler]:', err.stack || err);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+});
+
 app.listen(PORT, () => {
     console.log(`🚀 Trade Arena Server running on port ${PORT}`);
 });
