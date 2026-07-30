@@ -97,22 +97,20 @@ function calculateRSI(prices: number[], period: number = 14): number {
 /**
  * Calculate ATR-like volatility from prices
  * ATR = Average True Range as % of price
+ * ⚡ Bolt Optimization: Uses single-pass O(1) space loop on last 14 periods to completely eliminate array allocation and slice/reduce overhead.
  */
 function calculateATRPercent(prices: number[]): number {
   if (prices.length < 2) return 0;
   
-  let trueRanges: number[] = [];
+  const start = Math.max(1, prices.length - 14);
+  const count = prices.length - start;
   
-  for (let i = 1; i < prices.length; i++) {
-    const high = Math.max(prices[i], prices[i - 1]);
-    const low = Math.min(prices[i], prices[i - 1]);
-    const tr = high - low;
-    trueRanges.push(tr);
+  let trSum = 0;
+  for (let i = start; i < prices.length; i++) {
+    trSum += Math.abs(prices[i] - prices[i - 1]);
   }
   
-  // Use last 14 periods for ATR
-  const recentTRs = trueRanges.slice(-14);
-  const avgTR = recentTRs.reduce((a, b) => a + b, 0) / recentTRs.length;
+  const avgTR = trSum / count;
   const currentPrice = prices[prices.length - 1];
   
   return (avgTR / currentPrice) * 100;
@@ -134,33 +132,44 @@ function calculateReturn(prices: number[], periods: number): number {
 
 /**
  * Calculate average volume
+ * ⚡ Bolt Optimization: Uses single-pass O(1) space loop on last 24 periods to avoid intermediate array slicing/reduce allocations.
  */
 function calculateVolumeAvg(volumes: number[]): number {
   if (volumes.length === 0) return 0;
   
-  // Use last 24 periods
-  const recent = volumes.slice(-24);
-  return recent.reduce((a, b) => a + b, 0) / recent.length;
+  const start = Math.max(0, volumes.length - 24);
+  const count = volumes.length - start;
+
+  let sum = 0;
+  for (let i = start; i < volumes.length; i++) {
+    sum += volumes[i];
+  }
+  return sum / count;
 }
 
 /**
  * Calculate volatility metric (std deviation of returns)
+ * ⚡ Bolt Optimization: Completely eliminates O(N) array allocation for returns, slice(-20), .map(), and double-reduces.
+ * Runs in exactly O(1) auxiliary space with single-pass and manual accumulation loops.
  */
 function calculateVolatility(prices: number[]): number {
   if (prices.length < 2) return 0;
   
-  // Calculate period returns
-  const returns: number[] = [];
-  for (let i = 1; i < prices.length; i++) {
-    const ret = (prices[i] - prices[i - 1]) / prices[i - 1];
-    returns.push(ret);
+  const start = Math.max(1, prices.length - 20);
+  const count = prices.length - start;
+
+  let sum = 0;
+  for (let i = start; i < prices.length; i++) {
+    sum += (prices[i] - prices[i - 1]) / prices[i - 1];
   }
+  const mean = sum / count;
   
-  // Use last 20 returns
-  const recentReturns = returns.slice(-20);
-  const mean = recentReturns.reduce((a, b) => a + b, 0) / recentReturns.length;
-  const squaredDiffs = recentReturns.map(r => Math.pow(r - mean, 2));
-  const variance = squaredDiffs.reduce((a, b) => a + b, 0) / squaredDiffs.length;
+  let sumSquaredDiffs = 0;
+  for (let i = start; i < prices.length; i++) {
+    const ret = (prices[i] - prices[i - 1]) / prices[i - 1];
+    sumSquaredDiffs += (ret - mean) * (ret - mean);
+  }
+  const variance = sumSquaredDiffs / count;
   
   return Math.sqrt(variance) * 100;
 }
