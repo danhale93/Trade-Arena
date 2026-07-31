@@ -737,9 +737,12 @@ app.post('/api/tasks/claim', taskClaimLimiter, async (req, res) => {
         }
 
         // Sentinel: Use timing-safe comparison to prevent timing attacks on validation tokens
-        const isValidToken = typeof validationToken === 'string' &&
-                           validationToken.length === taskSecret.length &&
-                           crypto.timingSafeEqual(Buffer.from(validationToken), Buffer.from(taskSecret));
+        // Compare byte length of buffers to prevent TypeError throw on multibyte characters
+        const isValidToken = typeof validationToken === 'string' && (() => {
+            const tokenBuf = Buffer.from(validationToken);
+            const secretBuf = Buffer.from(taskSecret);
+            return tokenBuf.length === secretBuf.length && crypto.timingSafeEqual(tokenBuf, secretBuf);
+        })();
 
         if (!isValidToken) {
             return res.status(401).json({ success: false, error: 'Invalid or missing validation token' });
