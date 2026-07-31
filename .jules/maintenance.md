@@ -94,3 +94,6 @@ Critical error detected: "[Monitor] Failed to fetch deployments:". Initiating se
 
 ## 2026-07-30T22:55:06.035Z - [WARN] ARCHITECT
 Latency spike (86ms). Rerouting from Primary (Base) to Alchemy.
+
+## 2026-07-31T12:46:05.808Z - [WARN] ARCHITECT
+Latency spike (86ms). Rerouting from Primary (Base) to Ankr.
