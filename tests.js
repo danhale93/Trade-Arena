@@ -1097,6 +1097,22 @@ describe("escapeHTML - XSS Prevention (index.html:1304)", () => {
 });
 
 describe("Server Input Validation - Sentinel Hardening", () => {
+  it("validates validationToken timing-safe comparison with multibyte characters safely", () => {
+    const taskSecret = "secret-key";
+    const timingSafeCompare = (validationToken) => {
+      return typeof validationToken === 'string' && (() => {
+        const tokenBuf = Buffer.from(validationToken);
+        const secretBuf = Buffer.from(taskSecret);
+        return tokenBuf.length === secretBuf.length && crypto.timingSafeEqual(tokenBuf, secretBuf);
+      })();
+    };
+
+    expect(timingSafeCompare("secret-key")).toBe(true);
+    expect(timingSafeCompare("abcdefghij")).toBe(false);
+    expect(timingSafeCompare("short")).toBe(false);
+    expect(timingSafeCompare("äöüäßäöüäß")).toBe(false); // Same string length, different byte length, must not throw TypeError
+  });
+
   it("validates Ethereum addresses correctly using ethers.isAddress", () => {
     const { ethers } = require("ethers");
     expect(ethers.isAddress("0x9F407b7f793555c35c33aC64bd6901759470736D")).toBe(true);
