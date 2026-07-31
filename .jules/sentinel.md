@@ -187,3 +187,8 @@ Running security audit across localStorage and active config...
 
 ## 2026-07-31T05:34:36.566Z - [INFO] SENTINEL
 Running security audit across localStorage and active config...
+
+## 2026-07-31 - Faucet Address Uniqueness Validation (IP Rotation Protection)
+**Vulnerability:** The crypto faucet (`/api/faucet/claim`) only restricted claims using the request IP address. This was highly vulnerable to draining attacks since malicious actors could easily rotate their IPs using VPNs or proxies and repeatedly fund the same target Ethereum wallet.
+**Learning:** Limiting transactional actions (like faucets, rewards, or transfer endpoints) solely by client IP address is insufficient. Address tracking and normalization are critical in web3 application boundaries.
+**Prevention:** Always track and enforce uniqueness on the target Web3 account/address (normalized to lowercase) in addition to IP-level limiters to prevent sybil and drainage exploits.
