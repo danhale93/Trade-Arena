@@ -6736,6 +6736,37 @@ function saveSettingsApiKeys() {
     const el = document.getElementById('apiTestResult');
     if (el) { el.textContent = '✅ Settings saved locally'; el.style.color = 'var(--green)'; }
 
+    // Multi-sensory UX feedback
+    if (typeof SFX !== 'undefined' && SFX.tick) {
+        try { SFX.tick(); } catch (e) {}
+    }
+
+    if (typeof showToast === 'function') {
+        showToast('Settings saved locally!', 'success');
+    }
+
+    const btn = document.getElementById('saveAllKeysBtn');
+    if (btn) {
+        const originalText = btn.textContent;
+        const originalColor = btn.style.color;
+        btn.textContent = 'SAVED! ✅';
+        btn.style.color = 'var(--green)';
+        btn.disabled = true;
+
+        if (window.FX && window.FX.confetti) {
+            const rect = btn.getBoundingClientRect();
+            const x = rect.left + rect.width / 2;
+            const y = rect.top + rect.height / 2;
+            try { window.FX.confetti(x, y, 8); } catch (e) {}
+        }
+
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.style.color = originalColor;
+            btn.disabled = false;
+        }, 2000);
+    }
+
     // Re-initialize AI and Execution configs
     if (typeof reinitializeConfigs === "function") reinitializeConfigs();
 }
@@ -6894,7 +6925,7 @@ function updateSettingsVolume(val) {
         </div>
 
         <div style="display:flex; gap:6px">
-          <button onclick="saveSettingsApiKeys()" style="flex:1; padding:8px; background:var(--chrome); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Bungee',display; font-size:10px; cursor:pointer">SAVE ALL KEYS</button>
+          <button id="saveAllKeysBtn" onclick="saveSettingsApiKeys()" aria-label="Save all API keys locally" style="flex:1; padding:8px; background:var(--chrome); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Bungee',display; font-size:10px; cursor:pointer">SAVE ALL KEYS</button>
           <button onclick="testSettingsApiKey()" style="padding:8px 15px; background:var(--chrome); border:1px solid var(--border); color:var(--dim); border-radius:4px; font-family:'Bungee',display; font-size:10px; cursor:pointer">TEST CLAUDE</button>
         </div>
 
