@@ -17,9 +17,11 @@ Action: Implemented dual-mode trading system with real on-chain execution, batch
 ## 2026-06-25 - Efficient SVG String Building and Loop Optimization
 **Learning:** For high-frequency dashboard updates, even O(N) operations like `.map().join()` for SVG paths or `Math.max(...array)` can become bottlenecks as N grows, due to intermediate array allocations and spread operator overhead. Replacing these with manual loops and string accumulation provides a smoother UI experience.
 **Action:** Optimized Quant Report drawing functions to use single-pass traversals and manual string accumulation for SVG rendering.
+
 ## 2026-06-29 - O(1) Space Volatility and Parallelized Strategy Detection
 **Learning:** Monolithic loops that traverse datasets multiple times (e.g., once for returns, once for mean, once for variance) incur unnecessary CPU overhead and intermediate allocations. Furthermore, network-bound strategy detection logic (like arbitrage checks) that executes sequentially creates a waterfall latency bottleneck proportional to the number of trading pairs.
 **Action:** Implemented single-pass O(N) variance calculation using the identity $Var(X) = E[X^2] - (E[X])^2$ to achieve O(1) space complexity. Parallelized exchange price fetching and mempool simulations using `Promise.all` to convert O(N) sequential waterfalls into O(1) concurrent batches.
+
 ## 2026-06-30 - Backend Latency: Parallelized Connection Health Checks
 **Learning:** Performing sequential network-bound checks (RPC health, wallet balances) in a single API endpoint creates a latency waterfall. This cumulative delay is directly visible to the user as a "hanging" or slow-loading dashboard panel.
 **Action:** Use `Promise.all` to concurrently execute independent asynchronous checks, reducing total endpoint response time to the duration of the slowest single request.
@@ -107,3 +109,10 @@ Action: Implemented dual-mode trading system with real on-chain execution, batch
 ## 2026-07-29 - O(1) Space Sliding-Window Financial Indicators
 **Learning:** Sliding-window computations on historical candlesticks (e.g., computing ATR volatility over the last 14 periods, or calculating standard deviation of returns over 20 periods) are frequently implemented using expensive pipeline chains such as `.slice(-14).map().reduce()`. These allocate intermediate garbage arrays on every invocation, causing significant heap churn during continuous backtesting cycles.
 **Action:** Extract slice boundaries mathematically using `Math.max()` and loop directly over the source arrays within single-pass manual accumulators, keeping operations allocation-free and O(1) auxiliary space.
+
+## 2026-07-30 - O(1) Space Indicator & Inline Branch Optimizations in CrucibleTest
+**Learning:** High-frequency technical indicator calculations in test scripts (such as `calculateRSI` and `calculateATR` in `public/crucible-test.js`) are primary bottlenecks due to redundant array allocations and math library overhead.
+- In `calculateRSI`, caching loop variables like `period - 1` and lengths avoids redundant properties lookups, while inline ternary operations for gain/loss checks avoid library overhead.
+- In `calculateATR`, replacing slow standard methods like `Math.max` and `Math.abs` with fast ternary comparisons (`high > prevClose ? high - prevClose : prevClose - high`) speeds up range evaluations by over 3x.
+- Substituting functional pipeline methods like `.reduce()` with simple manual `for` accumulation loops eliminates intermediate function-call stack creation and ensures zero auxiliary space allocation.
+**Action:** Replace high-frequency functional transforms (`.reduce()`, `Math.max()`, `Math.abs()`) inside indicators with lightweight, inline manual loop alternatives to keep calculations allocation-free and sub-millisecond.

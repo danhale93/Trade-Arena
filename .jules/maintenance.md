@@ -91,3 +91,12 @@ Latency spike (91ms). Rerouting from Primary (Base) to Alchemy.
 
 ## 2026-07-28T09:52:47.628Z - [WARN] DEVELOPER
 Critical error detected: "[Monitor] Failed to fetch deployments:". Initiating self-healing protocol...
+
+## 2026-07-30T22:55:06.035Z - [WARN] ARCHITECT
+Latency spike (86ms). Rerouting from Primary (Base) to Alchemy.
+
+## 2026-07-31T05:34:32.515Z - [WARN] ARCHITECT
+Latency spike (78ms). Rerouting from Primary (Base) to Alchemy.
+
+## 2026-07-31T05:34:36.568Z - [WARN] ARCHITECT
+Latency spike (82ms). Rerouting from Primary (Base) to Infura.

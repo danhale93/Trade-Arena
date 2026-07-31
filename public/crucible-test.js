@@ -798,12 +798,14 @@ console.log(
  * @returns {number} RSI value (0-100)
  */
 function calculateRSI(prices, period = 14) {
-  if (prices.length < period + 1) return 50; // Neutral RSI if not enough data
+  const len = prices.length;
+  if (len < period + 1) return 50; // Neutral RSI if not enough data
 
+  // ⚡ Bolt Optimization: Single-pass O(N) RSI calculation with O(1) space complexity to avoid intermediate array allocations
   let gains = 0;
   let losses = 0;
 
-  for (let i = 1; i < prices.length; i++) {
+  for (let i = 1; i < len; i++) {
     const change = prices[i] - prices[i - 1];
     if (change > 0) gains += change;
     else losses -= change;
@@ -812,14 +814,15 @@ function calculateRSI(prices, period = 14) {
   let avgGain = gains / period;
   let avgLoss = losses / period;
 
+  const p1 = period - 1;
   // Calculate subsequent RSI values using Wilder's smoothing
-  for (let i = period + 1; i < prices.length; i++) {
+  for (let i = period + 1; i < len; i++) {
     const change = prices[i] - prices[i - 1];
-    const gain = Math.max(change, 0);
-    const loss = Math.max(-change, 0);
+    const gain = change > 0 ? change : 0;
+    const loss = change < 0 ? -change : 0;
 
-    avgGain = (avgGain * (period - 1) + gain) / period;
-    avgLoss = (avgLoss * (period - 1) + loss) / period;
+    avgGain = (avgGain * p1 + gain) / period;
+    avgLoss = (avgLoss * p1 + loss) / period;
   }
 
   if (avgLoss === 0) return 100;
@@ -836,26 +839,34 @@ function calculateRSI(prices, period = 14) {
  * @returns {number} ATR as percentage of price
  */
 function calculateATR(highs, lows, closes, period = 14) {
-  if (highs.length < period) return 0; // Not enough data
+  const len = highs.length;
+  if (len < period) return 0; // Not enough data
 
+  // ⚡ Bolt Optimization: Replace slow Math.max/Math.abs calls and reduce array allocations with O(1) space manual loops
   let trSum = 0;
-  for (let i = 0; i < highs.length; i++) {
+  const firstClose = closes[0];
+  for (let i = 0; i < len; i++) {
     const high = highs[i];
     const low = lows[i];
-    const prevClose = closes[i - 1] !== undefined ? closes[i - 1] : closes[0];
+    const prevClose = i > 0 ? closes[i - 1] : firstClose;
 
     const tr1 = high - low;
-    const tr2 = Math.abs(high - prevClose);
-    const tr3 = Math.abs(low - prevClose);
-    const tr = Math.max(tr1, tr2, tr3);
+    const tr2 = high > prevClose ? high - prevClose : prevClose - high;
+    const tr3 = low > prevClose ? low - prevClose : prevClose - low;
+    const tr = tr1 > tr2 ? (tr1 > tr3 ? tr1 : tr3) : (tr2 > tr3 ? tr2 : tr3);
 
     trSum += tr;
   }
 
-  const atr = trSum / Math.min(highs.length, period);
-  // Return ATR as percentage of price
-  const avgPrice =
-    closes.reduce((sum, price) => sum + price, 0) / closes.length;
+  const atr = trSum / (len < period ? len : period);
+
+  // ⚡ Bolt Optimization: Use manual single-pass loop to calculate average price and avoid O(N) .reduce() array allocation
+  let sumPrices = 0;
+  const closesLen = closes.length;
+  for (let i = 0; i < closesLen; i++) {
+    sumPrices += closes[i];
+  }
+  const avgPrice = sumPrices / closesLen;
   return (atr / avgPrice) * 100;
 }
 

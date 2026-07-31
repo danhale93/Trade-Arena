@@ -26,22 +26,22 @@ The project is structured into four distinct, logical phases designed to de-risk
 ### Phase 0: Immediate Safety, Pre-Execution Guardrails, & Risk Controls
 *   **Focus:** Harden the existing Node.js/Express backend (`server.js`) and trading engine bundle (`public/trading-bundle.js`) with deterministic execution limits, simulation steps, and local validation.
 *   **Milestone:** All bots running locally or in dev modes are governed by hard limits. Pre-execution checks prevent garbage transactions from being signed.
-*   **Target Date:** Week 1
+*   **Target Date:** Week 1 (Target: March 30, 2026)
 
 ### Phase 1: Staging Environment, Mainnet-Fork Testing, & Paper-Trading
 *   **Focus:** Establish an isolated staging environment (`trade-arena-staging.onrender.com`), configure continuous integration pipelines, and initiate a continuous dry-run period.
 *   **Milestone:** CI/CD automatically runs unit and mainnet-fork simulation tests on every Pull Request. Staging environment initiates a 14-day continuous paper-trading campaign with zero unhandled exceptions.
-*   **Target Date:** Weeks 2-3
+*   **Target Date:** Weeks 2-3 (Target: April 13, 2026)
 
 ### Phase 2: Production-Grade Signing, Relayer Infrastructure, & Audits
 *   **Focus:** Decouple transaction signing from the application server. Setup Gnosis Safe multisig custody combined with a secure automated relayer (e.g., Gelato, OpenZeppelin Defender, or Biconomy) and initiate external reviews.
 *   **Milestone:** Secure signing architecture deployed to staging. Core smart contracts (e.g., payout contracts, flash loan execution contracts) submitted to third-party auditors.
-*   **Target Date:** Weeks 4-6
+*   **Target Date:** Weeks 4-6 (Target: May 4, 2026)
 
 ### Phase 3: Production Rollout, Incident Response Dry-Runs, & Go-Live
 *   **Focus:** Launch the production application (`trade-arena-app.onrender.com`), execute live-money dry runs with tiny capital caps, perform "game day" disaster simulations (e.g., global kill-switch triggers), and finalize cutover.
 *   **Milestone:** Stable, live mainnet trading active under a strict 0.1 ETH global loss ceiling. Automated monitoring dashboards fully integrated with on-call alerting.
-*   **Target Date:** Week 7
+*   **Target Date:** Week 7 (Target: May 11, 2026)
 
 ---
 
@@ -112,6 +112,16 @@ Below is the concrete, ticket-sized task breakdown assigned to key roles: SRE (S
 *   **Priority:** Medium
 *   **Dependencies:** T-102
 
+#### Ticket T-104: Enable Automated CodeQL & Dependabot Scan Policies
+*   **Description:** Secure the repository supply chain using GitHub's native automated static analysis tools.
+*   **Implementation Steps:**
+    1.  Configure `.github/dependabot.yml` to track monthly Node package security updates.
+    2.  Enable GitHub Advanced Security CodeQL workflow scanning Javascript, HTML, and Solidity codebase for CWEs (like XSS, Injection, and Reentrancy).
+*   **Owner:** Sec (Elena Vance)
+*   **Estimate:** 4 hours
+*   **Priority:** Medium
+*   **Dependencies:** None
+
 ---
 
 ### Epic 2: Secure Custody & Relayer Integration (Phase 2)
@@ -135,6 +145,26 @@ Below is the concrete, ticket-sized task breakdown assigned to key roles: SRE (S
 *   **Owner:** Dev (Sam Chen)
 *   **Estimate:** 10 hours
 *   **Priority:** High
+*   **Dependencies:** T-201
+
+#### Ticket T-203: Implement Resilient Nonce & Retry Backoff System
+*   **Description:** Address raw transaction starvation, replacement underpricing, and out-of-order execution.
+*   **Implementation Steps:**
+    1.  Add an in-memory queue that strictly sequences transaction nonce submission per executor.
+    2.  Programmatic re-signing trigger to replace pending transactions with a 20% gas price bump if they remain unconfirmed for >3 blocks.
+*   **Owner:** Dev (Sam Chen)
+*   **Estimate:** 8 hours
+*   **Priority:** High
+*   **Dependencies:** T-201
+
+#### Ticket T-204: Flashbots & Private RPC Bundle Integration
+*   **Description:** Assess Flashbots / MEV-Share private RPC relays to shield sensitive swap orders from frontrunners.
+*   **Implementation Steps:**
+    1.  Implement a client configuration allowing fallback submission via Flashbots Base RPC (`https://builder.flashbots.net` or equivalent MEV-Share relays).
+    2.  Document Tradeoffs: Protects against sandwiching and frontrunning (MEV searchers), but introduces 1-2 block latency over public RPCs.
+*   **Owner:** Sec (Elena Vance)
+*   **Estimate:** 8 hours
+*   **Priority:** Medium
 *   **Dependencies:** T-201
 
 ---
@@ -187,6 +217,16 @@ Below is the concrete, ticket-sized task breakdown assigned to key roles: SRE (S
 *   **Estimate:** 8 hours
 *   **Priority:** High
 *   **Dependencies:** T-201, T-401
+
+#### Ticket T-403: Implement Database Backups & DR Recovery Routines
+*   **Description:** Ensure zero-loss system state recovery on hardware node or host dropouts.
+*   **Implementation Steps:**
+    1.  Configure automated daily backups of SQLite (`users.json` or persistent relational database) with a 30-day retention.
+    2.  Perform simulation restore runbooks and document recovery workflows.
+*   **Owner:** SRE (Alex Rivers)
+*   **Estimate:** 6 hours
+*   **Priority:** High
+*   **Dependencies:** T-102
 
 ---
 
