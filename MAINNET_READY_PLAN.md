@@ -6,6 +6,8 @@ This document serves as the authoritative, phased project plan and technical arc
 
 ## 📌 Executive Summary
 *   **Target Network:** Base Mainnet (Chain ID: `8453`)
+*   **Staging Environment:** `trade-arena-staging.onrender.com`
+*   **Production Environment:** `trade-arena-app.onrender.com`
 *   **Security Principle:** **Safety-First / Zero-Trust Automation**. No live-money automated trade execution will be enabled until multi-signature controls, transaction simulations, rigorous smart contract/infrastructure audits, and dynamic circuit breakers are fully implemented, verified, and signed off.
 *   **Key Paradigm Shift:** Moving away from hot-wallet automated keys to a **hybrid relayer + secure vault/multisig paradigm**, protecting critical user and protocol assets from compromise.
 
@@ -347,6 +349,42 @@ module.exports = { executeSecureTransaction };
 
 ---
 
+### Flashbots & Private RPC Bundle Integration
+
+For sensitive high-frequency transactions (e.g., arbitrage swaps and liquidation execution), frontrunning (MEV) is a major risk. An attacker can spot our transaction in the public mempool and insert their own transaction before ours (sandwiching).
+
+#### Pros of Flashbots/Private RPC:
+- **No Frontrunning:** Transactions are bypassed from the public mempool and delivered directly to validators/builders.
+- **No Gas Fees on Failure:** Failed transactions are discarded by builders and do not land on-chain, saving gas.
+
+#### Cons of Flashbots/Private RPC:
+- **Execution Latency:** May take 1-2 blocks longer to execute compared to public RPCs, depending on builder inclusion rates.
+- **Complexity:** Requires setting up Flashbots SDK and signing transaction bundles.
+
+#### Implementation Steps:
+1. Connect via Flashbots Provider:
+   ```javascript
+   const { FlashbotsBundleProvider } = require("@flashbots/ethers-provider-bundle");
+   const flashbotsProvider = await FlashbotsBundleProvider.create(
+     provider,
+     authSigner, // Reputational key (can be ephemeral)
+     "https://relay.flashbots.net"
+   );
+   ```
+2. Build, sign, and submit the bundle directly to builders:
+   ```javascript
+   const transactionBundle = [
+     {
+       transaction: signedTransaction,
+       signer: wallet
+     }
+   ];
+   const targetBlock = await provider.getBlockNumber() + 1;
+   const submission = await flashbotsProvider.sendBundle(transactionBundle, targetBlock);
+   ```
+
+---
+
 ## 5. CI/CD & Deploy Policy
 
 We enforce strict segregation between staging and production pipelines in GitHub Actions.
@@ -402,7 +440,7 @@ We follow a multi-layered testing pyramid to guarantee mainnet safety.
 
 1.  **Unit Tests:** Verify indicator calculations (RSI, SMA, EWMA) in `public/crucible-real-trading.js` and `strategies/core/sma-crossover.js`. Run on every push.
 2.  **Integration Tests:** Verify that database states, rate limiters, user log persistence, and API endpoints run correctly. Run on every push.
-3.  **Mainnet-Fork Tests:** Spin up a local Fork of Base Mainnet (block pinning via Alchemy) to test real flash loan transactions against active Uniswap/Aave liquidity. Run automatically in CI on pull requests when `ALCHEMY_MAINNET_URL` is set.
+3.  **Mainnet-Fork Tests:** Spin up a local Fork of Base Mainnet (block pinning via Alchemy) using `scripts/fork-test.js` to test real transactions against active Uniswap/Aave liquidity. Run automatically in CI on pull requests when `ALCHEMY_MAINNET_URL` is set.
 4.  **Simulation & Paper-Trading:** Execute identical logic against a read-only staging node for 14 calendar days, recording virtual profits/losses, slippage, and latency reports.
 
 ---
