@@ -58,6 +58,13 @@ const aiProxyLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false
 });
+const faucetLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 3, // limit each IP to 3 claims per window to prevent spam and drainage
+    message: { success: false, error: 'Too many faucet requests from this IP, please try again later.' },
+    standardHeaders: true,
+    legacyHeaders: false
+});
 const payoutRoutes = require("./routes/payoutRoutes");
 const { loadUsers, saveUsers } = require('./user_persistence');
 const PORT = process.env.PORT || 3001;
@@ -554,6 +561,11 @@ let connectionStatusCache = null;
 let connectionStatusCacheTime = 0;
 const CONNECTION_STATUS_CACHE_TTL = 30000; // 30 seconds
 
+// Sentinel: Cache for diagnostics full health checks to prevent RPC rate-limit/quota exhaustion Denial of Service (DoS)
+let diagnosticsFullCache = null;
+let diagnosticsFullCacheTime = 0;
+const DIAGNOSTICS_FULL_CACHE_TTL = 30000; // 30 seconds
+
 app.get('/api/status/connections', async (req, res) => {
     const now = Date.now();
     if (connectionStatusCache && (now - connectionStatusCacheTime < CONNECTION_STATUS_CACHE_TTL)) {
@@ -688,7 +700,7 @@ app.get('/api/payout/status', (req, res) => {
     });
 });
 
-app.post('/api/faucet/claim', async (req, res) => {
+app.post('/api/faucet/claim', faucetLimiter, async (req, res) => {
     try {
         const { userAddress } = req.body;
         const ip = req.ip || req.connection?.remoteAddress || 'unknown';
@@ -1105,8 +1117,17 @@ app.get('/api/diagnostics/quick', (req, res) => {
 });
 
 app.get('/api/diagnostics/full', async (req, res) => {
+    const now = Date.now();
+    if (diagnosticsFullCache && (now - diagnosticsFullCacheTime < DIAGNOSTICS_FULL_CACHE_TTL)) {
+        return res.json({
+            ...diagnosticsFullCache,
+            timestamp: new Date(now).toISOString(),
+            _cached: true
+        });
+    }
+
     const diagnostics = {
-        timestamp: new Date().toISOString(),
+        timestamp: new Date(now).toISOString(),
         environment: {},
         payout_system: {},
         task_system: {},
@@ -1275,6 +1296,10 @@ app.get('/api/diagnostics/full', async (req, res) => {
         warnings: issues.filter(i => i.severity === 'WARNING').length,
         status: issues.filter(i => i.severity === 'CRITICAL').length === 0 ? '✓ READY' : '✗ NEEDS FIXES'
     };
+
+    // Save to memory cache
+    diagnosticsFullCache = diagnostics;
+    diagnosticsFullCacheTime = now;
 
     res.json(diagnostics);
 });

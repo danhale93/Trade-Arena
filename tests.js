@@ -1309,6 +1309,42 @@ describe("Faucet Claim - Sentinel Hardening", () => {
       process.env.PORT = originalPort;
     }
   });
+
+  it("caches /api/diagnostics/full results to prevent RPC spam", async () => {
+    const originalPort = process.env.PORT;
+    process.env.PORT = "0";
+
+    const express = require('express');
+    const originalListen = express.application.listen;
+    let activeServer = null;
+    express.application.listen = function(...args) {
+      activeServer = originalListen.apply(this, args);
+      return activeServer;
+    };
+
+    delete require.cache[require.resolve("./server.js")];
+    require("./server.js");
+
+    try {
+      const port = activeServer.address().port;
+
+      // First request - should hit actual RPC checks and not be cached
+      const res1 = await fetch(`http://localhost:${port}/api/diagnostics/full`);
+      const firstResult = await res1.json();
+      expect(firstResult._cached).toBe(undefined);
+
+      // Second request - should be served from memory cache immediately
+      const res2 = await fetch(`http://localhost:${port}/api/diagnostics/full`);
+      const secondResult = await res2.json();
+      expect(secondResult._cached).toBe(true);
+    } finally {
+      express.application.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+    }
+  });
 });
 
 describe("Server Endpoint Caching - Sentinel Hardening", () => {
