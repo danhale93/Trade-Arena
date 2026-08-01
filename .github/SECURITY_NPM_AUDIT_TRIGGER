@@ -1,0 +1,3 @@
+Trigger file for npm-audit-fix workflow
+
+This file was added to create a push event on the security/npm-upgrades branch to trigger the .github/workflows/npm-audit-fix.yml workflow.
