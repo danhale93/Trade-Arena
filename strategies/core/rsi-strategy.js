@@ -23,26 +23,29 @@ const info = {
  * @returns {number} RSI value (0-100)
  */
 function calculateRSI(data, period) {
-  if (!data || data.length < period + 1) return null;
+  if (!data) return null;
+  const len = data.length;
+  if (len < period + 1) return null;
   
+  // ⚡ Bolt Optimization: Single-pass manual loop over closing prices with O(1) auxiliary space.
+  // Caches data length and boundaries, avoids expensive Math.abs calls using inline subtraction,
+  // and eliminates redundant divisions by period in RS calculation (gains/losses ratio is identical to avgGain/avgLoss ratio).
   let gains = 0;
   let losses = 0;
   
-  for (let i = data.length - period; i < data.length; i++) {
-    const change = data[i].close - data[i-1].close;
+  const start = len - period;
+  for (let i = start; i < len; i++) {
+    const change = data[i].close - data[i - 1].close;
     if (change >= 0) {
       gains += change;
     } else {
-      losses += Math.abs(change);
+      losses -= change;
     }
   }
   
-  const avgGain = gains / period;
-  const avgLoss = losses / period;
+  if (losses === 0) return 100;
   
-  if (avgLoss === 0) return 100;
-  
-  const rs = avgGain / avgLoss;
+  const rs = gains / losses;
   return 100 - (100 / (1 + rs));
 }
 

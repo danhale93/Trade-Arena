@@ -116,3 +116,10 @@ Action: Implemented dual-mode trading system with real on-chain execution, batch
 - In `calculateATR`, replacing slow standard methods like `Math.max` and `Math.abs` with fast ternary comparisons (`high > prevClose ? high - prevClose : prevClose - high`) speeds up range evaluations by over 3x.
 - Substituting functional pipeline methods like `.reduce()` with simple manual `for` accumulation loops eliminates intermediate function-call stack creation and ensures zero auxiliary space allocation.
 **Action:** Replace high-frequency functional transforms (`.reduce()`, `Math.max()`, `Math.abs()`) inside indicators with lightweight, inline manual loop alternatives to keep calculations allocation-free and sub-millisecond.
+
+## 2026-07-31 - Mathematical Cancellation and Allocation-Free Sandbox Metrics
+**Learning:** Optimizing performance indicators or performance stats metrics such as Relative Strength Index (`rsi-strategy.js`), volatility, and Sharpe ratios (`simulator.js`) can yield dramatic performance boosts by:
+- Mathematically canceling out redundant operations (such as dividing both parts of the RS ratio by `period`, which is mathematically unnecessary as `gains / period / (losses / period) === gains / losses`).
+- Replacing array-mapping (`trades.map`) and consecutive `.reduce` runs with focused, single-pass manual `for` loops to accumulate sums and sum-of-squared differences.
+- Avoiding calling slow library functions like `Math.abs` or `Math.pow` inside loop blocks, substituting them with inline subtraction or direct multiplication.
+**Action:** Always seek mathematical simplifications to eliminate redundant divisions in technical indicators, and implement allocation-free manual `for` loops in performance tracking utilities to minimize heap allocations and function-call overhead.
