@@ -419,6 +419,7 @@ app.get('/api/deployments', (req, res) => {
 });
 
 const FAUCET_CLAIMED_IPS = new Set();
+const FAUCET_CLAIMED_ADDRESSES = new Set();
 
 const PAYOUT_PRIVATE_KEY = process.env.PAYOUT_PRIVATE_KEY || '';
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY || '';
@@ -691,14 +692,19 @@ app.post('/api/faucet/claim', async (req, res) => {
     try {
         const { userAddress } = req.body;
         const ip = req.ip || req.connection?.remoteAddress || 'unknown';
-        
-        if (FAUCET_CLAIMED_IPS.has(ip)) {
-            return res.status(429).json({ success: false, error: 'Faucet already claimed from this IP' });
-        }
 
         // Sentinel: Ensure userAddress is a valid string and passes strict Ethereum address validation
         if (!userAddress || typeof userAddress !== 'string' || !ethers.isAddress(userAddress)) {
             return res.status(400).json({ success: false, error: 'Valid wallet address required for mainnet faucet' });
+        }
+
+        const normalizedAddress = userAddress.toLowerCase();
+        if (FAUCET_CLAIMED_ADDRESSES.has(normalizedAddress)) {
+            return res.status(429).json({ success: false, error: 'Faucet already claimed for this address' });
+        }
+
+        if (FAUCET_CLAIMED_IPS.has(ip)) {
+            return res.status(429).json({ success: false, error: 'Faucet already claimed from this IP' });
         }
 
         const payout = await sendPayout(userAddress, 0.005, 'ETH');
@@ -713,6 +719,7 @@ app.post('/api/faucet/claim', async (req, res) => {
         });
 
         FAUCET_CLAIMED_IPS.add(ip);
+        FAUCET_CLAIMED_ADDRESSES.add(normalizedAddress);
         res.json({ success: true, deployment, amount: 50, payout });
     } catch (error) {
         console.error('Faucet claim error:', error);
