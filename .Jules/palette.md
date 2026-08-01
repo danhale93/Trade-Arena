@@ -37,3 +37,7 @@
 ## 2026-06-30 - [ARIA State Type Safety & Cross-Component Navigation]
 **Learning:** WAI-ARIA attributes like 'aria-pressed' and 'aria-expanded' must be explicitly set as strings ("true"/"false") to ensure consistent behavior across all screen readers. Additionally, in data-heavy dashboards, bridging functional zones (e.g., linking Trade Ledger entries to active Bot Cards) via smooth-scroll navigation significantly improves situational awareness and reduces cognitive load during high-frequency operations.
 **Action:** Always use .toString() when updating ARIA boolean attributes and implement directional navigation between related UI entities to maintain user orientation.
+
+## 2026-07-31 - [Multi-Sensory Action Confirmation & Double-Action Prevention]
+**Learning:** For global persistent actions (like saving settings/API keys), visual status labels can often be missed if they are small or detached from the interaction zone. Combining localized button state transitions (text change, color shift, confetti) with global system-wide toast alerts and subtle auditory ticks ensures users receive unmistakable confirmation across all sensory channels, while temporarily disabling the trigger prevents accidental double-submission and rate-limiting during async transitions.
+**Action:** Use multi-sensory confirmation (button state + global toast + auditory cue) for high-stakes dashboard updates, and temporarily disable the submit button during the success animation.
