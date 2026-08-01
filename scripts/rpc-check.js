@@ -18,7 +18,7 @@ async function checkRPC() {
   console.log(`🔍 Checking RPC Connection to: ${rpcUrl.replace(/:[^@/]+@/, ':***@')}`); // Obfuscate credentials if present
 
   try {
-    const provider = new ethers.JsonRpcProvider(rpcUrl, null, {
+    const provider = new ethers.JsonRpcProvider(rpcUrl, undefined, {
       staticNetwork: true // Optimizes network validation and prevents extra chain ID calls
     });
 
