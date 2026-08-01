@@ -41,8 +41,8 @@ importers:
         specifier: 5.2.1
         version: 5.2.1
       express-rate-limit:
-        specifier: ^8.6.0
-        version: 8.6.0(express@5.2.1)
+        specifier: ^8.6.1
+        version: 8.6.1(express@5.2.1)
       react:
         specifier: ^19.2.7
         version: 19.2.8
@@ -1889,8 +1889,8 @@ packages:
     resolution: {integrity: sha512-mQw+2fkQbALzQ7V0MY0IqdnXNOeTtP4r0lN9z7AAawCXgqea7bDii20AYrIBrFd/Hx0M2Ocz6S111CaFkUcb0Q==}
     engines: {node: '>=0.8.x'}
 
-  express-rate-limit@8.6.0:
-    resolution: {integrity: sha512-XKJXDsASUOo0LLtFwW5hCcQGH0N4WQc/Rn8/Pvoia+TJFOkkFPvrtW9lZOeeNcxQJspvOIERMwiRLsVFlhHEkA==}
+  express-rate-limit@8.6.1:
+    resolution: {integrity: sha512-0D493aP61w0TJ2A0wy27riRsO7FMQ7FK+KUHOKCSfPvYo0R55aiC6emCVgFUeShH0fq0ICPVzNcgoS+BsbXQCA==}
     engines: {node: '>= 16'}
     peerDependencies:
       express: '>= 4.11'
@@ -2046,8 +2046,8 @@ packages:
   inherits@2.0.4:
     resolution: {integrity: sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ==}
 
-  ip-address@10.2.0:
-    resolution: {integrity: sha512-/+S6j4E9AHvW9SWMSEY9Xfy66O5PWvVEJ08O0y5JGyEKQpojb0K0GKpz/v5HJ/G0vi3D2sjGK78119oXZeE0qA==}
+  ip-address@10.4.0:
+    resolution: {integrity: sha512-oSK96Grm3aP6OrS263xVxbNDGVL7rzBtYdpGqlDG8iQdoenDoTs/nkki+DflYbAEE8Xl6o5YxhxlrKvI3nqKXQ==}
     engines: {node: '>= 12'}
 
   ipaddr.js@1.9.1:
@@ -6667,11 +6667,11 @@ snapshots:
 
   events@3.3.0: {}
 
-  express-rate-limit@8.6.0(express@5.2.1):
+  express-rate-limit@8.6.1(express@5.2.1):
     dependencies:
       debug: 4.4.3
       express: 5.2.1
-      ip-address: 10.2.0
+      ip-address: 10.4.0
     transitivePeerDependencies:
       - supports-color
 
@@ -6856,7 +6856,7 @@ snapshots:
 
   inherits@2.0.4: {}
 
-  ip-address@10.2.0: {}
+  ip-address@10.4.0: {}
 
   ipaddr.js@1.9.1: {}
 
