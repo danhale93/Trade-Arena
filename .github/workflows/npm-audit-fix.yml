@@ -1,0 +1,56 @@
+name: "Run npm audit fix"
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - security/npm-upgrades
+
+jobs:
+  audit-fix:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
+      - name: Run npm audit (before)
+        run: npm audit --json > npm-audit-before.json || true
+
+      - name: Run npm audit fix
+        run: |
+          npm audit fix || true
+
+      - name: Run npm audit (after)
+        run: npm audit --json > npm-audit-after.json || true
+
+      - name: Commit and push any changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -n "$(git status --porcelain)" ]; then 
+            git add package.json package-lock.json pnpm-lock.yaml yarn.lock || true
+            git commit -m "chore(deps): apply npm audit fix" || true
+            git push origin HEAD:security/npm-upgrades || true
+          else
+            echo "No dependency changes to commit"
+          fi
+
+      - name: Upload audit artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-audit-reports
+          path: |
+            npm-audit-before.json
+            npm-audit-after.json
