@@ -1,3 +1,7 @@
+## 2026-08-01 - Sensory Integration and Non-blocking Dynamic Loading Feedback for AI Concierges
+**Learning:** Adding dynamic loading states (such as `⏳ ASKING...`) to interactive conversational buttons paired with non-visual screen-reader indicators (`aria-label`) and tactile audio feedback (`SFX.tick()`) provides users with real-time confidence when interacting with asynchronous LLM backends. Coupling this with localized visual animations (`FX.pulse()`) on response render results in a delightful and highly accessible multi-sensory feedback loop that eliminates interface ambiguity during computational delays.
+**Action:** Always complement high-latency async UI actions with temporary visual loading states, matching screen-reader ARIA descriptions, tactile auditory clicks, and post-execution visual highlights.
+
 ## 2026-07-30 - User Disconnect and Logout Control inside Web3 Header
 **Learning:** Standard Web3 dashboards often display wallet addresses and connected status without providing a clear, interactive escape hatch for disconnecting or logging out. Adding a compact, high-contrast, keyboard-accessible "OUT" (Logout) button with proper ARIA attributes, focus outlines, and auditive tick feedback ensures both security and accessibility standards (WCAG) are met, while providing a delightful, frictionless transition.
 **Action:** Always pair Web3 identity/connection blocks with a semantic, distinct, and easily keyboard-navigated "Logout" or "Disconnect" control that is visually distinguished but cohesive with the core layout.

@@ -1112,23 +1112,44 @@ async function sendStaffQuery() {
     if (!input || !input.value.trim() || !window.STAFF) return;
 
     const query = input.value.trim();
+    const originalBtnHTML = btn ? btn.innerHTML : 'ASK';
 
     try {
         input.disabled = true;
-        if (btn) btn.disabled = true;
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '⏳ ASKING...';
+            btn.setAttribute('aria-label', 'Asking staff...');
+        }
         input.value = '';
 
         responseBox.style.display = 'block';
         responseBox.textContent = 'Thinking...';
 
+        // Play subtle tick on submit
+        if (typeof window.SFX !== 'undefined' && window.SFX.tick) {
+            try { window.SFX.tick(); } catch (e) {}
+        }
+
         const reply = await window.STAFF.handleSupportQuery(query);
         responseBox.textContent = reply;
 
+        // Pulse the response box visually when loaded
+        if (window.FX && window.FX.pulse) {
+            try { window.FX.pulse(responseBox); } catch (e) {}
+        }
+
         // SFX
-        if (typeof window.SFX !== 'undefined') window.SFX.tick();
+        if (typeof window.SFX !== 'undefined' && window.SFX.tick) {
+            try { window.SFX.tick(); } catch (e) {}
+        }
     } finally {
         input.disabled = false;
-        if (btn) btn.disabled = false;
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalBtnHTML;
+            btn.removeAttribute('aria-label');
+        }
     }
 }
 
