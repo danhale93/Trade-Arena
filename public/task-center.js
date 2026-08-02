@@ -7,7 +7,7 @@ window.API_BASE = window.API_BASE || (location.protocol === 'https:' ? '' : 'htt
 window.DEPLOYMENT_POLL_INTERVAL = window.DEPLOYMENT_POLL_INTERVAL || 4000;
 
 window.TASK_CONFIG = window.TASK_CONFIG || {
-    initialFaucetAmount: 50, // Starting credits // $50 starting credit
+    initialFaucetAmount: 0, // Starting credits // Starts at 0
     quests: [
         { id: 'follow_twitter', label: 'Follow on Twitter', reward: 10, completed: false, icon: '🐦', type: 'social' },
         { id: 'join_discord', label: 'Join Discord Arena', reward: 15, completed: false, icon: '💬', type: 'social' },
