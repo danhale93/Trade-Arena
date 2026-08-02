@@ -1315,15 +1315,15 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         <div class="b-control"><label for="drawdownPct"><span role="img" aria-label="Bar Chart">📊</span> Daily Drawdown Kill (%)</label><input type="number" id="drawdownPct" value="10" min="1" max="50" onchange="updateBreakers()"><div class="b-val" id="drawdownVal">Stop if -$0.00 today</div></div>
         <div class="b-control" style="grid-column:1/-1">
           <label for="aggrSlider"><span role="img" aria-label="Target Dart">🎯</span> Aggression Level — how hard the agents chase trades</label>
-          <input type="range" id="aggrSlider" min="1" max="10" value="8" aria-valuemin="1" aria-valuemax="10" aria-valuenow="8" oninput="updateAggrDisplay()">
+          <input type="range" id="aggrSlider" min="1" max="10" value="8" aria-valuemin="1" aria-valuemax="10" aria-valuenow="8" oninput="updateAggrDisplay()" onchange="if(window.SFX && window.SFX.tick) { try { window.SFX.tick(); } catch(e){} }">
           <div class="b-val" id="aggrVal" style="color:var(--hot)">Level 8 / 10 — AGGRESSIVE</div>
         </div>
         <div class="b-control" style="grid-column:1/-1">
           <label for="consensusSlider"><span role="img" aria-label="High Voltage">⚡</span> Consensus Threshold — agents needed to trigger a trade</label>
-          <input type="range" id="consensusSlider" min="1" max="4" value="2" aria-valuemin="1" aria-valuemax="4" aria-valuenow="2" oninput="updateConsensusDisplay()">
+          <input type="range" id="consensusSlider" min="1" max="4" value="2" aria-valuemin="1" aria-valuemax="4" aria-valuenow="2" oninput="updateConsensusDisplay()" onchange="if(window.SFX && window.SFX.tick) { try { window.SFX.tick(); } catch(e){} }">
           <div class="b-val" id="consensusVal" style="color:var(--amber)">2 / 4 agents must agree</div>
         </div>
-        <div class="b-control" style="grid-column:1/-1"><label for="gasSlider"><span role="img" aria-label="Gas Pump">⛽</span> Simulated Gas (gwei) — drag to test</label><input type="range" id="gasSlider" min="1" max="200" value="18" aria-valuemin="1" aria-valuemax="200" aria-valuenow="18" oninput="updateGasDisplay()"><div class="b-val" id="gasCurrentVal" style="color:var(--green)">18 gwei ✓ OK</div></div>
+        <div class="b-control" style="grid-column:1/-1"><label for="gasSlider"><span role="img" aria-label="Gas Pump">⛽</span> Simulated Gas (gwei) — drag to test</label><input type="range" id="gasSlider" min="1" max="200" value="18" aria-valuemin="1" aria-valuemax="200" aria-valuenow="18" oninput="updateGasDisplay()" onchange="if(window.SFX && window.SFX.tick) { try { window.SFX.tick(); } catch(e){} }"><div class="b-val" id="gasCurrentVal" style="color:var(--green)">18 gwei ✓ OK</div></div>
       </div>
       <table class="cooldown-table" id="cooldownTable">
         <tr><th>Trigger</th><th>Cooldown</th><th>Rationale</th></tr>
@@ -6736,6 +6736,37 @@ function saveSettingsApiKeys() {
     const el = document.getElementById('apiTestResult');
     if (el) { el.textContent = '✅ Settings saved locally'; el.style.color = 'var(--green)'; }
 
+    // Multi-sensory UX feedback
+    if (typeof SFX !== 'undefined' && SFX.tick) {
+        try { SFX.tick(); } catch (e) {}
+    }
+
+    if (typeof showToast === 'function') {
+        showToast('Settings saved locally!', 'success');
+    }
+
+    const btn = document.getElementById('saveAllKeysBtn');
+    if (btn) {
+        const originalText = btn.textContent;
+        const originalColor = btn.style.color;
+        btn.textContent = 'SAVED! ✅';
+        btn.style.color = 'var(--green)';
+        btn.disabled = true;
+
+        if (window.FX && window.FX.confetti) {
+            const rect = btn.getBoundingClientRect();
+            const x = rect.left + rect.width / 2;
+            const y = rect.top + rect.height / 2;
+            try { window.FX.confetti(x, y, 8); } catch (e) {}
+        }
+
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.style.color = originalColor;
+            btn.disabled = false;
+        }, 2000);
+    }
+
     // Re-initialize AI and Execution configs
     if (typeof reinitializeConfigs === "function") reinitializeConfigs();
 }
@@ -6894,7 +6925,7 @@ function updateSettingsVolume(val) {
         </div>
 
         <div style="display:flex; gap:6px">
-          <button onclick="saveSettingsApiKeys()" style="flex:1; padding:8px; background:var(--chrome); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Bungee',display; font-size:10px; cursor:pointer">SAVE ALL KEYS</button>
+          <button id="saveAllKeysBtn" onclick="saveSettingsApiKeys()" aria-label="Save all API keys locally" style="flex:1; padding:8px; background:var(--chrome); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Bungee',display; font-size:10px; cursor:pointer">SAVE ALL KEYS</button>
           <button onclick="testSettingsApiKey()" style="padding:8px 15px; background:var(--chrome); border:1px solid var(--border); color:var(--dim); border-radius:4px; font-family:'Bungee',display; font-size:10px; cursor:pointer">TEST CLAUDE</button>
         </div>
 

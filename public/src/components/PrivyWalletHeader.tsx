@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useRef, useMemo, useState } from 'react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 
 // Define the global bridge interface for synchronization with the Arena's legacy JavaScript engine
@@ -37,6 +37,9 @@ declare global {
 export const PrivyWalletHeader = () => {
   let { authenticated, user, login, logout, ready } = usePrivy();
   let { wallets, ready: walletsReady } = useWallets();
+
+  // Web3 state delight: inline copy feedback indicator
+  const [copied, setCopied] = useState(false);
 
   // Support frontend verification mocking
   if (typeof window !== 'undefined' && (window as any).__mockPrivy) {
@@ -290,6 +293,10 @@ export const PrivyWalletHeader = () => {
     e.preventDefault();
 
     navigator.clipboard.writeText(arenaWallet.address).then(() => {
+      // Set copied state to true for inline feedback
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+
       // 1. Subtle auditory feedback
       if (typeof window !== 'undefined' && (window as any).SFX && (window as any).SFX.tick) {
         try { (window as any).SFX.tick(); } catch (err) {}
@@ -340,7 +347,7 @@ export const PrivyWalletHeader = () => {
           aria-label={`Copy wallet address ${displayAddress} to clipboard`}
           style={{
             fontSize: '9px',
-            color: 'var(--dim)',
+            color: copied ? 'var(--emerald)' : 'var(--dim)',
             fontFamily: 'Share Tech Mono',
             display: 'flex',
             alignItems: 'center',
@@ -351,22 +358,22 @@ export const PrivyWalletHeader = () => {
             transition: 'color 0.15s ease, box-shadow 0.15s ease',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.color = 'var(--cyan)';
+            if (!copied) e.currentTarget.style.color = 'var(--cyan)';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.color = 'var(--dim)';
+            if (!copied) e.currentTarget.style.color = 'var(--dim)';
           }}
           onFocus={(e) => {
-            e.currentTarget.style.color = 'var(--cyan)';
+            if (!copied) e.currentTarget.style.color = 'var(--cyan)';
             e.currentTarget.style.boxShadow = '0 0 0 1px var(--cyan)';
           }}
           onBlur={(e) => {
-            e.currentTarget.style.color = 'var(--dim)';
+            if (!copied) e.currentTarget.style.color = 'var(--dim)';
             e.currentTarget.style.boxShadow = 'none';
           }}
         >
           <span style={{ color: 'var(--gold)', marginRight: '4px' }} role="img" aria-label="wallet">💳</span>
-          <span>{displayAddress}</span>
+          <span>{copied ? 'COPIED!' : displayAddress}</span>
         </div>
 
         <button

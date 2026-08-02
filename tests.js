@@ -1261,6 +1261,92 @@ describe("Server Input Validation - Sentinel Hardening", () => {
   });
 });
 
+describe("Faucet Claim - Sentinel Hardening", () => {
+  it("rejects duplicate faucet claims for the same Ethereum address", async () => {
+    const originalPort = process.env.PORT;
+    process.env.PORT = "0";
+
+    const express = require('express');
+    const originalListen = express.application.listen;
+    let activeServer = null;
+    express.application.listen = function(...args) {
+      activeServer = originalListen.apply(this, args);
+      return activeServer;
+    };
+
+    delete require.cache[require.resolve("./server.js")];
+    require("./server.js");
+
+    try {
+      const port = activeServer.address().port;
+      const testAddress = "0x9F407b7f793555c35c33aC64bd6901759470736D";
+
+      // First request - should succeed
+      const res1 = await fetch(`http://localhost:${port}/api/faucet/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userAddress: testAddress })
+      });
+      const data1 = await res1.json();
+      expect(res1.status).toBe(200);
+      expect(data1.success).toBe(true);
+
+      // Second request with same address (even case insensitive) - should be rejected with 429
+      const res2 = await fetch(`http://localhost:${port}/api/faucet/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userAddress: testAddress.toLowerCase() })
+      });
+      const data2 = await res2.json();
+      expect(res2.status).toBe(429);
+      expect(data2.success).toBe(false);
+      expect(data2.error).toBe('Faucet already claimed for this address');
+    } finally {
+      express.application.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+    }
+  });
+
+  it("caches /api/diagnostics/full results to prevent RPC spam", async () => {
+    const originalPort = process.env.PORT;
+    process.env.PORT = "0";
+
+    const express = require('express');
+    const originalListen = express.application.listen;
+    let activeServer = null;
+    express.application.listen = function(...args) {
+      activeServer = originalListen.apply(this, args);
+      return activeServer;
+    };
+
+    delete require.cache[require.resolve("./server.js")];
+    require("./server.js");
+
+    try {
+      const port = activeServer.address().port;
+
+      // First request - should hit actual RPC checks and not be cached
+      const res1 = await fetch(`http://localhost:${port}/api/diagnostics/full`);
+      const firstResult = await res1.json();
+      expect(firstResult._cached).toBe(undefined);
+
+      // Second request - should be served from memory cache immediately
+      const res2 = await fetch(`http://localhost:${port}/api/diagnostics/full`);
+      const secondResult = await res2.json();
+      expect(secondResult._cached).toBe(true);
+    } finally {
+      express.application.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+    }
+  });
+});
+
 describe("Server Endpoint Caching - Sentinel Hardening", () => {
   it("validates that /api/market/prices handles symbols query parameter type pollution gracefully", async () => {
     const originalPort = process.env.PORT;

@@ -58,13 +58,6 @@ const aiProxyLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false
 });
-const faucetLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 3, // limit each IP to 3 claims per window to prevent spam and drainage
-    message: { success: false, error: 'Too many faucet requests from this IP, please try again later.' },
-    standardHeaders: true,
-    legacyHeaders: false
-});
 const payoutRoutes = require("./routes/payoutRoutes");
 const { loadUsers, saveUsers } = require('./user_persistence');
 const PORT = process.env.PORT || 3001;
@@ -426,7 +419,6 @@ app.get('/api/deployments', (req, res) => {
 });
 
 const FAUCET_CLAIMED_IPS = new Set();
-const FAUCET_CLAIMED_ADDRESSES = new Set();
 
 const PAYOUT_PRIVATE_KEY = process.env.PAYOUT_PRIVATE_KEY || '';
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY || '';
@@ -560,11 +552,6 @@ app.post('/api/user/login', loginLimiter, (req, res) => {
 let connectionStatusCache = null;
 let connectionStatusCacheTime = 0;
 const CONNECTION_STATUS_CACHE_TTL = 30000; // 30 seconds
-
-// Sentinel: Cache for diagnostics full health checks to prevent RPC rate-limit/quota exhaustion Denial of Service (DoS)
-let diagnosticsFullCache = null;
-let diagnosticsFullCacheTime = 0;
-const DIAGNOSTICS_FULL_CACHE_TTL = 30000; // 30 seconds
 
 app.get('/api/status/connections', async (req, res) => {
     const now = Date.now();
@@ -700,23 +687,18 @@ app.get('/api/payout/status', (req, res) => {
     });
 });
 
-app.post('/api/faucet/claim', faucetLimiter, async (req, res) => {
+app.post('/api/faucet/claim', async (req, res) => {
     try {
         const { userAddress } = req.body;
         const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+        
+        if (FAUCET_CLAIMED_IPS.has(ip)) {
+            return res.status(429).json({ success: false, error: 'Faucet already claimed from this IP' });
+        }
 
         // Sentinel: Ensure userAddress is a valid string and passes strict Ethereum address validation
         if (!userAddress || typeof userAddress !== 'string' || !ethers.isAddress(userAddress)) {
             return res.status(400).json({ success: false, error: 'Valid wallet address required for mainnet faucet' });
-        }
-
-        const normalizedAddress = userAddress.toLowerCase();
-        if (FAUCET_CLAIMED_ADDRESSES.has(normalizedAddress)) {
-            return res.status(429).json({ success: false, error: 'Faucet already claimed for this address' });
-        }
-
-        if (FAUCET_CLAIMED_IPS.has(ip)) {
-            return res.status(429).json({ success: false, error: 'Faucet already claimed from this IP' });
         }
 
         const payout = await sendPayout(userAddress, 0.005, 'ETH');
@@ -731,7 +713,6 @@ app.post('/api/faucet/claim', faucetLimiter, async (req, res) => {
         });
 
         FAUCET_CLAIMED_IPS.add(ip);
-        FAUCET_CLAIMED_ADDRESSES.add(normalizedAddress);
         res.json({ success: true, deployment, amount: 50, payout });
     } catch (error) {
         console.error('Faucet claim error:', error);
@@ -1092,216 +1073,6 @@ function generateId() {
 app.use((err, req, res, next) => {
     console.error('[Sentinel Error Handler]:', err.stack || err);
     res.status(500).json({ success: false, error: 'Internal server error' });
-});
-
-
-// ════════════════════════════════════════════════════════════════
-// DIAGNOSTICS ENDPOINTS
-// ════════════════════════════════════════════════════════════════
-
-app.get('/api/diagnostics/quick', (req, res) => {
-    res.json({
-        timestamp: new Date().toISOString(),
-        payout_wallet: payoutWallet ? payoutWallet.address : 'NOT CONFIGURED',
-        task_secret: process.env.TASK_CLAIM_SECRET ? 'SET' : 'NOT SET',
-        ai_models: {
-            claude: process.env.ANTHROPIC_API_KEY ? 'YES' : 'NO',
-            openai: process.env.OPENAI_API_KEY ? 'YES' : 'NO'
-        },
-        exchanges: {
-            binance: process.env.BINANCE_API_KEY ? 'YES' : 'NO'
-        },
-        deployment_queue: deploymentEvents.length,
-        status: payoutWallet && process.env.TASK_CLAIM_SECRET ? 'READY' : 'NEEDS CONFIG'
-    });
-});
-
-app.get('/api/diagnostics/full', async (req, res) => {
-    const now = Date.now();
-    if (diagnosticsFullCache && (now - diagnosticsFullCacheTime < DIAGNOSTICS_FULL_CACHE_TTL)) {
-        return res.json({
-            ...diagnosticsFullCache,
-            timestamp: new Date(now).toISOString(),
-            _cached: true
-        });
-    }
-
-    const diagnostics = {
-        timestamp: new Date(now).toISOString(),
-        environment: {},
-        payout_system: {},
-        task_system: {},
-        ai_system: {},
-        exchange_system: {},
-        blockchain: {},
-        recommendations: []
-    };
-
-    // Environment variables
-    const mask = (key) => {
-        if (!key) return null;
-        if (key.length <= 8) return '✓ CONFIGURED (hidden)';
-        return key.substring(0, 4) + '****' + key.substring(key.length - 4);
-    };
-
-    diagnostics.environment = {
-        PAYOUT_PRIVATE_KEY: {
-            status: process.env.PAYOUT_PRIVATE_KEY ? '✓ SET' : '✗ MISSING',
-            value: mask(process.env.PAYOUT_PRIVATE_KEY),
-            critical: true
-        },
-        ALCHEMY_API_KEY: {
-            status: process.env.ALCHEMY_API_KEY ? '✓ SET' : '✗ MISSING',
-            value: mask(process.env.ALCHEMY_API_KEY),
-            critical: true
-        },
-        TASK_CLAIM_SECRET: {
-            status: process.env.TASK_CLAIM_SECRET ? '✓ SET' : '✗ MISSING',
-            value: mask(process.env.TASK_CLAIM_SECRET),
-            critical: true
-        },
-        ANTHROPIC_API_KEY: {
-            status: process.env.ANTHROPIC_API_KEY ? '✓ SET' : '✗ MISSING',
-            value: mask(process.env.ANTHROPIC_API_KEY),
-            critical: false
-        },
-        OPENAI_API_KEY: {
-            status: process.env.OPENAI_API_KEY ? '✓ SET' : '✗ MISSING',
-            value: mask(process.env.OPENAI_API_KEY),
-            critical: false
-        },
-        BINANCE_API_KEY: {
-            status: process.env.BINANCE_API_KEY ? '✓ SET' : '✗ MISSING',
-            value: mask(process.env.BINANCE_API_KEY),
-            critical: false
-        }
-    };
-
-    // Payout system
-    diagnostics.payout_system = {
-        wallet_initialized: payoutWallet ? '✓ YES' : '✗ NO',
-        wallet_address: payoutWallet ? payoutWallet.address : 'N/A',
-        rpc_url: maskRpcUrl(PAYOUT_RPC_URL),
-        chain_id: PAYOUT_CHAIN_ID,
-        usdc_contract: USDC_CONTRACT
-    };
-
-    if (payoutWallet) {
-        try {
-            const balance = await payoutProvider.getBalance(payoutWallet.address);
-            const ethBalance = ethers.formatEther(balance);
-            diagnostics.payout_system.wallet_balance_eth = ethBalance;
-            diagnostics.payout_system.wallet_balance_status = 
-                parseFloat(ethBalance) > 0.01 ? '✓ SUFFICIENT' : '✗ LOW (need > 0.01 ETH)';
-        } catch (e) {
-            diagnostics.payout_system.wallet_balance_status = '✗ ERROR: ' + e.message;
-        }
-    }
-
-    // Task system
-    diagnostics.task_system = {
-        task_secret_configured: process.env.TASK_CLAIM_SECRET ? '✓ YES' : '✗ NO',
-        deployment_queue_size: deploymentEvents.length,
-        recent_deployments: deploymentEvents.slice(0, 3).map(d => ({
-            id: d.id,
-            type: d.type,
-            status: d.status,
-            source: d.source,
-            created: new Date(d.created).toISOString()
-        }))
-    };
-
-    // AI system
-    diagnostics.ai_system = {
-        claude_available: process.env.ANTHROPIC_API_KEY ? '✓ YES' : '✗ NO',
-        openai_available: process.env.OPENAI_API_KEY ? '✓ YES' : '✗ NO',
-        gemini_available: process.env.GEMINI_API_KEY ? '✓ YES' : '✗ NO'
-    };
-
-    // Exchange system
-    diagnostics.exchange_system = {
-        binance_configured: process.env.BINANCE_API_KEY ? '✓ YES' : '✗ NO',
-        bybit_configured: process.env.BYBIT_API_KEY ? '✓ YES' : '✗ NO',
-        okx_configured: process.env.OKX_API_KEY ? '✓ YES' : '✗ NO'
-    };
-
-    // Blockchain
-    if (payoutProvider) {
-        try {
-            const blockNumber = await payoutProvider.getBlockNumber();
-            const network = await payoutProvider.getNetwork();
-            diagnostics.blockchain = {
-                network_name: network.name,
-                chain_id: network.chainId,
-                current_block: blockNumber,
-                status: '✓ CONNECTED'
-            };
-        } catch (e) {
-            diagnostics.blockchain = {
-                status: '✗ ERROR: ' + e.message
-            };
-        }
-    }
-
-    // Recommendations
-    const issues = [];
-
-    if (!process.env.PAYOUT_PRIVATE_KEY) {
-        issues.push({
-            severity: 'CRITICAL',
-            issue: 'PAYOUT_PRIVATE_KEY not set',
-            impact: 'Task payouts will be simulated, not real',
-            fix: 'Add PAYOUT_PRIVATE_KEY to Render environment variables'
-        });
-    }
-
-    if (!process.env.TASK_CLAIM_SECRET) {
-        issues.push({
-            severity: 'CRITICAL',
-            issue: 'TASK_CLAIM_SECRET not set',
-            impact: 'Task claims will be rejected',
-            fix: 'Add TASK_CLAIM_SECRET to Render environment variables'
-        });
-    }
-
-    if (payoutWallet) {
-        try {
-            const balance = await payoutProvider.getBalance(payoutWallet.address);
-            const ethBalance = parseFloat(ethers.formatEther(balance));
-            if (ethBalance < 0.01) {
-                issues.push({
-                    severity: 'WARNING',
-                    issue: 'Low wallet balance',
-                    impact: 'Cannot send payouts (need gas)',
-                    fix: `Fund wallet ${payoutWallet.address} with at least 0.01 ETH`,
-                    current_balance: ethBalance.toFixed(6) + ' ETH'
-                });
-            }
-        } catch (e) {}
-    }
-
-    if (!process.env.ANTHROPIC_API_KEY && !process.env.OPENAI_API_KEY) {
-        issues.push({
-            severity: 'WARNING',
-            issue: 'No AI models configured',
-            impact: 'AI Arena tournament will fail',
-            fix: 'Add ANTHROPIC_API_KEY or OPENAI_API_KEY to Render environment variables'
-        });
-    }
-
-    diagnostics.recommendations = issues;
-    diagnostics.summary = {
-        total_issues: issues.length,
-        critical_issues: issues.filter(i => i.severity === 'CRITICAL').length,
-        warnings: issues.filter(i => i.severity === 'WARNING').length,
-        status: issues.filter(i => i.severity === 'CRITICAL').length === 0 ? '✓ READY' : '✗ NEEDS FIXES'
-    };
-
-    // Save to memory cache
-    diagnosticsFullCache = diagnostics;
-    diagnosticsFullCacheTime = now;
-
-    res.json(diagnostics);
 });
 
 app.listen(PORT, () => {

@@ -17,22 +17,22 @@
     "@biconomy/account": "^4.5.7",
     "@privy-io/react-auth": "^3.35.2",
     "axios": "1.18.1",
-    "ccxt": "^4.5.68",
+    "ccxt": "^4.5.69",
     "cors": "^2.8.5",
     "dotenv": "17.4.2",
     "ethers": "6.17.0",
     "express": "5.2.1",
-    "express-rate-limit": "^8.6.0",
+    "express-rate-limit": "^8.6.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.8",
-    "viem": "^2.55.8",
+    "viem": "^2.55.10",
     "websocket": "^1.0.35",
     "zod": "3.25.76"
   },
   "devDependencies": {
     "esbuild": "^0.28.1",
     "concurrently": "^10.0.4",
-    "playwright": "^1.61.1"
+    "playwright": "^1.62.0"
   },
   "pnpm": {
     "overrides": {

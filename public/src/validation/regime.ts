@@ -63,9 +63,12 @@ const REGIME_THRESHOLDS = {
 
 /**
  * Calculate RSI(14) - Relative Strength Index
+ * ⚡ Bolt Optimization: Single-pass manual loop over closing prices, avoiding Math.abs overhead,
+ * caching boundary properties, and mathematically canceling out redundant division operations by period.
  */
 function calculateRSI(prices: number[], period: number = 14): number {
-  if (prices.length < period + 1) {
+  const len = prices.length;
+  if (len < period + 1) {
     return 50; // Neutral if not enough data
   }
   
@@ -73,25 +76,23 @@ function calculateRSI(prices: number[], period: number = 14): number {
   let losses = 0;
   
   // Calculate initial averages
-  for (let i = prices.length - period; i < prices.length; i++) {
+  const start = len - period;
+  for (let i = start; i < len; i++) {
     const change = prices[i] - prices[i - 1];
-    if (change > 0) {
+    if (change >= 0) {
       gains += change;
     } else {
-      losses += Math.abs(change);
+      losses -= change;
     }
   }
   
-  const avgGain = gains / period;
-  const avgLoss = losses / period;
+  if (losses === 0) return 100;
+  if (gains === 0) return 0;
   
-  if (avgLoss === 0) return 100;
-  if (avgGain === 0) return 0;
-  
-  const rs = avgGain / avgLoss;
+  const rs = gains / losses;
   const rsi = 100 - (100 / (1 + rs));
   
-  return Math.max(0, Math.min(100, rsi));
+  return rsi < 0 ? 0 : rsi > 100 ? 100 : rsi;
 }
 
 /**
@@ -149,8 +150,8 @@ function calculateVolumeAvg(volumes: number[]): number {
 
 /**
  * Calculate volatility metric (std deviation of returns)
- * ⚡ Bolt Optimization: Completely eliminates O(N) array allocation for returns, slice(-20), .map(), and double-reduces.
- * Runs in exactly O(1) auxiliary space with single-pass and manual accumulation loops.
+ * ⚡ Bolt Optimization: Convert two-pass loop to a single-pass O(N) variance loop using the identity Var(X) = E[X^2] - (E[X])^2.
+ * Completely eliminates O(N) array allocations, runs in O(1) space, and cuts loop traversal iterations by 50%.
  */
 function calculateVolatility(prices: number[]): number {
   if (prices.length < 2) return 0;
@@ -159,19 +160,16 @@ function calculateVolatility(prices: number[]): number {
   const count = prices.length - start;
 
   let sum = 0;
-  for (let i = start; i < prices.length; i++) {
-    sum += (prices[i] - prices[i - 1]) / prices[i - 1];
-  }
-  const mean = sum / count;
-  
-  let sumSquaredDiffs = 0;
+  let sumSq = 0;
   for (let i = start; i < prices.length; i++) {
     const ret = (prices[i] - prices[i - 1]) / prices[i - 1];
-    sumSquaredDiffs += (ret - mean) * (ret - mean);
+    sum += ret;
+    sumSq += ret * ret;
   }
-  const variance = sumSquaredDiffs / count;
+  const mean = sum / count;
+  const variance = (sumSq / count) - (mean * mean);
   
-  return Math.sqrt(variance) * 100;
+  return Math.sqrt(variance < 0 ? 0 : variance) * 100;
 }
 
 /**
