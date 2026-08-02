@@ -65,6 +65,13 @@ const faucetLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false
 });
+const tradingLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 10, // limit each IP to 10 requests per window to prevent spam and DoS
+    message: { success: false, error: 'Too many trading or bot requests, please try again later.' },
+    standardHeaders: true,
+    legacyHeaders: false
+});
 const payoutRoutes = require("./routes/payoutRoutes");
 const { loadUsers, saveUsers } = require('./user_persistence');
 const PORT = process.env.PORT || 3001;
@@ -914,7 +921,7 @@ app.get('/api/market/prices', async (req, res) => {
     }
 });
 
-app.post('/api/bot/create', async (req, res) => {
+app.post('/api/bot/create', tradingLimiter, async (req, res) => {
     try {
         const { name, strategy, riskLevel, initialCapital, userAddress } = req.body;
 
@@ -953,7 +960,7 @@ app.post('/api/bot/create', async (req, res) => {
     }
 });
 
-app.post('/api/execute/swap', async (req, res) => {
+app.post('/api/execute/swap', tradingLimiter, async (req, res) => {
     try {
         const { fromToken, toToken, amount, slippage } = req.body;
 

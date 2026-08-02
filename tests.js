@@ -572,6 +572,51 @@ describe("Server Endpoint Rate Limiting - Sentinel Hardening", () => {
       } catch (e) {}
     }
   });
+
+  it("enforces strict rate limiting on the /api/execute/swap endpoint", async () => {
+    const originalPort = process.env.PORT;
+    process.env.PORT = "0";
+
+    const express = require('express');
+    const originalListen = express.application.listen;
+    let activeServer = null;
+    express.application.listen = function(...args) {
+      activeServer = originalListen.apply(this, args);
+      return activeServer;
+    };
+
+    delete require.cache[require.resolve("./server.js")];
+    require("./server.js");
+
+    try {
+      const port = activeServer.address().port;
+
+      let lastStatus = 0;
+      for (let i = 0; i < 11; i++) {
+        const res = await fetch(`http://localhost:${port}/api/execute/swap`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fromToken: "USDC",
+            toToken: "WETH",
+            amount: 10,
+            slippage: 0.005
+          })
+        });
+        lastStatus = res.status;
+        if (lastStatus === 429) {
+          break;
+        }
+      }
+      expect(lastStatus).toBe(429);
+    } finally {
+      express.application.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+    }
+  });
 });
 
 describe("Live-Data Trade Logic Safety & Self-Correction", () => {
