@@ -146,7 +146,7 @@ async function completeTask(taskId) {
     await submitTaskToBackend(quest);
 }
 
-async function submitTaskToBackend(quest) {
+async function submitTaskToBackend(quest, token = null) {
     try {
         if (window.showToast) window.showToast(`Submitting ${quest.label}...`, 'info');
         const userAddress = window.privyWalletAddress || window.ethereum?.selectedAddress || '';
@@ -164,7 +164,8 @@ async function submitTaskToBackend(quest) {
                 taskId: quest.id,
                 reward: quest.reward,
                 userAddress: userAddress,
-                validationToken: _cfg_d(localStorage.getItem('ta_task_secret')) || ''
+                validationToken: _cfg_d(localStorage.getItem('ta_task_secret')) || '',
+                token: token
             })
         });
         const data = await resp.json();
@@ -190,7 +191,16 @@ async function submitTaskToBackend(quest) {
                 }
             }
         } else {
-            if (window.showToast) window.showToast(data.error || 'Task submission failed', 'error');
+            if (window.showToast) {
+                if (data.error && (data.error.includes('validation token') || data.error.includes('unauthorized') || data.error.includes('Unauthorized') || data.error.includes('validation secret'))) {
+                    window.showToast('Bounty validation token missing or invalid. Please configure your TASK REWARD SECRET in Settings to earn live payouts!', 'error');
+                    if (typeof window.focusKeyInSettings === 'function') {
+                        setTimeout(() => { window.focusKeyInSettings('TASK_CLAIM_SECRET'); }, 1500);
+                    }
+                } else {
+                    window.showToast(data.error || 'Task submission failed', 'error');
+                }
+            }
         }
     } catch (e) {
         console.error('[Monitor] Task claim failed:', e);
@@ -230,30 +240,7 @@ How accurate was the last AI prediction for BTC/USD?
 async function verifyTaskCompletion(taskId, token = null) {
     const task = window.taskState.quests.find(t => t.id === taskId);
     if (!task) return;
-
-    if (task.type === 'verified') {
-        if (window.showToast) window.showToast('Processing Real Crypto Reward...', 'info');
-        if (false) { // Disabled simulation in favor of real backend claim
-            const tx = await window.simulateTreasuryPayout(task.reward, task.label);
-            if (!tx.success) {
-                if (window.showToast) window.showToast('Reward Distribution Failed', 'error');
-                return;
-            }
-        }
-    }
-
-    task.completed = true;
-    window.taskState.creditsEarned += task.reward;
-    if (window.balance !== undefined) {
-        window.balance += task.reward;
-        if (window.updateGlobalBalance) window.updateGlobalBalance();
-    }
-    saveTaskState();
-    renderTaskCenter();
-    if (typeof FX !== 'undefined' && FX.confetti) FX.confetti(window.innerWidth / 2, window.innerHeight / 2);
-    if (typeof SFX !== 'undefined') SFX.bigWin();
-    const rewardType = task.type === 'verified' ? 'Real Crypto' : 'Credits';
-    if (window.showToast) window.showToast(`Verified Task Complete! +$${task.reward} ${rewardType} Credited`, 'success');
+    await submitTaskToBackend(task);
 }
 
 function renderTaskCenter() {
