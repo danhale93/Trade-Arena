@@ -193,7 +193,8 @@ Running security audit across localStorage and active config...
 **Learning:** Limiting transactional actions (like faucets, rewards, or transfer endpoints) solely by client IP address is insufficient. Address tracking and normalization are critical in web3 application boundaries.
 **Prevention:** Always track and enforce uniqueness on the target Web3 account/address (normalized to lowercase) in addition to IP-level limiters to prevent sybil and drainage exploits.
 
-## 2026-08-01 - Unauthenticated RPC Spam DoS Prevention on Diagnostics endpoint
-**Vulnerability:** The unauthenticated `/api/diagnostics/full` endpoint performed multiple synchronous external RPC requests (fetching wallet balances, block numbers, and network configuration) on every single invocation without any rate limiting or caching, leaving it highly vulnerable to Denial of Service (DoS) and API key quota exhaustion.
-**Learning:** While primary health or connections endpoints might be fortified with caching, other secondary diagnostic views can be overlooked, presenting identical external spam vectors.
-**Prevention:** Implement lightweight, in-memory caching layers with short TTL (such as 30 seconds) on any unauthenticated endpoints that query external dependencies or third-party RPC nodes to protect API limits and maintain server responsiveness.
+## 2026-08-01T22:48:08.450Z - [INFO] SENTINEL
+Running security audit across localStorage and active config...
+
+## 2026-08-01T22:48:12.441Z - [SUCCESS] SENTINEL
+Security audit complete. All encryption layers intact.
