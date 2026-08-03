@@ -218,3 +218,8 @@ Running security audit across localStorage and active config...
 
 ## 2026-08-03T05:23:39.848Z - [INFO] SENTINEL
 Running security audit across localStorage and active config...
+
+## 2026-08-03 - RPC Key Leakage in Console and CI/CD Output Logs
+**Vulnerability:** Diagnostic/health check scripts (such as `scripts/rpc-check.js`) that connect to external RPC endpoints often log connection details directly or print full fetch/ethers network connection errors on failure. Since Alchemy and Infura URL patterns place the secret API key in the path of the URL, simple regex replacements of basic auth credentials fail to mask the keys, leaking critical infrastructure credentials in build and execution logs (CWE-532).
+**Learning:** General URL masking regex (e.g. replacing `:password@` formats) is insufficient for path-based token systems. Furthermore, standard RPC clients like Ethers.js append the full request URL inside their thrown error messages on failure, which propagates sensitive URL parameters or keys directly into printed error stacks.
+**Prevention:** Always parse connection URLs using robust URL parsers to dynamically mask both path segments (keys) and credentials. Additionally, compile error sanitization filters to sanitize and replace occurrences of the raw sensitive URLs and keys from printed error trace strings before writing to stdout, stderr, or log systems.
