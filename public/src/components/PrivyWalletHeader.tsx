@@ -22,6 +22,17 @@ declare global {
 }
 
 /**
+ * Truncates an Ethereum wallet address to a clean, truncated display format (e.g., 0x1234...abcd).
+ * Separating this utility ensures high-performance memoization and robust unit testability.
+ */
+export const truncateAddress = (address: string | undefined | null): string => {
+  if (!address || typeof address !== 'string' || address.length < 10) {
+    return '0x...';
+  }
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+};
+
+/**
  * Senior Web3 Component: PrivyWalletHeader
  *
  * This component manages the Privy authentication lifecycle and specifically isolates
@@ -70,9 +81,7 @@ export const PrivyWalletHeader = () => {
    * for clear visual identification with minimum horizontal header footprint.
    */
   const displayAddress = useMemo(() => {
-    const addr = arenaWallet?.address;
-    if (!addr || typeof addr !== 'string' || addr.length < 10) return '0x...';
-    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+    return truncateAddress(arenaWallet?.address);
   }, [arenaWallet?.address]);
 
   // Derived user identity supporting Google, Email, and fallback socials like GitHub/Discord
