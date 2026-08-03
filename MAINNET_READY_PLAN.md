@@ -6,8 +6,8 @@ This document serves as the authoritative, phased project plan and technical arc
 
 ## 📌 Executive Summary
 *   **Target Network:** Base Mainnet (Chain ID: `8453`)
-*   **Staging Environment:** `trade-arena-staging.onrender.com`
-*   **Production Environment:** `trade-arena-app.onrender.com`
+*   **Staging Environment:** `trade-arena-staging.onrender.com` (Mapped to staging `RENDER_SERVICE_ID_STAGING`)
+*   **Production Environment:** `trade-arena-app.onrender.com` (Mapped to production `RENDER_SERVICE_ID`)
 *   **Security Principle:** **Safety-First / Zero-Trust Automation**. No live-money automated trade execution will be enabled until multi-signature controls, transaction simulations, rigorous smart contract/infrastructure audits, and dynamic circuit breakers are fully implemented, verified, and signed off.
 *   **Key Paradigm Shift:** Moving away from hot-wallet automated keys to a **hybrid relayer + secure vault/multisig paradigm**, protecting critical user and protocol assets from compromise.
 
@@ -49,29 +49,19 @@ The project is structured into four distinct, logical phases designed to de-risk
 
 ## 2. Epics & Ticket Breakdown
 
-Below is the concrete, ticket-sized task breakdown assigned to key roles: SRE (Site Reliability Engineer), Dev (Core Engineer), Sec (Security Architect), and Ops/Legal.
+Below is the concrete, ticket-sized task breakdown assigned to key roles: SRE (Site Reliability Engineer), Dev (Core Engineer), Sec (Security Architect), and Ops/Legal. Detailed ticket definition matches can be found inside the project tracker at [BACKLOG.md](BACKLOG.md).
 
 ### Epic 0: Pre-Execution Guardrails & Hard Limits (Phase 0)
 
-#### Ticket T-001: Implement Pre-Execution Sanity Checks
+#### Ticket [T-001: Implement Pre-Execution Sanity Checks](BACKLOG.md#t-001-implement-pre-execution-sanity-checks)
 *   **Description:** Inject a pre-execution validation layer in `/api/execute/swap` and inside the trading engine's execution loops.
-*   **Implementation Steps:**
-    1.  Validate that `min-profit-after-fees` is positive (accounting for 0.25% pool fees and estimated Gas).
-    2.  Check `slippage` is explicitly defined and capped (e.g., max 1% for standard pairs, 3% for highly volatile pools).
-    3.  Verify gas estimate is non-zero and falls under a sane gas ceiling (e.g., `gasPrice < 150 Gwei` on Base).
-    4.  Compare incoming DEX token prices against a multi-feed price sanity oracle (Chainlink/Pyth SDKs) before initiating swaps.
 *   **Owner:** Dev (Sam Chen)
 *   **Estimate:** 8 hours
 *   **Priority:** High
 *   **Dependencies:** None
 
-#### Ticket T-002: Add Hardcoded Risk Controls (Daily Caps & Global Kill-Switch)
+#### Ticket [T-002: Add Hardcoded Risk Controls (Daily Caps & Global Kill-Switch)](BACKLOG.md#t-002-add-hardcoded-risk-controls-daily-caps-and-global-kill-switch)
 *   **Description:** Introduce global and per-bot limits in memory and persisting in database configurations.
-*   **Implementation Steps:**
-    1.  Create a global sliding-window daily spend cap (maximum 0.5 ETH per 24h across all active bots).
-    2.  Enforce a maximum single-trade size (e.g., capped at 0.05 ETH).
-    3.  Define forced unwind thresholds: if a bot's loss exceeds 10% of its initial capital, trigger immediate position closure and bot pausing.
-    4.  Build a `/api/admin/kill-switch` endpoint that pauses all active loops immediately. Implement UI controls displaying these limits.
 *   **Owner:** Dev (Sam Chen)
 *   **Estimate:** 12 hours
 *   **Priority:** High
@@ -81,44 +71,29 @@ Below is the concrete, ticket-sized task breakdown assigned to key roles: SRE (S
 
 ### Epic 1: CI/CD Pipeline & Staging Isolation (Phase 1)
 
-#### Ticket T-101: GitHub Actions Mainnet-Fork Integration Test
+#### Ticket [T-101: GitHub Actions Mainnet-Fork Integration Test](BACKLOG.md#t-101-github-actions-mainnet-fork-integration-test)
 *   **Description:** Configure `.github/workflows/ci.yml` to run advanced mainnet-fork integration tests using Hardhat or Anvil when secrets are available.
-*   **Implementation Steps:**
-    1.  Integrate `scripts/rpc-check.js` and `scripts/fork-test.js` into the CI suite.
-    2.  Configure conditional execution: only run fork tests if `ALCHEMY_MAINNET_URL` is set in the environment.
-    3.  Mock external ERC-20 tokens (USDC, WETH) to isolate test coverage.
 *   **Owner:** SRE (Alex Rivers)
 *   **Estimate:** 6 hours
 *   **Priority:** High
 *   **Dependencies:** None
 
-#### Ticket T-102: Setup Isolated Staging Render Service
+#### Ticket [T-102: Setup Isolated Staging Render Service](BACKLOG.md#t-102-setup-isolated-staging-render-service)
 *   **Description:** Spin up `trade-arena-staging` on Render, completely isolated from production.
-*   **Implementation Steps:**
-    1.  Create the Render web service `trade-arena-staging`.
-    2.  Configure secrets via Render console (using separate RPC endpoints and mock keys).
-    3.  Map the staging service ID to `RENDER_SERVICE_ID_STAGING` for automated dev deploys.
 *   **Owner:** SRE (Alex Rivers)
 *   **Estimate:** 4 hours
 *   **Priority:** Medium
 *   **Dependencies:** None
 
-#### Ticket T-103: 14-Day Continuous Paper-Trading Log Validation
+#### Ticket [T-103: 14-Day Continuous Paper-Trading Log Validation](BACKLOG.md#t-103-14-day-continuous-paper-trading-log-validation)
 *   **Description:** Run all trading bots in dry-run/paper-trading mode on staging to verify system stability.
-*   **Implementation Steps:**
-    1.  Set up bots on staging utilizing real CoinGecko price tickers.
-    2.  Write a script to aggregate performance logs and look for unhandled exceptions or WebSocket dropouts.
-    3.  Generate a 14-day dry-run summary report tracking hypothetical P&L, slippage errors, and gas cost projections.
-*   **Owner:** Ops (Elena Vance)
+*   **Owner:** Ops (Elena Vance) / Dev (Sam Chen)
 *   **Estimate:** 14 days (elapsed time) / 8 hours (active setup/reporting)
 *   **Priority:** Medium
 *   **Dependencies:** T-102
 
-#### Ticket T-104: Enable Automated CodeQL & Dependabot Scan Policies
+#### Ticket [T-104: Enable Automated CodeQL & Dependabot Scan Policies](BACKLOG.md#t-104-enable-automated-codeql-and-dependabot-scan-policies)
 *   **Description:** Secure the repository supply chain using GitHub's native automated static analysis tools.
-*   **Implementation Steps:**
-    1.  Configure `.github/dependabot.yml` to track monthly Node package security updates.
-    2.  Enable GitHub Advanced Security CodeQL workflow scanning Javascript, HTML, and Solidity codebase for CWEs (like XSS, Injection, and Reentrancy).
 *   **Owner:** Sec (Elena Vance)
 *   **Estimate:** 4 hours
 *   **Priority:** Medium
@@ -128,42 +103,29 @@ Below is the concrete, ticket-sized task breakdown assigned to key roles: SRE (S
 
 ### Epic 2: Secure Custody & Relayer Integration (Phase 2)
 
-#### Ticket T-201: Setup Gnosis Safe Multisig & Relayer Contract Architecture
+#### Ticket [T-201: Setup Gnosis Safe Multisig & Relayer Contract Architecture](BACKLOG.md#t-201-setup-gnosis-safe-multisig-and-relayer-contract-architecture)
 *   **Description:** Eliminate single-point-of-failure hot keys from the server.
-*   **Implementation Steps:**
-    1.  Deploy a Gnosis Safe multisig (2-of-3 signature scheme) on Base Mainnet.
-    2.  Integrate a relayer service (e.g., Gelato or OpenZeppelin Defender Relayer) to submit transactions.
-    3.  Write the backend client to dispatch transaction payloads to the relayer. The relayer forwards transactions to the destination smart contract, charging gas fees to a pre-funded relayer balance.
 *   **Owner:** Sec (Elena Vance) / Dev (Sam Chen)
 *   **Estimate:** 20 hours
 *   **Priority:** High
 *   **Dependencies:** T-001
 
-#### Ticket T-202: Pre-Transaction Alchemy/Tenderly Simulations
+#### Ticket [T-202: Pre-Transaction Alchemy/Tenderly Simulations](BACKLOG.md#t-202-pre-transaction-alchemytenderly-simulations)
 *   **Description:** Ensure every transaction is simulated in a sandbox prior to relayer submission.
-*   **Implementation Steps:**
-    1.  Integrate the Alchemy Transact API (`alchemy_simulateExecution`) or Tenderly Simulation API inside `payoutService.js` and execution loops.
-    2.  If the simulation results in a revert or negative net value, block execution and trigger a high-severity log entry.
 *   **Owner:** Dev (Sam Chen)
 *   **Estimate:** 10 hours
 *   **Priority:** High
 *   **Dependencies:** T-201
 
-#### Ticket T-203: Implement Resilient Nonce & Retry Backoff System
+#### Ticket [T-203: Implement Resilient Nonce & Retry Backoff System](BACKLOG.md#t-203-implement-resilient-nonce-and-retry-backoff-system)
 *   **Description:** Address raw transaction starvation, replacement underpricing, and out-of-order execution.
-*   **Implementation Steps:**
-    1.  Add an in-memory queue that strictly sequences transaction nonce submission per executor.
-    2.  Programmatic re-signing trigger to replace pending transactions with a 20% gas price bump if they remain unconfirmed for >3 blocks.
 *   **Owner:** Dev (Sam Chen)
 *   **Estimate:** 8 hours
 *   **Priority:** High
 *   **Dependencies:** T-201
 
-#### Ticket T-204: Flashbots & Private RPC Bundle Integration
+#### Ticket [T-204: Flashbots & Private RPC Bundle Integration](BACKLOG.md#t-204-flashbots-and-private-rpc-bundle-integration)
 *   **Description:** Assess Flashbots / MEV-Share private RPC relays to shield sensitive swap orders from frontrunners.
-*   **Implementation Steps:**
-    1.  Implement a client configuration allowing fallback submission via Flashbots Base RPC (`https://builder.flashbots.net` or equivalent MEV-Share relays).
-    2.  Document Tradeoffs: Protects against sandwiching and frontrunning (MEV searchers), but introduces 1-2 block latency over public RPCs.
 *   **Owner:** Sec (Elena Vance)
 *   **Estimate:** 8 hours
 *   **Priority:** Medium
@@ -173,22 +135,15 @@ Below is the concrete, ticket-sized task breakdown assigned to key roles: SRE (S
 
 ### Epic 3: Audits & Compliance (Phase 2)
 
-#### Ticket T-301: Smart Contract Code Freeze & External Audit
+#### Ticket [T-301: Smart Contract Code Freeze & External Audit](BACKLOG.md#t-301-smart-contract-code-freeze-and-external-audit)
 *   **Description:** Submit Trade Arena smart contracts (including Aave flash loan integration and payout managers) for professional audits.
-*   **Implementation Steps:**
-    1.  Prepare contract repository with high test coverage (>95% line coverage).
-    2.  Coordinate with selected auditing firm (e.g., Trail of Bits, Halborn, or Spearbit).
-    3.  Address and patch all vulnerabilities identified in the draft audit report.
 *   **Owner:** Sec (Elena Vance) / SRE (Alex Rivers)
 *   **Estimate:** 40 hours
 *   **Priority:** High
 *   **Dependencies:** None
 
-#### Ticket T-302: Legal Framework and Non-Custodial Compliance Check
+#### Ticket [T-302: Legal Framework and Non-Custodial Compliance Check](BACKLOG.md#t-302-legal-framework-and-non-custodial-compliance-check)
 *   **Description:** Verify the platform complies with global KYC/AML laws depending on custody style.
-*   **Implementation Steps:**
-    1.  Verify the application architecture remains strictly non-custodial (users authenticate via Privy/MetaMask and retain ultimate key authority; backend only acts as an authorized delegator).
-    2.  Draft terms of service explicitly outlining risks, lack of financial advice, and regional restrictions (IP blocking for sanctioned jurisdictions).
 *   **Owner:** Legal (Jordan Cruz)
 *   **Estimate:** 15 hours
 *   **Priority:** High
@@ -198,33 +153,22 @@ Below is the concrete, ticket-sized task breakdown assigned to key roles: SRE (S
 
 ### Epic 4: Production Rollout, Monitoring & Game Days (Phase 3)
 
-#### Ticket T-401: Configure Prometheus & Grafana Dashboards
+#### Ticket [T-401: Configure Prometheus & Grafana Dashboards](BACKLOG.md#t-401-configure-prometheus-and-grafana-dashboards)
 *   **Description:** Implement real-time monitoring and alerting for bot performance and system health.
-*   **Implementation Steps:**
-    1.  Expose an `/actuator/prometheus` or `/metrics` endpoint in `server.js`.
-    2.  Track metrics: P&L per bot, gas spend, pending transactions, failed transaction rate, RPC latency, and wallet balances.
-    3.  Set up Grafana dashboards and link Slack/PagerDuty hooks for alerts (e.g., alert if wallet balance < 0.05 ETH or error rate > 5%).
 *   **Owner:** SRE (Alex Rivers)
 *   **Estimate:** 12 hours
 *   **Priority:** High
 *   **Dependencies:** T-102
 
-#### Ticket T-402: Production Deployment and Live Dry-Run (v0.1.0)
+#### Ticket [T-402: Production Deployment and Live Dry-Run (v0.1.0)](BACKLOG.md#t-402-production-deployment-and-live-dry-run-v010)
 *   **Description:** Cut over to production environment with strict, conservative parameters.
-*   **Implementation Steps:**
-    1.  Configure production Render service with live, production-grade secrets.
-    2.  Run live dry-run checks with minimal capital (e.g., 0.01 ETH).
-    3.  Execute a "Game Day" test: manually trigger the "Pause all bots" and "Drain funds" runbooks to verify on-chain reaction times.
 *   **Owner:** Ops (Elena Vance) / SRE (Alex Rivers)
 *   **Estimate:** 8 hours
 *   **Priority:** High
 *   **Dependencies:** T-201, T-401
 
-#### Ticket T-403: Implement Database Backups & DR Recovery Routines
+#### Ticket [T-403: Implement Database Backups & DR Recovery Routines](BACKLOG.md#t-403-implement-database-backups-and-dr-recovery-routines)
 *   **Description:** Ensure zero-loss system state recovery on hardware node or host dropouts.
-*   **Implementation Steps:**
-    1.  Configure automated daily backups of SQLite (`users.json` or persistent relational database) with a 30-day retention.
-    2.  Perform simulation restore runbooks and document recovery workflows.
 *   **Owner:** SRE (Alex Rivers)
 *   **Estimate:** 6 hours
 *   **Priority:** High
