@@ -216,9 +216,17 @@ export function findRegimeWeeks(
   for (let i = 0; i < candles.length - candlesPerWeek; i += candlesPerWeek) {
     const weekCandles = candles.slice(i, i + candlesPerWeek);
     
-    const prices = weekCandles.map(c => c.close);
-    const volumes = weekCandles.map(c => c.volume);
-    const now = weekCandles[Math.floor(weekCandles.length / 2)].timestamp;
+    // ⚡ Bolt Optimization: Use a single-pass manual loop to populate prices and volumes arrays simultaneously,
+    // avoiding multiple mapping/allocation traversals inside the window sliding loop.
+    const wLen = weekCandles.length;
+    const prices = new Array<number>(wLen);
+    const volumes = new Array<number>(wLen);
+    for (let j = 0; j < wLen; j++) {
+      const c = weekCandles[j];
+      prices[j] = c.close;
+      volumes[j] = c.volume;
+    }
+    const now = weekCandles[Math.floor(wLen / 2)].timestamp;
     
     // If no detector, use prices as proxy
     let detected = targetRegime;
@@ -274,11 +282,21 @@ export function candlesToArrays(candles: OHLCVCandle[]): {
   volumes: number[];
   timestamps: number[];
 } {
-  return {
-    prices: candles.map(c => c.close),
-    volumes: candles.map(c => c.volume),
-    timestamps: candles.map(c => c.timestamp),
-  };
+  // ⚡ Bolt Optimization: Replace multiple array maps (.map) with a single-pass pre-allocated loop.
+  // This avoids three separate O(N) array traversals and redundant garbage collection pressure.
+  const len = candles.length;
+  const prices = new Array<number>(len);
+  const volumes = new Array<number>(len);
+  const timestamps = new Array<number>(len);
+
+  for (let i = 0; i < len; i++) {
+    const c = candles[i];
+    prices[i] = c.close;
+    volumes[i] = c.volume;
+    timestamps[i] = c.timestamp;
+  }
+
+  return { prices, volumes, timestamps };
 }
 
 /**
