@@ -3229,9 +3229,20 @@ function calculateMarketOpponentRating() {
     let base = 1200;
 
     // If we have closed trades, adjust base by fleet win rate
+    // ⚡ Bolt Optimization: Use a non-allocating single-pass backwards loop on window.closedTrades
+    // to calculate the win rate of the last 20 elements, eliminating slice and filter garbage collection overhead.
     if (window.closedTrades && window.closedTrades.length > 0) {
-        const recent = window.closedTrades.slice(-20);
-        const wr = recent.filter(t => t.isWin).length / recent.length;
+        const len = window.closedTrades.length;
+        const count = Math.min(len, 20);
+        let wins = 0;
+        const start = len - 1;
+        const end = len - count;
+        for (let i = start; i >= end; i--) {
+            if (window.closedTrades[i].isWin) {
+                wins++;
+            }
+        }
+        const wr = wins / count;
         // High win rate = harder market
         base += (wr - 0.5) * 400;
     }
