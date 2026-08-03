@@ -2034,7 +2034,6 @@ async function openPosition(bot, decision, entryPrice, bet, volumeUsd, priceChan
   
   // Show position overlay immediately with instant visual feedback
   showOpenOverlay(bot.id, pos);
-  addToLog(pos);
   
   // Flash the position card for instant visual confirmation
   if(card){
@@ -3957,13 +3956,17 @@ async function _tickLivePrices() {
 let _lastWalletBalancePoll = 0;
 function _tickHeader(){
   // Periodic poll of live on-chain MetaMask balance (every 15s)
+  // Only used for display sync — never overwrites the simulated trading balance
   const nowTime = Date.now();
   if (window.walletState && window.walletState.isConnected && (nowTime - _lastWalletBalancePoll > 15000)) {
     _lastWalletBalancePoll = nowTime;
     if (window.getWalletBalanceUSD) {
       window.getWalletBalanceUSD().then(liveBalance => {
         if (liveBalance !== undefined && liveBalance !== null) {
-          balance = liveBalance;
+          // Only sync on-chain balance if no active positions (not mid-trading)
+          if (openPositions.length === 0) {
+            balance = liveBalance;
+          }
         }
       }).catch(err => console.warn('Periodic balance poll failed:', err));
     }
@@ -3981,11 +3984,11 @@ function _tickHeader(){
   }
 
   // ⚡ Bolt Optimization: Single-pass check for expired positions (replaces O(N) setTimeouts).
+  // Iterate backwards to safely handle checkExit reassigning openPositions.
   const now = Date.now();
-  for (let i = 0; i < openPositions.length; i++) {
+  for (let i = openPositions.length - 1; i >= 0; i--) {
     const pos = openPositions[i];
     if (pos.status === 'open' && now >= pos.exitTime) {
-      // Find the bot to pass correct reference
       const bot = botsMap[pos.botId];
       if (bot) checkExit(pos, bot);
     }
