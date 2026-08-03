@@ -53,13 +53,11 @@ function sanitizeError(error, rawUrl) {
   let message = typeof error === 'string' ? error : (error.message || '');
   if (rawUrl && typeof rawUrl === 'string' && rawUrl.length > 10) {
     const masked = maskRpcUrl(rawUrl);
-    const escapedUrl = rawUrl.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-    message = message.replace(new RegExp(escapedUrl, 'g'), masked);
+    message = message.split(rawUrl).join(masked);
 
     const apiKey = getApiKeyFromUrl(rawUrl);
     if (apiKey && apiKey.length > 8) {
-      const escapedKey = apiKey.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-      message = message.replace(new RegExp(escapedKey, 'g'), '********');
+      message = message.split(apiKey).join('********');
     }
   }
   return message;
