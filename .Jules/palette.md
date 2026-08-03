@@ -41,3 +41,7 @@
 ## 2026-07-31 - [Multi-Sensory Action Confirmation & Double-Action Prevention]
 **Learning:** For global persistent actions (like saving settings/API keys), visual status labels can often be missed if they are small or detached from the interaction zone. Combining localized button state transitions (text change, color shift, confetti) with global system-wide toast alerts and subtle auditory ticks ensures users receive unmistakable confirmation across all sensory channels, while temporarily disabling the trigger prevents accidental double-submission and rate-limiting during async transitions.
 **Action:** Use multi-sensory confirmation (button state + global toast + auditory cue) for high-stakes dashboard updates, and temporarily disable the submit button during the success animation.
+
+## 2026-08-02 - [Form Accessibility & Sensitive Token Obfuscation]
+**Learning:** Integrating semantic label associations using `<label for="id">` for auxiliary configurations like Databricks Genie makes forms screen-reader friendly and easier to target. Sensitive configuration fields (like Personal Access Tokens) should always default to the 'password' type with a dedicated, ARIA-aligned "SHOW/HIDE" visibility toggle to let users verify inputs securely.
+**Action:** Use labeled container wrappers with associated semantic label elements and include generic password visibility toggles on all token inputs.
