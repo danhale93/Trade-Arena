@@ -129,3 +129,7 @@ Action: Implemented dual-mode trading system with real on-chain execution, batch
 - In `calculateRSI`, Cutler's/simple RSI can be optimized to have O(1) space and avoid division operations inside RS calculations, since the `period` divides both terms and mathematically cancels out. Additionally, we can bypass `Math.abs` overhead by utilizing inline subtraction.
 - In `calculateVolatility`, standard deviation/variance can be optimized from a two-pass loop (mean then variance) to a single-pass loop using the algebraic identity $Var(X) = E[X^2] - (E[X])^2$, cutting loop traversal iterations by 50%.
 **Action:** Always identify mathematical cancellations and use single-pass loops to reduce both CPU cycles and garbage collection pressure in numerical pathways.
+
+## 2026-08-04 - Secure Prototype-Free Flat Object Accumulators
+**Learning:** Utilizing plain JavaScript objects (`{}`) as key-value stores for arbitrary string keys (such as user-controlled or third-party sportsbook outcome names) introduces critical prototype shadowing security risks (e.g., matching `"toString"`, `"valueOf"`, or `"constructor"`). Replacing standard `Map` structures to eliminate allocation and lookup overhead must be done using secure prototype-free flat objects created via `Object.create(null)` to ensure absolute safety.
+**Action:** Always prefer `Object.create(null)` instead of `{}` when collecting/aggregating data by arbitrary external string keys in optimized pathways. Use clean `for...of` loops rather than nested index loops to preserve readability.
