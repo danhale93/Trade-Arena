@@ -69,10 +69,15 @@ export const PrivyWalletHeader = () => {
    * SENIOR WEB3 CORE IMPLEMENTATION - TASK 2
    * Isolate the user's active Privy embedded wallet (where walletClientType === 'privy')
    * to immediately enable secure trading interactions within the Trade Arena.
+   * This is triggered instantly upon a successful Google login/OAuth session.
    */
   const arenaWallet = useMemo(() => {
     if (!wallets || !Array.isArray(wallets)) return null;
-    return wallets.find((w) => w.walletClientType === 'privy') || null;
+    const isolatedWallet = wallets.find((w) => w.walletClientType === 'privy') || null;
+    if (isolatedWallet) {
+      console.log('[Privy] Isolated active embedded wallet successfully:', isolatedWallet.address);
+    }
+    return isolatedWallet;
   }, [wallets]);
 
   /**
