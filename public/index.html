@@ -802,7 +802,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
        <button class="gh-bus-btn" id="fleetViewBtn" onclick="toggleFleetView()" title="Toggle Fleet View (Compact Grid)" aria-pressed="false"><span role="img" aria-hidden="true">📊</span> FLEET</button>
         <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots" aria-expanded="false"><span role="img" aria-hidden="true">⚙</span> BUS</button>
         <button class="gh-bus-btn" id="ghSettingsBtn" onclick="toggleSettingsModal()" title="Settings" aria-expanded="false"><span role="img" aria-hidden="true">⚙</span> SETTINGS</button>
-        <button class="gh-auto-btn" id="liveToggleBtn" onclick="toggleLiveMode()" title="Toggle Live/Demo Mode" style="border-color:var(--green);color:var(--green);box-shadow:0 0 10px rgba(0,255,157,0.3)">LIVE</button>
+        <button class="gh-auto-btn" id="liveToggleBtn" onclick="toggleLiveMode()" title="Toggle Live/Demo Mode" aria-pressed="true" style="border-color:var(--green);color:var(--green);box-shadow:0 0 10px rgba(0,255,157,0.3)">LIVE</button>
        <button class="gh-auto-btn" id="ghAutoBtn" onclick="globalAutoToggle()" title="Toggle auto-trading on all bots" aria-pressed="false">AUTO</button>
        <button class="gh-bot-btn" id="ghRemoveBtn" onclick="removeLastBot()" title="Remove last bot" aria-label="Remove last bot" disabled>−</button>
        <button class="gh-bot-btn" id="ghAddTraderBtn" onclick="addBot('TRADER')" title="Add Trading Bot" aria-label="Add new trading bot">🤖</button><button class="gh-bot-btn" id="ghAddWorkerBtn" onclick="addBot('WORKER')" title="Add Worker Bot" aria-label="Add new worker bot">👷</button>
@@ -1014,8 +1014,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
        <!-- Crucible Controls -->
        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
          <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
-           <label style="color:var(--dim);font-size:10px">Regime:</label>
-           <div style="display:flex;gap:2px">
+           <label id="regimeLabel" style="color:var(--dim);font-size:10px">Regime:</label>
+           <div style="display:flex;gap:2px" role="group" aria-labelledby="regimeLabel">
              <button id="regimeBull" class="regime-btn active" onclick="selectRegime('BULL')" aria-pressed="true">BULL</button>
              <button id="regimeBear" class="regime-btn" onclick="selectRegime('BEAR')" aria-pressed="false">BEAR</button>
              <button id="regimeChop" class="regime-btn" onclick="selectRegime('CHOP')" aria-pressed="false">CHOP</button>
@@ -1024,7 +1024,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
          </div>
          
          <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
-           <label style="color:var(--dim);font-size:10px">Cost Model:</label>
+           <label for="costModelSelect" style="color:var(--dim);font-size:10px">Cost Model:</label>
            <select id="costModelSelect" style="padding:4px 8px;background:var(--chrome);color:#fff;border:1px solid var(--border);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px">
              <option value="REALISTIC_1X">REALISTIC_1X (0.1% fees)</option>
              <option value="STRESS_1_5X">STRESS_1_5X (1.5x real costs)</option>
