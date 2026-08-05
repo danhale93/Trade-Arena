@@ -2,6 +2,12 @@
 
 This document serves as the authoritative, phased project plan and technical architecture blueprint required to transition **Trade Arena** from staging/simulation to a highly secure, audited, and resilient live on-chain trading platform on **Base Mainnet**.
 
+### 🔗 Context, Branches, & Live Deployments
+- **Repository & Branch:** `danhale93/Trade-Arena` (Branch: `chore/add-render-link`)
+- **Ready Pull Request Link:** [GitHub Compare / Pull Request](https://github.com/danhale93/Trade-Arena/compare/main...chore/add-render-link?expand=1)
+- **Live Staging/Prod App URL:** [Staging/Production Instance on Render](https://trade-arena-app.onrender.com)
+- **Key Current Additions:** `README`, `.env.example`, `scripts/rpc-check.js`, `scripts/fork-test.js`, and `.github/workflows/ci.yml`.
+
 ---
 
 ## 📌 Executive Summary
