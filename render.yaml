@@ -5,12 +5,13 @@ services:
     plan: starter
     buildCommand: pnpm install && pnpm run build
     startCommand: node server.js
-    healthCheckPath: /api/diagnostics/quick
     envVars:
       - key: PORT
         value: 3001
       - key: NODE_ENV
         value: production
+      - key: RPC_URL
+        value: https://mainnet.base.org
       - key: ANTHROPIC_API_KEY
         sync: false
       - key: OPENAI_API_KEY
@@ -19,14 +20,9 @@ services:
         sync: false
       - key: MOONPAY_WEBHOOK_SECRET
         sync: false
-      - key: RPC_URL
-        value: https://mainnet.base.org
-      # Required for on-chain payouts
       - key: PAYOUT_PRIVATE_KEY
         sync: false
-      # Required for task claim verification
       - key: TASK_CLAIM_SECRET
         sync: false
-      # Optional but recommended for better RPC reliability
       - key: ALCHEMY_API_KEY
         sync: false
