@@ -222,6 +222,11 @@ Running security audit across localStorage and active config...
 ## 2026-08-03T22:47:53.075Z - [INFO] SENTINEL
 Running security audit across localStorage and active config...
 
+## 2026-08-05 - Task Claim Whitelisting & Double-Claiming Prevention
+**Vulnerability:** Lack of taskId validation and duplicate claim tracking in `/api/tasks/claim` and `/api/v1/payouts/claim` allowed users to submit arbitrary task IDs and claim rewards / generate signatures repeatedly without limit.
+**Learning:** Endpoints executing state changes or payout signatures must have strict whitelists of acceptable action/task identifiers, and enforce single-use execution state tracking using unique key strings.
+**Prevention:** Always maintain a whitelist of allowed task/action identifiers and register completed user-action pairs in a centralized in-memory or persisted registry to enforce double-spending prevention.
+
 <<<<<<< fix-entrypoints-and-mainnet-readiness-16145032628926201398
 ## 2026-08-04T07:17:23.815Z - [INFO] SENTINEL
 Running security audit across localStorage and active config...

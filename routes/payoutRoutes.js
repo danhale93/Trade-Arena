@@ -34,6 +34,27 @@ router.post('/claim', payoutLimiter, async (req, res) => {
             return res.status(400).json({ error: 'Invalid or missing taskId' });
         }
 
+        // Sentinel: Ensure taskId is one of the allowed/whitelisted task IDs
+        const ALLOWED_TASK_IDS = new Set([
+            'follow_twitter',
+            'join_discord',
+            'share_win',
+            'first_trade',
+            'hcaptcha_verify',
+            'ai_feedback'
+        ]);
+
+        if (!ALLOWED_TASK_IDS.has(taskId)) {
+            return res.status(400).json({ error: 'Invalid or unauthorized taskId requested' });
+        }
+
+        const normalizedAddress = userAddress.toLowerCase();
+        const claimedKey = `${normalizedAddress}:${taskId}`;
+        const claimedTasks = req.app?.locals?.CLAIMED_USER_TASKS || new Set();
+        if (claimedTasks.has(claimedKey)) {
+            return res.status(429).json({ error: 'Task reward already claimed for this address' });
+        }
+
         if (!proofOfWork || typeof proofOfWork !== 'string' || proofOfWork.length > 1000) {
             return res.status(400).json({ error: 'Invalid or missing proofOfWork' });
         }
@@ -58,6 +79,10 @@ router.post('/claim', payoutLimiter, async (req, res) => {
         }
 
         const authPayload = await payoutService.authorizePayout(userAddress, taskId, proofOfWork);
+
+        // Sentinel: Record the claimed task to prevent duplicate/replay claiming attacks
+        claimedTasks.add(claimedKey);
+
         res.json({ success: true, data: authPayload });
     } catch (error) {
         console.error('[Payout API] Error during claim:', error);
