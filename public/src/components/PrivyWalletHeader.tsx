@@ -220,23 +220,34 @@ export const PrivyWalletHeader = () => {
             cursor: 'pointer',
             background: 'transparent',
             outline: 'none',
-            transition: 'all 0.15s ease-in-out'
+            transition: 'all 0.15s ease-in-out',
+            transform: 'scale(1)'
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.background = 'rgba(0, 240, 255, 0.1)';
             e.currentTarget.style.boxShadow = '0 0 8px rgba(0, 240, 255, 0.4)';
+            e.currentTarget.style.transform = 'scale(1.02)';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.background = 'transparent';
             e.currentTarget.style.boxShadow = 'none';
+            e.currentTarget.style.transform = 'scale(1)';
           }}
           onFocus={(e) => {
             e.currentTarget.style.background = 'rgba(0, 240, 255, 0.15)';
             e.currentTarget.style.boxShadow = '0 0 0 2px var(--cyan)';
+            e.currentTarget.style.transform = 'scale(1.02)';
           }}
           onBlur={(e) => {
             e.currentTarget.style.background = 'transparent';
             e.currentTarget.style.boxShadow = 'none';
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+          onMouseDown={(e) => {
+            e.currentTarget.style.transform = 'scale(0.96)';
+          }}
+          onMouseUp={(e) => {
+            e.currentTarget.style.transform = 'scale(1.02)';
           }}
         >
           LOGIN
@@ -251,23 +262,34 @@ export const PrivyWalletHeader = () => {
             cursor: 'pointer',
             background: 'transparent',
             outline: 'none',
-            transition: 'all 0.15s ease-in-out'
+            transition: 'all 0.15s ease-in-out',
+            transform: 'scale(1)'
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.background = 'rgba(246, 133, 27, 0.1)';
             e.currentTarget.style.boxShadow = '0 0 8px rgba(246, 133, 27, 0.4)';
+            e.currentTarget.style.transform = 'scale(1.02)';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.background = 'transparent';
             e.currentTarget.style.boxShadow = 'none';
+            e.currentTarget.style.transform = 'scale(1)';
           }}
           onFocus={(e) => {
             e.currentTarget.style.background = 'rgba(246, 133, 27, 0.15)';
             e.currentTarget.style.boxShadow = '0 0 0 2px var(--gold)';
+            e.currentTarget.style.transform = 'scale(1.02)';
           }}
           onBlur={(e) => {
             e.currentTarget.style.background = 'transparent';
             e.currentTarget.style.boxShadow = 'none';
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+          onMouseDown={(e) => {
+            e.currentTarget.style.transform = 'scale(0.96)';
+          }}
+          onMouseUp={(e) => {
+            e.currentTarget.style.transform = 'scale(1.02)';
           }}
         >
           CONNECT WALLET
@@ -358,7 +380,7 @@ export const PrivyWalletHeader = () => {
           onClick={handleCopy}
           onKeyDown={handleCopy}
           title={`Copy Privy wallet address (${arenaWallet?.address || ''}) to clipboard`}
-          aria-label={`Copy wallet address ${displayAddress} to clipboard`}
+          aria-label={copied ? "Wallet address copied successfully!" : `Copy wallet address ${displayAddress} to clipboard`}
           style={{
             fontSize: '9px',
             color: copied ? 'var(--emerald)' : 'var(--dim)',
@@ -410,27 +432,38 @@ export const PrivyWalletHeader = () => {
             cursor: 'pointer',
             outline: 'none',
             transition: 'all 0.15s ease-in-out',
+            transform: 'scale(1)',
             lineHeight: 1
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.background = 'rgba(255, 45, 120, 0.1)';
             e.currentTarget.style.borderColor = 'var(--hot)';
             e.currentTarget.style.boxShadow = '0 0 6px rgba(255, 45, 120, 0.3)';
+            e.currentTarget.style.transform = 'scale(1.02)';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.background = 'transparent';
             e.currentTarget.style.borderColor = 'rgba(255, 45, 120, 0.4)';
             e.currentTarget.style.boxShadow = 'none';
+            e.currentTarget.style.transform = 'scale(1)';
           }}
           onFocus={(e) => {
             e.currentTarget.style.background = 'rgba(255, 45, 120, 0.15)';
             e.currentTarget.style.borderColor = 'var(--hot)';
             e.currentTarget.style.boxShadow = '0 0 0 2px var(--hot)';
+            e.currentTarget.style.transform = 'scale(1.02)';
           }}
           onBlur={(e) => {
             e.currentTarget.style.background = 'transparent';
             e.currentTarget.style.borderColor = 'rgba(255, 45, 120, 0.4)';
             e.currentTarget.style.boxShadow = 'none';
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+          onMouseDown={(e) => {
+            e.currentTarget.style.transform = 'scale(0.96)';
+          }}
+          onMouseUp={(e) => {
+            e.currentTarget.style.transform = 'scale(1.02)';
           }}
         >
           OUT
