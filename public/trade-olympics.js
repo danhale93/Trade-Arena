@@ -409,6 +409,106 @@ const TRADE_OLYMPICS = {
         console.log(`      ... and ${standing.bracketsAssigned.length - 3} more`);
       }
     }
+  },
+
+  MATCH_LOG: [],
+
+  reset(options = {}) {
+    this.BRACKETS = {};
+    this.COMPETITION_LOG = {};
+    this.STANDINGS = {};
+    this.MATCH_LOG = [];
+
+    const models = options.models || [];
+
+    models.forEach(model => {
+      const assignedModel = model.name;
+      this.STANDINGS[assignedModel] = {
+        model: assignedModel,
+        provider: model.provider || 'Unknown',
+        elo: model.elo || 1200,
+        bracketsAssigned: [],
+        totalTrades: 0,
+        totalWins: 0,
+        totalLosses: 0,
+        totalPnL: 0,
+        overallWinRate: 0.0,
+        avgTradeValue: 0.0,
+        medals: { gold: 0, silver: 0, bronze: 0 }
+      };
+    });
+
+    const numModels = models.length || 1;
+    let modelIndex = 0;
+    for (let m = 0; m < this.METHODS.length; m++) {
+      for (let t = 0; t < this.TOKENS.length; t++) {
+        for (let e = 0; e < this.EDGE_TIERS.length; e++) {
+          const bracket = `${this.METHODS[m]}_${this.TOKENS[t]}_${this.EDGE_TIERS[e].name}`;
+          const assignedModel = models[modelIndex % numModels]?.name || 'claude-3.5-sonnet';
+
+          this.BRACKETS[bracket] = {
+            method: this.METHODS[m],
+            token: this.TOKENS[t],
+            edgeTier: this.EDGE_TIERS[e],
+            assignedModel: assignedModel,
+            trades: 0,
+            wins: 0,
+            losses: 0,
+            totalPnL: 0,
+            winRate: 0.0,
+            avgEdge: 0.0,
+            avgPnL: 0.0
+          };
+
+          if (this.STANDINGS[assignedModel]) {
+            this.STANDINGS[assignedModel].bracketsAssigned.push(bracket);
+          }
+          modelIndex++;
+        }
+      }
+    }
+
+    return {
+      totalModels: models.length,
+      totalBrackets: Object.keys(this.BRACKETS).length
+    };
+  },
+
+  getGlobalWeights() {
+    const standings = Object.values(this.STANDINGS);
+    const totalElo = standings.reduce((sum, s) => sum + s.elo, 0) || 1;
+    return standings.map(s => ({
+      model: s.model,
+      weight: s.elo / totalElo
+    }));
+  },
+
+  runEloTournament(options = {}) {
+    const rounds = options.rounds || 1;
+    const matches = [];
+    const standings = Object.values(this.STANDINGS);
+
+    for (let r = 0; r < rounds; r++) {
+      for (let i = 0; i < standings.length; i++) {
+        for (let j = i + 1; j < standings.length; j++) {
+          const m1 = standings[i];
+          const m2 = standings[j];
+          const outcome = options.random() > 0.5 ? 'WIN' : 'LOSS';
+
+          m1.elo += outcome === 'WIN' ? 16 : -16;
+          m2.elo += outcome === 'WIN' ? -16 : 16;
+
+          const match = { m1: m1.model, m2: m2.model, outcome };
+          matches.push(match);
+          this.MATCH_LOG.push(match);
+        }
+      }
+    }
+    return { matches };
+  },
+
+  getEloLeaderboard() {
+    return Object.values(this.STANDINGS).sort((a, b) => b.elo - a.elo);
   }
 };
 
