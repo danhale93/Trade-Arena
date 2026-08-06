@@ -19,10 +19,11 @@
     "axios": "1.18.1",
     "ccxt": "^4.5.70",
     "cors": "^2.8.5",
-    "dotenv": "17.4.2",
+    "dotenv": "^17.4.2",
     "ethers": "6.17.0",
     "express": "5.2.1",
     "express-rate-limit": "^8.6.1",
+    "path-to-regexp": "^8.4.2",
     "react": "^19.2.7",
     "react-dom": "^19.2.8",
     "viem": "^2.55.10",
@@ -30,15 +31,16 @@
     "zod": "3.25.76"
   },
   "devDependencies": {
-    "esbuild": "^0.28.1",
     "concurrently": "^10.0.4",
+    "esbuild": "^0.28.1",
     "playwright": "^1.62.0"
   },
   "pnpm": {
     "overrides": {
       "ws": "^8.21.0",
       "uuid": "^11.1.1",
-      "axios": "^1.18.1"
+      "axios": "^1.18.1",
+      "path-to-regexp": "^8.0.0"
     }
   }
 }

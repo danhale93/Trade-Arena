@@ -60,33 +60,41 @@ function removeVig(outcomes) {
   return implied;
 }
 
+// ⚡ Bolt Optimization: Use secure prototype-free flat objects and clean for...of loops to accumulate sums/counts, completely eliminating prototype-property shadowing risks, Map lookups, and nested array/reduce allocations.
 function normalizeSportsbookEvent(event, marketKey = "h2h", oddsFormat = "american") {
   const eventId = event.id || `${event.home_team || "home"}-${event.away_team || "away"}`;
-  const byOutcome = new Map();
+  const sums = Object.create(null);
+  const counts = Object.create(null);
 
   for (const bookmaker of event.bookmakers || []) {
     const market = (bookmaker.markets || []).find((item) => item.key === marketKey);
     if (!market) continue;
 
-    const fairOutcomes = removeVig(
-      (market.outcomes || []).map((outcome) => ({
+    const outcomes = market.outcomes || [];
+    const mappedOutcomes = [];
+    const bkKey = bookmaker.key || bookmaker.title;
+
+    for (const outcome of outcomes) {
+      mappedOutcomes.push({
         name: outcome.name,
         price: outcome.price,
         format: oddsFormat,
-        bookmaker: bookmaker.key || bookmaker.title,
-      })),
-    );
+        bookmaker: bkKey,
+      });
+    }
+
+    const fairOutcomes = removeVig(mappedOutcomes);
 
     for (const outcome of fairOutcomes) {
-      if (!byOutcome.has(outcome.name)) byOutcome.set(outcome.name, []);
-      byOutcome.get(outcome.name).push(outcome.fairProbability);
+      const name = outcome.name;
+      sums[name] = (sums[name] || 0) + outcome.fairProbability;
+      counts[name] = (counts[name] || 0) + 1;
     }
   }
 
   const fairProbabilities = {};
-  for (const [outcome, probabilities] of byOutcome.entries()) {
-    fairProbabilities[outcome] =
-      probabilities.reduce((sum, probability) => sum + probability, 0) / probabilities.length;
+  for (const name in sums) {
+    fairProbabilities[name] = sums[name] / counts[name];
   }
 
   return {

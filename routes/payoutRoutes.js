@@ -4,6 +4,15 @@ const rateLimit = require('express-rate-limit');
 const PayoutService = require('../services/payouts/payoutService');
 const router = express.Router();
 
+const ALLOWED_TASK_IDS = new Set([
+  'follow_twitter',
+  'join_discord',
+  'share_win',
+  'first_trade',
+  'hcaptcha_verify',
+  'ai_feedback'
+]);
+
 // Rate limiter: 5 requests per 15 minutes per IP
 const payoutLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -30,8 +39,8 @@ router.post('/claim', payoutLimiter, async (req, res) => {
         }
 
         // Sentinel: Enforce strict input validation on taskId and proofOfWork to prevent DoS/Type Confusion
-        if (!taskId || typeof taskId !== 'string' || taskId.length > 100) {
-            return res.status(400).json({ error: 'Invalid or missing taskId' });
+        if (!taskId || typeof taskId !== 'string' || !ALLOWED_TASK_IDS.has(taskId)) {
+            return res.status(400).json({ error: 'Invalid or unauthorized taskId' });
         }
 
         // Sentinel: Ensure taskId is one of the allowed/whitelisted task IDs
@@ -59,6 +68,13 @@ router.post('/claim', payoutLimiter, async (req, res) => {
             return res.status(400).json({ error: 'Invalid or missing proofOfWork' });
         }
 
+        const claimKey = `${userAddress.toLowerCase()}-${taskId.toLowerCase()}`;
+        if (req.app && req.app.locals && req.app.locals.CLAIMED_USER_TASKS) {
+            if (req.app.locals.CLAIMED_USER_TASKS.has(claimKey)) {
+                return res.status(429).json({ error: 'Task already claimed for this address' });
+            }
+        }
+
         // Security: Validate the claim secret to prevent unauthorized signature requests
         const CLAIM_SECRET = process.env.TASK_CLAIM_SECRET;
         if (!CLAIM_SECRET) {
@@ -80,8 +96,9 @@ router.post('/claim', payoutLimiter, async (req, res) => {
 
         const authPayload = await payoutService.authorizePayout(userAddress, taskId, proofOfWork);
 
-        // Sentinel: Record the claimed task to prevent duplicate/replay claiming attacks
-        claimedTasks.add(claimedKey);
+        if (req.app && req.app.locals && req.app.locals.CLAIMED_USER_TASKS) {
+            req.app.locals.CLAIMED_USER_TASKS.add(claimKey);
+        }
 
         res.json({ success: true, data: authPayload });
     } catch (error) {

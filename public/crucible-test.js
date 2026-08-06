@@ -263,53 +263,68 @@ const CrucibleTest = {
   generateReport() {
     const duration = ((this.endTime - this.startTime) / 1000).toFixed(2);
 
-    // Separate executed and skipped trades
-    const executedTrades = this.trades.filter((t) => !t.skipped);
-    const skippedTrades = this.trades.filter((t) => t.skipped);
+    // ⚡ Bolt Optimization: Replace 14 separate array filtrations/reduces with a single-pass manual `for` loop
+    // to accumulate all stats in O(N) time and O(1) auxiliary space, drastically reducing heap allocations.
+    const executedTrades = [];
+    const skippedTrades = [];
+    let wins = 0;
+    let losses = 0;
+    let totalPnl = 0;
+    let totalWinAmount = 0;
+    let totalLossAmount = 0;
+    let totalExpectedValue = 0;
+    let totalEdge = 0;
+    let totalConfidence = 0;
 
-    const wins = executedTrades.filter((t) => t.isWin).length;
-    const losses = executedTrades.filter((t) => !t.isWin).length;
+    const len = this.trades.length;
+    for (let i = 0; i < len; i++) {
+      const t = this.trades[i];
+      if (t.skipped) {
+        skippedTrades.push(t);
+      } else {
+        executedTrades.push(t);
+        totalPnl += t.pnl;
+        totalExpectedValue += t.expectedValue || 0;
+        totalEdge += t.edge || 0;
+        totalConfidence += t.confidence || 0;
+
+        if (t.isWin) {
+          wins++;
+          totalWinAmount += t.pnl;
+        } else {
+          losses++;
+          totalLossAmount += t.pnl;
+        }
+      }
+    }
+
     const winRate =
       executedTrades.length > 0
         ? ((wins / executedTrades.length) * 100).toFixed(2)
         : 0;
 
     // P&L calculations (only from executed trades)
-    const totalPnl = executedTrades.reduce((sum, t) => sum + t.pnl, 0);
     const finalBalance = this.config.paperBalance + totalPnl;
     const returnPercent = ((totalPnl / this.config.paperBalance) * 100).toFixed(
       2,
     );
 
-    // Trade statistics
-    const winTrades = executedTrades.filter((t) => t.isWin);
-    const lossTrades = executedTrades.filter((t) => !t.isWin);
-
     const avgWin =
-      winTrades.length > 0
-        ? (
-            winTrades.reduce((sum, t) => sum + t.pnl, 0) / winTrades.length
-          ).toFixed(2)
+      wins > 0
+        ? (totalWinAmount / wins).toFixed(2)
         : 0;
 
     const avgLoss =
-      lossTrades.length > 0
-        ? (
-            lossTrades.reduce((sum, t) => sum + t.pnl, 0) / lossTrades.length
-          ).toFixed(2)
+      losses > 0
+        ? (totalLossAmount / losses).toFixed(2)
         : 0;
 
     // Profit Factor (with risk management)
-    const totalWinAmount = Math.abs(
-      winTrades.reduce((sum, t) => sum + t.pnl, 0),
-    );
-    const totalLossAmount = Math.abs(
-      lossTrades.reduce((sum, t) => sum + t.pnl, 0),
-    );
+    const totalLossAmountAbs = Math.abs(totalLossAmount);
 
     const profitFactor =
-      totalLossAmount !== 0
-        ? (totalWinAmount / totalLossAmount).toFixed(2)
+      totalLossAmountAbs !== 0
+        ? (totalWinAmount / totalLossAmountAbs).toFixed(2)
         : totalWinAmount > 0
           ? "Inf"
           : 0;
@@ -317,26 +332,19 @@ const CrucibleTest = {
     // Expected Value Calculation
     const avgExpectedValue =
       executedTrades.length > 0
-        ? (
-            executedTrades.reduce((sum, t) => sum + t.expectedValue, 0) /
-            executedTrades.length
-          ).toFixed(2)
+        ? (totalExpectedValue / executedTrades.length).toFixed(2)
         : 0;
 
     // Edge analysis
     const avgEdge =
       executedTrades.length > 0
-        ? (
-            executedTrades.reduce((sum, t) => sum + t.edge, 0) /
-            executedTrades.length
-          ).toFixed(2)
+        ? (totalEdge / executedTrades.length).toFixed(2)
         : 0;
 
     const avgConfidence =
       executedTrades.length > 0
         ? (
-            (executedTrades.reduce((sum, t) => sum + t.confidence, 0) /
-              executedTrades.length) *
+            (totalConfidence / executedTrades.length) *
             100
           ).toFixed(0)
         : 0;
