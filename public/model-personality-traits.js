@@ -18,6 +18,4 @@ if (typeof module !== 'undefined' && module.exports) {
 }
 
 // Make global for browser
-if (typeof window !== 'undefined') {
-  window.MODEL_PERSONALITY_TRAITS = MODEL_PERSONALITY_TRAITS;
-}
+window.MODEL_PERSONALITY_TRAITS = MODEL_PERSONALITY_TRAITS;

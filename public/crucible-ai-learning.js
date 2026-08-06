@@ -33,7 +33,7 @@ const CrucibleAITest = {
   
   // Test configuration
   config: {
-    paperBalance: 0,         // Starting paper balance ($0)
+    paperBalance: 50,         // Starting paper balance ($50 AUD)
     tradeCount: 1000,         // 1000 trades for learning
     tradeInterval: 50,        // ms between trades (fast learning)
     verbose: false,           // Less logging for 1000 trades

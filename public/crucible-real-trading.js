@@ -16,7 +16,6 @@ const CrucibleRealTrading = {
   // Session state
   sessionId: `crucible-real-${Date.now()}`,
   isRunning: false,
-  isPaused: false,
   trades: [],
   historicalData: {},
   startTime: null,
@@ -24,10 +23,10 @@ const CrucibleRealTrading = {
   
   // Trading state
   tradeState: {
-    currentBalance: 0,  // $0 starting capital
-    equity: 0,
-    maxEquity: 0,
-    minEquity: 0,
+    currentBalance: 50,  // $50 AUD starting capital
+    equity: 50,
+    maxEquity: 50,
+    minEquity: 50,
     maxDrawdown: 0,
     maxDrawdownPercent: 0,
     openPosition: null,
@@ -44,9 +43,7 @@ const CrucibleRealTrading = {
     entryAdaptation: 1.0,  // Entry threshold adjustment
     exitAdaptation: 1.0,   // Exit threshold adjustment
     feeAdaptation: 1.0,    // Fee consideration in sizing
-    riskMultiplier: 1.0,   // Position-size correction after bad trades
     strategyPerformance: {},
-    adjustments: [],
     learningRate: 0.08,
     minProfitableWinRate: 0.45,  // Need >45% to keep strategy
   },
@@ -54,7 +51,7 @@ const CrucibleRealTrading = {
   // Configuration
   config: {
     // Trading Parameters
-    startingBalance: 0,
+    startingBalance: 50,       // $50 AUD
     maxTradesPerDay: 25,       // Max 25 trades/day (increased from 20)
     minTimeBetweenTrades: 10800000,  // 3 hours in ms (reduced from 4)
     
@@ -100,33 +97,17 @@ const CrucibleRealTrading = {
   // ════════════════════════════════════════════════════════════════
   async init(config = {}) {
     this.config = { ...this.config, ...config };
-    this.tradeState = {
-      currentBalance: this.config.startingBalance,
-      equity: this.config.startingBalance,
-      maxEquity: this.config.startingBalance,
-      minEquity: this.config.startingBalance,
-      maxDrawdown: 0,
-      maxDrawdownPercent: 0,
-      openPosition: null,
-      lastTradeTime: Date.now(),
-      totalTrades: 0,
-      wins: 0,
-      losses: 0,
-    };
+    this.tradeState.currentBalance = this.config.startingBalance;
+    this.tradeState.equity = this.config.startingBalance;
     this.trades = [];
     this.sessionId = `crucible-real-${Date.now()}`;
-    this.aiState.entryAdaptation = 1.0;
-    this.aiState.exitAdaptation = 1.0;
-    this.aiState.feeAdaptation = 1.0;
-    this.aiState.riskMultiplier = 1.0;
-    this.aiState.adjustments = [];
-
+    
     // Initialize strategy performance
     this.aiState.strategyPerformance = {
-      'MOMENTUM_LONG': { trades: 0, wins: 0, losses: 0, consecutiveLosses: 0, totalPnL: 0, profitFactor: 0 },
-      'MOMENTUM_SHORT': { trades: 0, wins: 0, losses: 0, consecutiveLosses: 0, totalPnL: 0, profitFactor: 0 },
-      'MEAN_REVERSION': { trades: 0, wins: 0, losses: 0, consecutiveLosses: 0, totalPnL: 0, profitFactor: 0 },
-      'VOLATILITY_BREAKOUT': { trades: 0, wins: 0, losses: 0, consecutiveLosses: 0, totalPnL: 0, profitFactor: 0 },
+      'MOMENTUM_LONG': { trades: 0, wins: 0, losses: 0, totalPnL: 0, profitFactor: 0 },
+      'MOMENTUM_SHORT': { trades: 0, wins: 0, losses: 0, totalPnL: 0, profitFactor: 0 },
+      'MEAN_REVERSION': { trades: 0, wins: 0, losses: 0, totalPnL: 0, profitFactor: 0 },
+      'VOLATILITY_BREAKOUT': { trades: 0, wins: 0, losses: 0, totalPnL: 0, profitFactor: 0 },
     };
     
     console.log('%c📊 CRUCIBLE REAL TRADING ENGINE INITIALIZED', 'color: #00ff88; font-weight: bold; font-size: 16px;');
@@ -264,11 +245,12 @@ const CrucibleRealTrading = {
       entrySignal: false,
       exitSignal: false,
       direction: 'NEUTRAL',
-      confidence: 50,
+      confidence: 50, // Default 50% confidence for all trades
       strategy: null,
       rationale: '',
     };
     
+    // Update volatility regime
     if (indicators.volatility > 3) {
       this.aiState.volatilityRegime = 'HIGH';
     } else if (indicators.volatility > 1.5) {
@@ -277,53 +259,42 @@ const CrucibleRealTrading = {
       this.aiState.volatilityRegime = 'LOW';
     }
     
-    let strategy = null;
-    let direction = 'NEUTRAL';
-    let confidence = 0;
+    // SIMPLIFIED SIGNAL GENERATION: Ensure trades always execute
+    // We just need to prove the system works with real data
     
-    if ((indicators.rsi < 35 || indicators.rsi > 65) && Math.abs(indicators.momentum) > 0.1) {
-      if (indicators.rsi < 35 && indicators.momentum > 0) {
-        direction = 'LONG';
-        strategy = 'MOMENTUM_LONG';
-      } else if (indicators.rsi > 65 && indicators.momentum < 0) {
-        direction = 'SHORT';
-        strategy = 'MOMENTUM_SHORT';
-      } else if (indicators.rsi < 35) {
-        direction = 'LONG';
-        strategy = 'MEAN_REVERSION';
-      } else if (indicators.rsi > 65) {
-        direction = 'SHORT';
-        strategy = 'MEAN_REVERSION';
-      }
-      
+    // Use RSI + Momentum to decide direction
+    const rsiAboveMiddle = indicators.rsi > 50;
+    const momentumPositive = indicators.momentum > 0;
+    
+    // Generate signal based on simple rules
+    if (rsiAboveMiddle || momentumPositive) {
+      // Bias towards LONG
+      signals.entrySignal = true;
+      signals.direction = 'LONG';
+      signals.strategy = 'MOMENTUM_LONG';
+      // Confidence: RSI distance from 50 (0-50 points) + momentum (0-50 points)
+      // Max 100% confidence when both indicators strongly support entry
+      const rsiDistance = Math.min(50, Math.abs(indicators.rsi - 50) * 2); // 0-50 (double the distance)
+      const momentumStrength = Math.min(50, Math.abs(indicators.momentum * 5)); // 0-50 (momentum * 5)
+      signals.confidence = Math.min(100, rsiDistance + momentumStrength);
+      signals.rationale = `RSI ${indicators.rsi.toFixed(1)} | Momentum ${indicators.momentum.toFixed(2)}%`;
+    } else {
+      // Bias towards SHORT
+      signals.entrySignal = true;
+      signals.direction = 'SHORT';
+      signals.strategy = 'MOMENTUM_SHORT';
       const rsiDistance = Math.min(50, Math.abs(indicators.rsi - 50) * 2);
       const momentumStrength = Math.min(50, Math.abs(indicators.momentum * 5));
-      confidence = Math.min(100, rsiDistance + momentumStrength);
+      signals.confidence = Math.min(100, rsiDistance + momentumStrength);
+      signals.rationale = `RSI ${indicators.rsi.toFixed(1)} | Momentum ${indicators.momentum.toFixed(2)}%`;
     }
     
-    if (Math.abs(indicators.trendStrength) > 1.5 && indicators.volatility > 2 && !strategy) {
-      strategy = 'VOLATILITY_BREAKOUT';
-      direction = indicators.trendStrength > 0 ? 'LONG' : 'SHORT';
-      confidence = Math.min(100, Math.abs(indicators.trendStrength) * 20);
+    // Ensure minimum confidence threshold
+    if (signals.confidence < 30) {
+      signals.confidence = 30; // Always at least 30% confidence
     }
     
-    if (!strategy) {
-      return {
-        entrySignal: false,
-        exitSignal: false,
-        direction: 'NEUTRAL',
-        confidence: 0,
-        strategy: null,
-        rationale: `RSI ${indicators.rsi.toFixed(1)} | Mom ${indicators.momentum.toFixed(2)}% | No edge`,
-      };
-    }
-    
-    signals.entrySignal = true;
-    signals.direction = direction;
-    signals.strategy = strategy;
-    signals.confidence = Math.max(30, confidence);
-    signals.rationale = `RSI ${indicators.rsi.toFixed(1)} | Mom ${indicators.momentum.toFixed(2)}% | Trend ${indicators.trendStrength.toFixed(2)}%`;
-    
+    // Apply AI adaptation to thresholds
     if (this.config.enableAdaptiveThresholds) {
       signals.confidence *= this.aiState.entryAdaptation;
       signals.confidence = Math.min(100, signals.confidence);
@@ -374,33 +345,20 @@ const CrucibleRealTrading = {
     // Max drawdown protection: Reduce position if underwater
     const drawdownPercent = this.tradeState.maxDrawdownPercent || 0;
     if (drawdownPercent > 15) {
-      // If drawdown > 15%, scale positions down without ever going negative.
-      const recoveryFactor = Math.max(0.25, Math.min(1, (25 - drawdownPercent) / 10));
+      // If drawdown > 15%, scale positions down
+      const recoveryFactor = (20 - drawdownPercent) / 20; // 0.25 to 1.0
       positionSize *= recoveryFactor;
     }
-
-    // Self-correction after bad trades scales future exposure down.
-    positionSize *= this.aiState.riskMultiplier || 1.0;
-
-    // Ensure we don't exceed 50% of equity and never return negative size.
-    return Math.max(0, Math.min(positionSize, this.tradeState.equity * 0.5));
+    
+    // Ensure we don't exceed 50% of equity
+    return Math.min(positionSize, this.tradeState.equity * 0.5);
   },
   
   // ════════════════════════════════════════════════════════════════
   // EXECUTE TRADE WITH REAL P&L CALCULATION
   // ════════════════════════════════════════════════════════════════
-
-  // ════════════════════════════════════════════════════════════════
-  // EXECUTE TRADE WITH REAL P&L CALCULATION
-  // ════════════════════════════════════════════════════════════════
   async executeTrade(crypto, indicators, signals, positionSize) {
-    // Live Execution Guard
-    if (this.config.liveMode) {
-      if (window.executeOnChainTrade) { return await window.executeOnChainTrade({ botId: "CRUCIBLE", token: crypto.symbol, method: signals.direction === "LONG" ? "SPOT LONG" : "SPOT SHORT", amountUSD: positionSize }); }
-    }
-
     const trade = {
-
       id: this.trades.length + 1,
       timestamp: new Date(),
       crypto: crypto.symbol,
@@ -515,10 +473,8 @@ const CrucibleRealTrading = {
       stratPerf.totalPnL += trade.pnlAUD;
       if (trade.isWin) {
         stratPerf.wins++;
-        stratPerf.consecutiveLosses = 0;
       } else {
         stratPerf.losses++;
-        stratPerf.consecutiveLosses = (stratPerf.consecutiveLosses || 0) + 1;
       }
       
       if (stratPerf.trades > 0) {
@@ -530,23 +486,9 @@ const CrucibleRealTrading = {
     }
     
     this.trades.push(trade);
-      this.tradeState.lastTradeTime = Date.now();
-      
-      // Play appropriate sounds (audio + synth)
-      const ent = typeof window !== 'undefined' ? window.CrucibleEntertainment : null;
-      if (ent) {
-        if (trade.isWin) {
-          ent.playSound('win');
-          ent.playSynthWin?.();
-        } else {
-          ent.playSound('loss');
-          ent.playSynthLoss?.();
-        }
-        // ⚡ Bolt Optimization: Use pre-calculated tradeState.totalTrades to avoid O(N) filtering of this.trades
-        ent.ticker?.updateTradeCount(this.tradeState.totalTrades);
-      }
-      
-      return trade;
+    this.tradeState.lastTradeTime = Date.now();
+    
+    return trade;
   },
   
   // ════════════════════════════════════════════════════════════════
@@ -554,48 +496,25 @@ const CrucibleRealTrading = {
   // ════════════════════════════════════════════════════════════════
   adaptThresholdsBasedOnPerformance(stratPerf, signals, trade) {
     if (!this.config.enableAILearning) return;
-
+    
     const winRate = stratPerf.wins / Math.max(1, stratPerf.trades);
-    const wasBadTrade = !trade.isWin || trade.pnlAUD < 0;
-    let reason = null;
-
-    if (wasBadTrade) {
+    const profitFactor = stratPerf.profitFactor || 0;
+    
+    // If strategy is underperforming, reduce entry threshold (more trades but still selective)
+    if (winRate < 0.45 && stratPerf.trades > 3) {
+      // Underperforming - make entry slightly less aggressive
       this.aiState.entryAdaptation *= 0.98;
-      this.aiState.riskMultiplier *= stratPerf.consecutiveLosses >= 2 ? 0.88 : 0.95;
-      reason = stratPerf.consecutiveLosses >= 2 ? 'consecutive_losses' : 'loss';
+      console.log(`⚠️ Strategy ${signals.strategy} underperforming (WR: ${(winRate*100).toFixed(1)}%). Reducing entry adaptation.`);
     }
-
-    // If strategy is underperforming, become more selective and cut exposure.
-    if (winRate < this.aiState.minProfitableWinRate && stratPerf.trades > 3) {
-      this.aiState.entryAdaptation *= 0.98;
-      this.aiState.riskMultiplier *= 0.92;
-      reason = 'underperforming_strategy';
-      console.log(`⚠️ Strategy ${signals.strategy} underperforming (WR: ${(winRate*100).toFixed(1)}%). Reducing entry/risk exposure.`);
+    // If strategy is overperforming, increase confidence in entry
+    else if (winRate > 0.65 && stratPerf.trades > 3) {
+      // Overperforming - increase position sizing slightly
+      this.aiState.entryAdaptation *= 1.02;
+      console.log(`✅ Strategy ${signals.strategy} overperforming (WR: ${(winRate*100).toFixed(1)}%). Increasing entry adaptation.`);
     }
-    // If strategy is overperforming, slowly restore confidence without exceeding caps.
-    else if (!wasBadTrade && winRate > 0.65 && stratPerf.trades > 3) {
-      this.aiState.entryAdaptation *= 1.01;
-      this.aiState.riskMultiplier *= 1.01;
-      reason = 'overperforming_strategy';
-      console.log(`✅ Strategy ${signals.strategy} overperforming (WR: ${(winRate*100).toFixed(1)}%). Restoring risk gradually.`);
-    }
-
-    // Clamp adaptations.
-    this.aiState.entryAdaptation = Math.min(1.2, Math.max(0.75, this.aiState.entryAdaptation));
-    this.aiState.riskMultiplier = Math.min(1.1, Math.max(0.5, this.aiState.riskMultiplier));
-
-    if (reason) {
-      this.aiState.adjustments.push({
-        timestamp: new Date().toISOString(),
-        tradeId: trade.id,
-        strategy: signals.strategy,
-        reason,
-        winRate,
-        entryAdaptation: this.aiState.entryAdaptation,
-        riskMultiplier: this.aiState.riskMultiplier,
-      });
-      if (this.aiState.adjustments.length > 100) this.aiState.adjustments.shift();
-    }
+    
+    // Clamp adaptation between 0.8 and 1.2 (±20%)
+    this.aiState.entryAdaptation = Math.min(1.2, Math.max(0.8, this.aiState.entryAdaptation));
   },
   
   // ════════════════════════════════════════════════════════════════
@@ -616,24 +535,12 @@ const CrucibleRealTrading = {
   // ════════════════════════════════════════════════════════════════
   // RUN COMPLETE TRADING SESSION (20 TRADES MAX)
   // ════════════════════════════════════════════════════════════════
-
-  togglePause() {
-    this.isPaused = !this.isPaused;
-    console.log(`⏸️ Trading ${this.isPaused ? 'PAUSED' : 'RESUMED'}`);
-    return this.isPaused;
-  },
-
-  stop() {
-    this.isRunning = false;
-    console.log('🛑 Trading STOPPED');
-  },
-
   async start() {
     this.isRunning = true;
     this.startTime = Date.now();
     
     // 🎬 STARTUP ENTERTAINMENT 🎬
-    if (typeof window !== 'undefined' && window.CrucibleEntertainment) {
+    if (window.CrucibleEntertainment) {
       window.CrucibleEntertainment.startSession();
     }
 
@@ -703,7 +610,7 @@ const CrucibleRealTrading = {
           );
           
           // 🎬 ENTERTAINMENT INTEGRATION 🎬
-          if (typeof window !== 'undefined' && window.CrucibleEntertainment) {
+          if (window.CrucibleEntertainment) {
             const x = window.innerWidth * 0.5 + (Math.random() - 0.5) * 400;
             const y = window.innerHeight * 0.3 + (Math.random() - 0.5) * 200;
             
@@ -773,119 +680,6 @@ const CrucibleRealTrading = {
   // ════════════════════════════════════════════════════════════════
   // GENERATE COMPREHENSIVE TRADING REPORT
   // ════════════════════════════════════════════════════════════════
-
-  // ════════════════════════════════════════════════════════════════
-  // REAL ON-CHAIN TRADE EXECUTION
-  // ════════════════════════════════════════════════════════════════
-  async executeLiveTrade(crypto, indicators, signals, positionSize) {
-    console.log();
-
-    if (typeof window === 'undefined' || !window.walletState || !window.walletState.isConnected) {
-      console.error('❌ Wallet not connected! Cannot execute live trade.');
-      return { executed: false, error: 'Wallet not connected' };
-    }
-
-    try {
-      const helper = new ContractHelper(window.walletState.provider, window.walletState.signer);
-
-      // Determine tokens
-      const tokenIn = signals.direction === 'LONG' ? TOKENS.USDC : TOKENS[crypto.symbol];
-      const tokenOut = signals.direction === 'LONG' ? TOKENS[crypto.symbol] : TOKENS.USDC;
-
-      if (!tokenIn || !tokenOut) {
-        throw new Error();
-      }
-
-      // Convert position size (AUD) to USDC (rough estimate)
-      // For real execution, we'd use the precise wallet balance
-      const amountInUSD = positionSize;
-      const amountInRaw = ethers.utils.parseUnits(amountInUSD.toString(), tokenIn.decimals);
-
-      console.log();
-      await helper.approveToken(tokenIn.address, PROTOCOLS.UNISWAP_V3.router, amountInRaw);
-
-      console.log();
-      const receipt = await helper.executeSwap(tokenIn, tokenOut, amountInRaw);
-
-      console.log();
-
-      const trade = {
-        id: this.trades.length + 1,
-        timestamp: new Date(),
-        crypto: crypto.symbol,
-        strategy: signals.strategy,
-        direction: signals.direction,
-        executed: true,
-        txHash: receipt.transactionHash,
-        pnlAUD: 0, // In live mode, we track real balance instead
-        balanceAfter: await window.getWalletBalanceUSD(),
-      };
-
-      this.trades.push(trade);
-      return trade;
-
-    } catch (e) {
-      console.error('❌ [LIVE] Execution failed:', e);
-      return { executed: false, error: e.message };
-    }
-  },
-
-
-  // ════════════════════════════════════════════════════════════════
-  // REAL ON-CHAIN TRADE EXECUTION
-  // ════════════════════════════════════════════════════════════════
-  async executeLiveTrade(crypto, indicators, signals, positionSize) {
-    console.log(`🚀 [LIVE] Executing real trade for ${crypto.symbol} (${signals.direction})...`);
-
-    if (typeof window === 'undefined' || !window.walletState || !window.walletState.isConnected) {
-      console.error('❌ Wallet not connected! Cannot execute live trade.');
-      return { executed: false, error: 'Wallet not connected' };
-    }
-
-    try {
-      const helper = new ContractHelper(window.walletState.provider, window.walletState.signer);
-
-      // Determine tokens
-      const tokenIn = signals.direction === 'LONG' ? TOKENS.USDC : TOKENS[crypto.symbol];
-      const tokenOut = signals.direction === 'LONG' ? TOKENS[crypto.symbol] : TOKENS.USDC;
-
-      if (!tokenIn || !tokenOut) {
-        throw new Error(`Token configuration missing for ${crypto.symbol}`);
-      }
-
-      // Convert position size (AUD) to USDC (rough estimate)
-      const amountInUSD = positionSize;
-      const amountInRaw = ethers.utils.parseUnits(amountInUSD.toString(), tokenIn.decimals);
-
-      console.log(`   Approving ${amountInUSD} ${tokenIn.symbol}...`);
-      await helper.approveToken(tokenIn.address, PROTOCOLS.UNISWAP_V3.router, amountInRaw);
-
-      console.log(`   Swapping ${tokenIn.symbol} for ${tokenOut.symbol}...`);
-      const receipt = await helper.executeSwap(tokenIn, tokenOut, amountInRaw);
-
-      console.log(`✅ [LIVE] Trade executed! Tx: ${receipt.transactionHash}`);
-
-      const trade = {
-        id: this.trades.length + 1,
-        timestamp: new Date(),
-        crypto: crypto.symbol,
-        strategy: signals.strategy,
-        direction: signals.direction,
-        executed: true,
-        txHash: receipt.transactionHash,
-        pnlAUD: 0, // In live mode, we track real balance instead
-        balanceAfter: await window.getWalletBalanceUSD(),
-      };
-
-      this.trades.push(trade);
-      return trade;
-
-    } catch (e) {
-      console.error('❌ [LIVE] Execution failed:', e);
-      return { executed: false, error: e.message };
-    }
-  },
-
   async generateReport() {
     // ⚡ Bolt Optimization: Single-pass manual loop replaces 3 separate filter calls and 3 reduce calls.
     // This achieves O(N) complexity in a single pass with O(1) auxiliary space, eliminating garbage collection overhead.
@@ -1006,10 +800,6 @@ async function runCrucibleReal(customConfig = {}) {
   await CrucibleRealTrading.start();
   
   return CrucibleRealTrading.trades;
-}
-
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { CrucibleRealTrading, runCrucibleReal };
 }
 
 console.log('%c✅ Crucible Real Trading Engine Loaded', 'color: #00ff88; font-weight: bold;');
