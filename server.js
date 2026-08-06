@@ -152,6 +152,11 @@ setInterval(() => {
 const publicDir = path.join(__dirname, "public");
 app.use(express.static(publicDir));
 
+// Root route for health check
+app.get('/', (req, res) => {
+    res.status(200).sendFile(path.join(publicDir, 'index.html'));
+});
+
 // Apply rate limiter to API requests and remaining routes
 app.use((req, res, next) => {
     // Whitelist common non-API browser requests that might fall through
