@@ -76,9 +76,12 @@ export const PrivyWalletHeader = () => {
     const isolatedWallet = wallets.find((w) => w.walletClientType === 'privy') || null;
     if (isolatedWallet) {
       console.log('[Privy] Isolated active embedded wallet successfully:', isolatedWallet.address);
+      if (user?.google) {
+        console.log('[Privy] Google-authenticated session active wallet resolved:', isolatedWallet.address);
+      }
     }
     return isolatedWallet;
-  }, [wallets]);
+  }, [wallets, user]);
 
   /**
    * SENIOR WEB3 CORE IMPLEMENTATION - TASK 3
