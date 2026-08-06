@@ -194,8 +194,17 @@ Below is the concrete, ticket-sized task breakdown assigned to key roles: SRE (S
 
 Storing private keys on a cloud application server (like Render) is a major attack vector. Compromise of the server would mean a total drain of all capital.
 
-### Recommended Architecture: Non-Custodial Multisig + Relayer
-Instead of keeping a raw private key on Render, we use a decentralized transaction execution model:
+### Recommended Architecture: Non-Custodial Multisig + Relayer + HSM / Vault
+Instead of keeping a raw private key on Render, we use a decentralized transaction execution model or a secure signing HSM/Vault API:
+
+#### 1. Hardware Security Module (HSM) & Secure Key Vault Integration
+To secure automated transactions, we recommend utilizing an enterprise-grade HSM or Vault (such as **AWS CloudHSM**, **Google Cloud KMS**, or **HashiCorp Vault** with transit secrets engine) for programmatic automated signatures:
+*   **Decoupled Signing Key:** The server on Render never handles the plaintext private key. It holds secure IAM/API credentials to access the Vault's transit signing API.
+*   **On-Demand Signature requests:** The application server calls the Vault/HSM API `sign()` operation with the pre-formatted transaction payload.
+*   **Policy Enforcements:** Strict policies are applied inside the Vault configuration to only allow signatures matching specific allowed contract targets and maximum daily volumes.
+
+#### 2. Hybrid Safe + Relayer Paradigm
+Alternatively, we utilize the Multisig Gnosis Safe with a Gas Relayer approach to preserve decentralized execution boundaries:
 
 ```
 ┌─────────────────┐               ┌─────────────────┐               ┌──────────────────┐
@@ -211,7 +220,7 @@ Instead of keeping a raw private key on Render, we use a decentralized transacti
 
 ### Alternatives Considered
 
-*   **Cloud HSM / HashiCorp Vault:** Keep keys inside a cloud HSM (AWS CloudHSM or Google KMS) and allow the backend to sign transactions programmatically via IAM.
+*   **Standalone Cloud HSM / HashiCorp Vault:** Keep keys inside a cloud HSM (AWS CloudHSM or Google KMS) and allow the backend to sign transactions programmatically via IAM.
     *   *Pros:* Complete automation support.
     *   *Cons:* Server compromise can still request unlimited signatures unless strict rate-limiting rules are configured inside the Vault policy.
 *   **Gnosis Safe + Relayer (Recommended):** Use a multi-signature safe as the capital treasury, and authorize a dedicated Smart Contract Executor via a Relayer.
