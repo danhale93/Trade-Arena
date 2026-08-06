@@ -3,9 +3,11 @@ services:
     name: trade-arena
     runtime: node
     plan: starter
-    buildCommand: pnpm install && pnpm run build
+    buildCommand: rm -rf node_modules package-lock.json pnpm-lock.yaml && npm install && npm run build
     startCommand: node server.js
     envVars:
+      - key: NODE_VERSION
+        value: "20"
       - key: PORT
         value: 3001
       - key: NODE_ENV
