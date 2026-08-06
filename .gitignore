@@ -6,10 +6,6 @@ build/
 *.log
 .DS_Store
 Thumbs.db
-node_modules
-.env
-public/arena-react-bundle.js
-public/arena-react-bundle.js.map
 
 # Foundry build folders
 contracts/out/
