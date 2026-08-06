@@ -22,6 +22,17 @@ declare global {
 }
 
 /**
+ * Truncates an Ethereum wallet address to a clean, truncated display format (e.g., 0x1234...abcd).
+ * Separating this utility ensures high-performance memoization and robust unit testability.
+ */
+export const truncateAddress = (address: string | undefined | null): string => {
+  if (!address || typeof address !== 'string' || address.length < 10) {
+    return '0x...';
+  }
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+};
+
+/**
  * Senior Web3 Component: PrivyWalletHeader
  *
  * This component manages the Privy authentication lifecycle and specifically isolates
@@ -58,11 +69,19 @@ export const PrivyWalletHeader = () => {
    * SENIOR WEB3 CORE IMPLEMENTATION - TASK 2
    * Isolate the user's active Privy embedded wallet (where walletClientType === 'privy')
    * to immediately enable secure trading interactions within the Trade Arena.
+   * This is triggered instantly upon a successful Google login/OAuth session.
    */
   const arenaWallet = useMemo(() => {
     if (!wallets || !Array.isArray(wallets)) return null;
-    return wallets.find((w) => w.walletClientType === 'privy') || null;
-  }, [wallets]);
+    const isolatedWallet = wallets.find((w) => w.walletClientType === 'privy') || null;
+    if (isolatedWallet) {
+      console.log('[Privy] Isolated active embedded wallet successfully:', isolatedWallet.address);
+      if (user?.google) {
+        console.log('[Privy] Google-authenticated session active wallet resolved:', isolatedWallet.address);
+      }
+    }
+    return isolatedWallet;
+  }, [wallets, user]);
 
   /**
    * SENIOR WEB3 CORE IMPLEMENTATION - TASK 3
@@ -70,9 +89,7 @@ export const PrivyWalletHeader = () => {
    * for clear visual identification with minimum horizontal header footprint.
    */
   const displayAddress = useMemo(() => {
-    const addr = arenaWallet?.address;
-    if (!addr || typeof addr !== 'string' || addr.length < 10) return '0x...';
-    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+    return truncateAddress(arenaWallet?.address);
   }, [arenaWallet?.address]);
 
   // Derived user identity supporting Google, Email, and fallback socials like GitHub/Discord
@@ -206,23 +223,34 @@ export const PrivyWalletHeader = () => {
             cursor: 'pointer',
             background: 'transparent',
             outline: 'none',
-            transition: 'all 0.15s ease-in-out'
+            transition: 'all 0.15s ease-in-out',
+            transform: 'scale(1)'
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.background = 'rgba(0, 240, 255, 0.1)';
             e.currentTarget.style.boxShadow = '0 0 8px rgba(0, 240, 255, 0.4)';
+            e.currentTarget.style.transform = 'scale(1.02)';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.background = 'transparent';
             e.currentTarget.style.boxShadow = 'none';
+            e.currentTarget.style.transform = 'scale(1)';
           }}
           onFocus={(e) => {
             e.currentTarget.style.background = 'rgba(0, 240, 255, 0.15)';
             e.currentTarget.style.boxShadow = '0 0 0 2px var(--cyan)';
+            e.currentTarget.style.transform = 'scale(1.02)';
           }}
           onBlur={(e) => {
             e.currentTarget.style.background = 'transparent';
             e.currentTarget.style.boxShadow = 'none';
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+          onMouseDown={(e) => {
+            e.currentTarget.style.transform = 'scale(0.96)';
+          }}
+          onMouseUp={(e) => {
+            e.currentTarget.style.transform = 'scale(1.02)';
           }}
         >
           LOGIN
@@ -237,23 +265,34 @@ export const PrivyWalletHeader = () => {
             cursor: 'pointer',
             background: 'transparent',
             outline: 'none',
-            transition: 'all 0.15s ease-in-out'
+            transition: 'all 0.15s ease-in-out',
+            transform: 'scale(1)'
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.background = 'rgba(246, 133, 27, 0.1)';
             e.currentTarget.style.boxShadow = '0 0 8px rgba(246, 133, 27, 0.4)';
+            e.currentTarget.style.transform = 'scale(1.02)';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.background = 'transparent';
             e.currentTarget.style.boxShadow = 'none';
+            e.currentTarget.style.transform = 'scale(1)';
           }}
           onFocus={(e) => {
             e.currentTarget.style.background = 'rgba(246, 133, 27, 0.15)';
             e.currentTarget.style.boxShadow = '0 0 0 2px var(--gold)';
+            e.currentTarget.style.transform = 'scale(1.02)';
           }}
           onBlur={(e) => {
             e.currentTarget.style.background = 'transparent';
             e.currentTarget.style.boxShadow = 'none';
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+          onMouseDown={(e) => {
+            e.currentTarget.style.transform = 'scale(0.96)';
+          }}
+          onMouseUp={(e) => {
+            e.currentTarget.style.transform = 'scale(1.02)';
           }}
         >
           CONNECT WALLET
@@ -344,7 +383,7 @@ export const PrivyWalletHeader = () => {
           onClick={handleCopy}
           onKeyDown={handleCopy}
           title={`Copy Privy wallet address (${arenaWallet?.address || ''}) to clipboard`}
-          aria-label={`Copy wallet address ${displayAddress} to clipboard`}
+          aria-label={copied ? "Wallet address copied successfully!" : `Copy wallet address ${displayAddress} to clipboard`}
           style={{
             fontSize: '9px',
             color: copied ? 'var(--emerald)' : 'var(--dim)',
@@ -396,27 +435,38 @@ export const PrivyWalletHeader = () => {
             cursor: 'pointer',
             outline: 'none',
             transition: 'all 0.15s ease-in-out',
+            transform: 'scale(1)',
             lineHeight: 1
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.background = 'rgba(255, 45, 120, 0.1)';
             e.currentTarget.style.borderColor = 'var(--hot)';
             e.currentTarget.style.boxShadow = '0 0 6px rgba(255, 45, 120, 0.3)';
+            e.currentTarget.style.transform = 'scale(1.02)';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.background = 'transparent';
             e.currentTarget.style.borderColor = 'rgba(255, 45, 120, 0.4)';
             e.currentTarget.style.boxShadow = 'none';
+            e.currentTarget.style.transform = 'scale(1)';
           }}
           onFocus={(e) => {
             e.currentTarget.style.background = 'rgba(255, 45, 120, 0.15)';
             e.currentTarget.style.borderColor = 'var(--hot)';
             e.currentTarget.style.boxShadow = '0 0 0 2px var(--hot)';
+            e.currentTarget.style.transform = 'scale(1.02)';
           }}
           onBlur={(e) => {
             e.currentTarget.style.background = 'transparent';
             e.currentTarget.style.borderColor = 'rgba(255, 45, 120, 0.4)';
             e.currentTarget.style.boxShadow = 'none';
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+          onMouseDown={(e) => {
+            e.currentTarget.style.transform = 'scale(0.96)';
+          }}
+          onMouseUp={(e) => {
+            e.currentTarget.style.transform = 'scale(1.02)';
           }}
         >
           OUT

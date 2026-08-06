@@ -146,6 +146,117 @@ describe("Trading Engine - Core Logic", () => {
   });
 });
 
+describe("Task Claim Security - Sentinel Hardening", () => {
+  it("enforces whitelisting and duplicate prevention on task claim endpoints", async () => {
+    const originalPort = process.env.PORT;
+    const originalSecret = process.env.TASK_CLAIM_SECRET;
+    process.env.PORT = "0";
+    process.env.TASK_CLAIM_SECRET = "test-secret-key-123";
+
+    const express = require('express');
+    const originalListen = express.application.listen;
+    let activeServer = null;
+    express.application.listen = function(...args) {
+      activeServer = originalListen.apply(this, args);
+      return activeServer;
+    };
+
+    delete require.cache[require.resolve("./server.js")];
+    require("./server.js");
+
+    try {
+      const port = activeServer.address().port;
+      const testAddress = "0x9F407b7f793555c35c33aC64bd6901759470736D";
+      const validToken = "test-secret-key-123";
+
+      // 1. /api/tasks/claim - Reject invalid/non-whitelisted taskId
+      const resInvalidTask = await fetch(`http://localhost:${port}/api/tasks/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: "malicious_task_999",
+          reward: 10,
+          userAddress: testAddress,
+          validationToken: validToken
+        })
+      });
+      expect(resInvalidTask.status).toBe(400);
+      const dataInvalidTask = await resInvalidTask.json();
+      expect(dataInvalidTask.success).toBe(false);
+      expect(dataInvalidTask.error).toBe("Invalid or unauthorized taskId requested");
+
+      // 2. /api/tasks/claim - Accept valid, whitelisted taskId
+      const resValidTask = await fetch(`http://localhost:${port}/api/tasks/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: "follow_twitter",
+          reward: 10,
+          userAddress: testAddress,
+          validationToken: validToken
+        })
+      });
+      expect(resValidTask.status).toBe(200);
+      const dataValidTask = await resValidTask.json();
+      expect(dataValidTask.success).toBe(true);
+
+      // 3. /api/tasks/claim - Reject duplicate taskId claim
+      const resDupTask = await fetch(`http://localhost:${port}/api/tasks/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: "follow_twitter",
+          reward: 10,
+          userAddress: testAddress,
+          validationToken: validToken
+        })
+      });
+      expect(resDupTask.status).toBe(429);
+      const dataDupTask = await resDupTask.json();
+      expect(dataDupTask.success).toBe(false);
+      expect(dataDupTask.error).toBe("Task reward already claimed for this address");
+
+      // 4. /api/v1/payouts/claim - Reject invalid/non-whitelisted taskId
+      const resInvalidPayout = await fetch(`http://localhost:${port}/api/v1/payouts/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: "malicious_task_999",
+          proofOfWork: "some-proof-data",
+          userAddress: testAddress,
+          validationToken: validToken
+        })
+      });
+      expect(resInvalidPayout.status).toBe(400);
+      const dataInvalidPayout = await resInvalidPayout.json();
+      expect(dataInvalidPayout.error).toBe("Invalid or unauthorized taskId requested");
+
+      // 5. /api/v1/payouts/claim - Reject duplicate taskId claim (shared in app.locals)
+      const resDupPayout = await fetch(`http://localhost:${port}/api/v1/payouts/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: "follow_twitter",
+          proofOfWork: "some-proof-data",
+          userAddress: testAddress,
+          validationToken: validToken
+        })
+      });
+      expect(resDupPayout.status).toBe(429);
+      const dataDupPayout = await resDupPayout.json();
+      expect(dataDupPayout.error).toBe("Task reward already claimed for this address");
+
+    } finally {
+      express.application.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+      process.env.TASK_CLAIM_SECRET = originalSecret;
+    }
+  });
+});
+
 describe("Trading Engine - Volatility & Sizing", () => {
   it("calculates volatility from price history", () => {
     const engine = new TradingEngine();
@@ -586,6 +697,7 @@ describe("Server Endpoint Rate Limiting - Sentinel Hardening", () => {
     };
 
     delete require.cache[require.resolve("./server.js")];
+    delete require.cache[require.resolve("./routes/payoutRoutes.js")];
     require("./server.js");
 
     try {
@@ -1320,6 +1432,7 @@ describe("Faucet Claim - Sentinel Hardening", () => {
     };
 
     delete require.cache[require.resolve("./server.js")];
+    delete require.cache[require.resolve("./routes/payoutRoutes.js")];
     require("./server.js");
 
     try {
@@ -1368,6 +1481,7 @@ describe("Faucet Claim - Sentinel Hardening", () => {
     };
 
     delete require.cache[require.resolve("./server.js")];
+    delete require.cache[require.resolve("./routes/payoutRoutes.js")];
     require("./server.js");
 
     try {
@@ -1405,7 +1519,11 @@ describe("Server Endpoint Caching - Sentinel Hardening", () => {
       return activeServer;
     };
 
-    delete require.cache[require.resolve("./server.js")];
+    Object.keys(require.cache).forEach(key => {
+      if (key.includes('payoutRoutes') || key.includes('payoutService') || key.includes('server.js')) {
+        delete require.cache[key];
+      }
+    });
     require("./server.js");
 
     try {
@@ -1439,7 +1557,11 @@ describe("Server Endpoint Caching - Sentinel Hardening", () => {
       return activeServer;
     };
 
-    delete require.cache[require.resolve("./server.js")];
+    Object.keys(require.cache).forEach(key => {
+      if (key.includes('payoutRoutes') || key.includes('payoutService') || key.includes('server.js')) {
+        delete require.cache[key];
+      }
+    });
     require("./server.js");
 
     try {
@@ -1461,6 +1583,226 @@ describe("Server Endpoint Caching - Sentinel Hardening", () => {
         activeServer.close();
       }
       process.env.PORT = originalPort;
+    }
+  });
+});
+
+describe("Task Claim Security & Whitelisting - Sentinel Hardening", () => {
+  it("rejects unauthorized taskId values", async () => {
+    const originalPort = process.env.PORT;
+    const originalSecret = process.env.TASK_CLAIM_SECRET;
+    process.env.PORT = "0";
+    process.env.TASK_CLAIM_SECRET = "test-secret-key-123";
+
+    const express = require('express');
+    const originalListen = express.application.listen;
+    let activeServer = null;
+    express.application.listen = function(...args) {
+      activeServer = originalListen.apply(this, args);
+      return activeServer;
+    };
+
+    Object.keys(require.cache).forEach(key => {
+      if (key.includes('payoutRoutes') || key.includes('payoutService') || key.includes('server.js')) {
+        delete require.cache[key];
+      }
+    });
+    require("./server.js");
+
+    try {
+      const port = activeServer.address().port;
+      const res = await fetch(`http://localhost:${port}/api/tasks/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: "invalid_unauthorized_task",
+          reward: 10,
+          userAddress: "0x9F407b7f793555c35c33aC64bd6901759470736D",
+          validationToken: "test-secret-key-123"
+        })
+      });
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.success).toBe(false);
+      expect(data.error).toBe("Invalid or unauthorized taskId");
+    } finally {
+      express.application.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+      process.env.TASK_CLAIM_SECRET = originalSecret;
+    }
+  });
+
+  it("rejects duplicate task claims with 429 status", async () => {
+    const originalPort = process.env.PORT;
+    const originalSecret = process.env.TASK_CLAIM_SECRET;
+    process.env.PORT = "0";
+    process.env.TASK_CLAIM_SECRET = "test-secret-key-123";
+
+    const express = require('express');
+    const originalListen = express.application.listen;
+    let activeServer = null;
+    express.application.listen = function(...args) {
+      activeServer = originalListen.apply(this, args);
+      return activeServer;
+    };
+
+    Object.keys(require.cache).forEach(key => {
+      if (key.includes('payoutRoutes') || key.includes('payoutService') || key.includes('server.js')) {
+        delete require.cache[key];
+      }
+    });
+    require("./server.js");
+
+    try {
+      const port = activeServer.address().port;
+      const payload = {
+        taskId: "follow_twitter",
+        reward: 10,
+        userAddress: "0x9F407b7f793555c35c33aC64bd6901759470736D",
+        validationToken: "test-secret-key-123"
+      };
+
+      // First claim should succeed (or at least pass validation and return 200)
+      const res1 = await fetch(`http://localhost:${port}/api/tasks/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      expect(res1.status).toBe(200);
+      const data1 = await res1.json();
+      expect(data1.success).toBe(true);
+
+      // Second claim with same userAddress and taskId should be blocked with 429
+      const res2 = await fetch(`http://localhost:${port}/api/tasks/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      expect(res2.status).toBe(429);
+      const data2 = await res2.json();
+      expect(data2.success).toBe(false);
+      expect(data2.error).toBe("Task already claimed for this address");
+    } finally {
+      express.application.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+      process.env.TASK_CLAIM_SECRET = originalSecret;
+    }
+  });
+
+  it("rejects unauthorized taskId values on routes/payoutRoutes", async () => {
+    const originalPort = process.env.PORT;
+    const originalSecret = process.env.TASK_CLAIM_SECRET;
+    const originalOracleKey = process.env.ORACLE_PRIVATE_KEY;
+    process.env.PORT = "0";
+    process.env.TASK_CLAIM_SECRET = "test-secret-key-123";
+    process.env.ORACLE_PRIVATE_KEY = "0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+
+    const express = require('express');
+    const originalListen = express.application.listen;
+    let activeServer = null;
+    express.application.listen = function(...args) {
+      activeServer = originalListen.apply(this, args);
+      return activeServer;
+    };
+
+    Object.keys(require.cache).forEach(key => {
+      if (key.includes('payoutRoutes') || key.includes('payoutService') || key.includes('server.js')) {
+        delete require.cache[key];
+      }
+    });
+    require("./server.js");
+
+    try {
+      const port = activeServer.address().port;
+      const res = await fetch(`http://localhost:${port}/api/v1/payouts/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: "invalid_unauthorized_task",
+          proofOfWork: "some-proof",
+          userAddress: "0x9F407b7f793555c35c33aC64bd6901759470736D",
+          validationToken: "test-secret-key-123"
+        })
+      });
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.error).toBe("Invalid or unauthorized taskId");
+    } finally {
+      express.application.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+      process.env.TASK_CLAIM_SECRET = originalSecret;
+      process.env.ORACLE_PRIVATE_KEY = originalOracleKey;
+    }
+  });
+
+  it("rejects duplicate task claims with 429 status on routes/payoutRoutes", async () => {
+    const originalPort = process.env.PORT;
+    const originalSecret = process.env.TASK_CLAIM_SECRET;
+    const originalOracleKey = process.env.ORACLE_PRIVATE_KEY;
+    process.env.PORT = "0";
+    process.env.TASK_CLAIM_SECRET = "test-secret-key-123";
+    process.env.ORACLE_PRIVATE_KEY = "0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+
+    const express = require('express');
+    const originalListen = express.application.listen;
+    let activeServer = null;
+    express.application.listen = function(...args) {
+      activeServer = originalListen.apply(this, args);
+      return activeServer;
+    };
+
+    Object.keys(require.cache).forEach(key => {
+      if (key.includes('payoutRoutes') || key.includes('payoutService') || key.includes('server.js')) {
+        delete require.cache[key];
+      }
+    });
+    require("./server.js");
+
+    try {
+      const port = activeServer.address().port;
+      const payload = {
+        taskId: "join_discord",
+        proofOfWork: "some-proof",
+        userAddress: "0x26fE35d19F481F376e862Aa70688a18Ae0237be5",
+        validationToken: "test-secret-key-123"
+      };
+
+      // First claim should succeed (using test mock/simulation signature payload)
+      const res1 = await fetch(`http://localhost:${port}/api/v1/payouts/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      expect(res1.status).toBe(200);
+      const data1 = await res1.json();
+      expect(data1.success).toBe(true);
+
+      // Second claim with same userAddress and taskId should be blocked with 429
+      const res2 = await fetch(`http://localhost:${port}/api/v1/payouts/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      expect(res2.status).toBe(429);
+      const data2 = await res2.json();
+      expect(data2.error).toBe("Task already claimed for this address");
+    } finally {
+      express.application.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+      process.env.TASK_CLAIM_SECRET = originalSecret;
+      process.env.ORACLE_PRIVATE_KEY = originalOracleKey;
     }
   });
 });

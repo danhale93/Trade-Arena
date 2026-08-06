@@ -45,3 +45,7 @@
 ## 2026-08-02 - [Form Accessibility & Sensitive Token Obfuscation]
 **Learning:** Integrating semantic label associations using `<label for="id">` for auxiliary configurations like Databricks Genie makes forms screen-reader friendly and easier to target. Sensitive configuration fields (like Personal Access Tokens) should always default to the 'password' type with a dedicated, ARIA-aligned "SHOW/HIDE" visibility toggle to let users verify inputs securely.
 **Action:** Use labeled container wrappers with associated semantic label elements and include generic password visibility toggles on all token inputs.
+
+## 2026-08-03 - [Explicit Form Labels and Group Associations]
+**Learning:** Standardizing explicit form associations via the `for`/`htmlFor` attribute on labels and wrapping multi-control button rows in a semantic `role="group"` container linked via `aria-labelledby` ensures that screen readers provide complete contextual hints to visual-impaired users. Synchronizing active toggle states (like Live vs Demo mode) with their initial `aria-pressed` values on DOM mount prevents critical mismatch anomalies between assistive tools and CSS presentation layers.
+**Action:** Always link form labels to their target input/select controls explicitly and initialize standard toggle buttons with an explicit `aria-pressed` state that mirrors the application's default state.

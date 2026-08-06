@@ -25,6 +25,7 @@ This document represents the official issue tracker and backlog for the Trade Ar
 
 ### Epic 2: Secure Custody & Relayer Integration (Phase 2)
 *   [T-201: Setup Gnosis Safe Multisig & Relayer Contract Architecture](#t-201-setup-gnosis-safe-multisig-and-relayer-contract-architecture) - `[security]` `[high-priority]`
+*   [T-205: Integrate HSM and Secure Cloud Vault](#t-205-integrate-hsm-and-secure-cloud-vault) - `[security]` `[high-priority]`
 *   [T-202: Pre-Transaction Alchemy/Tenderly Simulations](#t-202-pre-transaction-alchemytenderly-simulations) - `[security]` `[high-priority]`
 *   [T-203: Implement Resilient Nonce & Retry Backoff System](#t-203-implement-resilient-nonce-and-retry-backoff-system) - `[high-priority]`
 *   [T-204: Flashbots & Private RPC Bundle Integration](#t-204-flashbots-and-private-rpc-bundle-integration) - `[security]`
@@ -143,6 +144,19 @@ This document represents the official issue tracker and backlog for the Trade Ar
     2. Register and fund an account on an enterprise relayer network (e.g., Gelato, OpenZeppelin Defender).
     3. Configure custom smart contract validators to reject calls if target functions or destination contracts deviate from pre-approved trading scopes.
 *   **Acceptance Criteria:** Render server initiates transactions via secure, authenticated relayer API payloads without storing any raw private signing keys.
+
+#### <a id="t-205-integrate-hsm-and-secure-cloud-vault"></a>T-205: Integrate HSM and Secure Cloud Vault
+*   **Epic:** Epic 2
+*   **Labels:** `[security]` `[high-priority]`
+*   **Owner:** Elena Vance (Sec)
+*   **Estimated Hours:** 16 hours
+*   **Priority:** Critical
+*   **Description:** Setup integration with HashiCorp Vault or AWS KMS / CloudHSM for programmatic automated trading keys.
+*   **Implementation Steps:**
+    1. Provision and initialize a Secure Cloud KMS or HSM key vault instance.
+    2. Build integration middleware in the Node.js backend using the KMS SDK to sign transactions on-demand without keeping keys in process memory.
+    3. Configure tight IAM/access-control policies to reject signature operations unless specific pre-execution requirements (daily spend ceiling, pre-authorized DEX targets) are verified.
+*   **Acceptance Criteria:** Mainnet-fork tests can successfully invoke KMS transit sign APIs to execute trade transactions, ensuring keys are isolated inside the secure Vault.
 
 #### <a id="t-202-pre-transaction-alchemytenderly-simulations"></a>T-202: Pre-Transaction Alchemy/Tenderly Simulations
 *   **Epic:** Epic 2

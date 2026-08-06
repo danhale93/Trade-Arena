@@ -148,4 +148,3 @@ window.refreshBalanceManual = async function() {
 
 console.log('✅ MetaMask integration loaded and ready');
 </script>
-<script src="./arena-react-bundle.js"></script>

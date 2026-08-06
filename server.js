@@ -16,9 +16,30 @@ const WebSocket = require('websocket').w3cwebsocket;
 
 const app = express();
 
+// Sentinel: Initialize in-memory duplicate task claim registry and allowed task whitelist
+app.locals.CLAIMED_USER_TASKS = new Set();
+const ALLOWED_TASK_IDS = new Set([
+    'follow_twitter',
+    'join_discord',
+    'share_win',
+    'first_trade',
+    'hcaptcha_verify',
+    'ai_feedback'
+]);
+
 // Sentinel: Security hardening
 app.set('trust proxy', 1); // Trust first proxy (Render, Heroku, etc.)
 app.disable('x-powered-by'); // Mitigate information disclosure
+
+const ALLOWED_TASK_IDS = new Set([
+  'follow_twitter',
+  'join_discord',
+  'share_win',
+  'first_trade',
+  'hcaptcha_verify',
+  'ai_feedback'
+]);
+app.locals.CLAIMED_USER_TASKS = new Set();
 
 // Sentinel: Security headers middleware
 app.use((req, res, next) => {
@@ -775,8 +796,20 @@ app.post('/api/tasks/claim', taskClaimLimiter, async (req, res) => {
         }
 
         // Sentinel: Enforce strict input validation on taskId, reward, and userAddress
-        if (!taskId || typeof taskId !== 'string' || taskId.length > 100) {
-            return res.status(400).json({ success: false, error: 'Invalid or missing taskId' });
+        if (!taskId || typeof taskId !== 'string' || !ALLOWED_TASK_IDS.has(taskId)) {
+            return res.status(400).json({ success: false, error: 'Invalid or unauthorized taskId' });
+        }
+
+        // Sentinel: Ensure taskId is one of the allowed/whitelisted task IDs
+        if (!ALLOWED_TASK_IDS.has(taskId)) {
+            return res.status(400).json({ success: false, error: 'Invalid or unauthorized taskId requested' });
+        }
+
+        const normalizedAddress = userAddress.toLowerCase();
+        const claimedKey = `${normalizedAddress}:${taskId}`;
+        const claimedTasks = req.app.locals.CLAIMED_USER_TASKS || new Set();
+        if (claimedTasks.has(claimedKey)) {
+            return res.status(429).json({ success: false, error: 'Task reward already claimed for this address' });
         }
 
         if (typeof reward !== 'number' || isNaN(reward) || !isFinite(reward) || reward <= 0 || reward > 100) {
@@ -785,6 +818,11 @@ app.post('/api/tasks/claim', taskClaimLimiter, async (req, res) => {
 
         if (!userAddress || typeof userAddress !== 'string' || !ethers.isAddress(userAddress)) {
             return res.status(400).json({ success: false, error: 'Valid wallet address required for reward payout' });
+        }
+
+        const claimKey = `${userAddress.toLowerCase()}-${taskId.toLowerCase()}`;
+        if (req.app.locals.CLAIMED_USER_TASKS.has(claimKey)) {
+            return res.status(429).json({ success: false, error: 'Task already claimed for this address' });
         }
 
         const payoutAmount = reward <= 10 ? 0.01 : reward <= 25 ? 0.025 : 0.05;
@@ -824,6 +862,8 @@ app.post('/api/tasks/claim', taskClaimLimiter, async (req, res) => {
             confirmedAt: Date.now(),
             payout
         });
+
+        req.app.locals.CLAIMED_USER_TASKS.add(claimKey);
 
         res.json({ success: true, deployment, taskId, reward, payout });
     } catch (error) {
