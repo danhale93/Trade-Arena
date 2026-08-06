@@ -146,6 +146,117 @@ describe("Trading Engine - Core Logic", () => {
   });
 });
 
+describe("Task Claim Security - Sentinel Hardening", () => {
+  it("enforces whitelisting and duplicate prevention on task claim endpoints", async () => {
+    const originalPort = process.env.PORT;
+    const originalSecret = process.env.TASK_CLAIM_SECRET;
+    process.env.PORT = "0";
+    process.env.TASK_CLAIM_SECRET = "test-secret-key-123";
+
+    const express = require('express');
+    const originalListen = express.application.listen;
+    let activeServer = null;
+    express.application.listen = function(...args) {
+      activeServer = originalListen.apply(this, args);
+      return activeServer;
+    };
+
+    delete require.cache[require.resolve("./server.js")];
+    require("./server.js");
+
+    try {
+      const port = activeServer.address().port;
+      const testAddress = "0x9F407b7f793555c35c33aC64bd6901759470736D";
+      const validToken = "test-secret-key-123";
+
+      // 1. /api/tasks/claim - Reject invalid/non-whitelisted taskId
+      const resInvalidTask = await fetch(`http://localhost:${port}/api/tasks/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: "malicious_task_999",
+          reward: 10,
+          userAddress: testAddress,
+          validationToken: validToken
+        })
+      });
+      expect(resInvalidTask.status).toBe(400);
+      const dataInvalidTask = await resInvalidTask.json();
+      expect(dataInvalidTask.success).toBe(false);
+      expect(dataInvalidTask.error).toBe("Invalid or unauthorized taskId requested");
+
+      // 2. /api/tasks/claim - Accept valid, whitelisted taskId
+      const resValidTask = await fetch(`http://localhost:${port}/api/tasks/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: "follow_twitter",
+          reward: 10,
+          userAddress: testAddress,
+          validationToken: validToken
+        })
+      });
+      expect(resValidTask.status).toBe(200);
+      const dataValidTask = await resValidTask.json();
+      expect(dataValidTask.success).toBe(true);
+
+      // 3. /api/tasks/claim - Reject duplicate taskId claim
+      const resDupTask = await fetch(`http://localhost:${port}/api/tasks/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: "follow_twitter",
+          reward: 10,
+          userAddress: testAddress,
+          validationToken: validToken
+        })
+      });
+      expect(resDupTask.status).toBe(429);
+      const dataDupTask = await resDupTask.json();
+      expect(dataDupTask.success).toBe(false);
+      expect(dataDupTask.error).toBe("Task reward already claimed for this address");
+
+      // 4. /api/v1/payouts/claim - Reject invalid/non-whitelisted taskId
+      const resInvalidPayout = await fetch(`http://localhost:${port}/api/v1/payouts/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: "malicious_task_999",
+          proofOfWork: "some-proof-data",
+          userAddress: testAddress,
+          validationToken: validToken
+        })
+      });
+      expect(resInvalidPayout.status).toBe(400);
+      const dataInvalidPayout = await resInvalidPayout.json();
+      expect(dataInvalidPayout.error).toBe("Invalid or unauthorized taskId requested");
+
+      // 5. /api/v1/payouts/claim - Reject duplicate taskId claim (shared in app.locals)
+      const resDupPayout = await fetch(`http://localhost:${port}/api/v1/payouts/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: "follow_twitter",
+          proofOfWork: "some-proof-data",
+          userAddress: testAddress,
+          validationToken: validToken
+        })
+      });
+      expect(resDupPayout.status).toBe(429);
+      const dataDupPayout = await resDupPayout.json();
+      expect(dataDupPayout.error).toBe("Task reward already claimed for this address");
+
+    } finally {
+      express.application.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+      process.env.TASK_CLAIM_SECRET = originalSecret;
+    }
+  });
+});
+
 describe("Trading Engine - Volatility & Sizing", () => {
   it("calculates volatility from price history", () => {
     const engine = new TradingEngine();
