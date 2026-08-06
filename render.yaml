@@ -5,6 +5,7 @@ services:
     plan: starter
     buildCommand: rm -rf node_modules package-lock.json pnpm-lock.yaml && npm install && npm run build
     startCommand: node server.js
+    healthCheckPath: /
     envVars:
       - key: NODE_VERSION
         value: "20"
