@@ -2,160 +2,195 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trade Arena</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>TRADE ARENA • AI BOTS</title>
     <meta name="description" content="AI-powered trading bot platform with arbitrage detection and flash loan farming">
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#00ffe7">
+    <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Bungee+Shade&family=Share+Tech+Mono&family=Oswald:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" defer></script>
+    <script src="https://accounts.google.com/gsi/client" async></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="./trading-engine.js" defer></script>
+    <script src="./contract-helpers.js" defer></script>
+    <script src="./real-wallet.js" defer></script>
+    <script src="./blockchain-execution.js" defer></script>
+    <script src="./ai-strategies.js" defer></script>
+    <script src="./model-personality-traits.js" defer></script>
+    <script src="./advanced-bot-engine.js" defer></script>
+    <script src="./multi-ai-arena.js" defer></script>
+    <script src="./trade-olympics.js" defer></script>
+    <script src="./ai-arena.js" defer></script>
+    <script src="./crucible-test.js" defer></script>
+    <script src="./crucible-ai-learning.js" defer></script>
+    <script src="./crucible-real-trading.js" defer></script>
+    <script src="./crucible-entertainment.js" defer></script>
+    <script src="./management-bundle.js" defer></script>
+    <script src="./trading-bundle.js" defer></script>
+    <script src="./ACOUSTIC_CORE.js" defer></script>
+    <script src="./acoustic-bundle.js" defer></script>
 </head>
 <body>
-<!-- LOAD BLOCKCHAIN EXECUTION MODULE -->
-<script src="./real-wallet.js"></script>
-<script src="./blockchain-execution.js"></script>
+<div class="edge"></div>
 
-<!-- METAMASK LOGIN & BALANCE UPDATE HANDLER -->
+<!-- ══════════════════════════════
+     CONNECT
+══════════════════════════════ -->
+<div id="connectScreen">
+  <div class="marquee-wrap">
+    <div class="marquee-inner">
+      <span>⚡ FLASH LOANS</span><span>🎰 AI ARBITRAGE</span><span>💎 NFT FLIPS</span><span>🌊 YIELD SURF</span>
+      <span>🔥 MEME COINS</span><span>🤖 6 BOT MULTI</span><span>⚡ FLASH LOANS</span><span>🎰 AI ARBITRAGE</span>
+      <span>💎 NFT FLIPS</span><span>🌊 YIELD SURF</span><span>🔥 MEME COINS</span><span>🤖 6 BOT MULTI</span>
+    </div>
+  </div>
+  <div>
+    <div class="logo flk">TRADE<br>ARENA</div>
+    <div class="sub" style="margin-top:4px">6-BOT AI TRADING FLOOR</div>
+  </div>
+  <div style="display:flex;gap:8px;font-size:10px;color:var(--dim);justify-content:center">
+    <span>🤖 Up to 6 Bots</span><span>·</span><span>⚡ Auto-Trade</span><span>·</span><span>🎲 $1 Min Bet</span>
+  </div>
+
+  <div class="login-card">
+    <div class="login-card-hd">UNIFIED SECURE LOGIN</div>
+    <div class="login-card-bd">
+      <button class="g-btn" onclick="if(window.privyLogin) window.privyLogin();" style="height:54px; font-size:14px; background: linear-gradient(90deg, var(--cyan), var(--hot)); color: #000; border: none; box-shadow: 0 0 20px rgba(0,255,231,0.3)">
+        <span style="font-family:'Bungee'; letter-spacing:1px">ENTER ARENA →</span>
+      </button>
+
+      <p style="font-size:9px; color:var(--dim); text-align:center; margin-top:8px; line-height:1.4">
+        Powered by Privy • Secure Multi-Chain Authentication<br>
+        <span style="color:var(--cyan)">Base Mainnet Protocol</span>
+      </p>
+    </div>
+  </div>
+  <p id="cStatus"></p>
+</div>
+
+<!-- ══════════════════════════════
+     MAIN APP
+══════════════════════════════ -->
+<div id="mainApp" style="display:none">
+  <!-- Global header -->
+  <div class="global-header">
+    <div class="gh-avatar" id="ghAvatar">👤</div>
+    <div style="flex:1;overflow:hidden">
+      <div class="gh-name" id="ghName">—</div>
+      <div class="gh-badge" id="ghBadge">DEMO</div>
+    </div>
+    <div style="margin-right:8px;text-align:right">
+      <div class="gh-balance" id="ghBalance" style="font-size:18px !important;font-weight:900 !important;">$0.00</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:2px;">
+        <div class="gh-pnl pnl-pos" id="ghPnl">+$0.00 today</div>
+        <div class="pnl-tabs" style="display:flex;gap:4px;font-size:10px;">
+          <button class="pnl-tab active" data-period="24h" onclick="switchPnlPeriod('24h')">24h</button>
+          <button class="pnl-tab" data-period="7d" onclick="switchPnlPeriod('7d')">7d</button>
+          <button class="pnl-tab" data-period="30d" onclick="switchPnlPeriod('30d')">30d</button>
+        </div>
+      </div>
+      <div class="pnl-progress" id="pnlProgress" style="width:100%;height:6px;background:var(--chrome);border-radius:3px;margin-top:4px;overflow:hidden;">
+        <div style="height:100%;width:0%;background:linear-gradient(90deg,var(--green),var(--cyan));transition:width .3s;border-radius:3px;box-shadow:0 0 8px var(--green)" id="pnlBar"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;margin-right:8px;align-items:center">
+      <button class="master-ctrl-btn" id="masterStopBtn" onclick="stopAllBots()" title="Pause all auto-spins">⏹️ STOP ALL</button>
+      <button class="master-ctrl-btn" id="masterPlayBtn" onclick="playAllBots()" title="Resume all paused auto-spins" style="opacity:0.5;cursor:not-allowed">▶️ PLAY ALL</button>
+      <button class="master-ctrl-btn" id="masterAutoBtn" onclick="toggleMasterAuto()" title="Master control for all bot auto modes" style="background:rgba(57,255,20,.15);border:2px solid var(--green);color:var(--green);font-weight:700">🤖 AUTO OFF</button>
+      <div style="width:1px;height:20px;background:var(--border);margin:0 2px"></div>
+      <button class="hft-batch-btn" id="hftStartBtn" onclick="enableBatchTrading()" title="Launch HFT batch mode">🚀 HFT START</button>
+      <button class="hft-batch-btn" id="hftStopBtn" onclick="disableBatchTrading()" title="Stop all bots">🛑 HFT STOP</button>
+      <div style="display:flex;flex-direction:column;gap:1px;padding:0 8px;border-left:1px solid var(--border);border-right:1px solid var(--border)">
+        <div style="font-size:8px;color:var(--dim);letter-spacing:1px">TRADES/MIN</div>
+        <div style="font-size:13px;font-family:'Oswald';font-weight:700;color:var(--cyan)" id="tpmDisplay">0</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:1px;padding:0 8px;border-left:1px solid var(--border);border-right:1px solid var(--border)">
+        <div style="font-size:8px;color:var(--dim);letter-spacing:1px">TOTAL TRADES</div>
+        <div style="font-size:13px;font-family:'Oswald';font-weight:700;color:var(--gold)" id="totalTradesDisplay">0</div>
+      </div>
+      <button class="settings-btn" onclick="displayTradeStats()" title="View trading stats" style="padding:6px 10px;font-size:9px">📊 STATS</button>
+    </div>
+    <button class="add-bot-btn" id="addBotBtn" onclick="addBot()">+ ADD BOT</button>
+  </div>
+
+  <!-- Portfolio Summary -->
+  <div class="portfolio-summary" style="background:linear-gradient(135deg,var(--panel),var(--chrome));border:2px solid var(--gold2);border-radius:14px;padding:16px;margin-bottom:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;font-family:'Oswald',sans-serif;box-shadow:0 0 30px rgba(255,170,0,.25);">
+    <div><div class="stat-label" style="font-size:11px;color:var(--dim);margin-bottom:4px;letter-spacing:1px;text-transform:uppercase;">PORTFOLIO</div><div class="stat-value" id="portfolioTotal" style="font-size:20px;font-weight:900;color:var(--gold);">+$0.00</div></div>
+    <div><div class="stat-label">WIN RATE</div><div class="stat-value" id="portfolioWinrate">0%</div></div>
+    <div><div class="stat-label">TOTAL TRADES</div><div class="stat-value" id="portfolioTrades">0</div></div>
+    <div><div class="stat-label">TOP BOT</div><div class="stat-value" id="topBot">#1 +$0.00</div></div>
+    <div style="grid-column:1/-1;text-align:center;padding-top:8px;border-top:1px solid var(--border);">
+      <button class="settings-btn" onclick="exportPortfolio()" style="font-size:12px;padding:8px 16px;background:var(--cyan);color:#000;">📊 EXPORT REPORT</button>
+    </div>
+  </div>
+
+  <!-- Bot grid -->
+  <div class="bot-grid" id="botGrid"></div>
+
+  <!-- Global log -->
+  <div class="global-log">
+    <div class="log-title">ALL TRADES</div>
+    <div class="log-list" id="globalLog">
+      <div class="empty-log">Spin any machine to start trading.</div>
+    </div>
+  </div>
+
+  <!-- Bot Performance Ticker Graph -->
+  <div class="ticker-graph-container" style="margin-top:16px">
+    <div class="log-title">📊 BOT PERFORMANCE TICKER</div>
+    <div class="ticker-graph-wrapper">
+      <div id="tickerGraphCanvas" style="width:100%;height:280px;position:relative;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:8px;overflow:hidden"></div>
+      <div id="tickerLegend" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px;padding:8px;background:var(--panel);border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;font-size:9px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- React Header Mount Point -->
+<div id="react-header-root"></div>
+
+<!-- Privy Login Handler -->
 <script>
-async function handleMetaMaskConnect() {
-  console.log('🦊 Starting MetaMask connection...');
-  
-  if (!window.ethereum) {
-    alert('❌ MetaMask not installed. Get it at https://metamask.io');
-    return;
-  }
-
-  try {
-    // Step 1: Request account access
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-    walletState.address = accounts[0];
-    walletState.isConnected = true;
-    console.log('✅ Connected account:', walletState.address);
-
-    // Step 2: Setup ethers.js provider & signer
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
-    
-    walletState.provider = provider;
-    walletState.signer = signer;
-    
-    // Step 3: Check network
-    const network = await provider.getNetwork();
-    walletState.networkId = network.chainId;
-    walletState.isCorrectNetwork = network.chainId === 8453; // Base Mainnet
-    
-    if (!walletState.isCorrectNetwork) {
-      console.warn('❌ Wrong network! Please switch to Base Mainnet');
-      await switchToBaseNetwork();
-    }
-    
-    // Step 4: Get balance
-    const balance = await getWalletBalance();
-    console.log('💰 Balance retrieved:', balance);
-    
-    // Step 5: Update UI
-    document.getElementById('connectScreen').style.display = 'none';
-    document.getElementById('mainApp').style.display = 'flex';
-    document.getElementById('ghBalance').innerText = '$' + (balance?.usd || 0).toFixed(2);
-    document.getElementById('ghNetwork').style.display = 'inline';
-    
-    // Step 6: Start polling for balance updates
-    startBalancePolling();
-    
-    console.log('✅ MetaMask fully connected and ready!');
-    
-  } catch (error) {
-    console.error('❌ MetaMask connection failed:', error);
-    alert('Connection failed: ' + error.message);
-  }
-}
-
-// BALANCE POLLING - Update every 10 seconds
-function startBalancePolling() {
-  if (window.balancePoller) clearInterval(window.balancePoller);
-  
-  window.balancePoller = setInterval(async () => {
-    if (!walletState.isConnected) return;
-    
-    const balance = await getWalletBalance();
-    if (balance) {
-      const balanceEl = document.getElementById('ghBalance');
-      if (balanceEl) {
-        balanceEl.innerText = '$' + balance.usd.toFixed(2);
-      }
-    }
-  }, 10000); // Poll every 10 seconds
-}
-
-// OVERRIDE BOT SPIN TO EXECUTE REAL TRANSACTIONS
-// Patch the original spin function to execute real swaps
-const originalSpinFn = window.spinBot || function() {};
-
-window.spinBot = async function(botId, betAmount) {
-  console.log('🎰 Spin initiated - checking if real execution needed...');
-  
-  // Check if we're in live mode (MetaMask connected)
-  if (!walletState.isConnected) {
-    console.log('📊 Demo mode - simulating trade');
-    return originalSpinFn(botId, betAmount);
-  }
-  
-  console.log('💎 LIVE MODE - Executing real blockchain transaction');
-  
-  try {
-    // Execute real swap on Base network
-    const txResult = await executeRealSwap(
-      betAmount,
-      '0x4200000000000000000000000000000000000006', // WETH
-      '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // USDC
-      'ARBITRAGE' // method
-    );
-    
-    if (txResult.success) {
-      console.log('✅ Transaction confirmed!', txResult.txHash);
-      console.log('📊 Gas cost:', txResult.gasCost, 'ETH');
-      
-      // Wait 5 seconds then refresh balance
-      setTimeout(() => {
-        refreshBalanceAfterTrade();
-      }, 5000);
-      
-      return txResult;
-    } else {
-      console.error('❌ Transaction failed:', txResult.error);
-      alert('Trade failed: ' + txResult.error);
-      return { success: false, error: txResult.error };
-    }
-    
-  } catch (error) {
-    console.error('❌ Real execution error:', error);
-    alert('Execution error: ' + error.message);
-  }
-};
-
-// UPDATE GLOBAL BALANCE FUNCTION
-window.updateBalance = function(balance) {
-  console.log('💰 Updating UI balance...');
-  const balanceEl = document.getElementById('ghBalance');
-  const pnlEl = document.getElementById('ghPnl');
-  
-  if (balanceEl) balanceEl.innerText = '$' + balance.usd.toFixed(2);
-  if (pnlEl) {
-    const pnl = (balance.usd - (window.initialBalance || balance.usd));
-    const pnlClass = pnl >= 0 ? 'pnl-pos' : 'pnl-neg';
-    pnlEl.className = pnlClass;
-    pnlEl.innerText = (pnl >= 0 ? '+' : '') + '$' + pnl.toFixed(2) + ' today';
-  }
-};
-
-// MANUAL BALANCE REFRESH BUTTON
-window.refreshBalanceManual = async function() {
-  console.log('🔄 Manual balance refresh...');
-  const success = await refreshBalanceAfterTrade();
-  if (success) {
-    showToast('✅ Balance updated!', 'success');
+async function handlePrivyLogin() {
+  if (window.privyLogin) {
+    window.privyLogin();
   } else {
-    showToast('❌ Balance update failed', 'error');
+    // Fallback to MetaMask if Privy not loaded
+    handleMetaMaskConnect();
+  }
+}
+
+// Global Privy callbacks
+window.onPrivyReady = function(user, address) {
+  console.log('🔐 Privy ready:', user, address);
+  document.getElementById('connectScreen').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'flex';
+  if (document.getElementById('ghName')) {
+    document.getElementById('ghName').textContent = user?.google?.email || user?.email?.address || 'Arena Trader';
+  }
+  if (document.getElementById('ghBadge')) {
+    document.getElementById('ghBadge').textContent = 'LIVE';
+    document.getElementById('ghBadge').style.color = 'var(--green)';
   }
 };
 
-console.log('✅ MetaMask integration loaded and ready');
+window.onPrivyLoginSuccess = function(user, address) {
+  console.log('✅ Privy login success:', user, address);
+};
+
+// Initialize app when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', function() {
+    if (typeof initAppRebuildV42 === 'function') {
+      setTimeout(initAppRebuildV42, 100);
+    }
+  });
+} else {
+  if (typeof initAppRebuildV42 === 'function') {
+    setTimeout(initAppRebuildV42, 100);
+  }
+}
+
+console.log('✅ Trade Arena loaded');
 </script>
 <script src="./arena-react-bundle.js"></script>
 </body>
