@@ -416,12 +416,14 @@ const TRADE_OLYMPICS = {
 // AUTO-INITIALIZE ON LOAD
 // ════════════════════════════════════════════════════════════════════════════════
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      TRADE_OLYMPICS.initialize();
+    });
+  } else {
     TRADE_OLYMPICS.initialize();
-  });
-} else {
-  TRADE_OLYMPICS.initialize();
+  }
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
