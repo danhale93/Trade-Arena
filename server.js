@@ -31,16 +31,6 @@ const ALLOWED_TASK_IDS = new Set([
 app.set('trust proxy', 1); // Trust first proxy (Render, Heroku, etc.)
 app.disable('x-powered-by'); // Mitigate information disclosure
 
-const ALLOWED_TASK_IDS = new Set([
-  'follow_twitter',
-  'join_discord',
-  'share_win',
-  'first_trade',
-  'hcaptcha_verify',
-  'ai_feedback'
-]);
-app.locals.CLAIMED_USER_TASKS = new Set();
-
 // Sentinel: Security headers middleware
 app.use((req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
