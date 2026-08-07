@@ -281,6 +281,14 @@ class SecurityHelper {
     }
 
     /**
+     * Check if token is stablecoin (static)
+     */
+    static isStablecoin(tokenSymbol) {
+        const stablecoins = ['USDC', 'USDT', 'DAI', 'USDbC', 'FRAX'];
+        return stablecoins.includes(tokenSymbol);
+    }
+
+    /**
      * Check if transaction might face MEV
      */
     static analyzeMEVRisk(swapDetails) {

@@ -188,8 +188,10 @@ const TRADE_OLYMPICS = {
     standings.totalTrades++;
     if (result.outcome === 'WIN') {
       standings.totalWins++;
+      standings.elo += 16;
     } else {
       standings.totalLosses++;
+      standings.elo -= 16;
     }
     standings.totalPnL += result.pnl || 0;
     standings.overallWinRate = standings.totalTrades > 0 ?
@@ -200,13 +202,15 @@ const TRADE_OLYMPICS = {
     if (!this.COMPETITION_LOG[bracket]) {
       this.COMPETITION_LOG[bracket] = [];
     }
-    this.COMPETITION_LOG[bracket].push({
+    const entry = {
       timestamp: new Date().toISOString(),
       outcome: result.outcome,
       pnl: result.pnl,
       edge: result.edge,
       model: modelName
-    });
+    };
+    this.COMPETITION_LOG[bracket].push(entry);
+    return entry;
   },
 
   /**
