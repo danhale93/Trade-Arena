@@ -262,7 +262,7 @@ async function fetchDexPrice(token, dex) {
         const variance = (Math.random() - 0.5) * 2; // ±1% variance
         return basePrice * (1 + variance / 100);
     } catch (e) {
-        console.error(`Error fetching ${dex} price for ${token}:`, e);
+        console.error('Error fetching %s price for %s: %s', dex, token, e && e.message ? e.message : e);
         return null;
     }
 }
