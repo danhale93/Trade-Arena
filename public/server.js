@@ -284,7 +284,7 @@ async function fetchCoinGeckoPrice(symbol) {
 
         return response.data[coinId]?.usd || null;
     } catch (e) {
-        console.error(`CoinGecko error for ${symbol}:`, e.message);
+        console.error('CoinGecko error for %s: %s', symbol, e.message);
         return null;
     }
 }
