@@ -104,8 +104,9 @@ app.post('/api/analyze/arbitrage', async (req, res) => {
 app.post('/api/analyze/volatility', async (req, res) => {
     try {
         const { priceHistory } = req.body;
+        const MAX_PRICE_HISTORY_POINTS = 10000;
 
-        if (!priceHistory || priceHistory.length < 2) {
+        if (!Array.isArray(priceHistory) || priceHistory.length < 2 || priceHistory.length > MAX_PRICE_HISTORY_POINTS) {
             return res.status(400).json({ error: 'Invalid price history' });
         }
 
