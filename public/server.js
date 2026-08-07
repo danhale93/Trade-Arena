@@ -104,8 +104,9 @@ app.post('/api/analyze/arbitrage', async (req, res) => {
 app.post('/api/analyze/volatility', async (req, res) => {
     try {
         const { priceHistory } = req.body;
+        const MAX_PRICE_HISTORY_POINTS = 10000;
 
-        if (!priceHistory || priceHistory.length < 2) {
+        if (!Array.isArray(priceHistory) || priceHistory.length < 2 || priceHistory.length > MAX_PRICE_HISTORY_POINTS) {
             return res.status(400).json({ error: 'Invalid price history' });
         }
 
@@ -261,7 +262,7 @@ async function fetchDexPrice(token, dex) {
         const variance = (Math.random() - 0.5) * 2; // ±1% variance
         return basePrice * (1 + variance / 100);
     } catch (e) {
-        console.error(`Error fetching ${dex} price for ${token}:`, e);
+        console.error('Error fetching %s price for %s: %s', dex, token, e && e.message ? e.message : e);
         return null;
     }
 }
@@ -284,7 +285,7 @@ async function fetchCoinGeckoPrice(symbol) {
 
         return response.data[coinId]?.usd || null;
     } catch (e) {
-        console.error(`CoinGecko error for ${symbol}:`, e.message);
+        console.error('CoinGecko error for %s: %s', symbol, e.message);
         return null;
     }
 }
