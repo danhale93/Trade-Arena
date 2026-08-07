@@ -5,6 +5,58 @@
  * Uses LM Arena ELO ratings for model quality ranking
  */
 
+let generateBotSpecificDecision;
+let fallbackDecision;
+
+if (typeof require !== 'undefined') {
+  try {
+    const engine = require('./advanced-bot-engine.js');
+    generateBotSpecificDecision = engine.generateBotSpecificDecision;
+  } catch (e) {}
+  try {
+    const api = require('./ai-api.js');
+    fallbackDecision = api.fallbackDecision;
+  } catch (e) {}
+}
+if (!generateBotSpecificDecision && typeof window !== 'undefined') {
+  generateBotSpecificDecision = window.generateBotSpecificDecision;
+}
+if (!fallbackDecision && typeof window !== 'undefined') {
+  fallbackDecision = window.fallbackDecision;
+}
+
+if (!generateBotSpecificDecision) {
+  generateBotSpecificDecision = function(botId, botProfile, marketData, bet, botStrategy) {
+    const winRate = 0.55;
+    return {
+      method: 'SPOT LONG',
+      token: 'WETH',
+      edge_pct: 1.5,
+      win_probability: winRate,
+      reasoning: 'Fallback default bot decision',
+      outcome: Math.random() < winRate ? 'WIN' : 'LOSS',
+      pnl_multiplier: Math.random() < winRate ? 1.5 : -0.5,
+      botProfile
+    };
+  };
+}
+
+if (!fallbackDecision) {
+  fallbackDecision = function(bet, botProfile = 'BALANCED') {
+    const winRate = 0.55;
+    return {
+      method: 'SPOT LONG',
+      token: 'WETH',
+      edge_pct: 1.5,
+      win_probability: winRate,
+      reasoning: 'Fallback default decision',
+      outcome: Math.random() < winRate ? 'WIN' : 'LOSS',
+      pnl_multiplier: Math.random() < winRate ? 1.5 : -0.5,
+      botProfile
+    };
+  };
+}
+
 // ════════════════════════════════════════════════════════════════════════════════
 // LM ARENA MODEL REGISTRY
 // Based on real LM Arena ELO ratings (March 2026)
@@ -357,12 +409,15 @@ const ARENA_COMPETITION = {
 
   // Record trade result
   recordTrade(modelName, botId, result) {
-    if (!this.modelStats[modelName]) return;
+    if (!this.modelStats[modelName]) {
+      this.initializeModel(modelName, botId, 'BALANCED');
+    }
     
     const stats = this.modelStats[modelName];
     stats.baseTrades++;
     
-    if (result.isWin) {
+    const isWin = result.isWin || result.outcome === 1 || result.outcome === 'WIN';
+    if (isWin) {
       stats.wins++;
     } else {
       stats.losses++;
@@ -555,7 +610,7 @@ async function callAIModel(marketData, bet, botId) {
 
     // Apply model-specific personality adjustments
     if (modelConfig && modelConfig.personality) {
-      const personality = MODEL_PERSONALITY_TRAITS[modelConfig.personality] || {};
+      const personality = BOT_MODEL_ASSIGNMENT.personalityTraits[modelConfig.personality] || {};
       decision.edge_pct *= personality.edgeMultiplier || 1.0;
       decision.win_probability *= (1 - (personality.riskAversion || 1.0) * 0.1);
       decision.aiModel = modelName;

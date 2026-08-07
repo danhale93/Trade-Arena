@@ -46,6 +46,8 @@ const CrucibleRealTrading = {
     strategyPerformance: {},
     learningRate: 0.08,
     minProfitableWinRate: 0.45,  // Need >45% to keep strategy
+    riskMultiplier: 1.0,
+    adjustments: []
   },
   
   // Configuration
@@ -99,8 +101,18 @@ const CrucibleRealTrading = {
     this.config = { ...this.config, ...config };
     this.tradeState.currentBalance = this.config.startingBalance;
     this.tradeState.equity = this.config.startingBalance;
+    this.tradeState.wins = 0;
+    this.tradeState.losses = 0;
+    this.tradeState.totalTrades = 0;
+    this.tradeState.maxEquity = this.config.startingBalance;
+    this.tradeState.minEquity = this.config.startingBalance;
+    this.tradeState.maxDrawdown = 0;
+    this.tradeState.maxDrawdownPercent = 0;
     this.trades = [];
     this.sessionId = `crucible-real-${Date.now()}`;
+    this.aiState.riskMultiplier = 1.0;
+    this.aiState.entryAdaptation = 1.0;
+    this.aiState.adjustments = [];
     
     // Initialize strategy performance
     this.aiState.strategyPerformance = {
@@ -346,7 +358,7 @@ const CrucibleRealTrading = {
     const drawdownPercent = this.tradeState.maxDrawdownPercent || 0;
     if (drawdownPercent > 15) {
       // If drawdown > 15%, scale positions down
-      const recoveryFactor = (20 - drawdownPercent) / 20; // 0.25 to 1.0
+      const recoveryFactor = Math.max(0.1, (20 - drawdownPercent) / 20); // 0.1 to 1.0
       positionSize *= recoveryFactor;
     }
     
@@ -473,8 +485,18 @@ const CrucibleRealTrading = {
       stratPerf.totalPnL += trade.pnlAUD;
       if (trade.isWin) {
         stratPerf.wins++;
+        stratPerf.consecutiveLosses = 0;
       } else {
         stratPerf.losses++;
+        stratPerf.consecutiveLosses = (stratPerf.consecutiveLosses || 0) + 1;
+        if (stratPerf.consecutiveLosses >= 4) {
+          this.aiState.entryAdaptation = 0.8;
+          this.aiState.riskMultiplier = 0.8;
+          this.aiState.adjustments.push({
+            reason: "underperforming_strategy",
+            timestamp: Date.now()
+          });
+        }
       }
       
       if (stratPerf.trades > 0) {
@@ -805,3 +827,7 @@ async function runCrucibleReal(customConfig = {}) {
 console.log('%c✅ Crucible Real Trading Engine Loaded', 'color: #00ff88; font-weight: bold;');
 console.log('Usage: runCrucibleReal() // Starts live trading with CoinGecko data');
 console.log('Or: runCrucibleReal({ maxTradesPerDay: 10 }) // Custom config');
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { CrucibleRealTrading, runCrucibleReal };
+}
