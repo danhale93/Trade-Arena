@@ -10,14 +10,23 @@ class TradingEngine {
         this.marketData = {};
         this.opportunities = [];
         this.activeSessions = new Map();
+        this.riskLimits = {
+            maxOpportunityAgeMs: 45000
+        };
+    }
+
+    filterStablecoins(pairs) {
+        const stablecoins = ['USDC', 'USDT', 'DAI', 'USDbC', 'FRAX'];
+        return pairs.filter(pair => !stablecoins.includes(pair.token));
     }
 
     /**
      * AI Market Analysis - Detect Arbitrage Opportunities
      */
     async detectArbitrageOpportunities(marketPairs) {
+        const filteredPairs = this.filterStablecoins(marketPairs);
         // ⚡ Bolt Optimization: Parallelize pair analysis to reduce network waterfall latency
-        const results = await Promise.all(marketPairs.map(async (pair) => {
+        const results = await Promise.all(filteredPairs.map(async (pair) => {
             try {
                 // ⚡ Bolt Optimization: Parallelize exchange price fetching
                 const [dex1Price, dex2Price, cexPrice] = await Promise.all([
@@ -132,9 +141,9 @@ class TradingEngine {
     /**
      * Risk Management & Position Sizing
      */
-    calculatePositionSize(capital, volatility, leverage, riskPercentage = 2) {
-// Dynamic Kelly: Use bot's historical winRate or default
-        const historicalWinRate = bot.historicalWinRate || 0.55;
+    calculatePositionSize(capital, volatility, leverage, riskPercentage = 2, bot = {}) {
+        // Dynamic Kelly: Use bot's historical winRate or default
+        const historicalWinRate = bot ? (bot.historicalWinRate || 0.55) : 0.55;
         const winRate = Math.max(0.4, Math.min(0.75, historicalWinRate));
         const avgWin = 1.5;
         const avgLoss = 1.0;
@@ -286,7 +295,9 @@ class TradingEngine {
         const positionSize = this.calculatePositionSize(
             bot.amount,
             opportunity.volatility || 3,
-            parseInt(bot.risk.match(/\d+/)[0])
+            parseInt(bot.risk.match(/\d+/)[0]),
+            2,
+            bot
         );
 
         const trade = {
@@ -304,6 +315,15 @@ class TradingEngine {
             profit: 0,
             profitPercent: 0
         };
+
+        // Check for expiration
+        if (opportunity.timestamp && opportunity.ttl && (opportunity.timestamp + opportunity.ttl < Date.now())) {
+            trade.status = 'EXPIRED';
+            trade.profit = 0;
+            trade.profitPercent = 0;
+            this.trades.push(trade);
+            return trade;
+        }
 
         try {
             // Simulate execution (in real app, would call smart contracts)
@@ -425,3 +445,7 @@ class TradingEngine {
 
 // Global instance
 const tradingEngine = new TradingEngine();
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { TradingEngine, tradingEngine };
+}

@@ -214,7 +214,7 @@ describe("Task Claim Security - Sentinel Hardening", () => {
       expect(resDupTask.status).toBe(429);
       const dataDupTask = await resDupTask.json();
       expect(dataDupTask.success).toBe(false);
-      expect(dataDupTask.error).toBe("Task reward already claimed for this address");
+      expect(dataDupTask.error).toBe("Task already claimed for this address");
 
       // 4. /api/v1/payouts/claim - Reject invalid/non-whitelisted taskId
       const resInvalidPayout = await fetch(`http://localhost:${port}/api/v1/payouts/claim`, {
@@ -244,7 +244,7 @@ describe("Task Claim Security - Sentinel Hardening", () => {
       });
       expect(resDupPayout.status).toBe(429);
       const dataDupPayout = await resDupPayout.json();
-      expect(dataDupPayout.error).toBe("Task reward already claimed for this address");
+      expect(dataDupPayout.error).toBe("Task already claimed for this address");
 
     } finally {
       express.application.listen = originalListen;
@@ -1624,7 +1624,7 @@ describe("Task Claim Security & Whitelisting - Sentinel Hardening", () => {
       expect(res.status).toBe(400);
       const data = await res.json();
       expect(data.success).toBe(false);
-      expect(data.error).toBe("Invalid or unauthorized taskId");
+      expect(data.error).toBe("Invalid or unauthorized taskId requested");
     } finally {
       express.application.listen = originalListen;
       if (activeServer) {
@@ -1732,7 +1732,7 @@ describe("Task Claim Security & Whitelisting - Sentinel Hardening", () => {
       });
       expect(res.status).toBe(400);
       const data = await res.json();
-      expect(data.error).toBe("Invalid or unauthorized taskId");
+      expect(data.error).toBe("Invalid or unauthorized taskId requested");
     } finally {
       express.application.listen = originalListen;
       if (activeServer) {

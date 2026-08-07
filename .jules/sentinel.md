@@ -230,3 +230,8 @@ Security audit complete. All encryption layers intact.
 **Vulnerability:** Lack of input whitelisting and lack of transaction/event replay tracking allowed clients to infinitely submit claims for arbitrary task IDs, risking massive payout drains and API key abuse.
 **Learning:** Checking parameter format and length is insufficient if the identifier itself is completely untrusted. For financial or payout-bearing events, identifiers must be whitelisted against a strict, static set of allowed values, and user-event pairs must be registered to prevent double claiming / replay attacks.
 **Prevention:** Always implement a strict whitelist Set for task/event IDs and maintain an app-level, synchronized store (Set or Map) to register and reject duplicate user-event claims.
+
+## 2026-08-06 - Temporal Dead Zone ReferenceError in Security Whitelists
+**Vulnerability:** Redeclaring a block-scoped constant (`const ALLOWED_TASK_IDS`) inside a route handler after referencing the same name in an outer scope checks causes a Temporal Dead Zone (TDZ) `ReferenceError`. This results in crash-based DoS and server thread interruption.
+**Learning:** Node.js/V8 throws a ReferenceError if a block-scoped variable (`const`/`let`) is referenced prior to its internal block declaration, even if a variable with the identical name is declared in the parent scope. This completely breaks runtime security middleware.
+**Prevention:** Avoid redeclaring global or outer-scope configuration schemas/whitelists locally inside block handlers. Split existence/type verification cleanly from whitelist checking to avoid masking and scoping errors.

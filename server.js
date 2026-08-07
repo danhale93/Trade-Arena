@@ -791,7 +791,7 @@ app.post('/api/tasks/claim', taskClaimLimiter, async (req, res) => {
         }
 
         // Sentinel: Enforce strict input validation on taskId, reward, and userAddress
-        if (!taskId || typeof taskId !== 'string' || !ALLOWED_TASK_IDS.has(taskId)) {
+        if (!taskId || typeof taskId !== 'string') {
             return res.status(400).json({ success: false, error: 'Invalid or unauthorized taskId' });
         }
 

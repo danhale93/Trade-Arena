@@ -39,20 +39,11 @@ router.post('/claim', payoutLimiter, async (req, res) => {
         }
 
         // Sentinel: Enforce strict input validation on taskId and proofOfWork to prevent DoS/Type Confusion
-        if (!taskId || typeof taskId !== 'string' || !ALLOWED_TASK_IDS.has(taskId)) {
+        if (!taskId || typeof taskId !== 'string') {
             return res.status(400).json({ error: 'Invalid or unauthorized taskId' });
         }
 
         // Sentinel: Ensure taskId is one of the allowed/whitelisted task IDs
-        const ALLOWED_TASK_IDS = new Set([
-            'follow_twitter',
-            'join_discord',
-            'share_win',
-            'first_trade',
-            'hcaptcha_verify',
-            'ai_feedback'
-        ]);
-
         if (!ALLOWED_TASK_IDS.has(taskId)) {
             return res.status(400).json({ error: 'Invalid or unauthorized taskId requested' });
         }
