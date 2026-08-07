@@ -1416,6 +1416,134 @@ describe("Server Input Validation - Sentinel Hardening", () => {
     expect(isValidEarlyAddress(undefined)).toBe(false);
     expect(isValidEarlyAddress(123)).toBe(false);
   });
+
+  it("enforces strict type-safety and length limit checks on the /api/maintenance/log endpoint", async () => {
+    const originalPort = process.env.PORT;
+    process.env.PORT = "0";
+
+    const express = require('express');
+    const originalListen = express.application.listen;
+    let activeServer = null;
+    express.application.listen = function(...args) {
+      activeServer = originalListen.apply(this, args);
+      return activeServer;
+    };
+
+    delete require.cache[require.resolve("./server.js")];
+    delete require.cache[require.resolve("./routes/payoutRoutes.js")];
+    require("./server.js");
+
+    try {
+      const port = activeServer.address().port;
+
+      // 1. Valid payload - should succeed
+      const res1 = await fetch(`http://localhost:${port}/api/maintenance/log`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agent: "TEST-AGENT", message: "Everything is fine", level: "INFO" })
+      });
+      expect(res1.status).toBe(200);
+
+      // 2. Invalid payload (non-string agent) - should be rejected with 400
+      const res2 = await fetch(`http://localhost:${port}/api/maintenance/log`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agent: 123, message: "Everything is fine" })
+      });
+      expect(res2.status).toBe(400);
+
+      // 3. Invalid payload (too long agent) - should be rejected with 400
+      const res3 = await fetch(`http://localhost:${port}/api/maintenance/log`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agent: "A".repeat(101), message: "Everything is fine" })
+      });
+      expect(res3.status).toBe(400);
+
+      // 4. Invalid payload (too long message) - should be rejected with 400
+      const res4 = await fetch(`http://localhost:${port}/api/maintenance/log`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agent: "TEST-AGENT", message: "M".repeat(501) })
+      });
+      expect(res4.status).toBe(400);
+
+      // 5. Invalid payload (too long level) - should be rejected with 400
+      const res5 = await fetch(`http://localhost:${port}/api/maintenance/log`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agent: "TEST-AGENT", message: "Fine", level: "L".repeat(21) })
+      });
+      expect(res5.status).toBe(400);
+
+    } finally {
+      express.application.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+    }
+  });
+
+  it("enforces strict type-safety and length limit checks on the /api/maintenance/patch endpoint", async () => {
+    const originalPort = process.env.PORT;
+    process.env.PORT = "0";
+
+    const express = require('express');
+    const originalListen = express.application.listen;
+    let activeServer = null;
+    express.application.listen = function(...args) {
+      activeServer = originalListen.apply(this, args);
+      return activeServer;
+    };
+
+    delete require.cache[require.resolve("./server.js")];
+    delete require.cache[require.resolve("./routes/payoutRoutes.js")];
+    require("./server.js");
+
+    try {
+      const port = activeServer.address().port;
+
+      // 1. Valid payload - should succeed (logged for review, 200 OK)
+      const res1 = await fetch(`http://localhost:${port}/api/maintenance/patch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filepath: "public/index.html", patch: "diff content", description: "update title" })
+      });
+      expect(res1.status).toBe(200);
+
+      // 2. Invalid payload (non-string patch) - should be rejected with 400
+      const res2 = await fetch(`http://localhost:${port}/api/maintenance/patch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filepath: "public/index.html", patch: { code: "invalid" } })
+      });
+      expect(res2.status).toBe(400);
+
+      // 3. Invalid payload (too long description) - should be rejected with 400
+      const res3 = await fetch(`http://localhost:${port}/api/maintenance/patch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filepath: "public/index.html", patch: "diff", description: "D".repeat(1001) })
+      });
+      expect(res3.status).toBe(400);
+
+      // 4. Invalid payload (too long patch) - should be rejected with 400
+      const res4 = await fetch(`http://localhost:${port}/api/maintenance/patch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filepath: "public/index.html", patch: "P".repeat(50001), description: "patch too big" })
+      });
+      expect(res4.status).toBe(400);
+
+    } finally {
+      express.application.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+    }
+  });
 });
 
 describe("Faucet Claim - Sentinel Hardening", () => {

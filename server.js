@@ -403,6 +403,17 @@ app.post('/api/maintenance/log', maintenanceLogLimiter, (req, res) => {
     const { agent, message, level } = req.body;
     if (!agent || !message) return res.status(400).json({ error: 'Missing agent or message' });
 
+    // Sentinel: Enforce strict type-safety and length limits to prevent Type Confusion and DoS
+    if (typeof agent !== 'string' || agent.length > 100) {
+        return res.status(400).json({ error: 'Invalid or too long agent' });
+    }
+    if (typeof message !== 'string' || message.length > 500) {
+        return res.status(400).json({ error: 'Invalid or too long message' });
+    }
+    if (level !== undefined && (typeof level !== 'string' || level.length > 20)) {
+        return res.status(400).json({ error: 'Invalid or too long level' });
+    }
+
     // Sentinel: Sanitize inputs to prevent log injection/spoofing
     const sanitize = (s) => String(s || '').replace(/[\n\r]/g, ' ').substring(0, 500);
     const safeAgent = sanitize(agent).substring(0, 100);
@@ -433,6 +444,14 @@ app.post('/api/maintenance/patch', maintenanceLogLimiter, async (req, res) => {
     try {
         if (!filepath || typeof filepath !== 'string') {
             return res.status(400).json({ error: 'Invalid or missing filepath' });
+        }
+
+        // Sentinel: Enforce strict type-safety and length limits on patch and description
+        if (patch !== undefined && (typeof patch !== 'string' || patch.length > 50000)) {
+            return res.status(400).json({ error: 'Invalid or too long patch' });
+        }
+        if (description !== undefined && (typeof description !== 'string' || description.length > 1000)) {
+            return res.status(400).json({ error: 'Invalid or too long description' });
         }
 
         // Security: Check against absolute whitelist to clear CodeQL taint
