@@ -152,8 +152,17 @@ setInterval(() => {
 const publicDir = path.join(__dirname, "public");
 app.use(express.static(publicDir));
 
+// Explicit limiter for root route to protect filesystem-backed sendFile and satisfy static analysis
+const rootRouteLimiter = rateLimit({
+    windowMs: RATE_LIMIT_WINDOW,
+    max: RATE_LIMIT_MAX,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many requests, please try again later.' }
+});
+
 // Root route for health check
-app.get('/', (req, res) => {
+app.get('/', rootRouteLimiter, (req, res) => {
     const ip = req.ip || req.socket.remoteAddress || 'unknown';
     if (!checkRateLimit(ip)) {
         return res.status(429).json({ error: 'Too many requests, please try again later.' });
