@@ -85,7 +85,7 @@ app.post('/api/analyze/arbitrage', async (req, res) => {
                     });
                 }
             } catch (e) {
-                console.error(`Error analyzing ${token}:`, e.message);
+                console.error('Error analyzing %s: %s', token, e.message);
             }
         }
 
