@@ -44,15 +44,6 @@ router.post('/claim', payoutLimiter, async (req, res) => {
         }
 
         // Sentinel: Ensure taskId is one of the allowed/whitelisted task IDs
-        const ALLOWED_TASK_IDS = new Set([
-            'follow_twitter',
-            'join_discord',
-            'share_win',
-            'first_trade',
-            'hcaptcha_verify',
-            'ai_feedback'
-        ]);
-
         if (!ALLOWED_TASK_IDS.has(taskId)) {
             return res.status(400).json({ error: 'Invalid or unauthorized taskId requested' });
         }

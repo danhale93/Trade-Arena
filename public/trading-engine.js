@@ -425,3 +425,7 @@ class TradingEngine {
 
 // Global instance
 const tradingEngine = new TradingEngine();
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { TradingEngine };
+}
