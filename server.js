@@ -154,6 +154,11 @@ app.use(express.static(publicDir));
 
 // Root route for health check
 app.get('/', (req, res) => {
+    const ip = req.ip || req.socket.remoteAddress || 'unknown';
+    if (!checkRateLimit(ip)) {
+        return res.status(429).json({ error: 'Too many requests, please try again later.' });
+    }
+
     res.status(200).sendFile(path.join(publicDir, 'index.html'));
 });
 
