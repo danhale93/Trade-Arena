@@ -330,6 +330,8 @@ body::after{
 .settings-value{font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--gold2);min-width:60px;text-align:right}
 .settings-btn{width:100%;padding:12px;background:linear-gradient(90deg,var(--hot),var(--gold2));border:none;border-radius:6px;color:#fff;font-weight:bold;cursor:pointer;margin-top:12px;transition:all .15s}
 .settings-btn:hover{box-shadow:0 0 15px rgba(255,45,120,.5);transform:scale(1.01)}
+#settingsBtn:focus-visible{outline:none;border-color:var(--cyan)!important;box-shadow:0 0 15px var(--cyan)!important}
+.settings-slider:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
 
 /* Responsive */
 @media(max-width:640px){.bot-grid{grid-template-columns:1fr}}
@@ -466,25 +468,25 @@ body::after{
     <div class="settings-title">⚙️ COOLDOWN SETTINGS</div>
     
     <div class="settings-row">
-      <div class="settings-label">Losses before Level 1 cooldown</div>
+      <label class="settings-label" for="lossTrigger">Losses before Level 1 cooldown</label>
       <input type="range" id="lossTrigger" min="3" max="20" value="15" class="settings-slider" oninput="updateSettingsUI()">
       <div id="lossVal" class="settings-value">15</div>
     </div>
     
     <div class="settings-row">
-      <div class="settings-label">Level 1 cooldown (minutes)</div>
+      <label class="settings-label" for="cd1">Level 1 cooldown (minutes)</label>
       <input type="range" id="cd1" min="5" max="60" value="30" class="settings-slider" oninput="updateSettingsUI()">
       <div id="cd1val" class="settings-value">30 min</div>
     </div>
     
     <div class="settings-row">
-      <div class="settings-label">Level 2 cooldown (hours)</div>
+      <label class="settings-label" for="cd2">Level 2 cooldown (hours)</label>
       <input type="range" id="cd2" min="1" max="6" value="2" class="settings-slider" oninput="updateSettingsUI()">
       <div id="cd2val" class="settings-value">2 hrs</div>
     </div>
     
     <div class="settings-row">
-      <div class="settings-label">Level 3 cooldown (hours)</div>
+      <label class="settings-label" for="cd3">Level 3 cooldown (hours)</label>
       <input type="range" id="cd3" min="12" max="72" value="48" class="settings-slider" oninput="updateSettingsUI()">
       <div id="cd3val" class="settings-value">48 hrs</div>
     </div>
@@ -517,7 +519,7 @@ body::after{
 </div>
 
 <!-- Settings Button -->
-<button id="settingsBtn" onclick="openSettings()" style="position:fixed;bottom:16px;right:16px;background:var(--panel);border:2px solid var(--gold2);border-radius:50%;width:52px;height:52px;font-size:24px;z-index:9998;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center" title="Settings">⚙️</button>
+<button id="settingsBtn" onclick="openSettings()" style="position:fixed;bottom:16px;right:16px;background:var(--panel);border:2px solid var(--gold2);border-radius:50%;width:52px;height:52px;font-size:24px;z-index:9998;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center" title="Settings" aria-label="Open Cooldown and Export Settings" aria-haspopup="dialog" aria-expanded="false">⚙️</button>
 
 <script>
 // ════════════════════════════
@@ -987,6 +989,9 @@ async function getMarketData() {
 // ════════════════════════════
 // LOGIN
 // ════════════════════════════
+async function loginGoogle() {
+  const s = document.getElementById('cStatus');
+  if (GOOGLE_CLIENT_ID) {
     s.textContent = '⏳ Opening Google sign-in…';
     google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: handleGoogleCred });
     google.accounts.id.prompt();
@@ -994,6 +999,7 @@ async function getMarketData() {
     s.innerHTML = '⚠️ Add your Google Client ID in the script, or use Paper Trading Mode.';
   }
 }
+
 async function handleGoogleCred(resp) {
   try {
     const p = JSON.parse(atob(resp.credential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
@@ -1004,7 +1010,15 @@ async function handleGoogleCred(resp) {
     document.getElementById('cStatus').textContent = '❌ ' + e.message; 
   }
 }
-if(typeof setupWalletListeners === "function") setupWalletListeners();
+
+async function loginMetaMask() {
+  const s = document.getElementById('cStatus');
+  let ethereum = window.ethereum;
+  try {
+    if (ethereum && ethereum.providers) {
+      ethereum = ethereum.providers.find(p => p.isMetaMask);
+      if (typeof setupWalletListeners === "function") {
+        setupWalletListeners();
       }
     }
     
@@ -1205,7 +1219,6 @@ if(typeof setupWalletListeners === "function") setupWalletListeners();
     s.textContent = '❌ ' + errorMsg; 
     walletState.isConnected = false;
   }
-}
 }
 
 function createWallet() {
@@ -2852,12 +2865,24 @@ function openSettings() {
   
   updateSettingsUI();
   modal.style.display = 'flex';
+
+  const btn = document.getElementById('settingsBtn');
+  if (btn) btn.setAttribute('aria-expanded', 'true');
+
+  const firstInput = document.getElementById('lossTrigger');
+  if (firstInput) firstInput.focus();
 }
 
 function closeSettings() {
   const modal = document.getElementById('settingsModal');
   if (!modal) return;
   modal.style.display = 'none';
+
+  const btn = document.getElementById('settingsBtn');
+  if (btn) {
+    btn.setAttribute('aria-expanded', 'false');
+    btn.focus();
+  }
 }
 
 function updateSettingsUI() {

@@ -12,14 +12,14 @@
 
 ## 2026-06-21 - [Dynamic Content Accessibility & Interaction Feedback]
 **Learning:** Asynchronous UI updates in status containers (like login messages or AI replies) are invisible to screen readers unless marked with `aria-live="polite"`. Additionally, utility actions like "Copy to Clipboard" require immediate, high-contrast visual feedback (e.g., text change + color shift) to confirm success without requiring a separate notification component.
-**Action:** Apply `aria-live="polite"` to all dynamic status areas and implement a 2-second "COPIED!" state for clipboard buttons.
+**Action:** Apply `aria-live="polite"` to all dynamic status areas and implement a 2-second "COPIED!" state for clipboard feedback.
 
 ## 2026-06-22 - [Panel Navigation Affordance]
 **Learning:** In a multi-panel dashboard where top-level navigation buttons toggle collapsible sections, visual state synchronization is critical. Without an "active" class on the header button, users lose the relationship between the trigger and the content. Standardizing these triggers as semantic `<button>` elements with `aria-expanded` ensures both visual and assistive clarity.
 **Action:** Always map dashboard toggle buttons to their panel state using a shared logic (like `togglePanel`) that manages both the content visibility and the trigger's visual 'open' state.
 
 ## 2026-06-26 - [ARIA State Synchronization for Mode Toggles]
-**Learning:** For mutually exclusive mode toggles (like "SIMULATED" vs "LIVE"), synchronizing the `aria-pressed` attribute across both buttons is essential. Screen readers rely on this attribute to communicate the current active state, which visual users see through CSS classes.
+**Learning:** For mutually exclusive mode toggles (like "SIMULATED" vs "LIVE"), synchronizing the `aria-pressed` attribute across both related buttons is essential. Screen readers rely on this attribute to communicate the current active state, which visual users see through CSS classes.
 **Action:** Always update `aria-pressed` on all related toggle buttons within the state change handler to ensure assistive technology remains in sync with the visual UI.
 
 ## 2026-06-27 - [Dashboard Navigation via Status Matrix]
@@ -44,8 +44,12 @@
 
 ## 2026-08-02 - [Form Accessibility & Sensitive Token Obfuscation]
 **Learning:** Integrating semantic label associations using `<label for="id">` for auxiliary configurations like Databricks Genie makes forms screen-reader friendly and easier to target. Sensitive configuration fields (like Personal Access Tokens) should always default to the 'password' type with a dedicated, ARIA-aligned "SHOW/HIDE" visibility toggle to let users verify inputs securely.
-**Action:** Use labeled container wrappers with associated semantic label elements and include generic password visibility toggles on all token inputs.
+**Action:** Use labeled container wrappers with associated semantic label elements and include password visibility toggles on all sensitive token inputs.
 
 ## 2026-08-03 - [Explicit Form Labels and Group Associations]
 **Learning:** Standardizing explicit form associations via the `for`/`htmlFor` attribute on labels and wrapping multi-control button rows in a semantic `role="group"` container linked via `aria-labelledby` ensures that screen readers provide complete contextual hints to visual-impaired users. Synchronizing active toggle states (like Live vs Demo mode) with their initial `aria-pressed` values on DOM mount prevents critical mismatch anomalies between assistive tools and CSS presentation layers.
 **Action:** Always link form labels to their target input/select controls explicitly and initialize standard toggle buttons with an explicit `aria-pressed` state that mirrors the application's default state.
+
+## 2026-08-07 - [Settings Modal Focus Management & Accessibility annotations]
+**Learning:** For floating settings modals or gear panels triggered via an icon-only button, screen readers require explicit "aria-label", "aria-haspopup", and "aria-expanded" attributes on the trigger. When the modal is toggled, programmatically shifting focus to the first range input, and on modal close returning focus back to the triggering element, ensures keyboard users maintain orientation without losing their document position. Explicit range inputs must be linked to semantic `<label>` elements via the `for` attribute for screen-reader compliance.
+**Action:** Associate custom sliders with semantic label tags and synchronize dynamic aria-expanded states with programmatic element focus shift.
