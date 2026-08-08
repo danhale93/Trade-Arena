@@ -255,6 +255,53 @@ describe("Task Claim Security - Sentinel Hardening", () => {
       process.env.TASK_CLAIM_SECRET = originalSecret;
     }
   });
+
+  it("rejects task claims with incorrect or spoofed reward amounts (Integrity validation)", async () => {
+    const originalPort = process.env.PORT;
+    const originalSecret = process.env.TASK_CLAIM_SECRET;
+    process.env.PORT = "0";
+    process.env.TASK_CLAIM_SECRET = "test-secret-key-123";
+
+    const express = require('express');
+    const originalListen = express.application.listen;
+    let activeServer = null;
+    express.application.listen = function(...args) {
+      activeServer = originalListen.apply(this, args);
+      return activeServer;
+    };
+
+    delete require.cache[require.resolve("./server.js")];
+    require("./server.js");
+
+    try {
+      const port = activeServer.address().port;
+      const testAddress = "0x9F407b7f793555c35c33aC64bd6901759470736D";
+      const validToken = "test-secret-key-123";
+
+      // Try to submit follow_twitter with reward 100 instead of 10
+      const resSpoofedReward = await fetch(`http://localhost:${port}/api/tasks/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: "follow_twitter",
+          reward: 100, // Spoofed (should be 10)
+          userAddress: testAddress,
+          validationToken: validToken
+        })
+      });
+      expect(resSpoofedReward.status).toBe(400);
+      const dataSpoofedReward = await resSpoofedReward.json();
+      expect(dataSpoofedReward.success).toBe(false);
+      expect(dataSpoofedReward.error).toBe("Invalid or incorrect reward for this task");
+    } finally {
+      express.application.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+      process.env.TASK_CLAIM_SECRET = originalSecret;
+    }
+  });
 });
 
 describe("Trading Engine - Volatility & Sizing", () => {
