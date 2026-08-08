@@ -9,7 +9,7 @@ declare global {
     privyConnected: boolean;
     privyProvider: any;
     privyInit: () => void;
-    privyLogin: () => void;
+    privyLogin: (options?: any) => void;
     privyLogout: () => void;
     isPrivyConnected: () => boolean;
     getPrivyAddress: () => string | null;
@@ -22,6 +22,7 @@ declare global {
 }
 
 /**
+ * TASK 3: Address Truncation Utility
  * Truncates an Ethereum wallet address to a clean, truncated display format (e.g., 0x1234...abcd).
  * Separating this utility ensures high-performance memoization and robust unit testability.
  */
@@ -39,18 +40,28 @@ export const truncateAddress = (address: string | undefined | null): string => {
  * the embedded wallet for secure Trade Arena interactions.
  *
  * TASK ALIGNMENTS:
- * 1. Located primary authenticated header layout component.
+ * 1. Primary authenticated header/layout dashboard component located at 'public/src/components/PrivyWalletHeader.tsx'.
  * 2. Uses Privy's useWallets and usePrivy hooks to isolate embedded wallet (walletClientType === 'privy').
  * 3. Formats and displays truncated address with click-to-copy capability & screen-reader support.
  * 4. Adds graceful loading state "Initializing arena wallet..." if user is authenticated but wallet is empty.
  * 5. Leverages window global bridges for seamless integration with the legacy execution engine.
  */
 export const PrivyWalletHeader = () => {
+  // Task 1: Extract authenticated session metadata and login/logout methods
   let { authenticated, user, login, logout, ready } = usePrivy();
+
+  // Task 2: Call Privy's useWallets hook to retrieve all connected user wallets
   let { wallets, ready: walletsReady } = useWallets();
 
-  // Web3 state delight: inline copy feedback indicator
+  // UX Feedback State: inline copy feedback indicator
   const [copied, setCopied] = useState(false);
+
+  // Informative tracking detailing Google Login session active wallet resolution state
+  useEffect(() => {
+    if (authenticated && user?.google) {
+      console.log('[Privy Header] Successfully authenticated with Google OAuth:', user.google.email);
+    }
+  }, [authenticated, user]);
 
   // Support frontend verification mocking
   if (typeof window !== 'undefined' && (window as any).__mockPrivy) {
@@ -66,7 +77,7 @@ export const PrivyWalletHeader = () => {
   const lastSyncAddress = useRef<string | null>(null);
 
   /**
-   * SENIOR WEB3 CORE IMPLEMENTATION - TASK 2
+   * TASK 2 CORE RESOLUTION:
    * Isolate the user's active Privy embedded wallet (where walletClientType === 'privy')
    * to immediately enable secure trading interactions within the Trade Arena.
    * This is triggered instantly upon a successful Google login/OAuth session.
@@ -84,7 +95,7 @@ export const PrivyWalletHeader = () => {
   }, [wallets, user]);
 
   /**
-   * SENIOR WEB3 CORE IMPLEMENTATION - TASK 3
+   * TASK 3 CORE RESOLUTION:
    * Format the live authenticated embedded wallet address using a clean, truncated string format (0x1234...abcd)
    * for clear visual identification with minimum horizontal header footprint.
    */
@@ -104,7 +115,7 @@ export const PrivyWalletHeader = () => {
   }, [user]);
 
   /**
-   * REQUIREMENT 5: Legacy JavaScript Bridge
+   * Legacy JavaScript Bridge:
    * Synchronizes authentication state and providers with the execution engine.
    */
   useEffect(() => {
@@ -302,7 +313,7 @@ export const PrivyWalletHeader = () => {
   }
 
   /**
-   * SENIOR WEB3 CORE IMPLEMENTATION - TASK 4
+   * TASK 4 CORE RESOLUTION:
    * Graceful loading / provisioning state shown if user is authenticated but the embedded wallet array is empty.
    */
   if (authenticated && !arenaWallet) {
@@ -320,6 +331,7 @@ export const PrivyWalletHeader = () => {
   }
 
   /**
+   * TASK 3 UI ACTION:
    * Handle copying the full wallet address with rich visual and audio delight
    */
   const handleCopy = (e: React.MouseEvent<HTMLDivElement> | React.KeyboardEvent<HTMLDivElement>) => {
@@ -336,12 +348,12 @@ export const PrivyWalletHeader = () => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
 
-      // 1. Subtle auditory feedback
+      // Subtle auditory feedback
       if (typeof window !== 'undefined' && (window as any).SFX && (window as any).SFX.tick) {
         try { (window as any).SFX.tick(); } catch (err) {}
       }
 
-      // 2. Localized visual delight (confetti burst right at user action point)
+      // Localized visual delight (confetti burst right at user action point)
       if (typeof window !== 'undefined' && (window as any).FX && (window as any).FX.confetti) {
         let x = window.innerWidth / 2;
         let y = window.innerHeight / 2;
@@ -359,7 +371,7 @@ export const PrivyWalletHeader = () => {
         try { (window as any).FX.confetti(x, y, 10); } catch (err) {}
       }
 
-      // 3. System confirmation toast
+      // System confirmation toast
       if (typeof window !== 'undefined' && (window as any).showToast) {
         (window as any).showToast('Wallet address copied!', 'success');
       }
@@ -369,7 +381,8 @@ export const PrivyWalletHeader = () => {
   };
 
   /**
-   * REQUIREMENT 3 (UI): Truncated Address Display with Click-to-Copy UX and Accessibility
+   * TASK 3 VIEW RENDERING:
+   * Truncated Address Display with Click-to-Copy UX and Accessibility
    */
   return (
     <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '0 4px' }}>
