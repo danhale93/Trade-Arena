@@ -53,3 +53,7 @@
 ## 2026-08-07 - [Settings Modal Focus Management & Accessibility annotations]
 **Learning:** For floating settings modals or gear panels triggered via an icon-only button, screen readers require explicit "aria-label", "aria-haspopup", and "aria-expanded" attributes on the trigger. When the modal is toggled, programmatically shifting focus to the first range input, and on modal close returning focus back to the triggering element, ensures keyboard users maintain orientation without losing their document position. Explicit range inputs must be linked to semantic `<label>` elements via the `for` attribute for screen-reader compliance.
 **Action:** Associate custom sliders with semantic label tags and synchronize dynamic aria-expanded states with programmatic element focus shift.
+
+## 2026-08-08 - [Secure Onboarding Controls & External Link Announcements]
+**Learning:** External resource links utilizing `target="_blank"` require explicit `aria-label` labels informing screen reader users that they open in a new tab. For secondary token/secret configurations like Databricks Genie PAT inputs, omission of standard inline visual visibility triggers (SHOW/HIDE toggles) and copy feedback indicators hampers secure credentials verification in visual and assistive setups alike.
+**Action:** Annotate all new-tab links with clear `aria-label` properties, and provide password input fields with dedicated visibility toggles and labeled group headers.
