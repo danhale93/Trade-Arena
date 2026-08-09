@@ -255,7 +255,16 @@ function generateScalperDecision(botId, marketData, bet, botStrategy) {
 function generateTrendDecision(botId, marketData, bet, botStrategy) {
   // Trend followers: Momentum riders, follow market direction
   
-  const momentum = marketData?.reduce((sum, c) => sum + (c.price_change_percentage_24h || 0), 0) / 8 || 0;
+  // ⚡ Bolt Optimization: Single-pass manual loop replaces .reduce to avoid intermediate callback allocation and O(N) traversal overhead
+  let momentum = 0;
+  if (marketData && marketData.length > 0) {
+    let momSum = 0;
+    const len = marketData.length;
+    for (let i = 0; i < len; i++) {
+      momSum += marketData[i].price_change_percentage_24h || 0;
+    }
+    momentum = momSum / 8 || 0;
+  }
   
   if (momentum > 5) {
     // Strong bullish momentum - go long
@@ -311,7 +320,17 @@ function generateTrendDecision(botId, marketData, bet, botStrategy) {
 function generateAggressiveDecision(botId, marketData, bet, botStrategy) {
   // Aggressive: High risk, high reward, exploit volatility
   
-  const volatility = marketData?.reduce((sum, c) => sum + Math.abs(c.price_change_percentage_24h || 0), 0) / 8 || 2;
+  // ⚡ Bolt Optimization: Single-pass manual loop replaces .reduce to avoid intermediate callback allocation and O(N) traversal overhead
+  let volatility = 2;
+  if (marketData && marketData.length > 0) {
+    let volSum = 0;
+    const len = marketData.length;
+    for (let i = 0; i < len; i++) {
+      const chg = marketData[i].price_change_percentage_24h || 0;
+      volSum += chg >= 0 ? chg : -chg; // Inline Math.abs
+    }
+    volatility = volSum / 8 || 2;
+  }
   
   if (volatility > 8) {
     // High volatility - time for aggressive plays
@@ -372,7 +391,17 @@ function generateConservativeDecision(botId, marketData, bet, botStrategy) {
 function generateBalancedDecision(botId, marketData, bet, botStrategy) {
   // Balanced: Mix of everything, adapt to conditions
   
-  const volatility = marketData?.reduce((sum, c) => sum + Math.abs(c.price_change_percentage_24h || 0), 0) / 8 || 2;
+  // ⚡ Bolt Optimization: Single-pass manual loop replaces .reduce to avoid intermediate callback allocation and O(N) traversal overhead
+  let volatility = 2;
+  if (marketData && marketData.length > 0) {
+    let volSum = 0;
+    const len = marketData.length;
+    for (let i = 0; i < len; i++) {
+      const chg = marketData[i].price_change_percentage_24h || 0;
+      volSum += chg >= 0 ? chg : -chg; // Inline Math.abs
+    }
+    volatility = volSum / 8 || 2;
+  }
   
   const methods = ['ARBITRAGE', 'SPOT LONG', 'YIELD FARM', 'FLASH LOAN'];
   const tokens = ['ETH', 'SOL', 'ARB', 'PEPE'];
