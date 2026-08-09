@@ -133,3 +133,9 @@ Everything is fine
 
 ## 2026-08-08T23:02:20.576Z - [INFO] TEST-AGENT
 Everything is fine
+
+## 2026-08-09T07:24:50.677Z - [WARN] ARCHITECT
+Latency spike (72ms). Rerouting from Primary (Base) to QuickNode.
+
+## 2026-08-09T07:43:15.395Z - [INFO] TEST-AGENT
+Everything is fine
