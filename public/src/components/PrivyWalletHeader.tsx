@@ -47,10 +47,10 @@ export const truncateAddress = (address: string | undefined | null): string => {
  * 5. Leverages window global bridges for seamless integration with the legacy execution engine.
  */
 export const PrivyWalletHeader = () => {
-  // Task 1: Extract authenticated session metadata and login/logout methods
+  // Task 1: Locate the primary authenticated layout or dashboard header component and extract authenticated session metadata and login/logout methods
   let { authenticated, user, login, logout, ready } = usePrivy();
 
-  // Task 2: Call Privy's useWallets hook to retrieve all connected user wallets
+  // Task 2: Call Privy's useWallets hook to retrieve all connected user wallets, allowing us to isolate the user's active Privy embedded wallet
   let { wallets, ready: walletsReady } = useWallets();
 
   // UX Feedback State: inline copy feedback indicator
@@ -78,7 +78,7 @@ export const PrivyWalletHeader = () => {
 
   /**
    * TASK 2 CORE RESOLUTION:
-   * Isolate the user's active Privy embedded wallet (where walletClientType === 'privy')
+   * Use Privy's `useWallets` hook alongside `usePrivy` to isolate the user's active Privy embedded wallet (where `walletClientType === 'privy'`)
    * to immediately enable secure trading interactions within the Trade Arena.
    * This is triggered instantly upon a successful Google login/OAuth session.
    */
@@ -86,9 +86,9 @@ export const PrivyWalletHeader = () => {
     if (!wallets || !Array.isArray(wallets)) return null;
     const isolatedWallet = wallets.find((w) => w.walletClientType === 'privy') || null;
     if (isolatedWallet) {
-      console.log('[Privy] Isolated active embedded wallet successfully:', isolatedWallet.address);
+      console.log('[Privy] Successfully pulled the user\'s active Privy embedded wallet (walletClientType === \'privy\'):', isolatedWallet.address);
       if (user?.google) {
-        console.log('[Privy] Google-authenticated session active wallet resolved:', isolatedWallet.address);
+        console.log('[Privy] Google login was successful. Isolated active embedded wallet immediately:', isolatedWallet.address);
       }
     }
     return isolatedWallet;
@@ -314,7 +314,7 @@ export const PrivyWalletHeader = () => {
 
   /**
    * TASK 4 CORE RESOLUTION:
-   * Graceful loading / provisioning state shown if user is authenticated but the embedded wallet array is empty.
+   * Graceful loading state shown if user is logged in but the embedded wallet array is empty ("Initializing arena wallet...").
    */
   if (authenticated && !arenaWallet) {
     return (
