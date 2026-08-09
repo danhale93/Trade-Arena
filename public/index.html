@@ -1042,9 +1042,25 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <!-- Databricks Genie Config -->
       <div class="db-config" id="dbConfig">
         <div class="db-config-title">🧱 DATABRICKS GENIE <span style="color:var(--dim);font-size:7px;font-family:'Share Tech Mono',monospace" id="dbStatus">NOT CONFIGURED</span></div>
-        <input type="text" id="dbWorkspace" placeholder="Workspace URL: https://your-workspace.azuredatabricks.net" oninput="updateDbStatus()">
-        <input type="text" id="dbSpaceId" placeholder="Genie Space ID (from Databricks UI)" oninput="updateDbStatus()">
-        <input type="password" id="dbToken" placeholder="Personal Access Token (Settings → Developer)" oninput="updateDbStatus()">
+
+        <div style="margin-bottom:8px">
+          <label for="dbWorkspace" style="display:block; font-size:8px; color:var(--dim); margin-bottom:2px">DATABRICKS WORKSPACE URL</label>
+          <input type="text" id="dbWorkspace" placeholder="Workspace URL: https://your-workspace.azuredatabricks.net" oninput="updateDbStatus()">
+        </div>
+
+        <div style="margin-bottom:8px">
+          <label for="dbSpaceId" style="display:block; font-size:8px; color:var(--dim); margin-bottom:2px">GENIE SPACE ID</label>
+          <input type="text" id="dbSpaceId" placeholder="Genie Space ID (from Databricks UI)" oninput="updateDbStatus()">
+        </div>
+
+        <div style="margin-bottom:8px">
+          <div style="display:flex; justify-content:space-between; font-size:8px; color:var(--dim); margin-bottom:2px">
+            <label for="dbToken">PERSONAL ACCESS TOKEN</label>
+            <button onclick="toggleVisibility('dbToken', this)" aria-label="Toggle Databricks Genie Token visibility" aria-pressed="false" aria-controls="dbToken" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
+          </div>
+          <input type="password" id="dbToken" placeholder="Personal Access Token (Settings → Developer)" oninput="updateDbStatus()">
+        </div>
+
         <div class="db-status">When configured, the Genie agent queries your warehouse for historical trade context and pattern data before each decision.</div>
       </div>
 

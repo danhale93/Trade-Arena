@@ -53,3 +53,7 @@
 ## 2026-08-07 - [Settings Modal Focus Management & Accessibility annotations]
 **Learning:** For floating settings modals or gear panels triggered via an icon-only button, screen readers require explicit "aria-label", "aria-haspopup", and "aria-expanded" attributes on the trigger. When the modal is toggled, programmatically shifting focus to the first range input, and on modal close returning focus back to the triggering element, ensures keyboard users maintain orientation without losing their document position. Explicit range inputs must be linked to semantic `<label>` elements via the `for` attribute for screen-reader compliance.
 **Action:** Associate custom sliders with semantic label tags and synchronize dynamic aria-expanded states with programmatic element focus shift.
+
+## 2026-08-08 - [Sensory Verification of Hidden Tokens]
+**Learning:** In data-rich environments with background integrations (such as Databricks Genie), providing hidden token inputs is a security necessity, but leaves users blind to potential typing mistakes. Adding semantic form labels associated via the `for` attribute combined with a password visibility SHOW/HIDE toggle solves both screen-reader accessibility and input verification without compromising secret security.
+**Action:** Wrap form inputs in distinct layout blocks with explicit labels and include secure SHOW/HIDE buttons for all sensitive personal/pat token fields.

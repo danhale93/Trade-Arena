@@ -18,14 +18,15 @@ const app = express();
 
 // Sentinel: Initialize in-memory duplicate task claim registry and allowed task whitelist
 app.locals.CLAIMED_USER_TASKS = new Set();
-const ALLOWED_TASK_IDS = new Set([
-    'follow_twitter',
-    'join_discord',
-    'share_win',
-    'first_trade',
-    'hcaptcha_verify',
-    'ai_feedback'
-]);
+const TASK_REWARDS = {
+    'follow_twitter': 10,
+    'join_discord': 15,
+    'share_win': 25,
+    'first_trade': 5,
+    'hcaptcha_verify': 20,
+    'ai_feedback': 30
+};
+const ALLOWED_TASK_IDS = new Set(Object.keys(TASK_REWARDS));
 
 // Sentinel: Security hardening
 app.set('trust proxy', 1); // Trust first proxy (Render, Heroku, etc.)
@@ -840,8 +841,9 @@ app.post('/api/tasks/claim', taskClaimLimiter, async (req, res) => {
             return res.status(429).json({ success: false, error: 'Task reward already claimed for this address' });
         }
 
-        if (typeof reward !== 'number' || isNaN(reward) || !isFinite(reward) || reward <= 0 || reward > 100) {
-            return res.status(400).json({ success: false, error: 'Invalid or missing reward' });
+        // Sentinel: Enforce reward integrity matching task configuration to prevent client-side reward tampering
+        if (typeof reward !== 'number' || isNaN(reward) || !isFinite(reward) || reward !== TASK_REWARDS[taskId]) {
+            return res.status(400).json({ success: false, error: 'Invalid or incorrect reward for this task' });
         }
 
         if (!userAddress || typeof userAddress !== 'string' || !ethers.isAddress(userAddress)) {
