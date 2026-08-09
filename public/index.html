@@ -4274,7 +4274,7 @@ async function spinBot(id){
     if(typeof VOICE!=='undefined') VOICE.tradeOpen(bot.id, decision.token, decision.method);
 
     // ON-CHAIN EXECUTION TRIGGER
-    if (window.isLiveMode && window.isPrivyConnected && window.isPrivyConnected() && !decision.method.includes('PAPER')) {
+    if (window.isLiveMode && ((window.isPrivyConnected && window.isPrivyConnected()) || (window.walletState && window.walletState.isConnected)) && !decision.method.includes('PAPER')) {
         console.log('[Arena] Routing to On-Chain Execution Engine...');
         try {
             await window.executeOnChainTrade({
