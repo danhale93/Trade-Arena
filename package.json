@@ -15,7 +15,7 @@
   "dependencies": {
     "@biconomy/abstractjs": "^1.2.5",
     "@biconomy/account": "^4.5.7",
-    "@privy-io/react-auth": "^3.36.0",
+    "@privy-io/react-auth": "^3.37.0",
     "axios": "1.18.1",
     "ccxt": "^4.5.71",
     "cors": "^2.8.5",
