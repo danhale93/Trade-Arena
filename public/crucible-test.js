@@ -455,13 +455,20 @@ console.log('Usage: runCrucibleTest(tradeCount, intervalMs)');
 console.log('Example: runCrucibleTest(20, 1500) // 20 trades, 1.5s apart');
 
 function calculateSMA(prices, period) {
-  if (prices.length < period) return 0;
-  const sum = prices.slice(prices.length - period).reduce((a, b) => a + b, 0);
+  const len = prices.length;
+  if (len < period) return 0;
+  // ⚡ Bolt Optimization: Single-pass manual loop over the target window to avoid intermediate array allocations (.slice)
+  let sum = 0;
+  const start = len - period;
+  for (let i = start; i < len; i++) {
+    sum += prices[i];
+  }
   return Number((sum / period).toFixed(4));
 }
 
 function calculateRSI(prices, period = 14) {
-  if (prices.length <= period) return 50;
+  const len = prices.length;
+  if (len <= period) return 50;
   let gains = 0;
   let losses = 0;
   for (let i = 1; i <= period; i++) {
@@ -470,12 +477,18 @@ function calculateRSI(prices, period = 14) {
     else losses -= diff;
   }
   if (losses === 0) return 100;
-  let avgGain = gains / period;
-  let avgLoss = losses / period;
-  for (let i = period + 1; i < prices.length; i++) {
+
+  // ⚡ Bolt Optimization: Cache loop boundaries and division factor, avoid duplicate length lookups, and use inline ternary operations
+  const invPeriod = 1 / period;
+  const periodMinusOne = period - 1;
+  let avgGain = gains * invPeriod;
+  let avgLoss = losses * invPeriod;
+  for (let i = period + 1; i < len; i++) {
     const diff = prices[i] - prices[i - 1];
-    avgGain = (avgGain * (period - 1) + (diff > 0 ? diff : 0)) / period;
-    avgLoss = (avgLoss * (period - 1) + (diff < 0 ? -diff : 0)) / period;
+    const gain = diff > 0 ? diff : 0;
+    const loss = diff < 0 ? -diff : 0;
+    avgGain = (avgGain * periodMinusOne + gain) * invPeriod;
+    avgLoss = (avgLoss * periodMinusOne + loss) * invPeriod;
   }
   if (avgLoss === 0) return 100;
   const rs = avgGain / avgLoss;
@@ -483,17 +496,26 @@ function calculateRSI(prices, period = 14) {
 }
 
 function calculateATR(highs, lows, closes, period = 14) {
-  if (closes.length < 2) return 0;
+  const len = closes.length;
+  if (len < 2) return 0;
   let trSum = 0;
-  for (let i = 1; i < closes.length; i++) {
-    const tr = Math.max(
-      highs[i] - lows[i],
-      Math.abs(highs[i] - closes[i - 1]),
-      Math.abs(lows[i] - closes[i - 1])
-    );
+  // ⚡ Bolt Optimization: Single-pass manual loop over candles, replacing slow standard methods like Math.max and Math.abs
+  // with fast ternary comparisons to speed up range evaluations, and avoiding intermediate function-call stack creation.
+  for (let i = 1; i < len; i++) {
+    const high = highs[i];
+    const low = lows[i];
+    const prevClose = closes[i - 1];
+
+    const hl = high - low;
+    const hpc = high > prevClose ? high - prevClose : prevClose - high;
+    const lpc = low > prevClose ? low - prevClose : prevClose - low;
+
+    let tr = hl > hpc ? hl : hpc;
+    if (lpc > tr) tr = lpc;
+
     trSum += tr;
   }
-  return Number((trSum / (closes.length - 1)).toFixed(4));
+  return Number((trSum / (len - 1)).toFixed(4));
 }
 
 function classifyRegime(rsi, atr, price, sma) {

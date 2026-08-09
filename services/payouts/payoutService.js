@@ -1,5 +1,6 @@
 const axios = require('axios');
 const { ethers } = require('ethers');
+const crypto = require('crypto');
 
 class PayoutService {
     constructor(config) {
@@ -57,7 +58,8 @@ class PayoutService {
         }
 
         const amount = ethers.parseUnits("10", 6);
-        const nonce = Date.now();
+        // Sentinel: Generate a cryptographically secure random 256-bit nonce to eliminate collision and predictability vulnerabilities
+        const nonce = BigInt('0x' + crypto.randomBytes(32).toString('hex'));
         const signature = await this.generatePayoutSignature(userAddress, taskId, amount, nonce);
 
         return { user: userAddress, taskId, amount: amount.toString(), nonce: nonce.toString(), signature };

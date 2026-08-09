@@ -18,14 +18,15 @@ const app = express();
 
 // Sentinel: Initialize in-memory duplicate task claim registry and allowed task whitelist
 app.locals.CLAIMED_USER_TASKS = new Set();
-const ALLOWED_TASK_IDS = new Set([
-    'follow_twitter',
-    'join_discord',
-    'share_win',
-    'first_trade',
-    'hcaptcha_verify',
-    'ai_feedback'
-]);
+const TASK_REWARDS = {
+    'follow_twitter': 10,
+    'join_discord': 15,
+    'share_win': 25,
+    'first_trade': 5,
+    'hcaptcha_verify': 20,
+    'ai_feedback': 30
+};
+const ALLOWED_TASK_IDS = new Set(Object.keys(TASK_REWARDS));
 
 // Sentinel: Security hardening
 app.set('trust proxy', 1); // Trust first proxy (Render, Heroku, etc.)
@@ -403,6 +404,17 @@ app.post('/api/maintenance/log', maintenanceLogLimiter, (req, res) => {
     const { agent, message, level } = req.body;
     if (!agent || !message) return res.status(400).json({ error: 'Missing agent or message' });
 
+    // Sentinel: Enforce strict type-safety and length limits to prevent Type Confusion and DoS
+    if (typeof agent !== 'string' || agent.length > 100) {
+        return res.status(400).json({ error: 'Invalid or too long agent' });
+    }
+    if (typeof message !== 'string' || message.length > 500) {
+        return res.status(400).json({ error: 'Invalid or too long message' });
+    }
+    if (level !== undefined && (typeof level !== 'string' || level.length > 20)) {
+        return res.status(400).json({ error: 'Invalid or too long level' });
+    }
+
     // Sentinel: Sanitize inputs to prevent log injection/spoofing
     const sanitize = (s) => String(s || '').replace(/[\n\r]/g, ' ').substring(0, 500);
     const safeAgent = sanitize(agent).substring(0, 100);
@@ -433,6 +445,14 @@ app.post('/api/maintenance/patch', maintenanceLogLimiter, async (req, res) => {
     try {
         if (!filepath || typeof filepath !== 'string') {
             return res.status(400).json({ error: 'Invalid or missing filepath' });
+        }
+
+        // Sentinel: Enforce strict type-safety and length limits on patch and description
+        if (patch !== undefined && (typeof patch !== 'string' || patch.length > 50000)) {
+            return res.status(400).json({ error: 'Invalid or too long patch' });
+        }
+        if (description !== undefined && (typeof description !== 'string' || description.length > 1000)) {
+            return res.status(400).json({ error: 'Invalid or too long description' });
         }
 
         // Security: Check against absolute whitelist to clear CodeQL taint
@@ -821,8 +841,9 @@ app.post('/api/tasks/claim', taskClaimLimiter, async (req, res) => {
             return res.status(429).json({ success: false, error: 'Task reward already claimed for this address' });
         }
 
-        if (typeof reward !== 'number' || isNaN(reward) || !isFinite(reward) || reward <= 0 || reward > 100) {
-            return res.status(400).json({ success: false, error: 'Invalid or missing reward' });
+        // Sentinel: Enforce reward integrity matching task configuration to prevent client-side reward tampering
+        if (typeof reward !== 'number' || isNaN(reward) || !isFinite(reward) || reward !== TASK_REWARDS[taskId]) {
+            return res.status(400).json({ success: false, error: 'Invalid or incorrect reward for this task' });
         }
 
         if (!userAddress || typeof userAddress !== 'string' || !ethers.isAddress(userAddress)) {
