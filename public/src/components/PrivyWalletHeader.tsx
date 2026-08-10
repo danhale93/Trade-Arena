@@ -47,10 +47,10 @@ export const truncateAddress = (address: string | undefined | null): string => {
  * 5. Leverages window global bridges for seamless integration with the legacy execution engine.
  */
 export const PrivyWalletHeader = () => {
-  // Task 1: Locate the primary authenticated layout or dashboard header component and extract authenticated session metadata and login/logout methods
-  let { authenticated, user, login, logout, ready } = usePrivy();
+  // Senior Web3 Implementation: Extract session metadata, login/logout, and embedded wallet creation using Privy's core hook
+  let { authenticated, user, login, logout, ready, createWallet } = usePrivy();
 
-  // Task 2: Call Privy's useWallets hook to retrieve all connected user wallets, allowing us to isolate the user's active Privy embedded wallet
+  // Senior Web3 Implementation: Use useWallets to fetch the list of wallets currently available for this authenticated user
   let { wallets, ready: walletsReady } = useWallets();
 
   // UX Feedback State: inline copy feedback indicator
@@ -317,6 +317,17 @@ export const PrivyWalletHeader = () => {
    * Graceful loading state shown if user is logged in but the embedded wallet array is empty ("Initializing arena wallet...").
    */
   if (authenticated && !arenaWallet) {
+    const handleCreateWallet = async () => {
+      if (typeof createWallet === 'function') {
+        try {
+          console.log('[Privy] Manually triggering embedded wallet creation...');
+          await createWallet();
+        } catch (err) {
+          console.error('[Privy] Failed to manually create embedded wallet:', err);
+        }
+      }
+    };
+
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '0 4px' }} className="gh-wallet-initializing">
         <div className="gh-name" style={{ fontSize: '10px', color: 'var(--cyan)', whiteSpace: 'nowrap' }}>
@@ -325,6 +336,23 @@ export const PrivyWalletHeader = () => {
         <div style={{ fontSize: '8px', color: 'var(--amber)', fontFamily: 'Share Tech Mono', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '4px' }}>
           <span className="think-spinner" style={{ width: '8px', height: '8px', border: '1px solid var(--border)', borderTopColor: 'var(--amber)', borderRadius: '50%', display: 'inline-block', animation: 'spin 1s linear infinite' }} />
           <span>Initializing arena wallet...</span>
+          {typeof createWallet === 'function' && (
+            <button
+              onClick={handleCreateWallet}
+              style={{
+                background: 'rgba(217, 119, 6, 0.2)',
+                border: '1px solid var(--amber)',
+                color: 'var(--amber)',
+                fontSize: '7px',
+                padding: '1px 3px',
+                borderRadius: '3px',
+                marginLeft: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              CREATE
+            </button>
+          )}
         </div>
       </div>
     );

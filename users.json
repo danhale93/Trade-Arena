@@ -95,16 +95,16 @@
     "trades": [],
     "created": 1785762742650
   },
-  "0x8A3f205026464Dae6e83382e5f93a306CD13D690": {
-    "id": "0x8A3f205026464Dae6e83382e5f93a306CD13D690",
+  "0x94C54e741C8d64a62637b0DBCea83134F14f316E": {
+    "id": "0x94C54e741C8d64a62637b0DBCea83134F14f316E",
     "name": "MetaMask Trader",
     "email": null,
-    "address": "0x8A3f205026464Dae6e83382e5f93a306CD13D690",
+    "address": "0x94C54e741C8d64a62637b0DBCea83134F14f316E",
     "provider": "metamask",
     "avatar": null,
     "balance": 0,
     "bots": [],
     "trades": [],
-    "created": 1786358914077
+    "created": 1786334758130
   }
 }
