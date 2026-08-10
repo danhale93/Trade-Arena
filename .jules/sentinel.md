@@ -241,14 +241,12 @@ Security audit complete. All encryption layers intact.
 **Learning:** Checking parameter existence or using basic sanitization methods is insufficient when parameters are processed, formatted, or logged. When inputs are used within disk and memory operations, failure to restrict sizes or types allows remote clients to cause server starvation or stack/format exceptions.
 **Prevention:** Enforce strict type check validation (`typeof`) and conservative length constraints on all string parameters processed at route controllers, particularly for maintenance and diagnostics logging endpoints.
 
-## 2026-08-10T04:06:01.099Z - [INFO] SENTINEL
-Running security audit across localStorage and active config...
+## 2026-08-08 - Client-Side Reward Tampering Prevention & Cryptographically Secure Nonce Hardening
+**Vulnerability:** Client-side parameter tampering on reward amount and predictable millisecond-epoch based nonce generation prone to transaction collisions.
+**Learning:** Accepting critical values (such as monetary rewards or transaction values) directly from client payload parameters without checking them against a server-side authoritative map leads to parameter tampering and draining risks. Additionally, using millisecond-based timestamps (`Date.now()`) for smart contract signature nonces easily causes collision failures under concurrent claims and allows predictable nonce scanning.
+**Prevention:** Always maintain a backend canonical map/registry of allowed tasks and their associated reward values, verifying any incoming client-side reward parameter strictly matches the server map. Generate on-chain nonces using cryptographically secure 256-bit random integers (via `crypto.randomBytes(32)` converted to BigInt decimal string) to guarantee zero-collision concurrency and high entropy.
 
-## 2026-08-10T04:06:05.100Z - [SUCCESS] SENTINEL
-Security audit complete. All encryption layers intact.
-
-## 2026-08-10T04:07:32.597Z - [INFO] SENTINEL
-Running security audit across localStorage and active config...
-
-## 2026-08-10T04:11:31.536Z - [INFO] SENTINEL
-Running security audit across localStorage and active config...
+## 2026-08-09 - Path Traversal & Arbitrary File Write in Strategy Loader
+**Vulnerability:** The StrategyLoader's `addCustomStrategy` and `removeCustomStrategy` functions accepted a `strategyId` parameter and concatenated it directly with path structures without type checks, regex filtering, or relative path boundary validation. This allowed path-traversal strings like `../../../` to target, overwrite, or delete arbitrary files across the server.
+**Learning:** Utilities that dynamically write or delete files based on user-controlled file or resource identifiers are highly vulnerable to path traversal. Relying on simple path concatenation (`path.join`) fails to limit execution boundaries since dots and slashes bypass local directory constraints.
+**Prevention:** Always sanitize input keys to only allow alphanumeric characters and safe hyphens/underscores, and strictly validate resolved absolute paths using `path.resolve(targetPath).startsWith(baseDirectoryPath)` to prevent escaping sandbox bounds.

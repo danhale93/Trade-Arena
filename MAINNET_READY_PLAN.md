@@ -32,8 +32,8 @@ The project is structured into four distinct, logical phases designed to de-risk
 ```
 
 ### Phase 0: Immediate Safety, Pre-Execution Guardrails, & Risk Controls
-*   **Focus:** Harden the existing Node.js/Express backend (`server.js`) and trading engine bundle (`public/trading-bundle.js`) with deterministic execution limits, simulation steps, and local validation.
-*   **Milestone:** All bots running locally or in dev modes are governed by hard limits. Pre-execution checks prevent garbage transactions from being signed.
+*   **Focus:** Harden the existing Node.js/Express backend (`server.js`) and trading engine bundle (`public/trading-bundle.js`) with deterministic execution limits, simulation steps, automated spend limit controls, and local validation.
+*   **Milestone:** All bots running locally or in dev modes are governed by hard limits and automated spend limit controls. Pre-execution checks prevent garbage transactions from being signed.
 *   **Target Date:** Week 1 (Target: March 30, 2026)
 
 ### Phase 1: Staging Environment, Mainnet-Fork Testing, & Paper-Trading
@@ -188,7 +188,7 @@ Below is the concrete, ticket-sized task breakdown assigned to key roles: SRE (S
 |---|---|---|
 | **Phase 0** | **Pre-Execution Guardrails** | 1. Any trade swap that would result in a net loss (including gas + 0.25% fee) is blocked by the backend with an explicit error.<br>2. Slippage over 1% on major pools is blocked unless overridden.<br>3. Daily global spend cap (0.5 ETH) is successfully verified by unit tests. |
 | **Phase 1** | **Mainnet-Fork Tests in CI** | 1. CI runs `scripts/fork-test.js` successfully when `ALCHEMY_MAINNET_URL` is present.<br>2. PRs are blocked from merging if any tests fail.<br>3. `trade-arena-staging` is fully deployed with separate mock credentials. |
-| **Phase 1** | **14-Day Paper-Trading Run** | 1. Staging bots run continuously for 14 calendar days without a single critical crash/unhandled exception.<br>2. A complete spreadsheet/report is exported detailing simulated arbitrage and grid outcomes. |
+| **Phase 1** | **14-Day Paper-Trading Run** | 1. Staging bots run continuously for 14 calendar days with 100% uptime, zero unhandled server-side exceptions, and under a strict maximum drawdown limit of 15%.<br>2. Metrics show a stable simulated win/loss ratio of > 50% and execution latency limits strictly below 1500ms.<br>3. A complete spreadsheet/report is exported detailing simulated arbitrage and grid outcomes. |
 | **Phase 2** | **Gnosis Safe & Relayer Signing** | 1. Gnosis Safe 2-of-3 multisig deployed to Base Mainnet.<br>2. The application server initiates transactions via the secure relayer without holding or knowing the safe's signing private keys.<br>3. Alchemy/Tenderly simulation runs successfully before every transaction. |
 | **Phase 2** | **External Security Audit** | 1. Smart contracts audited by a reputable third-party firm.<br>2. Zero Critical or High-severity issues remain unpatched. |
 | **Phase 3** | **Monitoring & Alerting Setup** | 1. Live dashboards display real-time wallet balances and gas burn rate.<br>2. Slack and PagerDuty deliver test alerts within < 10 seconds of simulated failure trigger. |

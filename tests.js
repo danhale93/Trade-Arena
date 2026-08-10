@@ -255,6 +255,53 @@ describe("Task Claim Security - Sentinel Hardening", () => {
       process.env.TASK_CLAIM_SECRET = originalSecret;
     }
   });
+
+  it("rejects task claims with incorrect or spoofed reward amounts (Integrity validation)", async () => {
+    const originalPort = process.env.PORT;
+    const originalSecret = process.env.TASK_CLAIM_SECRET;
+    process.env.PORT = "0";
+    process.env.TASK_CLAIM_SECRET = "test-secret-key-123";
+
+    const express = require('express');
+    const originalListen = express.application.listen;
+    let activeServer = null;
+    express.application.listen = function(...args) {
+      activeServer = originalListen.apply(this, args);
+      return activeServer;
+    };
+
+    delete require.cache[require.resolve("./server.js")];
+    require("./server.js");
+
+    try {
+      const port = activeServer.address().port;
+      const testAddress = "0x9F407b7f793555c35c33aC64bd6901759470736D";
+      const validToken = "test-secret-key-123";
+
+      // Try to submit follow_twitter with reward 100 instead of 10
+      const resSpoofedReward = await fetch(`http://localhost:${port}/api/tasks/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: "follow_twitter",
+          reward: 100, // Spoofed (should be 10)
+          userAddress: testAddress,
+          validationToken: validToken
+        })
+      });
+      expect(resSpoofedReward.status).toBe(400);
+      const dataSpoofedReward = await resSpoofedReward.json();
+      expect(dataSpoofedReward.success).toBe(false);
+      expect(dataSpoofedReward.error).toBe("Invalid or incorrect reward for this task");
+    } finally {
+      express.application.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+      process.env.TASK_CLAIM_SECRET = originalSecret;
+    }
+  });
 });
 
 describe("Trading Engine - Volatility & Sizing", () => {
@@ -1932,6 +1979,71 @@ describe("Task Claim Security & Whitelisting - Sentinel Hardening", () => {
       process.env.TASK_CLAIM_SECRET = originalSecret;
       process.env.ORACLE_PRIVATE_KEY = originalOracleKey;
     }
+  });
+});
+
+describe("Strategy Loader Security & Path Traversal - Sentinel Hardening", () => {
+  it("rejects invalid/untrusted strategyId format in addCustomStrategy and removeCustomStrategy", async () => {
+    const loader = require("./strategies/loader");
+
+    // Test non-string input
+    let success = await loader.addCustomStrategy(123, {});
+    expect(success).toBe(false);
+
+    // Test path traversal payload
+    success = await loader.addCustomStrategy("../../../malicious", {
+      info: { name: "test", description: "test", version: "1.0.0" },
+      execute: () => {}
+    });
+    expect(success).toBe(false);
+
+    // Test null/undefined format
+    success = await loader.addCustomStrategy("test", null);
+    expect(success).toBe(false);
+
+    success = await loader.addCustomStrategy("test", undefined);
+    expect(success).toBe(false);
+  });
+
+  it("safely handles null or non-object in isValidStrategy", () => {
+    const loader = require("./strategies/loader");
+    expect(loader.isValidStrategy(null)).toBe(false);
+    expect(loader.isValidStrategy(undefined)).toBe(false);
+    expect(loader.isValidStrategy(123)).toBe(false);
+    expect(loader.isValidStrategy("not-an-object")).toBe(false);
+  });
+
+  it("successfully adds and removes custom strategy with valid strategyId", async () => {
+    const loader = require("./strategies/loader");
+    const strategyId = "sentinel_test_strategy";
+    const dummyStrategy = {
+      info: { name: "Sentinel Strategy", description: "Test", version: "1.0.0" },
+      execute: function(marketData, params) { return { signal: "HOLD", confidence: 0.5 }; },
+      toString: function() {
+        return `
+          module.exports = {
+            info: { name: "Sentinel Strategy", description: "Test", version: "1.0.0" },
+            execute: function(marketData, params) { return { signal: "HOLD", confidence: 0.5 }; }
+          };
+        `;
+      }
+    };
+
+    // Add strategy
+    const added = await loader.addCustomStrategy(strategyId, dummyStrategy);
+    expect(added).toBe(true);
+
+    // Verify it exists in strategies list
+    const strategies = loader.getStrategies();
+    expect(strategies[strategyId] !== undefined).toBe(true);
+
+    // Remove strategy
+    const removed = await loader.removeCustomStrategy(strategyId);
+    expect(removed).toBe(true);
+
+    // Verify it is removed
+    const strategiesAfter = loader.getStrategies();
+    expect(strategiesAfter[strategyId] === undefined).toBe(true);
   });
 });
 

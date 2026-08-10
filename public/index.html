@@ -1042,28 +1042,25 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <!-- Databricks Genie Config -->
       <div class="db-config" id="dbConfig">
         <div class="db-config-title">🧱 DATABRICKS GENIE <span style="color:var(--dim);font-size:7px;font-family:'Share Tech Mono',monospace" id="dbStatus">NOT CONFIGURED</span></div>
+
         <div style="margin-bottom:8px">
-          <div style="font-size:8px; color:var(--dim); margin-bottom:2px">
-            <label for="dbWorkspace">WORKSPACE URL</label>
-          </div>
+          <label for="dbWorkspace" style="display:block; font-size:8px; color:var(--dim); margin-bottom:2px">DATABRICKS WORKSPACE URL</label>
           <input type="text" id="dbWorkspace" placeholder="Workspace URL: https://your-workspace.azuredatabricks.net" oninput="updateDbStatus()">
         </div>
+
         <div style="margin-bottom:8px">
-          <div style="font-size:8px; color:var(--dim); margin-bottom:2px">
-            <label for="dbSpaceId">GENIE SPACE ID</label>
-          </div>
+          <label for="dbSpaceId" style="display:block; font-size:8px; color:var(--dim); margin-bottom:2px">GENIE SPACE ID</label>
           <input type="text" id="dbSpaceId" placeholder="Genie Space ID (from Databricks UI)" oninput="updateDbStatus()">
         </div>
+
         <div style="margin-bottom:8px">
           <div style="display:flex; justify-content:space-between; font-size:8px; color:var(--dim); margin-bottom:2px">
             <label for="dbToken">PERSONAL ACCESS TOKEN</label>
-            <div style="display:flex;gap:8px">
-              <button onclick="toggleVisibility('dbToken', this)" aria-label="Toggle Databricks Personal Access Token visibility" aria-pressed="false" aria-controls="dbToken" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
-              <a href="https://docs.databricks.com/en/dev-tools/auth/pat.html" target="_blank" rel="noopener noreferrer" style="color:var(--cyan)">Get Token →</a>
-            </div>
+            <button onclick="toggleVisibility('dbToken', this)" aria-label="Toggle Databricks Genie Token visibility" aria-pressed="false" aria-controls="dbToken" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
           </div>
           <input type="password" id="dbToken" placeholder="Personal Access Token (Settings → Developer)" oninput="updateDbStatus()">
         </div>
+
         <div class="db-status">When configured, the Genie agent queries your warehouse for historical trade context and pattern data before each decision.</div>
       </div>
 
@@ -3076,7 +3073,7 @@ function updateConnectionDashboard() {
         banner.style.display = 'flex';
         keysListEl.innerHTML = 'Inactive required systems: ' + missing.map(c => {
           const info = keyGenLinks[c.name] || { label: c.name.replace(/_/g, ' '), url: '#' };
-          return `<a href="${info.url}" target="_blank" rel="noopener noreferrer" style="color:var(--cyan); text-decoration:underline; font-weight:bold; margin:0 4px;">${info.label} (GET KEY →)</a>`;
+          return `<a href="${info.url}" target="_blank" rel="noopener noreferrer" aria-label="Get ${escapeHTML(info.label)} (opens in a new tab)" style="color:var(--cyan); text-decoration:underline; font-weight:bold; margin:0 4px;">${info.label} (GET KEY →)</a>`;
         }).join(', ');
       } else if (banner) {
         banner.style.display = 'none';
@@ -3110,7 +3107,7 @@ function updateConnectionDashboard() {
             <div style="margin-top:8px; border-top:1px solid var(--border); padding-top:8px;">
               <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
                 <span style="font-size:8px; color:var(--dim);">${label} — ${escapeHTML(conn.name.replace(/_/g, ' '))}</span>
-                <a href="${genUrl}" target="_blank" rel="noopener noreferrer" style="font-size:8px; color:var(--cyan); text-decoration:none;">GET KEY →</a>
+                <a href="${genUrl}" target="_blank" rel="noopener noreferrer" aria-label="Get ${escapeHTML(conn.name.replace(/_/g, ' '))} (opens in a new tab)" style="font-size:8px; color:var(--cyan); text-decoration:none;">GET KEY →</a>
               </div>
               <div style="display:flex; gap:4px;">
                 <input type="password" id="d_cfg_${conn.name}" placeholder="Enter ${escapeHTML(conn.name.replace(/_/g, ' '))}..."
@@ -4277,7 +4274,7 @@ async function spinBot(id){
     if(typeof VOICE!=='undefined') VOICE.tradeOpen(bot.id, decision.token, decision.method);
 
     // ON-CHAIN EXECUTION TRIGGER
-    if (window.isLiveMode && window.isPrivyConnected && window.isPrivyConnected() && !decision.method.includes('PAPER')) {
+    if (window.isLiveMode && ((window.isPrivyConnected && window.isPrivyConnected()) || (window.walletState && window.walletState.isConnected)) && !decision.method.includes('PAPER')) {
         console.log('[Arena] Routing to On-Chain Execution Engine...');
         try {
             await window.executeOnChainTrade({
@@ -6738,7 +6735,7 @@ function updateSettingsVolume(val) {
             <div style="display:flex;gap:8px">
               <button onclick="toggleVisibility('s_cfg_ant', this)" aria-label="Toggle Anthropic API Key visibility" aria-pressed="false" aria-controls="s_cfg_ant" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
               <button onclick="copyToClipboard('s_cfg_ant', this)" aria-label="Copy Anthropic API Key" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
-              <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer" style="color:var(--cyan)">Get Key →</a>
+              <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer" aria-label="Get Anthropic API Key (opens in a new tab)" style="color:var(--cyan)">Get Key →</a>
             </div>
           </div>
           <input type="password" id="s_cfg_ant" placeholder="sk-ant-..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
@@ -6750,7 +6747,7 @@ function updateSettingsVolume(val) {
             <div style="display:flex;gap:8px">
               <button onclick="toggleVisibility('s_cfg_oa', this)" aria-label="Toggle OpenAI API Key visibility" aria-pressed="false" aria-controls="s_cfg_oa" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
               <button onclick="copyToClipboard('s_cfg_oa', this)" aria-label="Copy OpenAI API Key" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
-              <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" style="color:var(--cyan)">Get Key →</a>
+              <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" aria-label="Get OpenAI API Key (opens in a new tab)" style="color:var(--cyan)">Get Key →</a>
             </div>
           </div>
           <input type="password" id="s_cfg_oa" placeholder="sk-..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
@@ -6762,7 +6759,7 @@ function updateSettingsVolume(val) {
             <div style="display:flex;gap:8px">
               <button onclick="toggleVisibility('s_cfg_gem', this)" aria-label="Toggle Google Gemini API Key visibility" aria-pressed="false" aria-controls="s_cfg_gem" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
               <button onclick="copyToClipboard('s_cfg_gem', this)" aria-label="Copy Google Gemini API Key" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
-              <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" style="color:var(--cyan)">Get Key →</a>
+              <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" aria-label="Get Google Gemini API Key (opens in a new tab)" style="color:var(--cyan)">Get Key →</a>
             </div>
           </div>
           <input type="password" id="s_cfg_gem" placeholder="AIza..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
@@ -6774,7 +6771,7 @@ function updateSettingsVolume(val) {
             <div style="display:flex;gap:8px">
               <button onclick="toggleVisibility('s_cfg_zx', this)" aria-label="Toggle 0x API Key visibility" aria-pressed="false" aria-controls="s_cfg_zx" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
               <button onclick="copyToClipboard('s_cfg_zx', this)" aria-label="Copy 0x API Key" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
-              <a href="https://dashboard.0x.org/apps" target="_blank" rel="noopener noreferrer" style="color:var(--cyan)">Get Key →</a>
+              <a href="https://dashboard.0x.org" target="_blank" rel="noopener noreferrer" aria-label="Get 0x API Key (opens in a new tab)" style="color:var(--cyan)">Get Key →</a>
             </div>
           </div>
           <input type="password" id="s_cfg_zx" placeholder="0x-api-key-..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
@@ -6786,7 +6783,7 @@ function updateSettingsVolume(val) {
             <div style="display:flex;gap:8px">
               <button onclick="toggleVisibility('s_cfg_ts', this)" aria-label="Toggle Task Reward Secret visibility" aria-pressed="false" aria-controls="s_cfg_ts" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
               <button onclick="copyToClipboard('s_cfg_ts', this)" aria-label="Copy Task Reward Secret" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
-              <a href="https://trade-arena.com/keys" target="_blank" rel="noopener noreferrer" style="color:var(--cyan); text-decoration:none;">GET SECRET →</a>
+              <a href="https://trade-arena.com/keys" target="_blank" rel="noopener noreferrer" aria-label="Get Task Reward Secret (opens in a new tab)" style="color:var(--cyan); text-decoration:none;">GET SECRET →</a>
             </div>
           </div>
           <input type="password" id="s_cfg_ts" placeholder="Enter payout validation secret..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
