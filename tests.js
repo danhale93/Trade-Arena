@@ -1982,6 +1982,71 @@ describe("Task Claim Security & Whitelisting - Sentinel Hardening", () => {
   });
 });
 
+describe("Strategy Loader Security & Path Traversal - Sentinel Hardening", () => {
+  it("rejects invalid/untrusted strategyId format in addCustomStrategy and removeCustomStrategy", async () => {
+    const loader = require("./strategies/loader");
+
+    // Test non-string input
+    let success = await loader.addCustomStrategy(123, {});
+    expect(success).toBe(false);
+
+    // Test path traversal payload
+    success = await loader.addCustomStrategy("../../../malicious", {
+      info: { name: "test", description: "test", version: "1.0.0" },
+      execute: () => {}
+    });
+    expect(success).toBe(false);
+
+    // Test null/undefined format
+    success = await loader.addCustomStrategy("test", null);
+    expect(success).toBe(false);
+
+    success = await loader.addCustomStrategy("test", undefined);
+    expect(success).toBe(false);
+  });
+
+  it("safely handles null or non-object in isValidStrategy", () => {
+    const loader = require("./strategies/loader");
+    expect(loader.isValidStrategy(null)).toBe(false);
+    expect(loader.isValidStrategy(undefined)).toBe(false);
+    expect(loader.isValidStrategy(123)).toBe(false);
+    expect(loader.isValidStrategy("not-an-object")).toBe(false);
+  });
+
+  it("successfully adds and removes custom strategy with valid strategyId", async () => {
+    const loader = require("./strategies/loader");
+    const strategyId = "sentinel_test_strategy";
+    const dummyStrategy = {
+      info: { name: "Sentinel Strategy", description: "Test", version: "1.0.0" },
+      execute: function(marketData, params) { return { signal: "HOLD", confidence: 0.5 }; },
+      toString: function() {
+        return `
+          module.exports = {
+            info: { name: "Sentinel Strategy", description: "Test", version: "1.0.0" },
+            execute: function(marketData, params) { return { signal: "HOLD", confidence: 0.5 }; }
+          };
+        `;
+      }
+    };
+
+    // Add strategy
+    const added = await loader.addCustomStrategy(strategyId, dummyStrategy);
+    expect(added).toBe(true);
+
+    // Verify it exists in strategies list
+    const strategies = loader.getStrategies();
+    expect(strategies[strategyId] !== undefined).toBe(true);
+
+    // Remove strategy
+    const removed = await loader.removeCustomStrategy(strategyId);
+    expect(removed).toBe(true);
+
+    // Verify it is removed
+    const strategiesAfter = loader.getStrategies();
+    expect(strategiesAfter[strategyId] === undefined).toBe(true);
+  });
+});
+
 async function run() {
   let lastSuite = null;
 

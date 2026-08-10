@@ -9,8 +9,8 @@ const path = require('path');
 class StrategyLoader {
   constructor() {
     this.strategies = new Map();
-    this.corePath = path.join(__dirname, 'strategies', 'core');
-    this.customPath = path.join(__dirname, 'strategies', 'custom');
+    this.corePath = path.join(__dirname, 'core');
+    this.customPath = path.join(__dirname, 'custom');
     
     // Ensure directories exist
     this.ensureDirectoryExists(this.corePath);
@@ -93,6 +93,9 @@ class StrategyLoader {
    * @returns {boolean} Is valid
    */
   isValidStrategy(module) {
+    if (!module || typeof module !== 'object') {
+      return false;
+    }
     // Strategy must have an execute function
     if (typeof module.execute !== 'function') {
       return false;
@@ -220,12 +223,13 @@ class StrategyLoader {
     const coreFiles = fs.readdirSync(this.corePath);
     const customFiles = fs.readdirSync(this.customPath);
     
-    const allFiles = [...coreFiles, ...customFiles]
+    const coreAll = coreFiles
       .filter(file => file.endsWith('.js'))
-      .map(file => path.join(
-        file.startsWith('.') ? this.customPath : this.corePath, 
-        file
-      ));
+      .map(file => path.join(this.corePath, file));
+    const customAll = customFiles
+      .filter(file => file.endsWith('.js'))
+      .map(file => path.join(this.customPath, file));
+    const allFiles = [...coreAll, ...customAll];
     
     // Clear require cache for strategy files
     for (const file of allFiles) {
@@ -245,6 +249,10 @@ class StrategyLoader {
    */
   async addCustomStrategy(strategyId, strategyCode) {
     try {
+      if (typeof strategyId !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(strategyId)) {
+        throw new Error('Invalid strategyId format');
+      }
+
       // Validate strategy code
       if (!this.isValidStrategy(strategyCode)) {
         throw new Error('Invalid strategy format');
@@ -252,7 +260,12 @@ class StrategyLoader {
       
       // Write to file
       const filePath = path.join(this.customPath, `${strategyId}.js`);
-      fs.writeFileSync(filePath, `
+      const resolvedPath = path.resolve(filePath);
+      if (!resolvedPath.startsWith(this.customPath)) {
+        throw new Error('Directory traversal detected');
+      }
+
+      fs.writeFileSync(resolvedPath, `
 /**
  * Custom Strategy: ${strategyId}
  * Auto-generated on ${new Date().toISOString()}
@@ -262,11 +275,12 @@ ${strategyCode.toString()}
       `);
       
       // Clear require cache for this file if it exists
-      const resolvedPath = require.resolve(filePath);
-      delete require.cache[resolvedPath];
+      if (require.cache[resolvedPath]) {
+        delete require.cache[resolvedPath];
+      }
       
       // Load the new strategy
-      const strategyModule = require(filePath);
+      const strategyModule = require(resolvedPath);
       this.strategies.set(strategyId, {
         ...strategyModule,
         id: strategyId,
@@ -290,6 +304,16 @@ ${strategyCode.toString()}
    */
   async removeCustomStrategy(strategyId) {
     try {
+      if (typeof strategyId !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(strategyId)) {
+        throw new Error('Invalid strategyId format');
+      }
+
+      const filePath = path.join(this.customPath, `${strategyId}.js`);
+      const resolvedPath = path.resolve(filePath);
+      if (!resolvedPath.startsWith(this.customPath)) {
+        throw new Error('Directory traversal detected');
+      }
+
       const strategy = this.getStrategy(strategyId);
       if (!strategy || strategy.type !== 'custom') {
         throw new Error(`Custom strategy not found: ${strategyId}`);
@@ -299,14 +323,13 @@ ${strategyCode.toString()}
       this.strategies.delete(strategyId);
       
       // Delete file
-      const filePath = path.join(this.customPath, `${strategyId}.js`);
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
+      if (fs.existsSync(resolvedPath)) {
+        fs.unlinkSync(resolvedPath);
       }
       
       // Clear require cache
-      if (require.cache[filePath]) {
-        delete require.cache[filePath];
+      if (require.cache[resolvedPath]) {
+        delete require.cache[resolvedPath];
       }
       
       console.log(`[StrategyLoader] Removed custom strategy: ${strategyId}`);
