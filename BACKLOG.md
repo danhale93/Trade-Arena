@@ -25,7 +25,7 @@ This document represents the official issue tracker and backlog for the Trade Ar
 
 ### Epic 2: Secure Custody & Relayer Integration (Phase 2)
 *   [T-201: Setup Gnosis Safe Multisig & Relayer Contract Architecture](#t-201-setup-gnosis-safe-multisig-and-relayer-contract-architecture) - `[security]` `[high-priority]`
-*   [T-205: Integrate HSM and Secure Cloud Vault](#t-205-integrate-hsm-and-secure-cloud-vault) - `[security]` `[high-priority]`
+*   [T-205: Integrate HSM and Secure Cloud Vault (Elena Vance (Sec))](#t-205-integrate-hsm-and-secure-cloud-vault) - `[security]` `[high-priority]`
 *   [T-202: Pre-Transaction Alchemy/Tenderly Simulations](#t-202-pre-transaction-alchemytenderly-simulations) - `[security]` `[high-priority]`
 *   [T-203: Implement Resilient Nonce & Retry Backoff System](#t-203-implement-resilient-nonce-and-retry-backoff-system) - `[high-priority]`
 *   [T-204: Flashbots & Private RPC Bundle Integration](#t-204-flashbots-and-private-rpc-bundle-integration) - `[security]`
@@ -65,9 +65,9 @@ This document represents the official issue tracker and backlog for the Trade Ar
 *   **Owner:** Sam Chen (Dev)
 *   **Estimated Hours:** 12 hours
 *   **Priority:** Critical
-*   **Description:** Create hardcoded state controls and admin commands to enforce risk rules both globally and per-bot.
+*   **Description:** Create hardcoded state controls and admin commands to enforce risk rules and automated spend limit controls both globally and per-bot.
 *   **Implementation Steps:**
-    1. Implement a 24-hour sliding-window spend tracker capping aggregate spending to 0.5 ETH per day.
+    1. Implement a 24-hour sliding-window spend tracker capping aggregate spending to 0.5 ETH per day (automated spend limit controls).
     2. Enforce maximum individual swap sizing to 0.05 ETH per trade.
     3. Create a forced position unwind and bot pausing trigger if a bot's real/unrealized loss exceeds 10% of configured capital.
     4. Implement `/api/admin/kill-switch` to immediately clear all active execution timers and halt bots. Expose this toggle with high contrast on the UI dashboard.
@@ -151,7 +151,7 @@ This document represents the official issue tracker and backlog for the Trade Ar
 *   **Owner:** Elena Vance (Sec)
 *   **Estimated Hours:** 16 hours
 *   **Priority:** Critical
-*   **Description:** Setup integration with HashiCorp Vault or AWS KMS / CloudHSM for programmatic automated trading keys.
+*   **Description:** Setup integration with HashiCorp Vault or AWS KMS / CloudHSM for programmatic automated trading keys, supporting spend limit controls.
 *   **Implementation Steps:**
     1. Provision and initialize a Secure Cloud KMS or HSM key vault instance.
     2. Build integration middleware in the Node.js backend using the KMS SDK to sign transactions on-demand without keeping keys in process memory.
