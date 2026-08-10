@@ -112,3 +112,9 @@ Everything is fine
 
 ## 2026-08-08T01:36:48.356Z - [INFO] TEST-AGENT
 Everything is fine
+
+## 2026-08-10T03:54:29.099Z - [INFO] TEST-AGENT
+Everything is fine
+
+## 2026-08-10T04:07:32.601Z - [WARN] ARCHITECT
+Latency spike (80ms). Rerouting from Primary (Base) to Ankr.
