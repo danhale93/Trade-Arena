@@ -1056,7 +1056,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         <div style="margin-bottom:8px">
           <div style="display:flex; justify-content:space-between; font-size:8px; color:var(--dim); margin-bottom:2px">
             <label for="dbToken">PERSONAL ACCESS TOKEN</label>
-            <button onclick="toggleVisibility('dbToken', this)" aria-label="Toggle Databricks Genie Token visibility" aria-pressed="false" aria-controls="dbToken" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
+            <div style="display:flex;gap:8px">
+              <button onclick="toggleVisibility('dbToken', this)" aria-label="Toggle Databricks Genie Token visibility" aria-pressed="false" aria-controls="dbToken" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
+              <a href="https://docs.databricks.com/en/dev-tools/auth/pat.html" target="_blank" rel="noopener noreferrer" aria-label="Get Databricks Personal Access Token (opens in a new tab)" style="color:var(--cyan); text-decoration:none;">Get Token →</a>
+            </div>
           </div>
           <input type="password" id="dbToken" placeholder="Personal Access Token (Settings → Developer)" oninput="updateDbStatus()">
         </div>
@@ -6735,7 +6738,7 @@ function updateSettingsVolume(val) {
             <div style="display:flex;gap:8px">
               <button onclick="toggleVisibility('s_cfg_ant', this)" aria-label="Toggle Anthropic API Key visibility" aria-pressed="false" aria-controls="s_cfg_ant" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
               <button onclick="copyToClipboard('s_cfg_ant', this)" aria-label="Copy Anthropic API Key" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
-              <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer" aria-label="Get Anthropic API Key (opens in a new tab)" style="color:var(--cyan)">Get Key →</a>
+              <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer" aria-label="Get Anthropic API Key (opens in a new tab)" style="color:var(--cyan)">Get Key →</a>
             </div>
           </div>
           <input type="password" id="s_cfg_ant" placeholder="sk-ant-..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
@@ -6771,7 +6774,7 @@ function updateSettingsVolume(val) {
             <div style="display:flex;gap:8px">
               <button onclick="toggleVisibility('s_cfg_zx', this)" aria-label="Toggle 0x API Key visibility" aria-pressed="false" aria-controls="s_cfg_zx" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
               <button onclick="copyToClipboard('s_cfg_zx', this)" aria-label="Copy 0x API Key" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
-              <a href="https://dashboard.0x.org" target="_blank" rel="noopener noreferrer" aria-label="Get 0x API Key (opens in a new tab)" style="color:var(--cyan)">Get Key →</a>
+              <a href="https://dashboard.0x.org/apps" target="_blank" rel="noopener noreferrer" aria-label="Get 0x API Key (opens in a new tab)" style="color:var(--cyan)">Get Key →</a>
             </div>
           </div>
           <input type="password" id="s_cfg_zx" placeholder="0x-api-key-..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
