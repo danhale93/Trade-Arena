@@ -776,6 +776,37 @@ describe("Server Endpoint Rate Limiting - Sentinel Hardening", () => {
       process.env.PORT = originalPort;
     }
   });
+
+  it("evicts the oldest IP record when MAX_TRACKED_IPS threshold is reached", async () => {
+    delete require.cache[require.resolve("./server.js")];
+    const serverApp = require("./server.js");
+    const rateLimitMap = serverApp.rateLimitMap;
+    const checkRateLimit = serverApp.checkRateLimit;
+    const MAX_TRACKED_IPS = serverApp.MAX_TRACKED_IPS;
+
+    // Reset rateLimitMap for clean test
+    rateLimitMap.clear();
+
+    const now = Date.now();
+    // Pre-populate rateLimitMap with MAX_TRACKED_IPS dummy entries
+    // Since insertion order is preserved in ES6 Map, '1.1.1.1' will be the oldest
+    rateLimitMap.set('1.1.1.1', { count: 1, resetAt: now + 900000 });
+    for (let i = 2; i <= MAX_TRACKED_IPS; i++) {
+      rateLimitMap.set(`1.1.1.${i}`, { count: 1, resetAt: now + 900000 });
+    }
+
+    expect(rateLimitMap.size).toBe(MAX_TRACKED_IPS);
+    expect(rateLimitMap.has('1.1.1.1')).toBe(true);
+
+    // Call checkRateLimit with a brand new IP address (e.g. '2.2.2.2')
+    // This should trigger oldest-first eviction (removing '1.1.1.1' and adding '2.2.2.2')
+    const allowed = checkRateLimit('2.2.2.2');
+
+    expect(allowed).toBe(true);
+    expect(rateLimitMap.size).toBe(MAX_TRACKED_IPS);
+    expect(rateLimitMap.has('1.1.1.1')).toBe(false); // Oldest IP evicted
+    expect(rateLimitMap.has('2.2.2.2')).toBe(true);  // New IP successfully tracked
+  });
 });
 
 describe("Live-Data Trade Logic Safety & Self-Correction", () => {
