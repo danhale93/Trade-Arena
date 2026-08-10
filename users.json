@@ -94,5 +94,17 @@
     "bots": [],
     "trades": [],
     "created": 1785762742650
+  },
+  "0x8A3f205026464Dae6e83382e5f93a306CD13D690": {
+    "id": "0x8A3f205026464Dae6e83382e5f93a306CD13D690",
+    "name": "MetaMask Trader",
+    "email": null,
+    "address": "0x8A3f205026464Dae6e83382e5f93a306CD13D690",
+    "provider": "metamask",
+    "avatar": null,
+    "balance": 0,
+    "bots": [],
+    "trades": [],
+    "created": 1786358914077
   }
 }
