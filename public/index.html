@@ -3058,10 +3058,10 @@ function updateConnectionDashboard() {
     .then(data => {
       // Update Missing Keys Alert Banner dynamically
       const keyGenLinks = {
-        'ANTHROPIC_API_KEY': { label: 'Anthropic', url: 'https://console.anthropic.com' },
+        'ANTHROPIC_API_KEY': { label: 'Anthropic', url: 'https://console.anthropic.com/settings/keys' },
         'OPENAI_API_KEY': { label: 'OpenAI', url: 'https://platform.openai.com/api-keys' },
         'GEMINI_API_KEY': { label: 'Gemini', url: 'https://aistudio.google.com/app/apikey' },
-        '0x_API_KEY': { label: '0x API', url: 'https://dashboard.0x.org' },
+        '0x_API_KEY': { label: '0x API', url: 'https://dashboard.0x.org/apps' },
         'TASK_CLAIM_SECRET': { label: 'Task Secret', url: 'https://trade-arena.com/keys' }
       };
 
@@ -3094,10 +3094,10 @@ function updateConnectionDashboard() {
         let keyEntryHtml = '';
         if (isAiKey || isSecret) {
           const keyGenLinks = {
-            'ANTHROPIC_API_KEY': 'https://console.anthropic.com',
+            'ANTHROPIC_API_KEY': 'https://console.anthropic.com/settings/keys',
             'OPENAI_API_KEY': 'https://platform.openai.com/api-keys',
             'GEMINI_API_KEY': 'https://aistudio.google.com/app/apikey',
-            '0x_API_KEY': 'https://dashboard.0x.org',
+            '0x_API_KEY': 'https://dashboard.0x.org/apps',
             'TASK_CLAIM_SECRET': 'https://trade-arena.com/keys'
           };
           const genUrl = keyGenLinks[conn.name] || '#';
