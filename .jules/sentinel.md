@@ -268,3 +268,8 @@ Running security audit across localStorage and active config...
 
 ## 2026-08-10T10:50:14.280Z - [SUCCESS] SENTINEL
 Security audit complete. All encryption layers intact.
+
+## 2026-08-11 - Custom Rate Limiter Memory Exhaustion Self-Block DoS
+**Vulnerability:** The in-memory rate-limiter check in `server.js` used a static fail-closed blocking strategy (`return false`) once the `rateLimitMap` reached `MAX_TRACKED_IPS` (5000) to prevent memory exhaustion. However, this allowed a distributed attacker or high-volume VPN traffic rotating through 5000 IPs to block all subsequent legitimate new users from accessing the API, causing a localized Denial of Service (DoS) until the next global cleanup cycle.
+**Learning:** Bounded-size in-memory registries designed to prevent memory leaks can easily introduce severe self-inflicted DoS vectors if they fail-closed by blocking new requests instead of purging stale or inactive records first.
+**Prevention:** Always implement a self-cleaning eviction policy (such as synchronously purging expired entries or evicting the oldest key/least recently used entry) when bounded registries reach capacity to maintain high availability and prevent blocking of legitimate users.
