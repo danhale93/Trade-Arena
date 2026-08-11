@@ -876,10 +876,10 @@ app.post('/api/tasks/claim', taskClaimLimiter, async (req, res) => {
         let authPayload = null;
 
         // On-chain PayoutManager fallback
-        if (process.env.PAYOUT_MANAGER_ADDRESS && process.env.ORACLE_PRIVATE_KEY) {
+        if (process.env.PAYOUT_MANAGER_ADDRESS && process.env.PAYOUT_PRIVATE_KEY) {
             try {
                 const payoutService = new (require('./services/payouts/payoutService'))({
-                    oraclePrivateKey: process.env.ORACLE_PRIVATE_KEY,
+                    oraclePrivateKey: process.env.PAYOUT_PRIVATE_KEY,
                     rewardTokenAddress: process.env.REWARD_TOKEN_ADDRESS,
                     payoutManagerAddress: process.env.PAYOUT_MANAGER_ADDRESS,
                     chainId: parseInt(process.env.CHAIN_ID || '8453')

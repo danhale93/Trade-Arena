@@ -1904,10 +1904,10 @@ describe("Task Claim Security & Whitelisting - Sentinel Hardening", () => {
   it("rejects unauthorized taskId values on routes/payoutRoutes", async () => {
     const originalPort = process.env.PORT;
     const originalSecret = process.env.TASK_CLAIM_SECRET;
-    const originalOracleKey = process.env.ORACLE_PRIVATE_KEY;
+    const originalOracleKey = process.env.PAYOUT_PRIVATE_KEY;
     process.env.PORT = "0";
     process.env.TASK_CLAIM_SECRET = "test-secret-key-123";
-    process.env.ORACLE_PRIVATE_KEY = "0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+    process.env.PAYOUT_PRIVATE_KEY = "0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
     const express = require('express');
     const originalListen = express.application.listen;
@@ -1946,17 +1946,17 @@ describe("Task Claim Security & Whitelisting - Sentinel Hardening", () => {
       }
       process.env.PORT = originalPort;
       process.env.TASK_CLAIM_SECRET = originalSecret;
-      process.env.ORACLE_PRIVATE_KEY = originalOracleKey;
+      process.env.PAYOUT_PRIVATE_KEY = originalOracleKey;
     }
   });
 
   it("rejects duplicate task claims with 429 status on routes/payoutRoutes", async () => {
     const originalPort = process.env.PORT;
     const originalSecret = process.env.TASK_CLAIM_SECRET;
-    const originalOracleKey = process.env.ORACLE_PRIVATE_KEY;
+    const originalOracleKey = process.env.PAYOUT_PRIVATE_KEY;
     process.env.PORT = "0";
     process.env.TASK_CLAIM_SECRET = "test-secret-key-123";
-    process.env.ORACLE_PRIVATE_KEY = "0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+    process.env.PAYOUT_PRIVATE_KEY = "0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
     const express = require('express');
     const originalListen = express.application.listen;
@@ -2008,7 +2008,7 @@ describe("Task Claim Security & Whitelisting - Sentinel Hardening", () => {
       }
       process.env.PORT = originalPort;
       process.env.TASK_CLAIM_SECRET = originalSecret;
-      process.env.ORACLE_PRIVATE_KEY = originalOracleKey;
+      process.env.PAYOUT_PRIVATE_KEY = originalOracleKey;
     }
   });
 });
