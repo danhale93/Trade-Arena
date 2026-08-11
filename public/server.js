@@ -303,34 +303,34 @@ function calculateRisk(spread, amount) {
 }
 
 function generateBotConfig(strategy, riskLevel) {
-    const configs = {
-        'Arbitrage Detection': {
+    const configs = new Map([
+        ['Arbitrage Detection', {
             minSpread: 0.3,
             maxSpread: 10,
             maxSlippage: 1,
             checkInterval: 30000
-        },
-        'Flash Loan Farming': {
+        }],
+        ['Flash Loan Farming', {
             minProfit: 0.1,
             maxLoanMultiplier: 50,
             riskAssessment: 'HIGH',
             checkInterval: 15000
-        },
-        'Volatility Trading': {
+        }],
+        ['Volatility Trading', {
             minVolatility: 2,
             maxVolatility: 50,
             leverageAdjustment: 'DYNAMIC',
             checkInterval: 60000
-        },
-        'Grid Trading': {
+        }],
+        ['Grid Trading', {
             gridSize: 5,
             priceDeviation: 2,
             orderSize: 'AUTO',
             checkInterval: 45000
-        }
-    };
+        }]
+    ]);
 
-    const config = configs[strategy] || configs['Arbitrage Detection'];
+    const baseConfig = configs.get(strategy) || configs.get('Arbitrage Detection');
 
     // Apply risk adjustments
     const riskMultipliers = {
@@ -340,9 +340,10 @@ function generateBotConfig(strategy, riskLevel) {
         'Max Risk (20x leverage)': 3.0
     };
 
-    config.riskMultiplier = riskMultipliers[riskLevel] || 1;
-
-    return config;
+    return {
+        ...baseConfig,
+        riskMultiplier: riskMultipliers[riskLevel] || 1
+    };
 }
 
 function generateId() {
