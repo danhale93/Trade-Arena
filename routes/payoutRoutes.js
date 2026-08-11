@@ -23,7 +23,7 @@ const payoutLimiter = rateLimit({
 });
 
 const payoutService = new PayoutService({
-    oraclePrivateKey: process.env.ORACLE_PRIVATE_KEY,
+    oraclePrivateKey: process.env.PAYOUT_PRIVATE_KEY,
     rewardTokenAddress: process.env.REWARD_TOKEN_ADDRESS,
     payoutManagerAddress: process.env.PAYOUT_MANAGER_ADDRESS,
     chainId: parseInt(process.env.CHAIN_ID || '8453')
