@@ -3,6 +3,9 @@
  * AI-Powered Market Analysis & Risk Management
  */
 
+// ⚡ Bolt Optimization: Pre-allocated static stablecoin Set to bypass garbage collection allocation churn and O(N) array linear sweeps in hot paths.
+const STABLECOINS_SET = new Set(['USDC', 'USDT', 'DAI', 'USDbC', 'FRAX']);
+
 class TradingEngine {
     constructor() {
         this.bots = [];
@@ -16,8 +19,8 @@ class TradingEngine {
     }
 
     filterStablecoins(pairs) {
-        const stablecoins = ['USDC', 'USDT', 'DAI', 'USDbC', 'FRAX'];
-        return pairs.filter(pair => !stablecoins.includes(pair.token));
+        // ⚡ Bolt Optimization: Constant-time O(1) Set lookup to completely eliminate O(N) linear array scanning.
+        return pairs.filter(pair => !STABLECOINS_SET.has(pair.token));
     }
 
     /**
