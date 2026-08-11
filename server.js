@@ -134,12 +134,27 @@ function checkRateLimit(ip) {
         return record.count <= RATE_LIMIT_MAX;
     }
 
-    // Sentinel: If map is full, block new IPs until cleanup to prevent DoS
-    if (rateLimitMap.size >= MAX_TRACKED_IPS) return false;
+    // Sentinel: If map is full, perform dynamic cleanup and oldest-first eviction to prevent DoS
+    if (rateLimitMap.size >= MAX_TRACKED_IPS) {
+        for (const [key, val] of rateLimitMap.entries()) {
+            if (now > val.resetAt) {
+                rateLimitMap.delete(key);
+            }
+        }
+        if (rateLimitMap.size >= MAX_TRACKED_IPS) {
+            const oldestIp = rateLimitMap.keys().next().value;
+            if (oldestIp) rateLimitMap.delete(oldestIp);
+        }
+    }
 
     rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW });
     return true;
 }
+
+// Expose rate limit internals for secure testing verification
+app.rateLimitMap = rateLimitMap;
+app.checkRateLimit = checkRateLimit;
+app.MAX_TRACKED_IPS = MAX_TRACKED_IPS;
 
 // Cleanup expired entries periodically
 setInterval(() => {
