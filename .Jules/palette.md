@@ -57,3 +57,7 @@
 ## 2026-08-08 - [Sensory Verification of Hidden Tokens]
 **Learning:** In data-rich environments with background integrations (such as Databricks Genie), providing hidden token inputs is a security necessity, but leaves users blind to potential typing mistakes. Adding semantic form labels associated via the `for` attribute combined with a password visibility SHOW/HIDE toggle solves both screen-reader accessibility and input verification without compromising secret security.
 **Action:** Wrap form inputs in distinct layout blocks with explicit labels and include secure SHOW/HIDE buttons for all sensitive personal/pat token fields.
+
+## 2026-08-10 - [Dynamic ARIA Template Synchronization]
+**Learning:** When adding initial static ARIA states (like `aria-pressed`) to HTML templates, it is critical to confirm that all existing dynamic client-side JS handlers are fully instrumented to synchronize these attributes on active clicks or layout updates. Mismatches between visual active states and screen-reader announced boolean states create severe accessibility regressions.
+**Action:** Always verify that every interactive button with a static ARIA state is backed by an explicit `.setAttribute('aria-pressed', state.toString())` in its associated JavaScript state transition logic.

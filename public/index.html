@@ -6804,8 +6804,8 @@ function updateSettingsVolume(val) {
         </div>
 
         <div style="display:flex; gap:6px">
-          <button onclick="saveSettingsApiKeys()" style="flex:1; padding:8px; background:var(--chrome); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Bungee',display; font-size:10px; cursor:pointer">SAVE ALL KEYS</button>
-          <button onclick="testSettingsApiKey()" style="padding:8px 15px; background:var(--chrome); border:1px solid var(--border); color:var(--dim); border-radius:4px; font-family:'Bungee',display; font-size:10px; cursor:pointer">TEST CLAUDE</button>
+          <button onclick="saveSettingsApiKeys()" aria-label="Save all API keys and contract configuration settings" title="Save all configuration keys to local storage" style="flex:1; padding:8px; background:var(--chrome); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Bungee',display; font-size:10px; cursor:pointer">SAVE ALL KEYS</button>
+          <button onclick="testSettingsApiKey()" aria-label="Test Anthropic API key connectivity with Claude" title="Perform a dry-run connection test to Claude API" style="padding:8px 15px; background:var(--chrome); border:1px solid var(--border); color:var(--dim); border-radius:4px; font-family:'Bungee',display; font-size:10px; cursor:pointer">TEST CLAUDE</button>
         </div>
 
         <div id="apiTestResult" style="font-size:9px; color:var(--dim); margin-top:6px"></div>
@@ -6817,23 +6817,23 @@ function updateSettingsVolume(val) {
       <div class="settings-section">
         <div class="settings-section-title">🎨 Colour Theme</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <button class="theme-preset active" onclick="applyTheme('default', true)" data-theme="default">Cyberpunk</button>
-          <button class="theme-preset" onclick="applyTheme('matrix', true)" data-theme="matrix">Matrix</button>
-          <button class="theme-preset" onclick="applyTheme('sunset', true)" data-theme="sunset">Sunset</button>
-          <button class="theme-preset" onclick="applyTheme('ocean', true)" data-theme="ocean">Ocean</button>
+          <button class="theme-preset active" onclick="applyTheme('default', true)" data-theme="default" aria-label="Set theme to Cyberpunk" aria-pressed="true" title="Set visual palette to Cyberpunk">Cyberpunk</button>
+          <button class="theme-preset" onclick="applyTheme('matrix', true)" data-theme="matrix" aria-label="Set theme to Matrix" aria-pressed="false" title="Set visual palette to Matrix">Matrix</button>
+          <button class="theme-preset" onclick="applyTheme('sunset', true)" data-theme="sunset" aria-label="Set theme to Sunset" aria-pressed="false" title="Set visual palette to Sunset">Sunset</button>
+          <button class="theme-preset" onclick="applyTheme('ocean', true)" data-theme="ocean" aria-label="Set theme to Ocean" aria-pressed="false" title="Set visual palette to Ocean">Ocean</button>
         </div>
       </div>
       <div class="settings-section">
         <div class="settings-section-title">🔊 Sound Preferences</div>
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
           <label for="settingsVolume" style="font-size:9px;color:var(--dim);min-width:48px;cursor:pointer">Volume</label>
-          <input type="range" id="settingsVolume" min="0" max="100" value="50" style="flex:1" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50" oninput="document.getElementById('settingsVolumeLabel').textContent=this.value+'%';updateSettingsVolume(this.value)" onchange="if(window.SFX && window.SFX.tick) { try { window.SFX.tick(); } catch(e){} }">
+          <input type="range" id="settingsVolume" min="0" max="100" value="50" style="flex:1" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50" aria-label="Sound volume level" oninput="document.getElementById('settingsVolumeLabel').textContent=this.value+'%';updateSettingsVolume(this.value)" onchange="if(window.SFX && window.SFX.tick) { try { window.SFX.tick(); } catch(e){} }">
           <span id="settingsVolumeLabel" style="font-size:9px;color:var(--dim);min-width:32px;text-align:right">50%</span>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <button id="settingsSfxBtn" class="sound-toggle active" onclick="toggleSettingsSfx()">🔊 SFX</button>
-          <button id="settingsVoiceBtn" class="sound-toggle" onclick="toggleSettingsVoice()">🗣️ Voice</button>
-          <button id="settingsAudioBtn" class="sound-toggle" onclick="toggleSettingsAudio()">🎹 Audio</button>
+          <button id="settingsSfxBtn" class="sound-toggle active" onclick="toggleSettingsSfx()" aria-label="Toggle SFX sound effects" aria-pressed="true" title="Toggle SFX sound effects">🔊 SFX</button>
+          <button id="settingsVoiceBtn" class="sound-toggle" onclick="toggleSettingsVoice()" aria-label="Toggle Voice synthesis commentary" aria-pressed="false" title="Toggle AI voice synthesis">🗣️ Voice</button>
+          <button id="settingsAudioBtn" class="sound-toggle" onclick="toggleSettingsAudio()" aria-label="Toggle background Audio loops" aria-pressed="false" title="Toggle background ambient tracks">🎹 Audio</button>
         </div>
       </div>
     </div>
