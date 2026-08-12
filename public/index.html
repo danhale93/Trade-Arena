@@ -4299,12 +4299,14 @@ async function spinBot(id){
     if(typeof VOICE!=='undefined') VOICE.tradeOpen(bot.id, decision.token, decision.method);
 
     // ON-CHAIN EXECUTION TRIGGER
-    // Remove the window.isLiveMode check because it may not be set, rely on wallet connection
-    const hasWallet = (window.isPrivyConnected && window.isPrivyConnected()) || (window.walletState && window.walletState.isConnected) || window.ethereum;
-    if (hasWallet && !decision.method.includes('PAPER')) {
+    const hasWallet = (window.isPrivyConnected && window.isPrivyConnected()) || (window.walletState && window.walletState.isConnected) || (window.ethereum);
+    const isHold = decision.method === 'HOLD';
+    
+    if (hasWallet && !isHold && !decision.method.includes('PAPER')) {
         console.log('[Arena] Routing to On-Chain Execution Engine...');
+        if (window.showToast) window.showToast(`Initiating Live ${decision.method} on Base...`, 'info');
+        
         try {
-            // executeOnChainTrade is in trading-bundle.js
             if (window.executeOnChainTrade) {
                 await window.executeOnChainTrade({
                     botId: bot.id,
@@ -4314,10 +4316,16 @@ async function spinBot(id){
                 });
             } else {
                 console.error('[Arena] executeOnChainTrade not found on window');
+                if (window.showToast) window.showToast('Execution engine not loaded', 'error');
             }
         } catch (execError) {
-            console.error('[Arena] On-chain execution failed, falling back to simulation', execError);
+            console.error('[Arena] On-chain execution failed:', execError);
+            if (window.showToast) window.showToast(`Live Trade Error: ${execError.message}`, 'error');
         }
+    } else if (isHold) {
+        console.log('[Arena] Bot decided to HOLD, skipping execution.');
+    } else if (!hasWallet) {
+        console.log('[Arena] No wallet connected, skipping live execution.');
     }
   }catch(e){}
 

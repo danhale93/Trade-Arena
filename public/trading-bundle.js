@@ -2965,11 +2965,27 @@ window.executeOnChainTrade = async function(tradeRequest) {
     const { botId, token, method, amountUSD } = tradeRequest;
     console.log(`[Execution] EXECUTING REAL TRADE: Bot #${botId} - ${method} ${token} $${amountUSD}`);
 
-    const isConnected = (window.isPrivyConnected && window.isPrivyConnected()) ||
+    let isConnected = (window.isPrivyConnected && window.isPrivyConnected()) ||
                         (window.walletState && window.walletState.isConnected);
 
+    if (!isConnected && window.ethereum) {
+        console.log('[Execution] Wallet present but not connected. Requesting accounts...');
+        try {
+            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            if (accounts && accounts.length > 0) {
+                isConnected = true;
+                if (window.walletState) {
+                    window.walletState.isConnected = true;
+                    window.walletState.address = accounts[0];
+                }
+            }
+        } catch (e) {
+            console.error('[Execution] Failed to request accounts:', e);
+        }
+    }
+
     if (!isConnected) {
-        throw new Error('Wallet not connected. Please login via Privy or connect MetaMask.');
+        throw new Error('Wallet not connected. Please click "Connect Wallet" or ensure MetaMask is unlocked.');
     }
 
     ExecutionState.isExecuting = true;

@@ -10,6 +10,21 @@ async function executeRealSwap(betUSD, tokenIn, tokenOut, method) {
 
   try {
     const provider = new ethers.BrowserProvider(window.ethereum);
+    
+    // Ensure we are on Base Mainnet
+    const network = await provider.getNetwork();
+    if (Number(network.chainId) !== 8453) {
+      console.log('⚠️ Wrong network detected, attempting to switch to Base Mainnet...');
+      try {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0x2105' }], // 8453 in hex
+        });
+      } catch (switchError) {
+        return { success: false, error: 'Please switch your wallet to Base Mainnet (Chain ID 8453) to execute live trades.' };
+      }
+    }
+
     const signer = await provider.getSigner();
     const address = await signer.getAddress();
 
