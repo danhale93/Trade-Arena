@@ -158,9 +158,15 @@ export const PrivyWalletHeader = () => {
       if (window.walletState) {
         window.walletState.isConnected = true;
         window.walletState.address = arenaWallet.address;
-        privyProviderInstance.getEthersProvider().then((provider) => {
+        privyProviderInstance.getEthersProvider().then(async (provider) => {
           window.walletState.provider = provider;
-          window.walletState.signer = provider.getSigner();
+          try {
+            // getSigner is async in Ethers v6
+            window.walletState.signer = await provider.getSigner();
+            console.log('[Privy] Signer synchronized to walletState');
+          } catch (sErr) {
+            console.error('[Privy] Failed to get signer:', sErr);
+          }
         }).catch((err) => {
           console.error('[Privy] Failed to initialize provider in walletState:', err);
         });

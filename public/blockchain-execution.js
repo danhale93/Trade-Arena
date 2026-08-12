@@ -5,13 +5,23 @@
 
 async function executeRealSwap(betUSD, tokenIn, tokenOut, method) {
   console.log('[executeRealSwap] Starting...', { betUSD, tokenIn, tokenOut, method });
-  if (!window.ethereum) {
-    console.error('[executeRealSwap] No window.ethereum found');
-    return { success: false, error: 'MetaMask or Web3 wallet not detected' };
-  }
-
+  
   try {
-    const provider = new ethers.BrowserProvider(window.ethereum);
+    let provider;
+    if (window.privyProvider && typeof window.privyProvider.getEthersProvider === 'function') {
+      console.log('[executeRealSwap] Using Privy provider');
+      provider = await window.privyProvider.getEthersProvider();
+    } else if (window.walletState && window.walletState.provider) {
+      console.log('[executeRealSwap] Using walletState provider');
+      provider = window.walletState.provider;
+    } else if (window.ethereum) {
+      console.log('[executeRealSwap] Using window.ethereum provider');
+      provider = new ethers.BrowserProvider(window.ethereum);
+    } else {
+      console.error('[executeRealSwap] No provider found');
+      return { success: false, error: 'No wallet provider detected. Please connect your wallet.' };
+    }
+
     console.log('[executeRealSwap] Provider initialized');
     
     // Ensure we are on Base Mainnet

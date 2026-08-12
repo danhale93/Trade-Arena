@@ -1494,15 +1494,19 @@ async function handleMetaMaskConnect() {
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     if (accounts.length > 0) {
       const address = accounts[0];
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const signer = provider.getSigner();
-
+      // Ethers v6 uses BrowserProvider
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      
       // Update global walletState
       if (!window.walletState) window.walletState = { isConnected: false };
       window.walletState.isConnected = true;
       window.walletState.address = address;
       window.walletState.provider = provider;
-      window.walletState.signer = signer;
+      
+      // getSigner is async in v6
+      provider.getSigner().then(signer => {
+        window.walletState.signer = signer;
+      }).catch(err => console.error('Error getting signer:', err));
 
       showToast(`Connected: ${address.slice(0,6)}...${address.slice(-4)}`, 'success');
 
