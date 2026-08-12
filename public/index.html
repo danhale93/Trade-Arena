@@ -1494,6 +1494,11 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <div style="background:#0b0f17; border:1px solid var(--border); border-radius:6px; padding:10px; height:180px; overflow-y:auto; font-family:'Share Tech Mono',monospace; font-size:9px; display:flex; flex-direction:column; gap:4px;" id="serverConsoleLogs">
         <div style="color:var(--dim);">Awaiting server log stream...</div>
       </div>
+      <div style="display:flex; gap:8px; margin-top:10px;">
+        <button onclick="testSignature()" style="flex:1; background:rgba(0,240,255,0.1); border:1px solid var(--cyan); color:var(--cyan); padding:6px; border-radius:4px; font-family:'Bungee'; font-size:9px; cursor:pointer;">⚡ TEST SIGNATURE</button>
+        <button onclick="resetExecutionState()" style="flex:1; background:rgba(255,45,120,0.1); border:1px solid var(--hot); color:var(--hot); padding:6px; border-radius:4px; font-family:'Bungee'; font-size:9px; cursor:pointer;">🔄 RESET ENGINE</button>
+        <button onclick="document.getElementById('serverConsoleLogs').innerHTML=''" style="background:rgba(255,255,255,0.05); border:1px solid var(--border); color:var(--dim); padding:6px; border-radius:4px; font-family:'Bungee'; font-size:9px; cursor:pointer;">🗑️ CLEAR</button>
+      </div>
     </div>
   </div>
 </div>

@@ -880,3 +880,46 @@ window.updateHealthMetrics = function(health) {
         }
     }, 2000);
 })();
+
+/**
+ * DEBUG HELPERS
+ */
+window.resetExecutionState = function() {
+    console.log('🔄 Manually resetting Execution Engine state...');
+    if (typeof ExecutionState !== 'undefined') {
+        ExecutionState.isExecuting = false;
+        console.log('✅ ExecutionState.isExecuting set to false');
+    }
+    if (window.showToast) window.showToast('Execution Engine Reset', 'info');
+};
+
+window.testSignature = async function() {
+    console.log('⚡ Initiating Signature Test...');
+    try {
+        let provider;
+        if (window.privyProvider && typeof window.privyProvider.getEthersProvider === 'function') {
+            provider = await window.privyProvider.getEthersProvider();
+        } else if (window.walletState && window.walletState.provider) {
+            provider = window.walletState.provider;
+        } else if (window.ethereum) {
+            provider = new ethers.BrowserProvider(window.ethereum);
+        } else {
+            throw new Error('No wallet provider detected. Please connect your wallet first.');
+        }
+
+        const signer = await provider.getSigner();
+        const address = await signer.getAddress();
+        console.log('👤 Wallet Address:', address);
+
+        if (window.showToast) window.showToast('Check MetaMask for Signature Request', 'info');
+        
+        const message = `Trade Arena Verification\nTimestamp: ${new Date().toISOString()}\nWallet: ${address}`;
+        const signature = await signer.signMessage(message);
+        
+        console.log('✅ Signature Successful:', signature.substring(0, 20) + '...');
+        if (window.showToast) window.showToast('Signature Verified!', 'success');
+    } catch (e) {
+        console.error('❌ Signature Test Failed:', e.message);
+        if (window.showToast) window.showToast(`Test Failed: ${e.message}`, 'error');
+    }
+};

@@ -2915,6 +2915,7 @@ const ExecutionState = {
     pendingTrades: new Map(),
     mevProtectionActive: true
 };
+window.ExecutionState = ExecutionState;
 
 /**
  * Get a swap quote from 0x API
