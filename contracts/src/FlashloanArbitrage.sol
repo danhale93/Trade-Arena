@@ -28,6 +28,11 @@ contract FlashloanArbitrage is IFlashLoanSimpleReceiver, Ownable {
         POOL.flashLoanSimple(address(this), _token, _amount, _params, 0);
     }
 
+    struct FlashParams {
+        uint256 minProfit;
+        Action[] actions;
+    }
+
     function executeOperation(
         address asset,
         uint256 amount,
@@ -38,15 +43,27 @@ contract FlashloanArbitrage is IFlashLoanSimpleReceiver, Ownable {
         require(msg.sender == address(POOL), "Only Pool");
         require(initiator == address(this), "Invalid initiator");
 
-        Action[] memory actions = abi.decode(params, (Action[]));
+        uint256 balanceBefore = IERC20(asset).balanceOf(address(this));
 
-        for (uint256 i = 0; i < actions.length; i++) {
-            (bool success, ) = actions[i].target.call(actions[i].callData);
+        FlashParams memory decoded = abi.decode(params, (FlashParams));
+
+        for (uint256 i = 0; i < decoded.actions.length; i++) {
+            (bool success, ) = decoded.actions[i].target.call(decoded.actions[i].callData);
             require(success, "Action failed");
         }
 
         uint256 amountToRepay = amount + premium;
         IERC20(asset).approve(address(POOL), amountToRepay);
+
+        uint256 balanceAfter = IERC20(asset).balanceOf(address(this));
+
+        // Protect contract capital: ensure transaction only succeeds if it made a net profit
+        if (balanceAfter >= amountToRepay) {
+            uint256 netProfit = balanceAfter - amountToRepay;
+            require(netProfit >= decoded.minProfit, "Arbitrage unprofitable");
+        } else {
+            revert("Insufficient funds to repay loan");
+        }
 
         return true;
     }
