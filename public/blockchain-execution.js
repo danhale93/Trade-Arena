@@ -85,18 +85,26 @@ async function executeRealSwap(betUSD, tokenIn, tokenOut, method) {
 
 async function get0xSwapQuote(betUSD, tokenIn, tokenOut) {
   try {
-    const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum,usd-coin&vs_currencies=usd');
-    const priceData = await priceResponse.json();
-    const ethPrice = priceData.ethereum?.usd || 3200;
+    // Determine the sell amount in the correct token's decimals
+    let sellAmount;
+    const isSellEth = tokenIn.toLowerCase() === '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee' || tokenIn.toLowerCase() === 'eth';
     
-    const tokenInAmount = ethers.parseEther((betUSD / ethPrice).toFixed(6));
+    if (isSellEth) {
+      const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+      const priceData = await priceResponse.json();
+      const ethPrice = priceData.ethereum?.usd || 3200;
+      sellAmount = ethers.parseEther((betUSD / ethPrice).toFixed(18));
+    } else {
+      // Assume USDC (6 decimals) if not ETH
+      sellAmount = ethers.parseUnits(betUSD.toString(), 6);
+    }
 
     const apiUrl = new URL('https://api.0x.org/swap/v1/quote');
     apiUrl.searchParams.append('chainId', '8453');
-    apiUrl.searchParams.append('sellToken', tokenIn);
-    apiUrl.searchParams.append('buyToken', tokenOut);
-    apiUrl.searchParams.append('sellAmount', tokenInAmount.toString());
-    apiUrl.searchParams.append('slippagePercentage', '0.5');
+    apiUrl.searchParams.append('sellToken', isSellEth ? 'ETH' : tokenIn);
+    apiUrl.searchParams.append('buyToken', tokenOut.toLowerCase() === 'eth' ? 'ETH' : tokenOut);
+    apiUrl.searchParams.append('sellAmount', sellAmount.toString());
+    apiUrl.searchParams.append('slippagePercentage', '0.01'); // 1% slippage for safety
 
     const response = await fetch(apiUrl.toString());
     if (!response.ok) {

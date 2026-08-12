@@ -2957,7 +2957,7 @@ async function getSwapQuote(buyTokenAddress, sellTokenAddress, sellAmountWei, ta
  * Execute a real on-chain trade
  * @param {Object} tradeRequest
  */
-async function executeOnChainTrade(tradeRequest) {
+window.executeOnChainTrade = async function(tradeRequest) {
     if (ExecutionState.isExecuting) {
         throw new Error('Execution in progress');
     }
@@ -2976,9 +2976,12 @@ async function executeOnChainTrade(tradeRequest) {
     updateExecutionUI(botId, 'PREPARING');
 
     try {
-        const userAddress = (window.isPrivyConnected && window.isPrivyConnected() && window.getPrivyAddress()) || (window.walletState && window.walletState.address);
-        const usdcAddress = TOKENS.USDC.address;
-        const targetTokenAddress = TOKENS[token]?.address;
+        const userAddress = (window.isPrivyConnected && window.isPrivyConnected() && window.getPrivyAddress()) || (window.walletState && window.walletState.address) || (window.ethereum && window.ethereum.selectedAddress);
+        
+        // Ensure TOKENS is available from contract-helpers.js
+        const tokens = window.TOKENS || TOKENS;
+        const usdcAddress = tokens.USDC.address;
+        const targetTokenAddress = tokens[token]?.address;
 
         if (!targetTokenAddress) throw new Error(`Token ${token} address unknown`);
 
@@ -2991,17 +2994,11 @@ async function executeOnChainTrade(tradeRequest) {
         const sellToken = method.includes('LONG') ? usdcAddress : targetTokenAddress;
 
         updateExecutionUI(botId, 'QUOTING');
-        const quote = await getSwapQuote(buyToken, sellToken, amountWei, userAddress);
-
-        // 2. Request Transaction via Privy
-        updateExecutionUI(botId, 'SIGNING');
-
-        // In a real implementation with Privy, we'd use the provider to send the transaction
-        // Since we are in a sandbox/simulated environment, we'll use a simulated result
-        // if no real API key is present, otherwise we'd use ethers.js with privy provider.
-
+        
         // 2. Execute Real Onchain Swap with Ethers v6 & Receipts
         updateExecutionUI(botId, 'SIGNING');
+        
+        // Use the global executeRealSwap from blockchain-execution.js
         const result = await window.executeRealSwap(amountUSD, sellToken, buyToken, method);
         
         if (!result.success) {
