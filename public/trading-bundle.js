@@ -3020,6 +3020,11 @@ async function executeOnChainTrade(tradeRequest) {
             window.addOnChainReceipt(receipt);
         }
 
+        // Notify other clients via WebSocket
+        if (window.notifyTradeConfirmed) {
+            window.notifyTradeConfirmed(receipt);
+        }
+
         ExecutionState.isExecuting = false;
         updateExecutionUI(botId, 'COMPLETE', txHash);
 

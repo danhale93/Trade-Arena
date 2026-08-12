@@ -692,3 +692,60 @@ window.addOnChainReceipt = function(receipt) {
     togglePanel('receipts');
   }
 };
+
+/**
+ * WEBSOCKET NOTIFICATIONS
+ */
+let ws;
+function connectWebSocket() {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}`;
+    
+    ws = new WebSocket(wsUrl);
+    
+    ws.onopen = () => {
+        console.log('🔌 WebSocket Connected');
+    };
+    
+    ws.onmessage = (event) => {
+        try {
+            const message = JSON.parse(event.data);
+            if (message.type === 'TRADE_NOTIFICATION') {
+                const receipt = message.data;
+                console.log('🔔 New Trade Notification:', receipt);
+                
+                // Show a global toast notification
+                if (window.showToast) {
+                    window.showToast(`New Trade Confirmed: ${receipt.txHash.substring(0, 8)}...`, 'info');
+                }
+                
+                // Add to receipts UI
+                if (window.addOnChainReceipt) {
+                    window.addOnChainReceipt(receipt);
+                }
+            }
+        } catch (e) {
+            console.error('WebSocket message error:', e);
+        }
+    };
+    
+    ws.onclose = () => {
+        console.log('🔌 WebSocket Disconnected. Retrying in 5s...');
+        setTimeout(connectWebSocket, 5000);
+    };
+}
+
+// Start WebSocket connection on load
+if (typeof window !== 'undefined') {
+    connectWebSocket();
+    
+    // Export notify function
+    window.notifyTradeConfirmed = function(receipt) {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+                type: 'TRADE_CONFIRMED',
+                payload: receipt
+            }));
+        }
+    };
+}

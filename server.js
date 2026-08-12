@@ -12,9 +12,49 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
-const WebSocket = require('websocket').w3cwebsocket;
+const http = require('http');
+const { Server: WebSocketServer } = require('ws');
 
 const app = express();
+const server = http.createServer(app);
+const wss = new WebSocketServer({ server });
+
+// WebSocket connection registry
+const clients = new Set();
+
+wss.on('connection', (ws) => {
+    clients.add(ws);
+    console.log('[WebSocket] Client connected. Total clients:', clients.size);
+
+    ws.on('message', (data) => {
+        try {
+            const message = JSON.parse(data);
+            if (message.type === 'TRADE_CONFIRMED') {
+                // Broadcast confirmed trade to all other clients
+                broadcast({
+                    type: 'TRADE_NOTIFICATION',
+                    data: message.payload
+                }, ws);
+            }
+        } catch (e) {
+            console.error('[WebSocket] Error parsing message:', e.message);
+        }
+    });
+
+    ws.on('close', () => {
+        clients.delete(ws);
+        console.log('[WebSocket] Client disconnected. Total clients:', clients.size);
+    });
+});
+
+function broadcast(data, excludeWs = null) {
+    const message = JSON.stringify(data);
+    clients.forEach(client => {
+        if (client !== excludeWs && client.readyState === 1) { // 1 = OPEN
+            client.send(message);
+        }
+    });
+}
 
 // Sentinel: Initialize in-memory duplicate task claim registry and allowed task whitelist
 app.locals.CLAIMED_USER_TASKS = new Set();
@@ -1407,7 +1447,7 @@ app.get('/api/diagnostics/full', async (req, res) => {
     res.json(diagnostics);
 });
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`🚀 Trade Arena Server running on port ${PORT}`);
     // Start background automated bots execution worker
     autonomousWorker.start().catch(err => {
