@@ -285,22 +285,18 @@ function calculateVolatility(trades) {
   const startingEquity = (typeof window !== 'undefined' && window.balance) ? window.balance : 0;
   const denominator = startingEquity || 1;
 
-  // ⚡ Bolt Optimization: Completely eliminates intermediate returns array allocation (trades.map) and multiple .reduce passes.
-  // Performs O(1) auxiliary space calculations using direct manual loops and replaces Math.pow with inline multiplication.
+  // ⚡ Bolt Optimization: Uses single-pass O(1) space manual loop with algebraic identity Var(X) = E[X^2] - (E[X])^2.
+  // Completely eliminates intermediate returns array allocations, cuts loop iterations by 50%, and avoids Math.pow.
   let sum = 0;
-  for (let i = 0; i < len; i++) {
-    sum += trades[i].pnl / denominator;
-  }
-  const mean = sum / len;
-
-  let sumSquaredDiffs = 0;
+  let sumSq = 0;
   for (let i = 0; i < len; i++) {
     const r = trades[i].pnl / denominator;
-    const diff = r - mean;
-    sumSquaredDiffs += diff * diff;
+    sum += r;
+    sumSq += r * r;
   }
-  const variance = sumSquaredDiffs / len;
-  return Math.sqrt(variance) * 100 * Math.sqrt(252); // Annualized
+  const mean = sum / len;
+  const variance = (sumSq / len) - (mean * mean);
+  return Math.sqrt(variance < 0 ? 0 : variance) * 100 * Math.sqrt(252); // Annualized
 }
 
 /**
@@ -314,24 +310,24 @@ function calculateSharpeRatio(trades) {
   const startingEquity = (typeof window !== 'undefined' && window.balance) ? window.balance : 0;
   const denominator = startingEquity || 1;
 
-  // ⚡ Bolt Optimization: Completely eliminates intermediate returns array allocation (trades.map) and multiple .reduce passes.
-  // Performs O(1) auxiliary space calculations using direct manual loops and replaces Math.pow with inline multiplication.
+  // ⚡ Bolt Optimization: Uses single-pass O(1) space manual loop with algebraic identity Var(X) = E[X^2] - (E[X])^2.
+  // Note: Sample variance denominator is (len - 1), so standard identity is adjusted to correct Bessel correction factor.
+  // We use sum_i (x_i - mean)^2 = sum_i x_i^2 - len * mean^2, then divide by (len - 1).
   let sum = 0;
+  let sumSq = 0;
   for (let i = 0; i < len; i++) {
-    sum += trades[i].pnl / denominator;
+    const r = trades[i].pnl / denominator;
+    sum += r;
+    sumSq += r * r;
   }
   const mean = sum / len;
   if (mean === 0) return 0;
-  
-  let sumSquaredDiffs = 0;
-  for (let i = 0; i < len; i++) {
-    const r = trades[i].pnl / denominator;
-    const diff = r - mean;
-    sumSquaredDiffs += diff * diff;
-  }
+
+  const sumSquaredDiffs = sumSq - len * mean * mean;
   const variance = sumSquaredDiffs / (len - 1);
-  const stdDev = Math.sqrt(variance);
-  
+  const stdDev = Math.sqrt(variance < 0 ? 0 : variance);
+  if (stdDev === 0) return 0;
+
   // Assuming risk-free rate of 0% for simplicity
   return (mean / stdDev) * Math.sqrt(252); // Annualized
 }
