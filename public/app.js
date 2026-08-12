@@ -826,8 +826,45 @@ function updateHealthMetrics(health) {
     }
 }
 
-// Hook into existing connectWebSocket in app.js by wrapping ws.onmessage
-// (We append this to extend message handling)
-const originalWsOnMessage = ws => {
-    // Handled inside connectWebSocket in app.js
-};
+/**
+ * CLIENT-SIDE CONSOLE INTERCEPTOR
+ * Forwards browser console logs to the System Monitor UI
+ */
+(function() {
+    const originalConsoleLog = console.log;
+    const originalConsoleError = console.error;
+    const originalConsoleWarn = console.warn;
+
+    function forwardToMonitor(level, args) {
+        const message = args.map(arg => {
+            try {
+                return typeof arg === 'object' ? JSON.stringify(arg) : String(arg);
+            } catch (e) {
+                return String(arg);
+            }
+        }).join(' ');
+
+        if (window.appendServerLog) {
+            window.appendServerLog({
+                timestamp: new Date().toISOString(),
+                level: `CLIENT-${level}`,
+                message: message
+            });
+        }
+    }
+
+    console.log = function(...args) {
+        originalConsoleLog.apply(console, args);
+        forwardToMonitor('INFO', args);
+    };
+
+    console.error = function(...args) {
+        originalConsoleError.apply(console, args);
+        forwardToMonitor('ERROR', args);
+    };
+
+    console.warn = function(...args) {
+        originalConsoleWarn.apply(console, args);
+        forwardToMonitor('WARN', args);
+    };
+})();

@@ -1084,6 +1084,7 @@ app.post('/api/webhooks/moonpay/deposit', (req, res) => {
 });
 
 app.get('/api/market/prices', async (req, res) => {
+    console.log('[Market API] Fetching prices for symbols:', req.query.symbols || 'default');
     try {
         const allowedSymbols = new Set(['WETH', 'USDC', 'ARB', 'OP']);
         const coinMap = { 'WETH': 'ethereum', 'USDC': 'usd-coin', 'ARB': 'arbitrum', 'OP': 'optimism' };
@@ -1159,6 +1160,7 @@ app.post('/api/bot/create', tradingLimiter, async (req, res) => {
 });
 
 app.post('/api/execute/swap', tradingLimiter, async (req, res) => {
+    console.log('[Swap API] Execution request:', req.body);
     try {
         const { fromToken, toToken, amount, slippage } = req.body;
 
