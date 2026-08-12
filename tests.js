@@ -2078,6 +2078,84 @@ describe("Strategy Loader Security & Path Traversal - Sentinel Hardening", () =>
   });
 });
 
+describe("On-Chain Execution Engine & Worker", () => {
+  it("executes trades in dry-run mode and returns expected fields with null transactionHash", async () => {
+    const onchainEngine = require("./services/OnchainExecutionEngine");
+    const originalDryRun = process.env.DRY_RUN;
+    const originalKey = process.env.TRADING_PRIVATE_KEY;
+    process.env.DRY_RUN = "true";
+    delete process.env.TRADING_PRIVATE_KEY;
+
+    try {
+      const result = await onchainEngine.executeTrade({
+        botId: "test-bot",
+        fromToken: "USDC",
+        toToken: "WETH",
+        amount: 10,
+        slippageBps: 100
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.mode).toBe("DRY_RUN");
+      expect(result.txHash).toBe(null);
+      expect(result.fromAmount).toBe(10);
+      expect(result.toAmount).toBe(9.9);
+    } finally {
+      process.env.DRY_RUN = originalDryRun;
+      if (originalKey) {
+        process.env.TRADING_PRIVATE_KEY = originalKey;
+      }
+    }
+  });
+
+  it("fails execution when calling with non-whitelisted assets", async () => {
+    const onchainEngine = require("./services/OnchainExecutionEngine");
+    try {
+      await onchainEngine.executeTrade({
+        botId: "test-bot",
+        fromToken: "INVALID",
+        toToken: "WETH",
+        amount: 10
+      });
+      throw new Error("Should have thrown");
+    } catch (e) {
+      expect(e.message.includes("Asset validation failed")).toBe(true);
+    }
+  });
+
+  it("enforces risk limits on large transaction sizes", async () => {
+    const onchainEngine = require("./services/OnchainExecutionEngine");
+    const originalDryRun = process.env.DRY_RUN;
+    const originalKey = process.env.TRADING_PRIVATE_KEY;
+    const originalMax = process.env.MAX_TRADE_USD;
+
+    process.env.DRY_RUN = "false";
+    process.env.TRADING_PRIVATE_KEY = "0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+    process.env.MAX_TRADE_USD = "100";
+
+    try {
+      await onchainEngine.executeTrade({
+        botId: "test-bot",
+        fromToken: "USDC",
+        toToken: "WETH",
+        amount: 500
+      });
+      throw new Error("Should have thrown");
+    } catch (e) {
+      expect(e.message.includes("exceeds MAX_TRADE_USD")).toBe(true);
+    } finally {
+      process.env.DRY_RUN = originalDryRun;
+      if (originalKey) {
+        process.env.TRADING_PRIVATE_KEY = originalKey;
+      } else {
+        delete process.env.TRADING_PRIVATE_KEY;
+      }
+      process.env.MAX_TRADE_USD = originalMax;
+    }
+  });
+});
+
+
 async function run() {
   let lastSuite = null;
 

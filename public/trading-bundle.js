@@ -3062,7 +3062,11 @@ async function simulateOrSendTransaction(quote) {
     const isConnected = (window.isPrivyConnected && window.isPrivyConnected()) ||
                         (window.walletState && window.walletState.isConnected);
 
-    if (isConnected) {
+    if (window.isLiveMode) {
+        if (!isConnected) {
+            throw new Error('Wallet not connected. Real transaction execution requires a connected MetaMask or Privy wallet.');
+        }
+
         let provider, signer;
         const expectedChainId = 8453; // Base Mainnet
 
@@ -3107,16 +3111,18 @@ async function simulateOrSendTransaction(quote) {
                 const tx = await signer.sendTransaction(txParams);
                 console.log('[Execution] Transaction sent successfully:', tx.hash);
                 return tx.hash;
+            } else {
+                throw new Error('No signer available for transaction execution.');
             }
         } catch (signError) {
             console.error('[Execution] On-chain signing failed:', signError);
-            throw signError;
+            throw new Error(`On-chain signing failed: ${signError.message || 'User rejected or provider error'}`);
         }
+    } else {
+        console.log('[Execution] Running in DEMO / Simulation mode. Generating mock transaction.');
+        await new Promise(r => setTimeout(r, 2000));
+        return '0x-simulated-' + Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('');
     }
-
-    console.warn('[Execution] No connected wallet found for real signature. Falling back to simulation.');
-    await new Promise(r => setTimeout(r, 2000));
-    return '0x-simulated-' + Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('');
 }
 
 /**
@@ -3128,7 +3134,7 @@ async function waitForTransaction(hash) {
     const isConnected = (window.isPrivyConnected && window.isPrivyConnected()) ||
                         (window.walletState && window.walletState.isConnected);
 
-    if (isConnected && hash && !hash.startsWith('0x-simulated')) {
+    if (hash && !hash.startsWith('0x-simulated')) {
         try {
             let provider;
             if (window.isPrivyConnected && window.isPrivyConnected() && window.privyProvider) {
@@ -3142,11 +3148,19 @@ async function waitForTransaction(hash) {
             }
             if (provider) {
                 const receipt = await provider.waitForTransaction(hash);
+                if (receipt && receipt.status === 0) {
+                    throw new Error('Transaction reverted on-chain.');
+                }
                 return receipt;
             }
         } catch (e) {
-            console.warn('[Execution] Error waiting for transaction receipt:', e);
+            console.error('[Execution] Error waiting for transaction receipt:', e);
+            throw e;
         }
+    }
+
+    if (window.isLiveMode) {
+        throw new Error('No provider available to poll receipt in LIVE mode.');
     }
 
     await new Promise(r => setTimeout(r, 3000));

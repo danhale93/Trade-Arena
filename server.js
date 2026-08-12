@@ -88,6 +88,9 @@ const payoutRoutes = require("./routes/payoutRoutes");
 const { loadUsers, saveUsers } = require('./user_persistence');
 const PORT = process.env.PORT || 3001;
 
+const onchainEngine = require('./services/OnchainExecutionEngine');
+const autonomousWorker = require('./services/AutonomousWorker');
+
 /**
  * Sentinel: Mask sensitive parts of an RPC URL (like Alchemy/Infura API keys)
  */
@@ -1065,26 +1068,34 @@ app.post('/api/execute/swap', tradingLimiter, async (req, res) => {
             }
         }
 
+        // Delegate to unified OnchainExecutionEngine (which handles dry run / simulation vs real swap transaction gracefully)
+        const slippageBps = slippage !== undefined ? Math.round(slippage * 10000) : 100;
+        const tradeResult = await onchainEngine.executeTrade({
+            botId: 'manual',
+            fromToken,
+            toToken,
+            amount,
+            slippageBps
+        });
+
         const expectedOutput = amount * (1 - (slippage || 0.005));
-        const gasUsed = Math.random() * 150000 + 50000;
-        const gasCost = gasUsed * 0.001;
         const result = {
             success: true,
             swap: {
                 from: { token: fromToken, amount: amount.toFixed(4) },
-                to: { token: toToken, amount: expectedOutput.toFixed(4) },
+                to: { token: toToken, amount: tradeResult.toAmount ? parseFloat(tradeResult.toAmount).toFixed(4) : expectedOutput.toFixed(4) },
                 exchange: 'Uniswap V3',
                 slippage: `${((slippage || 0.005) * 100).toFixed(2)}%`,
-                gasUsed: gasUsed.toFixed(0),
-                gasCost: gasCost.toFixed(4),
-                timestamp: Date.now()
+                gasUsed: tradeResult.gasUsed || '85000',
+                gasCost: tradeResult.gasCostETH || '0.000085',
+                timestamp: tradeResult.timestamp || Date.now()
             },
-            txHash: '0x' + crypto.randomBytes(32).toString('hex')
+            txHash: tradeResult.txHash
         };
         res.json(result);
     } catch (error) {
         console.error('Swap execution error:', error);
-        res.status(500).json({ success: false, error: 'Internal server error' });
+        res.status(500).json({ success: false, error: error.message || 'Internal server error' });
     }
 });
 
@@ -1398,6 +1409,10 @@ app.get('/api/diagnostics/full', async (req, res) => {
 
 app.listen(PORT, () => {
     console.log(`🚀 Trade Arena Server running on port ${PORT}`);
+    // Start background automated bots execution worker
+    autonomousWorker.start().catch(err => {
+        console.error('[Startup] Autonomous worker failed to start:', err.message);
+    });
 });
 
 module.exports = app;

@@ -43,6 +43,16 @@ async function executeRealSwap(betUSD, tokenIn, tokenOut, method) {
     const receipt = await sentTx.wait(1); // Wait for 1 confirmation
     console.log('✅ Transaction confirmed on block:', receipt.blockNumber);
 
+    if (receipt.status === 0) {
+      console.error('❌ Transaction reverted on-chain.');
+      return {
+        success: false,
+        error: 'Transaction reverted on-chain',
+        txHash: sentTx.hash,
+        status: 'REVERTED'
+      };
+    }
+
     return {
       success: true,
       txHash: sentTx.hash,
