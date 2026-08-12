@@ -768,7 +768,7 @@ if (typeof window !== 'undefined') {
 /**
  * SYSTEM MONITOR & CONSOLE LOGGER UI HANDLERS
  */
-function appendServerLog(entry) {
+window.appendServerLog = function(entry) {
     const consoleEl = document.getElementById('serverConsoleLogs');
     if (!consoleEl) return;
 
@@ -794,7 +794,7 @@ function appendServerLog(entry) {
     consoleEl.scrollTop = consoleEl.scrollHeight;
 }
 
-function updateHealthMetrics(health) {
+window.updateHealthMetrics = function(health) {
     const statusEl = document.getElementById('monitorStatus');
     const uptimeEl = document.getElementById('metricUptime');
     const connEl = document.getElementById('metricConnections');
@@ -867,4 +867,16 @@ function updateHealthMetrics(health) {
         originalConsoleWarn.apply(console, args);
         forwardToMonitor('WARN', args);
     };
+
+    // Run startup diagnostics
+    setTimeout(() => {
+        console.log('🛡️ SYSTEM DIAGNOSTICS INITIATED');
+        console.log('   - Ethers.js:', typeof ethers !== 'undefined' ? `v${ethers.version || '6.x'}` : '❌ NOT FOUND');
+        console.log('   - Execution Engine:', typeof window.executeRealSwap !== 'undefined' ? '✅ LOADED' : '❌ MISSING');
+        console.log('   - Wallet Provider:', window.ethereum ? '✅ DETECTED' : '❌ NOT FOUND');
+        console.log('   - WebSocket:', ws && ws.readyState === WebSocket.OPEN ? '✅ CONNECTED' : '❌ DISCONNECTED');
+        if (window.walletState) {
+            console.log('   - Wallet State:', window.walletState.isConnected ? `✅ CONNECTED (${window.walletState.address})` : '❌ DISCONNECTED');
+        }
+    }, 2000);
 })();

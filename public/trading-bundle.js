@@ -2995,7 +2995,9 @@ window.executeOnChainTrade = async function(tradeRequest) {
         const userAddress = (window.isPrivyConnected && window.isPrivyConnected() && window.getPrivyAddress()) || (window.walletState && window.walletState.address) || (window.ethereum && window.ethereum.selectedAddress);
         
         // Ensure TOKENS is available from contract-helpers.js
-        const tokens = window.TOKENS || TOKENS;
+        const tokens = window.TOKENS || (typeof TOKENS !== 'undefined' ? TOKENS : null);
+        if (!tokens) throw new Error('Contract tokens configuration not loaded');
+        
         const usdcAddress = tokens.USDC.address;
         const targetTokenAddress = tokens[token]?.address;
 
