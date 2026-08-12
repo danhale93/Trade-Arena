@@ -644,3 +644,51 @@ window.addEventListener('load', () => {
         connectWallet();
     }
 });
+
+/**
+ * UI HELPER: Add On-Chain Receipt to the dashboard
+ */
+window.addOnChainReceipt = function(receipt) {
+  const container = document.getElementById('receiptsList');
+  if (!container) return;
+
+  // Remove the "No receipts yet" placeholder if it exists
+  if (container.querySelector('div[style*="text-align:center"]')) {
+    container.innerHTML = '';
+  }
+
+  const receiptEl = document.createElement('div');
+  receiptEl.className = 'log-row';
+  receiptEl.style.cssText = 'background:var(--chrome); border:1px solid var(--border); border-radius:8px; padding:10px; display:flex; flex-direction:column; gap:6px; margin-bottom:8px; animation:toastFadeIn 0.3s ease;';
+
+  const shortHash = receipt.txHash.substring(0, 10) + '...' + receipt.txHash.substring(receipt.txHash.length - 8);
+  
+  receiptEl.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <span style="font-family:'Bungee'; font-size:10px; color:var(--gold);">TX CONFIRMED</span>
+      <span style="font-size:9px; color:var(--dim);">${new Date(receipt.timestamp).toLocaleTimeString()}</span>
+    </div>
+    <div style="display:flex; gap:10px; font-size:11px;">
+      <div style="flex:1;">
+        <div style="color:var(--dim); font-size:8px; text-transform:uppercase;">Transaction Hash</div>
+        <div style="color:#fff; font-family:'Share Tech Mono',monospace;">${shortHash}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="color:var(--dim); font-size:8px; text-transform:uppercase;">Gas Cost</div>
+        <div style="color:var(--green);">${receipt.gasCost} ETH</div>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.05);">
+      <span style="font-size:9px; color:var(--dim);">Block: ${receipt.blockNumber}</span>
+      <a href="${receipt.explorerUrl}" target="_blank" style="font-family:'Bungee'; font-size:9px; color:var(--cyan); text-decoration:none; border-bottom:1px solid var(--cyan);">VIEW ON BASESCAN ↗</a>
+    </div>
+  `;
+
+  container.prepend(receiptEl);
+  
+  // Auto-expand the panel if it's the first receipt
+  const body = document.getElementById('receiptsBody');
+  if (body && !body.classList.contains('open')) {
+    togglePanel('receipts');
+  }
+};

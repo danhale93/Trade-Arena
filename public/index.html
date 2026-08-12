@@ -1442,6 +1442,25 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     </div>
     <div class="log-list" id="globalLog"><div class="empty-log">No trades yet. Spin a bot to start trading! 🎰</div></div>
   </div>
+
+  <!-- On-Chain Receipts Panel -->
+  <div class="cpanel" id="receiptsPanel" style="margin-top: 20px; border-color: var(--gold2);">
+    <div class="cpanel-hd" id="receiptsHd" onclick="togglePanel('receipts')" style="background:linear-gradient(90deg,rgba(255,215,0,.1),transparent)" role="button" tabindex="0">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:14px" role="img" aria-hidden="true">🧾</span>
+        <span class="cpanel-title" style="color:var(--gold)">ON-CHAIN RECEIPTS</span>
+        <span style="font-size:9px;color:var(--dim)">Verified Basescan Transactions</span>
+      </div>
+      <span class="cpanel-toggle" id="receiptsToggle">▼ EXPAND</span>
+    </div>
+    <div class="cpanel-body" id="receiptsBody">
+      <div id="receiptsList" style="display:flex; flex-direction:column; gap:8px;">
+        <div style="text-align:center; padding:20px; color:var(--dim); font-size:10px; border:1px dashed var(--border); border-radius:6px;">
+          No on-chain receipts yet. Execute a live trade to see verified receipts here.
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>

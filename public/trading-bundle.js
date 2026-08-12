@@ -3015,6 +3015,11 @@ async function executeOnChainTrade(tradeRequest) {
         // 3. Receipt is already fetched by executeRealSwap
         const receipt = result;
 
+        // Update UI with the new on-chain receipt
+        if (window.addOnChainReceipt) {
+            window.addOnChainReceipt(receipt);
+        }
+
         ExecutionState.isExecuting = false;
         updateExecutionUI(botId, 'COMPLETE', txHash);
 
