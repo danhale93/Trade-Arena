@@ -193,7 +193,7 @@ class ContractHelper {
             return amounts[amounts.length - 1]; // Return output amount
         } catch (e) {
             console.error('Swap estimation failed:', e);
-            return ethers.BigNumber.from(0);
+            return 0n;
         }
     }
 
@@ -209,7 +209,7 @@ class ContractHelper {
 
         const path = await this.getSwapPath(tokenIn, tokenOut);
         const estimatedOut = await this.estimateSwap(tokenIn, tokenOut, amountIn);
-        const minOut = estimatedOut.mul(10000 - Math.floor(slippage * 100)).div(10000);
+        const minOut = (estimatedOut * BigInt(10000 - Math.floor(slippage * 100))) / 10000n;
 
         const deadline = Math.floor(Date.now() / 1000) + 3600; // 1 hour deadline
 

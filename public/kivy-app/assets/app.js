@@ -39,7 +39,7 @@ async function connectWallet() {
         }
 
         // Fetch balance
-        userBalance = ethers.utils.formatEther(
+        userBalance = ethers.formatEther(
             await provider.getBalance(userAddress)
         );
 

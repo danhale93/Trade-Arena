@@ -154,7 +154,7 @@ async function getWalletBalance() {
   
   try {
     const balanceWei = await walletState.provider.getBalance(walletState.address);
-    const balanceETH = parseFloat(ethers.utils.formatEther(balanceWei));
+    const balanceETH = parseFloat(ethers.formatEther(balanceWei));
     
     // Get ETH price from CoinGecko
     const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd', {
@@ -211,12 +211,12 @@ async function estimateSwapGasCost(method = 'ARBITRAGE') {
   // Use EIP-1559 fee (maxFeePerGas)
   const gasPrice = feeData.maxFee || feeData.gasPrice;
   const gasCostWei = gasPrice.mul(gasEstimate);
-  const gasCostETH = parseFloat(ethers.utils.formatEther(gasCostWei));
+  const gasCostETH = parseFloat(ethers.formatEther(gasCostWei));
   const gasCostUSD = gasCostETH * (walletState.balanceUSD / walletState.balanceETH || 3200);
   
   return {
     gasLimit: gasEstimate,
-    gasPrice: parseFloat(ethers.utils.formatUnits(gasPrice, 'gwei')),
+    gasPrice: parseFloat(ethers.formatUnits(gasPrice, 'gwei')),
     costETH: gasCostETH,
     costUSD: gasCostUSD,
     totalGasWei: gasCostWei,
