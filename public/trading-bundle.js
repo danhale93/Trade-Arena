@@ -3000,20 +3000,20 @@ async function executeOnChainTrade(tradeRequest) {
         // Since we are in a sandbox/simulated environment, we'll use a simulated result
         // if no real API key is present, otherwise we'd use ethers.js with privy provider.
 
-        // 2. Prepare Atomic Bundle (MEV Protection)
-        let txHash;
-        if (EXECUTION_CONFIG.useAtomicBundles) {
-            updateExecutionUI(botId, 'BUNDLING');
-            txHash = await sendAtomicBundle(quote, userAddress);
-        } else {
-            txHash = await simulateOrSendTransaction(quote);
+        // 2. Execute Real Onchain Swap with Ethers v6 & Receipts
+        updateExecutionUI(botId, 'SIGNING');
+        const result = await window.executeRealSwap(amountUSD, sellToken, buyToken, method);
+        
+        if (!result.success) {
+            throw new Error(result.error || 'Transaction failed');
         }
 
+        const txHash = result.txHash;
         ExecutionState.lastTxHash = txHash;
         updateExecutionUI(botId, 'MINING', txHash);
 
-        // 3. Wait for Receipt
-        const receipt = await waitForTransaction(txHash);
+        // 3. Receipt is already fetched by executeRealSwap
+        const receipt = result;
 
         ExecutionState.isExecuting = false;
         updateExecutionUI(botId, 'COMPLETE', txHash);

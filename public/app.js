@@ -21,7 +21,7 @@ async function connectWallet() {
             return;
         }
 
-        provider = new ethers.providers.Web3Provider(window.ethereum);
+        provider = new ethers.BrowserProvider(window.ethereum);
         await provider.send('eth_requestAccounts', []);
         signer = provider.getSigner();
         userAddress = await signer.getAddress();
