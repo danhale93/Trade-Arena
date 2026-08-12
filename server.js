@@ -22,9 +22,10 @@ const wss = new WebSocketServer({ server });
 // WebSocket connection registry
 const clients = new Set();
 
-wss.on('connection', (ws) => {
+wss.on('connection', (ws, req) => {
+    const ip = req.socket.remoteAddress;
     clients.add(ws);
-    console.log('[WebSocket] Client connected. Total clients:', clients.size);
+    console.log(`[WebSocket] New connection established from ${ip}. Total active traders: ${clients.size}`);
 
     ws.on('message', (data) => {
         try {
