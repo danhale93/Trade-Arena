@@ -153,8 +153,17 @@ async function waitForTransaction(hash) {
         : (window.ethereum ? new ethers.providers.Web3Provider(window.ethereum) : null);
 
     if (provider) {
-        return await provider.waitForTransaction(hash);
+        const receipt = await provider.waitForTransaction(hash);
+        if (receipt && receipt.status === 0) {
+            throw new Error('Transaction reverted on-chain.');
+        }
+        return receipt;
     }
+
+    if (window.isLiveMode) {
+        throw new Error('No wallet provider available to fetch receipt in LIVE mode.');
+    }
+
     await new Promise(r => setTimeout(r, 3000));
     return { status: 1, blockNumber: 12345678 };
 }
