@@ -4321,13 +4321,19 @@ async function spinBot(id){
         } catch (execError) {
             console.error('[Arena] On-chain execution failed:', execError);
             if (window.showToast) window.showToast(`Live Trade Error: ${execError.message}`, 'error');
+            // If execution fails, we stop here to prevent paper-trade recording of a failed live trade
+            return;
         }
     } else if (isHold) {
         console.log('[Arena] Bot decided to HOLD, skipping execution.');
     } else if (!hasWallet) {
         console.log('[Arena] No wallet connected, skipping live execution.');
+        if (window.showToast) window.showToast('Connect wallet to execute live trades', 'warn');
     }
-  }catch(e){}
+  }catch(e){
+    console.error('[Arena] Spin error:', e);
+    if (window.showToast) window.showToast(`System Error: ${e.message}`, 'error');
+  }
 
   await openPosition(bot,decision,entryPrice,bot.bet,volumeUsd,priceChangePct15m);
   updateQuantReport();

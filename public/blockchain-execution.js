@@ -4,15 +4,19 @@
  */
 
 async function executeRealSwap(betUSD, tokenIn, tokenOut, method) {
+  console.log('[executeRealSwap] Starting...', { betUSD, tokenIn, tokenOut, method });
   if (!window.ethereum) {
+    console.error('[executeRealSwap] No window.ethereum found');
     return { success: false, error: 'MetaMask or Web3 wallet not detected' };
   }
 
   try {
     const provider = new ethers.BrowserProvider(window.ethereum);
+    console.log('[executeRealSwap] Provider initialized');
     
     // Ensure we are on Base Mainnet
     const network = await provider.getNetwork();
+    console.log('[executeRealSwap] Network:', network.chainId.toString());
     if (Number(network.chainId) !== 8453) {
       console.log('⚠️ Wrong network detected, attempting to switch to Base Mainnet...');
       try {
@@ -99,6 +103,7 @@ async function executeRealSwap(betUSD, tokenIn, tokenOut, method) {
 }
 
 async function get0xSwapQuote(betUSD, tokenIn, tokenOut) {
+  console.log('[get0xSwapQuote] Fetching quote...', { betUSD, tokenIn, tokenOut });
   try {
     // Determine the sell amount in the correct token's decimals
     let sellAmount;
@@ -109,9 +114,11 @@ async function get0xSwapQuote(betUSD, tokenIn, tokenOut) {
       const priceData = await priceResponse.json();
       const ethPrice = priceData.ethereum?.usd || 3200;
       sellAmount = ethers.parseEther((betUSD / ethPrice).toFixed(18));
+      console.log('[get0xSwapQuote] Sell ETH amount:', sellAmount.toString());
     } else {
       // Assume USDC (6 decimals) if not ETH
       sellAmount = ethers.parseUnits(betUSD.toString(), 6);
+      console.log('[get0xSwapQuote] Sell USDC amount:', sellAmount.toString());
     }
 
     const apiUrl = new URL('https://api.0x.org/swap/v1/quote');
