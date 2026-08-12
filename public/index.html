@@ -1461,6 +1461,41 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       </div>
     </div>
   </div>
+
+  <!-- System Monitor & Console Logger Panel -->
+  <div class="cpanel" id="monitorPanel" style="margin-top: 20px; border-color: var(--cyan);">
+    <div class="cpanel-hd" id="monitorHd" onclick="togglePanel('monitor')" style="background:linear-gradient(90deg,rgba(0,240,255,.1),transparent)" role="button" tabindex="0">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:14px" role="img" aria-hidden="true">🖥️</span>
+        <span class="cpanel-title" style="color:var(--cyan)">SYSTEM MONITOR & SERVER LOGS</span>
+        <span style="font-size:9px;color:var(--dim)" id="monitorStatus">Connecting...</span>
+      </div>
+      <span class="cpanel-toggle" id="monitorToggle">▼ EXPAND</span>
+    </div>
+    <div class="cpanel-body" id="monitorBody">
+      <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; margin-bottom:12px;">
+        <div style="background:var(--chrome); padding:8px; border-radius:6px; border:1px solid var(--border);">
+          <div style="font-size:8px; color:var(--dim); text-transform:uppercase;">Server Uptime</div>
+          <div id="metricUptime" style="font-family:'Share Tech Mono'; font-size:14px; color:var(--gold);">0s</div>
+        </div>
+        <div style="background:var(--chrome); padding:8px; border-radius:6px; border:1px solid var(--border);">
+          <div style="font-size:8px; color:var(--dim); text-transform:uppercase;">Active Traders</div>
+          <div id="metricConnections" style="font-family:'Share Tech Mono'; font-size:14px; color:var(--cyan);">0</div>
+        </div>
+        <div style="background:var(--chrome); padding:8px; border-radius:6px; border:1px solid var(--border);">
+          <div style="font-size:8px; color:var(--dim); text-transform:uppercase;">Memory (Heap Used)</div>
+          <div id="metricMemory" style="font-family:'Share Tech Mono'; font-size:14px; color:var(--green);">0 MB</div>
+        </div>
+        <div style="background:var(--chrome); padding:8px; border-radius:6px; border:1px solid var(--border);">
+          <div style="font-size:8px; color:var(--dim); text-transform:uppercase;">Node Version</div>
+          <div id="metricNode" style="font-family:'Share Tech Mono'; font-size:14px; color:#fff;">v22.13.0</div>
+        </div>
+      </div>
+      <div style="background:#0b0f17; border:1px solid var(--border); border-radius:6px; padding:10px; height:180px; overflow-y:auto; font-family:'Share Tech Mono',monospace; font-size:9px; display:flex; flex-direction:column; gap:4px;" id="serverConsoleLogs">
+        <div style="color:var(--dim);">Awaiting server log stream...</div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>

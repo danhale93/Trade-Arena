@@ -19,13 +19,52 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
-// WebSocket connection registry
+// WebSocket connection registry & Log Interceptor
 const clients = new Set();
+const logBuffer = [];
+const MAX_LOG_BUFFER = 100;
+
+// Intercept console.log and console.error to stream to clients
+const originalLog = console.log;
+const originalError = console.error;
+
+function captureAndBroadcastLog(level, args) {
+    const message = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' ');
+    const logEntry = {
+        timestamp: new Date().toISOString(),
+        level,
+        message
+    };
+    logBuffer.push(logEntry);
+    if (logBuffer.length > MAX_LOG_BUFFER) {
+        logBuffer.shift();
+    }
+    broadcast({
+        type: 'SERVER_LOG',
+        data: logEntry
+    });
+}
+
+console.log = function(...args) {
+    originalLog.apply(console, args);
+    captureAndBroadcastLog('INFO', args);
+};
+
+console.error = function(...args) {
+    originalError.apply(console, args);
+    captureAndBroadcastLog('ERROR', args);
+};
 
 wss.on('connection', (ws, req) => {
     const ip = req.socket.remoteAddress;
     clients.add(ws);
     console.log(`[WebSocket] New connection established from ${ip}. Total active traders: ${clients.size}`);
+
+    // Send recent log history to newly connected client
+    ws.send(JSON.stringify({
+        type: 'LOG_HISTORY',
+        data: logBuffer
+    }));
 
     ws.on('message', (data) => {
         try {
@@ -36,6 +75,11 @@ wss.on('connection', (ws, req) => {
                     type: 'TRADE_NOTIFICATION',
                     data: message.payload
                 }, ws);
+            } else if (message.type === 'REQUEST_HEALTH') {
+                ws.send(JSON.stringify({
+                    type: 'HEALTH_STATUS',
+                    data: getHealthStatus()
+                }));
             }
         } catch (e) {
             console.error('[WebSocket] Error parsing message:', e.message);
@@ -44,7 +88,7 @@ wss.on('connection', (ws, req) => {
 
     ws.on('close', () => {
         clients.delete(ws);
-        console.log('[WebSocket] Client disconnected. Total clients:', clients.size);
+        console.log(`[WebSocket] Client disconnected. Total active traders: ${clients.size}`);
     });
 });
 
@@ -56,6 +100,31 @@ function broadcast(data, excludeWs = null) {
         }
     });
 }
+
+function getHealthStatus() {
+    const memUsage = process.memoryUsage();
+    return {
+        uptime: process.uptime(),
+        activeConnections: clients.size,
+        memory: {
+            rss: Math.round(memUsage.rss / 1024 / 1024),
+            heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024),
+            heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024)
+        },
+        nodeVersion: process.version,
+        timestamp: Date.now()
+    };
+}
+
+// Broadcast health status every 10 seconds
+setInterval(() => {
+    if (clients.size > 0) {
+        broadcast({
+            type: 'HEALTH_STATUS',
+            data: getHealthStatus()
+        });
+    }
+}, 10000);
 
 // Sentinel: Initialize in-memory duplicate task claim registry and allowed task whitelist
 app.locals.CLAIMED_USER_TASKS = new Set();

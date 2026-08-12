@@ -723,6 +723,21 @@ function connectWebSocket() {
                 if (window.addOnChainReceipt) {
                     window.addOnChainReceipt(receipt);
                 }
+            } else if (message.type === 'SERVER_LOG') {
+                if (window.appendServerLog) {
+                    window.appendServerLog(message.data);
+                }
+            } else if (message.type === 'LOG_HISTORY') {
+                const consoleEl = document.getElementById('serverConsoleLogs');
+                if (consoleEl && Array.isArray(message.data)) {
+                    message.data.forEach(log => {
+                        if (window.appendServerLog) window.appendServerLog(log);
+                    });
+                }
+            } else if (message.type === 'HEALTH_STATUS') {
+                if (window.updateHealthMetrics) {
+                    window.updateHealthMetrics(message.data);
+                }
             }
         } catch (e) {
             console.error('WebSocket message error:', e);
@@ -749,3 +764,70 @@ if (typeof window !== 'undefined') {
         }
     };
 }
+
+/**
+ * SYSTEM MONITOR & CONSOLE LOGGER UI HANDLERS
+ */
+function appendServerLog(entry) {
+    const consoleEl = document.getElementById('serverConsoleLogs');
+    if (!consoleEl) return;
+
+    // Remove placeholder if present
+    if (consoleEl.querySelector('div[style*="color:var(--dim)"]')) {
+        consoleEl.innerHTML = '';
+    }
+
+    const logRow = document.createElement('div');
+    const color = entry.level === 'ERROR' ? 'var(--hot)' : 'var(--cyan)';
+    const ts = new Date(entry.timestamp).toLocaleTimeString();
+    
+    logRow.style.cssText = 'display:flex; gap:8px; align-items:flex-start; word-break:break-all; border-bottom:1px solid rgba(255,255,255,0.03); padding-bottom:2px;';
+    logRow.innerHTML = `
+        <span style="color:var(--dim); font-size:8px;">[${ts}]</span>
+        <span style="color:${color}; font-weight:bold; font-size:8px;">[${entry.level}]</span>
+        <span style="color:#e2e8f0; flex:1;">${escapeHTML(entry.message)}</span>
+    `;
+
+    consoleEl.appendChild(logRow);
+    
+    // Auto-scroll to bottom
+    consoleEl.scrollTop = consoleEl.scrollHeight;
+}
+
+function updateHealthMetrics(health) {
+    const statusEl = document.getElementById('monitorStatus');
+    const uptimeEl = document.getElementById('metricUptime');
+    const connEl = document.getElementById('metricConnections');
+    const memEl = document.getElementById('metricMemory');
+    const nodeEl = document.getElementById('metricNode');
+
+    if (statusEl) {
+        statusEl.textContent = 'ONLINE (Live)';
+        statusEl.style.color = 'var(--green)';
+    }
+
+    if (uptimeEl) {
+        const uptimeSec = Math.floor(health.uptime);
+        const mins = Math.floor(uptimeSec / 60);
+        const hrs = Math.floor(mins / 60);
+        uptimeEl.textContent = hrs > 0 ? `${hrs}h ${mins % 60}m` : `${mins}m ${uptimeSec % 60}s`;
+    }
+
+    if (connEl) {
+        connEl.textContent = health.activeConnections;
+    }
+
+    if (memEl && health.memory) {
+        memEl.textContent = `${health.memory.heapUsed} MB`;
+    }
+
+    if (nodeEl && health.nodeVersion) {
+        nodeEl.textContent = health.nodeVersion;
+    }
+}
+
+// Hook into existing connectWebSocket in app.js by wrapping ws.onmessage
+// (We append this to extend message handling)
+const originalWsOnMessage = ws => {
+    // Handled inside connectWebSocket in app.js
+};
