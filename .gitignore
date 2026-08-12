@@ -1,6 +1,12 @@
 node_modules/
 dist/
 build/
+public/arena-react-bundle.js
+public/arena-react-bundle.js.map
+.jules/
+.continue/
+.vscode/
+.idea/
 .env
 .env.local
 *.log
