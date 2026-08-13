@@ -343,31 +343,44 @@ async function createBot() {
         return;
     }
 
-    const newBot = {
-        id: tradingEngine.generateId(),
-        name,
-        strategy,
-        risk,
-        amount,
-        autoMode,
-        active: true,
-        created: Date.now(),
-        totalProfit: 0,
-        trades: 0,
-        winRate: 0,
-        checkInterval: 30000
-    };
+    try {
+        showToast('Deploying bot to arena...', 'info');
+        
+        // 🚀 CREATE ON BACKEND: Persist bot to the autonomous worker
+        const response = await fetch('/api/bot/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name,
+                strategy,
+                riskLevel: risk,
+                initialCapital: amount,
+                userAddress
+            })
+        });
 
-    tradingEngine.bots.push(newBot);
-    userBalance -= amount;
-    document.getElementById('walletBalance').textContent = parseFloat(userBalance).toFixed(2) + ' ETH';
+        const data = await response.json();
+        if (data.success) {
+            const newBot = data.bot;
+            tradingEngine.bots.push(newBot);
+            
+            userBalance -= amount;
+            const balanceEl = document.getElementById('walletBalance') || document.getElementById('ghBalance');
+            if (balanceEl) balanceEl.textContent = '$' + (parseFloat(userBalance) || 0).toFixed(2);
 
-    closeBotCreator();
-    refreshBots();
-    showToast(`Bot "${name}" created and started!`, 'success');
-
-    // Start bot execution in background
-    tradingEngine.executeBot(newBot);
+            closeBotCreator();
+            refreshBots();
+            showToast(`Bot "${name}" deployed successfully!`, 'success');
+            
+            // Start local monitoring
+            tradingEngine.executeBot(newBot);
+        } else {
+            throw new Error(data.error || 'Creation failed');
+        }
+    } catch (e) {
+        console.error('Bot creation failed:', e);
+        showToast('Failed to create bot: ' + e.message, 'error');
+    }
 }
 
 function refreshBots() {

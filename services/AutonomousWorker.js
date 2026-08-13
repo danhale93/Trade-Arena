@@ -31,6 +31,13 @@ class AutonomousWorker {
         // Sliding-window daily spend tracking
         this.dailySpendUsd = 0;
         this.dailySpendResetTimestamp = Date.now() + 24 * 60 * 60 * 1000;
+
+        // 📈 Price History for Technical Analysis (RSI, SMA, etc.)
+        this.priceHistory = {
+            'WETH': [],
+            'USDC': []
+        };
+        this.maxHistoryLength = 100;
     }
 
     /**
@@ -91,6 +98,18 @@ class AutonomousWorker {
                 return;
             }
 
+            // 📈 Record to History
+            Object.keys(prices).forEach(token => {
+                if (!this.priceHistory[token]) this.priceHistory[token] = [];
+                this.priceHistory[token].push({
+                    close: prices[token],
+                    timestamp: Date.now()
+                });
+                if (this.priceHistory[token].length > this.maxHistoryLength) {
+                    this.priceHistory[token].shift();
+                }
+            });
+
             // Update position unrealised P&Ls with fresh market prices
             positionManager.updateUnrealisedPnL(prices);
 
@@ -126,21 +145,25 @@ class AutonomousWorker {
      */
     async evaluateBotStrategy(user, bot, prices) {
         try {
-            console.log(`[AutonomousWorker] Evaluating Bot #${bot.id} (${bot.name}) using Strategy: ${bot.strategy}`);
+            const token = bot.token || 'WETH';
+            const history = this.priceHistory[token] || [];
+            
+            // Technical strategies (RSI, SMA) need historical candle data
+            if (history.length < 5) {
+                console.log(`[AutonomousWorker] Bot #${bot.id} skipping: Insufficient history (${history.length}/5)`);
+                return;
+            }
 
-            // Format market data for strategy evaluation
-            const marketData = {
-                prices,
-                token: bot.token || 'WETH',
-                timestamp: Date.now()
-            };
+            console.log(`[AutonomousWorker] Evaluating Bot #${bot.id} (${bot.name}) with ${history.length} data points.`);
 
-            const strategyId = bot.strategyId || 'rsi-strategy'; // default core strategy ID
-            const result = await strategyLoader.executeStrategy(strategyId, marketData, bot.config || {});
+            const strategyId = bot.strategyId || 'rsi-strategy';
+            const result = await strategyLoader.executeStrategy(strategyId, history, bot.config || {});
 
-            if (result.signal === 'BUY' && result.confidence > 0.6) {
+            if (result.signal === 'BUY' && result.confidence > 0.55) {
+                console.log(`[AutonomousWorker] 🟢 BUY SIGNAL for Bot #${bot.id} (Confidence: ${result.confidence})`);
                 await this.triggerTradeExecution(user, bot, 'BUY', prices);
-            } else if (result.signal === 'SELL' && result.confidence > 0.6) {
+            } else if (result.signal === 'SELL' && result.confidence > 0.55) {
+                console.log(`[AutonomousWorker] 🔴 SELL SIGNAL for Bot #${bot.id} (Confidence: ${result.confidence})`);
                 await this.triggerTradeExecution(user, bot, 'SELL', prices);
             }
 
@@ -160,8 +183,11 @@ class AutonomousWorker {
         }
 
         const isLong = action === 'BUY';
-        const fromToken = isLong ? this.USDC : this.WETH;
-        const toToken = isLong ? this.WETH : this.USDC;
+        const tradeToken = bot.token || 'WETH';
+        
+        // 🔄 Dynamic Token Routing
+        const fromToken = isLong ? 'USDC' : tradeToken;
+        const toToken = isLong ? tradeToken : 'USDC';
 
         const tradeSizeUsd = Math.min(bot.initialCapital || 10, this.riskLimits.maxTradeUsd);
 
@@ -287,17 +313,26 @@ class AutonomousWorker {
      */
     async getMarketPrices() {
         try {
-            const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum,usd-coin&vs_currencies=usd');
+            const ids = 'ethereum,usd-coin,wrapped-bitcoin,pepe,solana';
+            const r = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`);
             const data = await r.json();
             return {
                 'WETH': data['ethereum']?.usd || 3200,
-                'USDC': data['usd-coin']?.usd || 1
+                'USDC': data['usd-coin']?.usd || 1,
+                'WBTC': data['wrapped-bitcoin']?.usd || 65000,
+                'cbBTC': data['wrapped-bitcoin']?.usd || 65000,
+                'PEPE': data['pepe']?.usd || 0.00001,
+                'SOL': data['solana']?.usd || 145
             };
         } catch (e) {
             console.warn('[AutonomousWorker] Failed to query online CoinGecko feed, using default fallback prices');
             return {
                 'WETH': 3200,
-                'USDC': 1
+                'USDC': 1,
+                'WBTC': 65000,
+                'cbBTC': 65000,
+                'PEPE': 0.00001,
+                'SOL': 145
             };
         }
     }

@@ -21,10 +21,22 @@ async function executeOnChainTrade(tradeRequest) {
     updateExecutionUI(botId, 'PREPARING');
 
     try {
-        // Map token symbol to address if needed
-        const tokenIn = method.includes('LONG') ? 'USDC' : token;
-        const tokenOut = method.includes('LONG') ? token : 'USDC';
+        // 🔄 ROBUST METHOD MAPPING: Convert UI strategies to on-chain swap routes
+        let tokenIn, tokenOut;
+        
+        if (method.includes('LONG') || method === 'YIELD FARM' || method === 'ARBITRAGE' || method === 'FLASH_LOAN') {
+            tokenIn = 'USDC';
+            tokenOut = token;
+        } else if (method.includes('SHORT')) {
+            tokenIn = token;
+            tokenOut = 'USDC';
+        } else {
+            // Default fallback
+            tokenIn = 'USDC';
+            tokenOut = token;
+        }
 
+        console.log(`[Execution Bridge] Mapped ${method} to swap: ${tokenIn} -> ${tokenOut}`);
         updateExecutionUI(botId, 'EXECUTING');
         
         // Call the new Ethers v6 engine

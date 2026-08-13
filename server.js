@@ -1151,6 +1151,21 @@ app.get('/api/market/prices', async (req, res) => {
     }
 });
 
+app.get('/api/user/:address/data', async (req, res) => {
+    try {
+        const users = loadUsers();
+        const user = users[req.params.address] || users['demo'];
+        res.json({ 
+            success: true, 
+            bots: user ? user.bots : [], 
+            trades: user ? user.trades : [],
+            balance: user ? user.balance : 0
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
 app.post('/api/bot/create', tradingLimiter, async (req, res) => {
     try {
         const { name, strategy, riskLevel, initialCapital, userAddress } = req.body;
@@ -1174,15 +1189,38 @@ app.post('/api/bot/create', tradingLimiter, async (req, res) => {
             }
         }
 
+        const strategyMap = {
+            'Arbitrage Detection': 'sma-crossover',
+            'Flash Loan Farming': 'rsi-strategy',
+            'Volatility Trading': 'rsi-strategy'
+        };
+
         const bot = {
             id: generateId(),
             name, strategy, riskLevel, initialCapital, userAddress,
+            strategyId: strategyMap[strategy] || 'rsi-strategy',
             status: 'ACTIVE',
             created: Date.now(),
             trades: [],
             totalProfit: 0,
             config: generateBotConfig(strategy, riskLevel)
         };
+
+        // 💾 PERSIST BOT: Save to user record so AutonomousWorker can execute it
+        const users = loadUsers();
+        const userId = userAddress || 'demo';
+        if (!users[userId]) {
+            users[userId] = { 
+                id: userId, 
+                address: userAddress || null,
+                bots: [], 
+                trades: [], 
+                balance: initialCapital || 0 
+            };
+        }
+        users[userId].bots.push(bot);
+        saveUsers(users);
+
         res.json({ success: true, bot });
     } catch (error) {
         console.error('Bot creation error:', error);

@@ -329,19 +329,37 @@ class TradingEngine {
         }
 
         try {
-            // Simulate execution (in real app, would call smart contracts)
-            trade.status = 'EXECUTED';
-            trade.executedTime = Date.now();
-            
-            // Simulate profit based on opportunity margin
-            // opportunity.profitMargin is a percentage (e.g. 1.2 for 1.2%).
-            const margin = Number(opportunity.profitMargin) || 0.5; // percent
-            const simulatedProfit = (margin / 100) * parseFloat(trade.size) * 0.8; // 80% realized
+            // 🛡️ REAL EXECUTION BRIDGE: If Live Mode is active, execute on-chain
+            if (window.isLiveMode && typeof window.executeOnChainTrade === 'function') {
+                console.log(`[TradingEngine] 🚀 Executing REAL trade for Bot #${bot.id}`);
+                const result = await window.executeOnChainTrade({
+                    botId: bot.id,
+                    token: opportunity.token || 'WETH',
+                    method: opportunity.type === 'ARBITRAGE' ? 'ARBITRAGE' : 'LONG',
+                    amountUSD: bot.amount
+                });
 
-            trade.profit = Number(simulatedProfit.toFixed(4));
-            trade.profitPercent = Number(((simulatedProfit / parseFloat(trade.size)) * 100).toFixed(2));
-            trade.status = 'CLOSED';
-            trade.closedTime = Date.now();
+                if (result.success) {
+                    trade.status = 'CLOSED';
+                    trade.txHash = result.txHash;
+                    trade.profit = 0; // Will be updated via balance sync
+                    trade.executedTime = Date.now();
+                } else {
+                    throw new Error(result.error || 'Execution failed');
+                }
+            } else {
+                // Simulate execution (DEMO mode)
+                trade.status = 'EXECUTED';
+                trade.executedTime = Date.now();
+                
+                const margin = Number(opportunity.profitMargin) || 0.5;
+                const simulatedProfit = (margin / 100) * parseFloat(trade.size) * 0.8;
+
+                trade.profit = Number(simulatedProfit.toFixed(4));
+                trade.profitPercent = Number(((simulatedProfit / parseFloat(trade.size)) * 100).toFixed(2));
+                trade.status = 'CLOSED';
+                trade.closedTime = Date.now();
+            }
         } catch (e) {
             trade.status = 'FAILED';
             trade.error = e.message;

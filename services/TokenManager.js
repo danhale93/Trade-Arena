@@ -20,25 +20,38 @@ class TokenManager {
                 name: 'Wrapped Ethereum'
             },
             'WBTC': {
-                address: '0x03C6b3903b65151371B9541b59367468160BCE62', // Canonical Base WBTC
+                address: '0x03C6b3903b65151371B9541b59367468160BCE62',
                 decimals: 8,
                 symbol: 'WBTC',
                 name: 'Wrapped Bitcoin'
+            },
+            'CBBTC': {
+                address: '0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf',
+                decimals: 8,
+                symbol: 'cbBTC',
+                name: 'Coinbase Wrapped BTC'
+            },
+            'PEPE': {
+                address: '0x698dc45e4f10966f6d1d98e3bfd7071d8144c233',
+                decimals: 18,
+                symbol: 'PEPE',
+                name: 'Pepe'
+            },
+            'SOL': {
+                address: '0x29683838D64aB2eB75757d59048a60f9e15f3366',
+                decimals: 9,
+                symbol: 'SOL',
+                name: 'Wrapped SOL'
             }
         };
 
         // Configuration-driven whitelisted pairs and Uniswap V3 fee tiers (3000 = 0.3%, 500 = 0.05%)
         this.pairs = {
-            'WETH/USDC': {
-                tokenIn: 'USDC',
-                tokenOut: 'WETH',
-                fee: 3000
-            },
-            'WBTC/WETH': {
-                tokenIn: 'WETH',
-                tokenOut: 'WBTC',
-                fee: 3000
-            }
+            'WETH/USDC': { tokenIn: 'USDC', tokenOut: 'WETH', fee: 500 },
+            'WBTC/WETH': { tokenIn: 'WETH', tokenOut: 'WBTC', fee: 3000 },
+            'CBBTC/USDC': { tokenIn: 'USDC', tokenOut: 'cbBTC', fee: 3000 },
+            'PEPE/WETH': { tokenIn: 'WETH', tokenOut: 'PEPE', fee: 10000 },
+            'SOL/USDC': { tokenIn: 'USDC', tokenOut: 'SOL', fee: 3000 }
         };
     }
 
