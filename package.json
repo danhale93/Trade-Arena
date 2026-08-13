@@ -16,6 +16,7 @@
     "@biconomy/abstractjs": "^1.2.5",
     "@biconomy/account": "^4.5.7",
     "@privy-io/react-auth": "^3.37.0",
+    "aes-js": "^4.0.0-beta.5",
     "axios": "1.18.1",
     "ccxt": "^4.5.71",
     "cors": "^2.8.5",
@@ -26,8 +27,10 @@
     "path-to-regexp": "^8.4.2",
     "react": "^19.2.7",
     "react-dom": "^19.2.8",
+    "semver": "^7.8.5",
     "viem": "^2.55.11",
     "websocket": "^1.0.35",
+    "ws": "^8.21.3",
     "zod": "3.25.76"
   },
   "devDependencies": {

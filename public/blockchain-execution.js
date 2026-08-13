@@ -1,50 +1,79 @@
 /**
  * REAL BLOCKCHAIN EXECUTION
- * Handles actual MetaMask transaction signing and on-chain execution
+ * Handles actual MetaMask transaction signing and on-chain execution on Base Mainnet (8453) with Ethers v6
  */
 
-// ═══════════════════════════════════════════════════════════
-// UNISWAP V3 SWAP EXECUTION
-// ═══════════════════════════════════════════════════════════
-
 async function executeRealSwap(betUSD, tokenIn, tokenOut, method) {
-  if (!walletState.signer) {
-    console.error('❌ No signer available. Connect MetaMask first!');
-    return { success: false, error: 'No signer available' };
-  }
-
+  console.log('[executeRealSwap] Starting...', { betUSD, tokenIn, tokenOut, method });
+  
   try {
-    console.log('🔄 Executing real swap on Base network...');
-    
-    // Step 1: Get swap quote from 0x API
-    const quote = await get0xSwapQuote(betUSD, tokenIn, tokenOut);
-    if (!quote || !quote.data) {
-      return { success: false, error: 'Failed to get swap quote' };
+    let provider;
+    if (window.privyProvider && typeof window.privyProvider.getEthersProvider === 'function') {
+      console.log('[executeRealSwap] Using Privy provider');
+      provider = await window.privyProvider.getEthersProvider();
+    } else if (window.walletState && window.walletState.provider) {
+      console.log('[executeRealSwap] Using walletState provider');
+      provider = window.walletState.provider;
+    } else if (window.ethereum) {
+      console.log('[executeRealSwap] Using window.ethereum provider');
+      provider = new ethers.BrowserProvider(window.ethereum);
+    } else {
+      console.error('[executeRealSwap] No provider found');
+      return { success: false, error: 'No wallet provider detected. Please connect your wallet.' };
     }
 
-    // Step 2: Show MetaMask confirmation modal
+    console.log('[executeRealSwap] Provider initialized');
+    
+    // Ensure we are on Base Mainnet
+    const network = await provider.getNetwork();
+    console.log('[executeRealSwap] Network:', network.chainId.toString());
+    if (Number(network.chainId) !== 8453) {
+      console.log('⚠️ Wrong network detected, attempting to switch to Base Mainnet...');
+      try {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0x2105' }], // 8453 in hex
+        });
+      } catch (switchError) {
+        return { success: false, error: 'Please switch your wallet to Base Mainnet (Chain ID 8453) to execute live trades.' };
+      }
+    }
+
+    const signer = await provider.getSigner();
+    const address = await signer.getAddress();
+
+    console.log('🔄 Executing real swap on Base network as:', address);
+    
+    // Step 1: Get swap quote from 0x API or Uniswap
+    const quote = await get0xSwapQuote(betUSD, tokenIn, tokenOut);
+    if (!quote || !quote.data) {
+      return { success: false, error: 'Failed to get swap quote from 0x API' };
+    }
+
+    // Step 2: Request MetaMask signature & send transaction
     console.log('💰 Requesting MetaMask signature...');
     
-    // Step 3: Send transaction via MetaMask
-    const tx = {
+    const txValue = quote.value ? BigInt(quote.value) : 0n;
+    const gasLimitEst = quote.gas ? BigInt(quote.gas) * 120n / 100n : 150000n;
+    const gasPriceEst = quote.gasPrice ? BigInt(quote.gasPrice) : 1000000000n;
+
+    const txRequest = {
       to: quote.to,
-      from: walletState.address,
+      from: address,
       data: quote.data,
-      value: quote.value || '0',
-      gas: ethers.BigNumber.from(quote.gas || 150000).mul(120).div(100), // Add 20% buffer
-      gasPrice: ethers.BigNumber.from(quote.gasPrice || 1000000000),
+      value: txValue,
+      gasLimit: gasLimitEst,
+      gasPrice: gasPriceEst,
     };
 
-    // Step 4: Sign and send via signer
-    const sentTx = await walletState.signer.sendTransaction(tx);
+    const sentTx = await signer.sendTransaction(txRequest);
     console.log('✅ Transaction sent! Hash:', sentTx.hash);
 
-    // Step 5: Wait for confirmation
-    const receipt = await sentTx.wait(1); // Wait for 1 confirmation
+    // Step 3: Wait for confirmation & receipt
+    const receipt = await provider.waitForTransaction(sentTx.hash, 1);
     console.log('✅ Transaction confirmed on block:', receipt.blockNumber);
 
     if (receipt.status === 0) {
-      console.error('❌ Transaction reverted on-chain.');
       return {
         success: false,
         error: 'Transaction reverted on-chain',
@@ -53,202 +82,94 @@ async function executeRealSwap(betUSD, tokenIn, tokenOut, method) {
       };
     }
 
-    return {
+    const gasUsed = receipt.gasUsed;
+    const effectiveGasPrice = receipt.gasPrice || gasPriceEst;
+    const transactionFeeWei = gasUsed * effectiveGasPrice;
+    const transactionFeeETH = ethers.formatEther(transactionFeeWei);
+
+    const receiptData = {
       success: true,
       txHash: sentTx.hash,
       blockNumber: receipt.blockNumber,
+      from: address,
+      to: quote.to,
+      gasUsed: gasUsed.toString(),
+      gasCost: transactionFeeETH,
+      explorerUrl: `https://basescan.org/tx/${sentTx.hash}`,
       timestamp: new Date().toISOString(),
-      status: 'CONFIRMED',
-      gasCost: ethers.utils.formatEther(
-        ethers.BigNumber.from(receipt.gasUsed).mul(tx.gasPrice)
-      ),
+      status: 'CONFIRMED'
     };
+
+    console.log('📄 Trade Receipt Generated:', receiptData);
+    return receiptData;
 
   } catch (error) {
     console.error('❌ Swap failed:', error.message);
-    
-    // User rejected in MetaMask
-    if (error.code === 4001) {
+    if (error.code === 4001 || error.code === 'ACTION_REJECTED') {
       return { success: false, error: 'Transaction rejected in MetaMask' };
     }
-    
-    // Insufficient gas
-    if (error.message.includes('insufficient')) {
-      return { success: false, error: 'Insufficient balance or gas' };
-    }
-
     return { success: false, error: error.message };
   }
 }
 
-// ═══════════════════════════════════════════════════════════
-// 0x SWAP QUOTE API
-// ═══════════════════════════════════════════════════════════
-
 async function get0xSwapQuote(betUSD, tokenIn, tokenOut) {
+  console.log('[get0xSwapQuote] Fetching quote...', { betUSD, tokenIn, tokenOut });
   try {
-    // Get current token prices
-    const priceData = await fetch(
-      'https://api.coingecko.com/api/v3/simple/price?ids=ethereum,usd-coin&vs_currencies=usd'
-    ).then(r => r.json());
-
-    const ethPrice = priceData.ethereum?.usd || 3200;
+    // Determine the sell amount in the correct token's decimals
+    let sellAmount;
+    const isSellEth = tokenIn.toLowerCase() === '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee' || tokenIn.toLowerCase() === 'eth';
     
-    // Convert USD to Wei
-    const tokenInAmount = ethers.utils.parseEther((betUSD / ethPrice).toString());
+    if (isSellEth) {
+      const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+      const priceData = await priceResponse.json();
+      const ethPrice = priceData.ethereum?.usd || 3200;
+      sellAmount = ethers.parseEther((betUSD / ethPrice).toFixed(18));
+      console.log('[get0xSwapQuote] Sell ETH amount:', sellAmount.toString());
+    } else {
+      // Assume USDC (6 decimals) if not ETH
+      sellAmount = ethers.parseUnits(betUSD.toString(), 6);
+      console.log('[get0xSwapQuote] Sell USDC amount:', sellAmount.toString());
+    }
 
-    // Get swap quote from 0x
     const apiUrl = new URL('https://api.0x.org/swap/v1/quote');
-    apiUrl.searchParams.append('chainId', '8453'); // Base network
-    apiUrl.searchParams.append('sellToken', tokenIn);
-    apiUrl.searchParams.append('buyToken', tokenOut);
-    apiUrl.searchParams.append('sellAmount', tokenInAmount.toString());
-    apiUrl.searchParams.append('slippagePercentage', '0.5');
+    apiUrl.searchParams.append('chainId', '8453');
+    apiUrl.searchParams.append('sellToken', isSellEth ? 'ETH' : tokenIn);
+    apiUrl.searchParams.append('buyToken', tokenOut.toLowerCase() === 'eth' ? 'ETH' : tokenOut);
+    apiUrl.searchParams.append('sellAmount', sellAmount.toString());
+    apiUrl.searchParams.append('slippagePercentage', '0.01'); // 1% slippage for safety
 
-    console.log('📊 Fetching 0x quote...');
     const response = await fetch(apiUrl.toString());
-    
     if (!response.ok) {
       throw new Error(`0x API error: ${response.statusText}`);
     }
 
-    const quoteData = await response.json();
-    console.log('✅ Quote received:', quoteData);
-
-    return quoteData;
-
+    return await response.json();
   } catch (error) {
     console.error('❌ Quote fetch failed:', error);
     return null;
   }
 }
 
-// ═══════════════════════════════════════════════════════════
-// TRANSACTION HISTORY TRACKING
-// ═══════════════════════════════════════════════════════════
-
 async function trackTransactionStatus(txHash) {
-  if (!walletState.provider) return null;
-
+  if (!window.ethereum) return null;
   try {
-    // Poll for transaction receipt
-    let receipt = null;
-    let attempts = 0;
-    const maxAttempts = 60; // 5 minutes with 5-second intervals
-
-    while (!receipt && attempts < maxAttempts) {
-      receipt = await walletState.provider.getTransactionReceipt(txHash);
-      
-      if (!receipt) {
-        console.log(`⏳ Waiting for confirmation... (${attempts + 1}/${maxAttempts})`);
-        await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
-      }
-
-      attempts++;
-    }
-
-    if (!receipt) {
-      return { status: 'PENDING', message: 'Transaction still pending after 5 minutes' };
-    }
-
-    // Transaction confirmed
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const receipt = await provider.getTransactionReceipt(txHash);
+    if (!receipt) return { status: 'PENDING' };
     return {
       status: receipt.status === 1 ? 'SUCCESS' : 'FAILED',
       blockNumber: receipt.blockNumber,
       gasUsed: receipt.gasUsed.toString(),
-      transactionFee: ethers.utils.formatEther(
-        receipt.gasUsed.mul(receipt.effectiveGasPrice || 1000000000)
-      ),
+      explorerUrl: `https://basescan.org/tx/${txHash}`
     };
-
-  } catch (error) {
-    console.error('❌ Transaction tracking failed:', error);
-    return { status: 'ERROR', error: error.message };
+  } catch (e) {
+    return { status: 'ERROR', error: e.message };
   }
 }
-
-// ═══════════════════════════════════════════════════════════
-// UPDATE WALLET BALANCE AFTER TRANSACTION
-// ═══════════════════════════════════════════════════════════
-
-async function refreshBalanceAfterTrade() {
-  console.log('🔄 Refreshing wallet balance...');
-  
-  const balance = await getWalletBalance();
-  if (!balance) {
-    console.error('❌ Failed to refresh balance');
-    return false;
-  }
-
-  console.log(`✅ New balance: ${balance.eth} ETH ($${balance.usd.toFixed(2)})`);
-  
-  // Update UI
-  if (window.updateBalance) {
-    window.updateBalance(balance);
-  }
-
-  return true;
-}
-
-// ═══════════════════════════════════════════════════════════
-// VERIFY TRANSACTION ON BLOCKCHAIN
-// ═══════════════════════════════════════════════════════════
-
-async function verifyTransactionOnChain(txHash) {
-  if (!walletState.provider) {
-    console.error('Provider not available');
-    return false;
-  }
-
-  try {
-    const tx = await walletState.provider.getTransaction(txHash);
-    const receipt = await walletState.provider.getTransactionReceipt(txHash);
-
-    if (!receipt) {
-      console.warn('⏳ Transaction pending or not found');
-      return null; // Still pending
-    }
-
-    const verified = {
-      confirmed: receipt.status === 1,
-      blockNumber: receipt.blockNumber,
-      gasUsed: receipt.gasUsed.toString(),
-      from: receipt.from,
-      to: receipt.to,
-      value: ethers.utils.formatEther(tx.value),
-      timestamp: new Date().toISOString(),
-      explorerUrl: `https://basescan.org/tx/${txHash}`,
-    };
-
-    console.log('✅ Transaction verified on-chain:', verified);
-    return verified;
-
-  } catch (error) {
-    console.error('❌ Verification failed:', error);
-    return false;
-  }
-}
-
-// ═══════════════════════════════════════════════════════════
-// EXPORT FOR USE IN HTML
-// ═══════════════════════════════════════════════════════════
 
 if (typeof window !== 'undefined') {
   window.executeRealSwap = executeRealSwap;
   window.get0xSwapQuote = get0xSwapQuote;
   window.trackTransactionStatus = trackTransactionStatus;
-  window.refreshBalanceAfterTrade = refreshBalanceAfterTrade;
-  window.verifyTransactionOnChain = verifyTransactionOnChain;
-
-  console.log('✅ Blockchain Execution module loaded');
-}
-
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = {
-    executeRealSwap,
-    get0xSwapQuote,
-    trackTransactionStatus,
-    refreshBalanceAfterTrade,
-    verifyTransactionOnChain,
-  };
+  console.log('✅ Updated Blockchain Execution module loaded (Ethers v6)');
 }

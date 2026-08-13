@@ -193,7 +193,7 @@ class ContractHelper {
             return amounts[amounts.length - 1]; // Return output amount
         } catch (e) {
             console.error('Swap estimation failed:', e);
-            return ethers.BigNumber.from(0);
+            return BigInt(0);
         }
     }
 

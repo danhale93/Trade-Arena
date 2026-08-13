@@ -21,7 +21,7 @@ async function connectWallet() {
             return;
         }
 
-        provider = new ethers.providers.Web3Provider(window.ethereum);
+        provider = new ethers.BrowserProvider(window.ethereum);
         await provider.send('eth_requestAccounts', []);
         signer = provider.getSigner();
         userAddress = await signer.getAddress();
@@ -39,7 +39,7 @@ async function connectWallet() {
         }
 
         // Fetch balance
-        userBalance = ethers.utils.formatEther(
+        userBalance = ethers.formatEther(
             await provider.getBalance(userAddress)
         );
 
@@ -644,3 +644,282 @@ window.addEventListener('load', () => {
         connectWallet();
     }
 });
+
+/**
+ * UI HELPER: Add On-Chain Receipt to the dashboard
+ */
+window.addOnChainReceipt = function(receipt) {
+  const container = document.getElementById('receiptsList');
+  if (!container) return;
+
+  // Remove the "No receipts yet" placeholder if it exists
+  if (container.querySelector('div[style*="text-align:center"]')) {
+    container.innerHTML = '';
+  }
+
+  const receiptEl = document.createElement('div');
+  receiptEl.className = 'log-row';
+  receiptEl.style.cssText = 'background:var(--chrome); border:1px solid var(--border); border-radius:8px; padding:10px; display:flex; flex-direction:column; gap:6px; margin-bottom:8px; animation:toastFadeIn 0.3s ease;';
+
+  const shortHash = receipt.txHash.substring(0, 10) + '...' + receipt.txHash.substring(receipt.txHash.length - 8);
+  
+  receiptEl.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <span style="font-family:'Bungee'; font-size:10px; color:var(--gold);">TX CONFIRMED</span>
+      <span style="font-size:9px; color:var(--dim);">${new Date(receipt.timestamp).toLocaleTimeString()}</span>
+    </div>
+    <div style="display:flex; gap:10px; font-size:11px;">
+      <div style="flex:1;">
+        <div style="color:var(--dim); font-size:8px; text-transform:uppercase;">Transaction Hash</div>
+        <div style="color:#fff; font-family:'Share Tech Mono',monospace;">${shortHash}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="color:var(--dim); font-size:8px; text-transform:uppercase;">Gas Cost</div>
+        <div style="color:var(--green);">${receipt.gasCost} ETH</div>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.05);">
+      <span style="font-size:9px; color:var(--dim);">Block: ${receipt.blockNumber}</span>
+      <a href="${receipt.explorerUrl}" target="_blank" style="font-family:'Bungee'; font-size:9px; color:var(--cyan); text-decoration:none; border-bottom:1px solid var(--cyan);">VIEW ON BASESCAN ↗</a>
+    </div>
+  `;
+
+  container.prepend(receiptEl);
+  
+  // Auto-expand the panel if it's the first receipt
+  const body = document.getElementById('receiptsBody');
+  if (body && !body.classList.contains('open')) {
+    togglePanel('receipts');
+  }
+};
+
+/**
+ * WEBSOCKET NOTIFICATIONS
+ */
+let ws;
+function connectWebSocket() {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}`;
+    
+    ws = new WebSocket(wsUrl);
+    
+    ws.onopen = () => {
+        console.log('🔌 WebSocket Connected');
+    };
+    
+    ws.onmessage = (event) => {
+        try {
+            const message = JSON.parse(event.data);
+            if (message.type === 'TRADE_NOTIFICATION') {
+                const receipt = message.data;
+                console.log('🔔 New Trade Notification:', receipt);
+                
+                // Show a global toast notification
+                if (window.showToast) {
+                    window.showToast(`New Trade Confirmed: ${receipt.txHash.substring(0, 8)}...`, 'info');
+                }
+                
+                // Add to receipts UI
+                if (window.addOnChainReceipt) {
+                    window.addOnChainReceipt(receipt);
+                }
+            } else if (message.type === 'SERVER_LOG') {
+                if (window.appendServerLog) {
+                    window.appendServerLog(message.data);
+                }
+            } else if (message.type === 'LOG_HISTORY') {
+                const consoleEl = document.getElementById('serverConsoleLogs');
+                if (consoleEl && Array.isArray(message.data)) {
+                    message.data.forEach(log => {
+                        if (window.appendServerLog) window.appendServerLog(log);
+                    });
+                }
+            } else if (message.type === 'HEALTH_STATUS') {
+                if (window.updateHealthMetrics) {
+                    window.updateHealthMetrics(message.data);
+                }
+            }
+        } catch (e) {
+            console.error('WebSocket message error:', e);
+        }
+    };
+    
+    ws.onclose = () => {
+        console.log('🔌 WebSocket Disconnected. Retrying in 5s...');
+        setTimeout(connectWebSocket, 5000);
+    };
+}
+
+// Start WebSocket connection on load
+if (typeof window !== 'undefined') {
+    connectWebSocket();
+    
+    // Export notify function
+    window.notifyTradeConfirmed = function(receipt) {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+                type: 'TRADE_CONFIRMED',
+                payload: receipt
+            }));
+        }
+    };
+}
+
+/**
+ * SYSTEM MONITOR & CONSOLE LOGGER UI HANDLERS
+ */
+window.appendServerLog = function(entry) {
+    const consoleEl = document.getElementById('serverConsoleLogs');
+    if (!consoleEl) return;
+
+    // Remove placeholder if present
+    if (consoleEl.querySelector('div[style*="color:var(--dim)"]')) {
+        consoleEl.innerHTML = '';
+    }
+
+    const logRow = document.createElement('div');
+    const color = entry.level === 'ERROR' ? 'var(--hot)' : 'var(--cyan)';
+    const ts = new Date(entry.timestamp).toLocaleTimeString();
+    
+    logRow.style.cssText = 'display:flex; gap:8px; align-items:flex-start; word-break:break-all; border-bottom:1px solid rgba(255,255,255,0.03); padding-bottom:2px;';
+    logRow.innerHTML = `
+        <span style="color:var(--dim); font-size:8px;">[${ts}]</span>
+        <span style="color:${color}; font-weight:bold; font-size:8px;">[${entry.level}]</span>
+        <span style="color:#e2e8f0; flex:1;">${escapeHTML(entry.message)}</span>
+    `;
+
+    consoleEl.appendChild(logRow);
+    
+    // Auto-scroll to bottom
+    consoleEl.scrollTop = consoleEl.scrollHeight;
+}
+
+window.updateHealthMetrics = function(health) {
+    const statusEl = document.getElementById('monitorStatus');
+    const uptimeEl = document.getElementById('metricUptime');
+    const connEl = document.getElementById('metricConnections');
+    const memEl = document.getElementById('metricMemory');
+    const nodeEl = document.getElementById('metricNode');
+
+    if (statusEl) {
+        statusEl.textContent = 'ONLINE (Live)';
+        statusEl.style.color = 'var(--green)';
+    }
+
+    if (uptimeEl) {
+        const uptimeSec = Math.floor(health.uptime);
+        const mins = Math.floor(uptimeSec / 60);
+        const hrs = Math.floor(mins / 60);
+        uptimeEl.textContent = hrs > 0 ? `${hrs}h ${mins % 60}m` : `${mins}m ${uptimeSec % 60}s`;
+    }
+
+    if (connEl) {
+        connEl.textContent = health.activeConnections;
+    }
+
+    if (memEl && health.memory) {
+        memEl.textContent = `${health.memory.heapUsed} MB`;
+    }
+
+    if (nodeEl && health.nodeVersion) {
+        nodeEl.textContent = health.nodeVersion;
+    }
+}
+
+/**
+ * CLIENT-SIDE CONSOLE INTERCEPTOR
+ * Forwards browser console logs to the System Monitor UI
+ */
+(function() {
+    const originalConsoleLog = console.log;
+    const originalConsoleError = console.error;
+    const originalConsoleWarn = console.warn;
+
+    function forwardToMonitor(level, args) {
+        const message = args.map(arg => {
+            try {
+                return typeof arg === 'object' ? JSON.stringify(arg) : String(arg);
+            } catch (e) {
+                return String(arg);
+            }
+        }).join(' ');
+
+        if (window.appendServerLog) {
+            window.appendServerLog({
+                timestamp: new Date().toISOString(),
+                level: `CLIENT-${level}`,
+                message: message
+            });
+        }
+    }
+
+    console.log = function(...args) {
+        originalConsoleLog.apply(console, args);
+        forwardToMonitor('INFO', args);
+    };
+
+    console.error = function(...args) {
+        originalConsoleError.apply(console, args);
+        forwardToMonitor('ERROR', args);
+    };
+
+    console.warn = function(...args) {
+        originalConsoleWarn.apply(console, args);
+        forwardToMonitor('WARN', args);
+    };
+
+    // Run startup diagnostics
+    setTimeout(() => {
+        console.log('🛡️ SYSTEM DIAGNOSTICS INITIATED');
+        console.log('   - Ethers.js:', typeof ethers !== 'undefined' ? `v${ethers.version || '6.x'}` : '❌ NOT FOUND');
+        console.log('   - Execution Engine:', typeof window.executeRealSwap !== 'undefined' ? '✅ LOADED' : '❌ MISSING');
+        console.log('   - Wallet Provider:', window.ethereum ? '✅ DETECTED' : '❌ NOT FOUND');
+        console.log('   - WebSocket:', ws && ws.readyState === WebSocket.OPEN ? '✅ CONNECTED' : '❌ DISCONNECTED');
+        if (window.walletState) {
+            console.log('   - Wallet State:', window.walletState.isConnected ? `✅ CONNECTED (${window.walletState.address})` : '❌ DISCONNECTED');
+        }
+    }, 2000);
+})();
+
+/**
+ * DEBUG HELPERS
+ */
+window.resetExecutionState = function() {
+    console.log('🔄 Manually resetting Execution Engine state...');
+    if (typeof ExecutionState !== 'undefined') {
+        ExecutionState.isExecuting = false;
+        console.log('✅ ExecutionState.isExecuting set to false');
+    }
+    if (window.showToast) window.showToast('Execution Engine Reset', 'info');
+};
+
+window.testSignature = async function() {
+    console.log('⚡ Initiating Signature Test...');
+    try {
+        let provider;
+        if (window.privyProvider && typeof window.privyProvider.getEthersProvider === 'function') {
+            provider = await window.privyProvider.getEthersProvider();
+        } else if (window.walletState && window.walletState.provider) {
+            provider = window.walletState.provider;
+        } else if (window.ethereum) {
+            provider = new ethers.BrowserProvider(window.ethereum);
+        } else {
+            throw new Error('No wallet provider detected. Please connect your wallet first.');
+        }
+
+        const signer = await provider.getSigner();
+        const address = await signer.getAddress();
+        console.log('👤 Wallet Address:', address);
+
+        if (window.showToast) window.showToast('Check MetaMask for Signature Request', 'info');
+        
+        const message = `Trade Arena Verification\nTimestamp: ${new Date().toISOString()}\nWallet: ${address}`;
+        const signature = await signer.signMessage(message);
+        
+        console.log('✅ Signature Successful:', signature.substring(0, 20) + '...');
+        if (window.showToast) window.showToast('Signature Verified!', 'success');
+    } catch (e) {
+        console.error('❌ Signature Test Failed:', e.message);
+        if (window.showToast) window.showToast(`Test Failed: ${e.message}`, 'error');
+    }
+};

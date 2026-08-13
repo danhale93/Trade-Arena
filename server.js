@@ -12,9 +12,119 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
-const WebSocket = require('websocket').w3cwebsocket;
+const http = require('http');
+const { Server: WebSocketServer } = require('ws');
 
 const app = express();
+const server = http.createServer(app);
+const wss = new WebSocketServer({ server });
+
+// WebSocket connection registry & Log Interceptor
+const clients = new Set();
+const logBuffer = [];
+const MAX_LOG_BUFFER = 100;
+
+// Intercept console.log and console.error to stream to clients
+const originalLog = console.log;
+const originalError = console.error;
+
+function captureAndBroadcastLog(level, args) {
+    const message = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' ');
+    const logEntry = {
+        timestamp: new Date().toISOString(),
+        level,
+        message
+    };
+    logBuffer.push(logEntry);
+    if (logBuffer.length > MAX_LOG_BUFFER) {
+        logBuffer.shift();
+    }
+    broadcast({
+        type: 'SERVER_LOG',
+        data: logEntry
+    });
+}
+
+console.log = function(...args) {
+    originalLog.apply(console, args);
+    captureAndBroadcastLog('INFO', args);
+};
+
+console.error = function(...args) {
+    originalError.apply(console, args);
+    captureAndBroadcastLog('ERROR', args);
+};
+
+wss.on('connection', (ws, req) => {
+    const ip = req.socket.remoteAddress;
+    clients.add(ws);
+    console.log(`[WebSocket] New connection established from ${ip}. Total active traders: ${clients.size}`);
+
+    // Send recent log history to newly connected client
+    ws.send(JSON.stringify({
+        type: 'LOG_HISTORY',
+        data: logBuffer
+    }));
+
+    ws.on('message', (data) => {
+        try {
+            const message = JSON.parse(data);
+            if (message.type === 'TRADE_CONFIRMED') {
+                // Broadcast confirmed trade to all other clients
+                broadcast({
+                    type: 'TRADE_NOTIFICATION',
+                    data: message.payload
+                }, ws);
+            } else if (message.type === 'REQUEST_HEALTH') {
+                ws.send(JSON.stringify({
+                    type: 'HEALTH_STATUS',
+                    data: getHealthStatus()
+                }));
+            }
+        } catch (e) {
+            console.error('[WebSocket] Error parsing message:', e.message);
+        }
+    });
+
+    ws.on('close', () => {
+        clients.delete(ws);
+        console.log(`[WebSocket] Client disconnected. Total active traders: ${clients.size}`);
+    });
+});
+
+function broadcast(data, excludeWs = null) {
+    const message = JSON.stringify(data);
+    clients.forEach(client => {
+        if (client !== excludeWs && client.readyState === 1) { // 1 = OPEN
+            client.send(message);
+        }
+    });
+}
+
+function getHealthStatus() {
+    const memUsage = process.memoryUsage();
+    return {
+        uptime: process.uptime(),
+        activeConnections: clients.size,
+        memory: {
+            rss: Math.round(memUsage.rss / 1024 / 1024),
+            heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024),
+            heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024)
+        },
+        nodeVersion: process.version,
+        timestamp: Date.now()
+    };
+}
+
+// Broadcast health status every 10 seconds
+setInterval(() => {
+    if (clients.size > 0) {
+        broadcast({
+            type: 'HEALTH_STATUS',
+            data: getHealthStatus()
+        });
+    }
+}, 10000);
 
 // Sentinel: Initialize in-memory duplicate task claim registry and allowed task whitelist
 app.locals.CLAIMED_USER_TASKS = new Set();
@@ -39,7 +149,7 @@ app.use((req, res, next) => {
     res.setHeader('X-XSS-Protection', '1; mode=block');
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
     res.setHeader('Referrer-Policy', 'no-referrer');
-    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://accounts.google.com https://cdn.privy.io https://js.hcaptcha.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https:; frame-src 'self' https://auth.privy.io https://newassets.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com; child-src 'self' https://auth.privy.io https://newassets.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com;");
+    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://accounts.google.com https://cdn.privy.io https://js.hcaptcha.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https: ws: wss:; frame-src 'self' https://auth.privy.io https://newassets.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com; child-src 'self' https://auth.privy.io https://newassets.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com;");
     next();
 });
 
@@ -974,6 +1084,7 @@ app.post('/api/webhooks/moonpay/deposit', (req, res) => {
 });
 
 app.get('/api/market/prices', async (req, res) => {
+    console.log('[Market API] Fetching prices for symbols:', req.query.symbols || 'default');
     try {
         const allowedSymbols = new Set(['WETH', 'USDC', 'ARB', 'OP']);
         const coinMap = { 'WETH': 'ethereum', 'USDC': 'usd-coin', 'ARB': 'arbitrum', 'OP': 'optimism' };
@@ -1049,6 +1160,7 @@ app.post('/api/bot/create', tradingLimiter, async (req, res) => {
 });
 
 app.post('/api/execute/swap', tradingLimiter, async (req, res) => {
+    console.log('[Swap API] Execution request:', req.body);
     try {
         const { fromToken, toToken, amount, slippage } = req.body;
 
@@ -1407,7 +1519,7 @@ app.get('/api/diagnostics/full', async (req, res) => {
     res.json(diagnostics);
 });
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`🚀 Trade Arena Server running on port ${PORT}`);
     // Start background automated bots execution worker
     autonomousWorker.start().catch(err => {

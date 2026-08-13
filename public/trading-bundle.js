@@ -990,7 +990,7 @@ class ContractHelper {
       return amounts[amounts.length - 1];
     } catch (e) {
       console.error("Swap estimation failed:", e);
-      return ethers.BigNumber ? ethers.BigNumber.from(0) : BigInt(0);
+      return ethers.BigNumber ? BigInt(0) : BigInt(0);
     }
   }
 
@@ -1376,7 +1376,7 @@ async function getWalletBalance() {
 
   try {
     const balanceWei = await walletState.provider.getBalance(walletState.address);
-    const balanceETH = parseFloat(ethers.utils.formatEther(balanceWei));
+    const balanceETH = parseFloat(ethers.formatEther(balanceWei));
 
     // Get ETH price from CoinGecko
     const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd', {
@@ -1433,12 +1433,12 @@ async function estimateSwapGasCost(method = 'ARBITRAGE') {
   // Use EIP-1559 fee (maxFeePerGas)
   const gasPrice = feeData.maxFee || feeData.gasPrice;
   const gasCostWei = gasPrice.mul(gasEstimate);
-  const gasCostETH = parseFloat(ethers.utils.formatEther(gasCostWei));
+  const gasCostETH = parseFloat(ethers.formatEther(gasCostWei));
   const gasCostUSD = gasCostETH * (walletState.balanceUSD / walletState.balanceETH || 3200);
 
   return {
     gasLimit: gasEstimate,
-    gasPrice: parseFloat(ethers.utils.formatUnits(gasPrice, 'gwei')),
+    gasPrice: parseFloat(ethers.formatUnits(gasPrice, 'gwei')),
     costETH: gasCostETH,
     costUSD: gasCostUSD,
     totalGasWei: gasCostWei,
@@ -1845,7 +1845,7 @@ async function getWalletBalanceUSD() {
             if (livePrice) ethPrice = livePrice;
         }
 
-        walletState.balanceETH = parseFloat(ethers.utils.formatEther(ethBalance));
+        walletState.balanceETH = parseFloat(ethers.formatEther(ethBalance));
         walletState.balanceUSD = walletState.balanceETH * ethPrice;
 
         return walletState.balanceUSD;
@@ -2655,7 +2655,7 @@ const CrucibleRealTrading = {
       // Convert position size (AUD) to USDC (rough estimate)
       // For real execution, we'd use the precise wallet balance
       const amountInUSD = positionSize;
-      const amountInRaw = ethers.utils.parseUnits(amountInUSD.toString(), tokenIn.decimals);
+      const amountInRaw = ethers.parseUnits(amountInUSD.toString(), tokenIn.decimals);
 
       console.log();
       await helper.approveToken(tokenIn.address, PROTOCOLS.UNISWAP_V3.router, amountInRaw);
@@ -2711,7 +2711,7 @@ const CrucibleRealTrading = {
 
       // Convert position size (AUD) to USDC (rough estimate)
       const amountInUSD = positionSize;
-      const amountInRaw = ethers.utils.parseUnits(amountInUSD.toString(), tokenIn.decimals);
+      const amountInRaw = ethers.parseUnits(amountInUSD.toString(), tokenIn.decimals);
 
       console.log(`   Approving ${amountInUSD} ${tokenIn.symbol}...`);
       await helper.approveToken(tokenIn.address, PROTOCOLS.UNISWAP_V3.router, amountInRaw);
@@ -2915,6 +2915,7 @@ const ExecutionState = {
     pendingTrades: new Map(),
     mevProtectionActive: true
 };
+window.ExecutionState = ExecutionState;
 
 /**
  * Get a swap quote from 0x API
@@ -2957,7 +2958,7 @@ async function getSwapQuote(buyTokenAddress, sellTokenAddress, sellAmountWei, ta
  * Execute a real on-chain trade
  * @param {Object} tradeRequest
  */
-async function executeOnChainTrade(tradeRequest) {
+window.executeOnChainTrade = async function(tradeRequest) {
     if (ExecutionState.isExecuting) {
         throw new Error('Execution in progress');
     }
@@ -2965,20 +2966,41 @@ async function executeOnChainTrade(tradeRequest) {
     const { botId, token, method, amountUSD } = tradeRequest;
     console.log(`[Execution] EXECUTING REAL TRADE: Bot #${botId} - ${method} ${token} $${amountUSD}`);
 
-    const isConnected = (window.isPrivyConnected && window.isPrivyConnected()) ||
+    let isConnected = (window.isPrivyConnected && window.isPrivyConnected()) ||
                         (window.walletState && window.walletState.isConnected);
 
+    if (!isConnected && window.ethereum) {
+        console.log('[Execution] Wallet present but not connected. Requesting accounts...');
+        try {
+            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            if (accounts && accounts.length > 0) {
+                isConnected = true;
+                if (window.walletState) {
+                    window.walletState.isConnected = true;
+                    window.walletState.address = accounts[0];
+                }
+            }
+        } catch (e) {
+            console.error('[Execution] Failed to request accounts:', e);
+        }
+    }
+
     if (!isConnected) {
-        throw new Error('Wallet not connected. Please login via Privy or connect MetaMask.');
+        throw new Error('Wallet not connected. Please click "Connect Wallet" or ensure MetaMask is unlocked.');
     }
 
     ExecutionState.isExecuting = true;
     updateExecutionUI(botId, 'PREPARING');
 
     try {
-        const userAddress = (window.isPrivyConnected && window.isPrivyConnected() && window.getPrivyAddress()) || (window.walletState && window.walletState.address);
-        const usdcAddress = TOKENS.USDC.address;
-        const targetTokenAddress = TOKENS[token]?.address;
+        const userAddress = (window.isPrivyConnected && window.isPrivyConnected() && window.getPrivyAddress()) || (window.walletState && window.walletState.address) || (window.ethereum && window.ethereum.selectedAddress);
+        
+        // Ensure TOKENS is available from contract-helpers.js
+        const tokens = window.TOKENS || (typeof TOKENS !== 'undefined' ? TOKENS : null);
+        if (!tokens) throw new Error('Contract tokens configuration not loaded');
+        
+        const usdcAddress = tokens.USDC.address;
+        const targetTokenAddress = tokens[token]?.address;
 
         if (!targetTokenAddress) throw new Error(`Token ${token} address unknown`);
 
@@ -2991,29 +3013,33 @@ async function executeOnChainTrade(tradeRequest) {
         const sellToken = method.includes('LONG') ? usdcAddress : targetTokenAddress;
 
         updateExecutionUI(botId, 'QUOTING');
-        const quote = await getSwapQuote(buyToken, sellToken, amountWei, userAddress);
-
-        // 2. Request Transaction via Privy
+        
+        // 2. Execute Real Onchain Swap with Ethers v6 & Receipts
         updateExecutionUI(botId, 'SIGNING');
-
-        // In a real implementation with Privy, we'd use the provider to send the transaction
-        // Since we are in a sandbox/simulated environment, we'll use a simulated result
-        // if no real API key is present, otherwise we'd use ethers.js with privy provider.
-
-        // 2. Prepare Atomic Bundle (MEV Protection)
-        let txHash;
-        if (EXECUTION_CONFIG.useAtomicBundles) {
-            updateExecutionUI(botId, 'BUNDLING');
-            txHash = await sendAtomicBundle(quote, userAddress);
-        } else {
-            txHash = await simulateOrSendTransaction(quote);
+        
+        // Use the global executeRealSwap from blockchain-execution.js
+        const result = await window.executeRealSwap(amountUSD, sellToken, buyToken, method);
+        
+        if (!result.success) {
+            throw new Error(result.error || 'Transaction failed');
         }
 
+        const txHash = result.txHash;
         ExecutionState.lastTxHash = txHash;
         updateExecutionUI(botId, 'MINING', txHash);
 
-        // 3. Wait for Receipt
-        const receipt = await waitForTransaction(txHash);
+        // 3. Receipt is already fetched by executeRealSwap
+        const receipt = result;
+
+        // Update UI with the new on-chain receipt
+        if (window.addOnChainReceipt) {
+            window.addOnChainReceipt(receipt);
+        }
+
+        // Notify other clients via WebSocket
+        if (window.notifyTradeConfirmed) {
+            window.notifyTradeConfirmed(receipt);
+        }
 
         ExecutionState.isExecuting = false;
         updateExecutionUI(botId, 'COMPLETE', txHash);

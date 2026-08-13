@@ -5,7 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>TRADE ARENA — AI TRADING FLOOR</title>
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Bungee+Shade&family=JetBrains+Mono:wght@400;700&family=Oswald:wght@400;700&family=Share+Tech+Mono&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js" defer></script>
+<script src="contract-helpers.js" defer></script>
+<script src="real-wallet.js" defer></script>
+<script src="blockchain-execution.js" defer></script>
 <style>
 :root{
   --gold:#ffd700;--gold2:#ffaa00;--hot:#ff2d78;--cyan:#00ffe7;
@@ -1439,6 +1442,65 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     </div>
     <div class="log-list" id="globalLog"><div class="empty-log">No trades yet. Spin a bot to start trading! 🎰</div></div>
   </div>
+
+  <!-- On-Chain Receipts Panel -->
+  <div class="cpanel" id="receiptsPanel" style="margin-top: 20px; border-color: var(--gold2);">
+    <div class="cpanel-hd" id="receiptsHd" onclick="togglePanel('receipts')" style="background:linear-gradient(90deg,rgba(255,215,0,.1),transparent)" role="button" tabindex="0">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:14px" role="img" aria-hidden="true">🧾</span>
+        <span class="cpanel-title" style="color:var(--gold)">ON-CHAIN RECEIPTS</span>
+        <span style="font-size:9px;color:var(--dim)">Verified Basescan Transactions</span>
+      </div>
+      <span class="cpanel-toggle" id="receiptsToggle">▼ EXPAND</span>
+    </div>
+    <div class="cpanel-body" id="receiptsBody">
+      <div id="receiptsList" style="display:flex; flex-direction:column; gap:8px;">
+        <div style="text-align:center; padding:20px; color:var(--dim); font-size:10px; border:1px dashed var(--border); border-radius:6px;">
+          No on-chain receipts yet. Execute a live trade to see verified receipts here.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- System Monitor & Console Logger Panel -->
+  <div class="cpanel" id="monitorPanel" style="margin-top: 20px; border-color: var(--cyan);">
+    <div class="cpanel-hd" id="monitorHd" onclick="togglePanel('monitor')" style="background:linear-gradient(90deg,rgba(0,240,255,.1),transparent)" role="button" tabindex="0">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:14px" role="img" aria-hidden="true">🖥️</span>
+        <span class="cpanel-title" style="color:var(--cyan)">SYSTEM MONITOR & SERVER LOGS</span>
+        <span style="font-size:9px;color:var(--dim)" id="monitorStatus">Connecting...</span>
+      </div>
+      <span class="cpanel-toggle" id="monitorToggle">▼ EXPAND</span>
+    </div>
+    <div class="cpanel-body" id="monitorBody">
+      <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; margin-bottom:12px;">
+        <div style="background:var(--chrome); padding:8px; border-radius:6px; border:1px solid var(--border);">
+          <div style="font-size:8px; color:var(--dim); text-transform:uppercase;">Server Uptime</div>
+          <div id="metricUptime" style="font-family:'Share Tech Mono'; font-size:14px; color:var(--gold);">0s</div>
+        </div>
+        <div style="background:var(--chrome); padding:8px; border-radius:6px; border:1px solid var(--border);">
+          <div style="font-size:8px; color:var(--dim); text-transform:uppercase;">Active Traders</div>
+          <div id="metricConnections" style="font-family:'Share Tech Mono'; font-size:14px; color:var(--cyan);">0</div>
+        </div>
+        <div style="background:var(--chrome); padding:8px; border-radius:6px; border:1px solid var(--border);">
+          <div style="font-size:8px; color:var(--dim); text-transform:uppercase;">Memory (Heap Used)</div>
+          <div id="metricMemory" style="font-family:'Share Tech Mono'; font-size:14px; color:var(--green);">0 MB</div>
+        </div>
+        <div style="background:var(--chrome); padding:8px; border-radius:6px; border:1px solid var(--border);">
+          <div style="font-size:8px; color:var(--dim); text-transform:uppercase;">Node Version</div>
+          <div id="metricNode" style="font-family:'Share Tech Mono'; font-size:14px; color:#fff;">v22.13.0</div>
+        </div>
+      </div>
+      <div style="background:#0b0f17; border:1px solid var(--border); border-radius:6px; padding:10px; height:180px; overflow-y:auto; font-family:'Share Tech Mono',monospace; font-size:9px; display:flex; flex-direction:column; gap:4px;" id="serverConsoleLogs">
+        <div style="color:var(--dim);">Awaiting server log stream...</div>
+      </div>
+      <div style="display:flex; gap:8px; margin-top:10px;">
+        <button onclick="testSignature()" style="flex:1; background:rgba(0,240,255,0.1); border:1px solid var(--cyan); color:var(--cyan); padding:6px; border-radius:4px; font-family:'Bungee'; font-size:9px; cursor:pointer;">⚡ TEST SIGNATURE</button>
+        <button onclick="resetExecutionState()" style="flex:1; background:rgba(255,45,120,0.1); border:1px solid var(--hot); color:var(--hot); padding:6px; border-radius:4px; font-family:'Bungee'; font-size:9px; cursor:pointer;">🔄 RESET ENGINE</button>
+        <button onclick="document.getElementById('serverConsoleLogs').innerHTML=''" style="background:rgba(255,255,255,0.05); border:1px solid var(--border); color:var(--dim); padding:6px; border-radius:4px; font-family:'Bungee'; font-size:9px; cursor:pointer;">🗑️ CLEAR</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -1472,15 +1534,19 @@ async function handleMetaMaskConnect() {
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     if (accounts.length > 0) {
       const address = accounts[0];
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const signer = provider.getSigner();
-
+      // Ethers v6 uses BrowserProvider
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      
       // Update global walletState
       if (!window.walletState) window.walletState = { isConnected: false };
       window.walletState.isConnected = true;
       window.walletState.address = address;
       window.walletState.provider = provider;
-      window.walletState.signer = signer;
+      
+      // getSigner is async in v6
+      provider.getSigner().then(signer => {
+        window.walletState.signer = signer;
+      }).catch(err => console.error('Error getting signer:', err));
 
       showToast(`Connected: ${address.slice(0,6)}...${address.slice(-4)}`, 'success');
 
@@ -4277,20 +4343,41 @@ async function spinBot(id){
     if(typeof VOICE!=='undefined') VOICE.tradeOpen(bot.id, decision.token, decision.method);
 
     // ON-CHAIN EXECUTION TRIGGER
-    if (window.isLiveMode && ((window.isPrivyConnected && window.isPrivyConnected()) || (window.walletState && window.walletState.isConnected)) && !decision.method.includes('PAPER')) {
+    const hasWallet = (window.isPrivyConnected && window.isPrivyConnected()) || (window.walletState && window.walletState.isConnected) || (window.ethereum);
+    const isHold = decision.method === 'HOLD';
+    
+    if (hasWallet && !isHold && !decision.method.includes('PAPER')) {
         console.log('[Arena] Routing to On-Chain Execution Engine...');
+        if (window.showToast) window.showToast(`Initiating Live ${decision.method} on Base...`, 'info');
+        
         try {
-            await window.executeOnChainTrade({
-                botId: bot.id,
-                token: decision.token,
-                method: decision.method,
-                amountUSD: bot.bet
-            });
+            if (window.executeOnChainTrade) {
+                await window.executeOnChainTrade({
+                    botId: bot.id,
+                    token: decision.token,
+                    method: decision.method,
+                    amountUSD: bot.bet
+                });
+            } else {
+                console.error('[Arena] executeOnChainTrade not found on window');
+                if (window.showToast) window.showToast('Execution engine not loaded', 'error');
+            }
         } catch (execError) {
-            console.error('[Arena] On-chain execution failed, falling back to simulation', execError);
+            console.error('[Arena] On-chain execution failed:', execError);
+            if (window.showToast) window.showToast(`Live Trade Error: ${execError.message}`, 'error');
+            // If execution fails, we stop here to prevent paper-trade recording of a failed live trade
+            return;
         }
+    } else if (isHold) {
+        console.log('[Arena] Bot decided to HOLD, skipping execution.');
+    } else if (!hasWallet) {
+        console.log('[Arena] No wallet connected, skipping live execution.');
+        if (window.showToast) window.showToast('Connect wallet to execute live trades', 'warn');
     }
-  }catch(e){}
+  }catch(e){
+    console.error('[Arena] Spin error:', e);
+    if (window.showToast) window.showToast(`System Error: ${e.message}`, 'error');
+  }
 
   await openPosition(bot,decision,entryPrice,bot.bet,volumeUsd,priceChangePct15m);
   updateQuantReport();
@@ -6270,6 +6357,7 @@ document.addEventListener('keydown', function(e) {
 </script>
 <!-- Arena React Bundle -->
 <script src="arena-react-bundle.js" defer></script>
+<script src="app.js" defer></script>
 
 <!-- ACOUSTIC Audio-Visual Engines -->
 <script src="acoustic-bundle.js" defer></script>
