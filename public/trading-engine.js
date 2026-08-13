@@ -330,7 +330,7 @@ class TradingEngine {
 
         try {
             // 🛡️ REAL EXECUTION BRIDGE: If Live Mode is active, execute on-chain
-            if (window.isLiveMode && typeof window.executeOnChainTrade === 'function') {
+            if (typeof window !== 'undefined' && window.isLiveMode && typeof window.executeOnChainTrade === 'function') {
                 console.log(`[TradingEngine] 🚀 Executing REAL trade for Bot #${bot.id}`);
                 const result = await window.executeOnChainTrade({
                     botId: bot.id,

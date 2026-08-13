@@ -185,11 +185,10 @@ class OnchainExecutionEngine {
         // 🚀 METAMASK AGENT WALLET INTEGRATION
         // Check if mm CLI is available and authenticated
         let useAgentWallet = false;
-        const mmPath = '/home/ubuntu/.nvm/versions/node/v22.18.0/bin/mm';
-        const nodePath = '/home/ubuntu/.nvm/versions/node/v22.18.0/bin/node';
+        const mmPath = process.env.MM_PATH || 'mm';
 
         try {
-            const doctorOutput = execSync(`${nodePath} ${mmPath} doctor --json`, { 
+            const doctorOutput = execSync(`${mmPath} doctor --json`, { 
                 encoding: 'utf8',
                 env: { ...process.env }
             });
@@ -205,7 +204,7 @@ class OnchainExecutionEngine {
         if (useAgentWallet) {
             try {
                 const slippagePct = (slippageBps / 100).toFixed(1);
-                const cmd = `${nodePath} ${mmPath} swap execute --from ${resolvedIn.symbol} --to ${resolvedOut.symbol} --amount ${amount} --from-chain-id 8453 --slippage ${slippagePct} --yes --json`;
+                const cmd = `${mmPath} swap execute --from ${resolvedIn.symbol} --to ${resolvedOut.symbol} --amount ${amount} --from-chain-id 8453 --slippage ${slippagePct} --json`;
                 console.log(`[OnchainExecutionEngine] Executing via Agent Wallet: ${cmd}`);
                 
                 const output = execSync(cmd, { 

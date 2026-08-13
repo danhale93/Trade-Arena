@@ -106,5 +106,17 @@
     "bots": [],
     "trades": [],
     "created": 1786334758130
+  },
+  "test-rate-limit@example.com": {
+    "id": "test-rate-limit@example.com",
+    "name": "New User",
+    "email": "test-rate-limit@example.com",
+    "address": null,
+    "provider": "unknown",
+    "avatar": null,
+    "balance": 0,
+    "bots": [],
+    "trades": [],
+    "created": 1786630350316
   }
 }

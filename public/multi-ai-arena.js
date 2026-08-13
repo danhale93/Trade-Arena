@@ -644,7 +644,9 @@ async function callAIModel(marketData, bet, botId) {
     // Log decision with Olympics info
     if (typeof console !== 'undefined') {
       const olympicsLabel = olympicsBracket ? ` 🏅 ${olympicsBracket}` : '';
-      console.log(`[Multi-AI Arena] Bot #${botId}: Model ${modelName} (${modelConfig.provider}, ELO ${modelConfig.elo})${olympicsLabel}`);
+      const provider = modelConfig ? modelConfig.provider : 'Unknown';
+      const elo = modelConfig ? modelConfig.elo : 1200;
+      console.log(`[Multi-AI Arena] Bot #${botId}: Model ${modelName} (${provider}, ELO ${elo})${olympicsLabel}`);
       console.log(`  Decision: ${decision.method} on ${decision.token}`);
       console.log(`  Edge: ${decision.edge_pct}% | Win Prob: ${decision.win_probability * 100}%`);
     }
@@ -755,6 +757,9 @@ const MODEL_SELECTION = {
 // ════════════════════════════════════════════════════════════════════════════════
 
 if (typeof module !== 'undefined' && module.exports) {
+  if (typeof global !== 'undefined') {
+    global.LM_ARENA_MODELS = LM_ARENA_MODELS;
+  }
   module.exports = {
     LM_ARENA_MODELS,
     BOT_MODEL_ASSIGNMENT,

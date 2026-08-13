@@ -1654,14 +1654,16 @@ app.get('/api/diagnostics/full', async (req, res) => {
     res.json(diagnostics);
 });
 
-server.listen(PORT, () => {
-    console.log(`🚀 Trade Arena Server running on port ${PORT}`);
-    // Start background automated bots execution worker
-    autonomousWorker.start().catch(err => {
-        console.error('[Startup] Autonomous worker failed to start:', err.message);
+if (require.main === module) {
+    server.listen(PORT, () => {
+        console.log(`🚀 Trade Arena Server running on port ${PORT}`);
+        // Start background automated bots execution worker
+        autonomousWorker.start().catch(err => {
+            console.error('[Startup] Autonomous worker failed to start:', err.message);
+        });
+        // Start CoinGecko production health and rate limit monitor
+        coingeckoMonitor.startMonitoring();
     });
-    // Start CoinGecko production health and rate limit monitor
-    coingeckoMonitor.startMonitoring();
-});
+}
 
-module.exports = app;
+module.exports = { app, server };

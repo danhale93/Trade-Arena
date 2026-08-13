@@ -21,7 +21,6 @@ const {
   classifyRegime,
   validateAllRegimes,
 } = require("./public/crucible-test.js");
-const { TRADE_OLYMPICS } = require("./public/trade-olympics.js");
 const {
   ARENA_COMPETITION,
   BOT_AI_MODELS,
@@ -29,6 +28,7 @@ const {
   callAIModel,
   getModelConfig,
 } = require("./public/multi-ai-arena.js");
+const { TRADE_OLYMPICS } = require("./public/trade-olympics.js");
 const { calculateSlippage } = require("./public/real-wallet.js");
 const { CrucibleRealTrading } = require("./public/crucible-real-trading.js");
 const {
@@ -154,16 +154,20 @@ describe("Task Claim Security - Sentinel Hardening", () => {
     process.env.TASK_CLAIM_SECRET = "test-secret-key-123";
 
     const express = require('express');
-    const originalListen = express.application.listen;
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
     let activeServer = null;
-    express.application.listen = function(...args) {
-      activeServer = originalListen.apply(this, args);
-      return activeServer;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
     };
 
     delete require.cache[require.resolve("./server.js")];
-    require("./server.js");
-
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
     try {
       const port = activeServer.address().port;
       const testAddress = "0x9F407b7f793555c35c33aC64bd6901759470736D";
@@ -247,7 +251,7 @@ describe("Task Claim Security - Sentinel Hardening", () => {
       expect(dataDupPayout.error).toBe("Task already claimed for this address");
 
     } finally {
-      express.application.listen = originalListen;
+      http.Server.prototype.listen = originalListen;
       if (activeServer) {
         activeServer.close();
       }
@@ -263,16 +267,20 @@ describe("Task Claim Security - Sentinel Hardening", () => {
     process.env.TASK_CLAIM_SECRET = "test-secret-key-123";
 
     const express = require('express');
-    const originalListen = express.application.listen;
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
     let activeServer = null;
-    express.application.listen = function(...args) {
-      activeServer = originalListen.apply(this, args);
-      return activeServer;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
     };
 
     delete require.cache[require.resolve("./server.js")];
-    require("./server.js");
-
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
     try {
       const port = activeServer.address().port;
       const testAddress = "0x9F407b7f793555c35c33aC64bd6901759470736D";
@@ -294,7 +302,7 @@ describe("Task Claim Security - Sentinel Hardening", () => {
       expect(dataSpoofedReward.success).toBe(false);
       expect(dataSpoofedReward.error).toBe("Invalid or incorrect reward for this task");
     } finally {
-      express.application.listen = originalListen;
+      http.Server.prototype.listen = originalListen;
       if (activeServer) {
         activeServer.close();
       }
@@ -673,11 +681,12 @@ describe("Server Endpoint Rate Limiting - Sentinel Hardening", () => {
     process.env.PORT = "0";
 
     const express = require('express');
-    const originalListen = express.application.listen;
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
     let activeServer = null;
-    express.application.listen = function(...args) {
-      activeServer = originalListen.apply(this, args);
-      return activeServer;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
     };
 
     // Back up users.json to ensure no database pollution
@@ -693,8 +702,11 @@ describe("Server Endpoint Rate Limiting - Sentinel Hardening", () => {
 
     // Clear require cache for server.js to ensure a fresh load
     delete require.cache[require.resolve("./server.js")];
-    require("./server.js");
-
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
     try {
       const port = activeServer.address().port;
 
@@ -714,7 +726,7 @@ describe("Server Endpoint Rate Limiting - Sentinel Hardening", () => {
       }
       expect(lastStatus).toBe(429);
     } finally {
-      express.application.listen = originalListen;
+      http.Server.prototype.listen = originalListen;
       if (activeServer) {
         activeServer.close();
       }
@@ -736,17 +748,21 @@ describe("Server Endpoint Rate Limiting - Sentinel Hardening", () => {
     process.env.PORT = "0";
 
     const express = require('express');
-    const originalListen = express.application.listen;
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
     let activeServer = null;
-    express.application.listen = function(...args) {
-      activeServer = originalListen.apply(this, args);
-      return activeServer;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
     };
 
     delete require.cache[require.resolve("./server.js")];
     delete require.cache[require.resolve("./routes/payoutRoutes.js")];
-    require("./server.js");
-
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
     try {
       const port = activeServer.address().port;
 
@@ -769,7 +785,7 @@ describe("Server Endpoint Rate Limiting - Sentinel Hardening", () => {
       }
       expect(lastStatus).toBe(429);
     } finally {
-      express.application.listen = originalListen;
+      http.Server.prototype.listen = originalListen;
       if (activeServer) {
         activeServer.close();
       }
@@ -779,7 +795,7 @@ describe("Server Endpoint Rate Limiting - Sentinel Hardening", () => {
 
   it("evicts the oldest IP record when MAX_TRACKED_IPS threshold is reached", async () => {
     delete require.cache[require.resolve("./server.js")];
-    const serverApp = require("./server.js");
+    const { app: serverApp, server } = require("./server.js");
     const rateLimitMap = serverApp.rateLimitMap;
     const checkRateLimit = serverApp.checkRateLimit;
     const MAX_TRACKED_IPS = serverApp.MAX_TRACKED_IPS;
@@ -1500,17 +1516,21 @@ describe("Server Input Validation - Sentinel Hardening", () => {
     process.env.PORT = "0";
 
     const express = require('express');
-    const originalListen = express.application.listen;
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
     let activeServer = null;
-    express.application.listen = function(...args) {
-      activeServer = originalListen.apply(this, args);
-      return activeServer;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
     };
 
     delete require.cache[require.resolve("./server.js")];
     delete require.cache[require.resolve("./routes/payoutRoutes.js")];
-    require("./server.js");
-
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
     try {
       const port = activeServer.address().port;
 
@@ -1555,7 +1575,7 @@ describe("Server Input Validation - Sentinel Hardening", () => {
       expect(res5.status).toBe(400);
 
     } finally {
-      express.application.listen = originalListen;
+      http.Server.prototype.listen = originalListen;
       if (activeServer) {
         activeServer.close();
       }
@@ -1568,17 +1588,21 @@ describe("Server Input Validation - Sentinel Hardening", () => {
     process.env.PORT = "0";
 
     const express = require('express');
-    const originalListen = express.application.listen;
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
     let activeServer = null;
-    express.application.listen = function(...args) {
-      activeServer = originalListen.apply(this, args);
-      return activeServer;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
     };
 
     delete require.cache[require.resolve("./server.js")];
     delete require.cache[require.resolve("./routes/payoutRoutes.js")];
-    require("./server.js");
-
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
     try {
       const port = activeServer.address().port;
 
@@ -1615,7 +1639,7 @@ describe("Server Input Validation - Sentinel Hardening", () => {
       expect(res4.status).toBe(400);
 
     } finally {
-      express.application.listen = originalListen;
+      http.Server.prototype.listen = originalListen;
       if (activeServer) {
         activeServer.close();
       }
@@ -1630,17 +1654,21 @@ describe("Faucet Claim - Sentinel Hardening", () => {
     process.env.PORT = "0";
 
     const express = require('express');
-    const originalListen = express.application.listen;
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
     let activeServer = null;
-    express.application.listen = function(...args) {
-      activeServer = originalListen.apply(this, args);
-      return activeServer;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
     };
 
     delete require.cache[require.resolve("./server.js")];
     delete require.cache[require.resolve("./routes/payoutRoutes.js")];
-    require("./server.js");
-
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
     try {
       const port = activeServer.address().port;
       const testAddress = "0x9F407b7f793555c35c33aC64bd6901759470736D";
@@ -1666,7 +1694,7 @@ describe("Faucet Claim - Sentinel Hardening", () => {
       expect(data2.success).toBe(false);
       expect(data2.error).toBe('Faucet already claimed for this address');
     } finally {
-      express.application.listen = originalListen;
+      http.Server.prototype.listen = originalListen;
       if (activeServer) {
         activeServer.close();
       }
@@ -1679,17 +1707,21 @@ describe("Faucet Claim - Sentinel Hardening", () => {
     process.env.PORT = "0";
 
     const express = require('express');
-    const originalListen = express.application.listen;
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
     let activeServer = null;
-    express.application.listen = function(...args) {
-      activeServer = originalListen.apply(this, args);
-      return activeServer;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
     };
 
     delete require.cache[require.resolve("./server.js")];
     delete require.cache[require.resolve("./routes/payoutRoutes.js")];
-    require("./server.js");
-
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
     try {
       const port = activeServer.address().port;
 
@@ -1703,7 +1735,7 @@ describe("Faucet Claim - Sentinel Hardening", () => {
       const secondResult = await res2.json();
       expect(secondResult._cached).toBe(true);
     } finally {
-      express.application.listen = originalListen;
+      http.Server.prototype.listen = originalListen;
       if (activeServer) {
         activeServer.close();
       }
@@ -1718,11 +1750,12 @@ describe("Server Endpoint Caching - Sentinel Hardening", () => {
     process.env.PORT = "0";
 
     const express = require('express');
-    const originalListen = express.application.listen;
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
     let activeServer = null;
-    express.application.listen = function(...args) {
-      activeServer = originalListen.apply(this, args);
-      return activeServer;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
     };
 
     Object.keys(require.cache).forEach(key => {
@@ -1730,8 +1763,11 @@ describe("Server Endpoint Caching - Sentinel Hardening", () => {
         delete require.cache[key];
       }
     });
-    require("./server.js");
-
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
     try {
       const port = activeServer.address().port;
 
@@ -1742,7 +1778,7 @@ describe("Server Endpoint Caching - Sentinel Hardening", () => {
       expect(data.success).toBe(false);
       expect(data.error).toBe('Invalid symbols parameter type');
     } finally {
-      express.application.listen = originalListen;
+      http.Server.prototype.listen = originalListen;
       if (activeServer) {
         activeServer.close();
       }
@@ -1756,11 +1792,12 @@ describe("Server Endpoint Caching - Sentinel Hardening", () => {
 
     // Mock Express listen to capture the server instance and close it later
     const express = require('express');
-    const originalListen = express.application.listen;
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
     let activeServer = null;
-    express.application.listen = function(...args) {
-      activeServer = originalListen.apply(this, args);
-      return activeServer;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
     };
 
     Object.keys(require.cache).forEach(key => {
@@ -1768,8 +1805,11 @@ describe("Server Endpoint Caching - Sentinel Hardening", () => {
         delete require.cache[key];
       }
     });
-    require("./server.js");
-
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
     try {
       const port = activeServer.address().port;
 
@@ -1784,7 +1824,7 @@ describe("Server Endpoint Caching - Sentinel Hardening", () => {
       expect(secondResult._cached).toBe(true);
     } finally {
       // Restore listen and close server to prevent open handles from hanging tests
-      express.application.listen = originalListen;
+      http.Server.prototype.listen = originalListen;
       if (activeServer) {
         activeServer.close();
       }
@@ -1801,11 +1841,12 @@ describe("Task Claim Security & Whitelisting - Sentinel Hardening", () => {
     process.env.TASK_CLAIM_SECRET = "test-secret-key-123";
 
     const express = require('express');
-    const originalListen = express.application.listen;
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
     let activeServer = null;
-    express.application.listen = function(...args) {
-      activeServer = originalListen.apply(this, args);
-      return activeServer;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
     };
 
     Object.keys(require.cache).forEach(key => {
@@ -1813,8 +1854,11 @@ describe("Task Claim Security & Whitelisting - Sentinel Hardening", () => {
         delete require.cache[key];
       }
     });
-    require("./server.js");
-
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
     try {
       const port = activeServer.address().port;
       const res = await fetch(`http://localhost:${port}/api/tasks/claim`, {
@@ -1832,7 +1876,7 @@ describe("Task Claim Security & Whitelisting - Sentinel Hardening", () => {
       expect(data.success).toBe(false);
       expect(data.error).toBe("Invalid or unauthorized taskId requested");
     } finally {
-      express.application.listen = originalListen;
+      http.Server.prototype.listen = originalListen;
       if (activeServer) {
         activeServer.close();
       }
@@ -1848,11 +1892,12 @@ describe("Task Claim Security & Whitelisting - Sentinel Hardening", () => {
     process.env.TASK_CLAIM_SECRET = "test-secret-key-123";
 
     const express = require('express');
-    const originalListen = express.application.listen;
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
     let activeServer = null;
-    express.application.listen = function(...args) {
-      activeServer = originalListen.apply(this, args);
-      return activeServer;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
     };
 
     Object.keys(require.cache).forEach(key => {
@@ -1860,8 +1905,11 @@ describe("Task Claim Security & Whitelisting - Sentinel Hardening", () => {
         delete require.cache[key];
       }
     });
-    require("./server.js");
-
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
     try {
       const port = activeServer.address().port;
       const payload = {
@@ -1892,7 +1940,7 @@ describe("Task Claim Security & Whitelisting - Sentinel Hardening", () => {
       expect(data2.success).toBe(false);
       expect(data2.error).toBe("Task already claimed for this address");
     } finally {
-      express.application.listen = originalListen;
+      http.Server.prototype.listen = originalListen;
       if (activeServer) {
         activeServer.close();
       }
@@ -1910,11 +1958,12 @@ describe("Task Claim Security & Whitelisting - Sentinel Hardening", () => {
     process.env.PAYOUT_PRIVATE_KEY = "0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
     const express = require('express');
-    const originalListen = express.application.listen;
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
     let activeServer = null;
-    express.application.listen = function(...args) {
-      activeServer = originalListen.apply(this, args);
-      return activeServer;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
     };
 
     Object.keys(require.cache).forEach(key => {
@@ -1922,8 +1971,11 @@ describe("Task Claim Security & Whitelisting - Sentinel Hardening", () => {
         delete require.cache[key];
       }
     });
-    require("./server.js");
-
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
     try {
       const port = activeServer.address().port;
       const res = await fetch(`http://localhost:${port}/api/v1/payouts/claim`, {
@@ -1940,7 +1992,7 @@ describe("Task Claim Security & Whitelisting - Sentinel Hardening", () => {
       const data = await res.json();
       expect(data.error).toBe("Invalid or unauthorized taskId requested");
     } finally {
-      express.application.listen = originalListen;
+      http.Server.prototype.listen = originalListen;
       if (activeServer) {
         activeServer.close();
       }
@@ -1959,11 +2011,12 @@ describe("Task Claim Security & Whitelisting - Sentinel Hardening", () => {
     process.env.PAYOUT_PRIVATE_KEY = "0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
     const express = require('express');
-    const originalListen = express.application.listen;
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
     let activeServer = null;
-    express.application.listen = function(...args) {
-      activeServer = originalListen.apply(this, args);
-      return activeServer;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
     };
 
     Object.keys(require.cache).forEach(key => {
@@ -1971,8 +2024,11 @@ describe("Task Claim Security & Whitelisting - Sentinel Hardening", () => {
         delete require.cache[key];
       }
     });
-    require("./server.js");
-
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
     try {
       const port = activeServer.address().port;
       const payload = {
@@ -2002,7 +2058,7 @@ describe("Task Claim Security & Whitelisting - Sentinel Hardening", () => {
       const data2 = await res2.json();
       expect(data2.error).toBe("Task already claimed for this address");
     } finally {
-      express.application.listen = originalListen;
+      http.Server.prototype.listen = originalListen;
       if (activeServer) {
         activeServer.close();
       }

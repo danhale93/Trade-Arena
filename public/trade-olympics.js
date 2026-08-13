@@ -523,10 +523,10 @@ const TRADE_OLYMPICS = {
 if (typeof document !== 'undefined') {
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-      TRADE_OLYMPICS.initialize();
+      if (typeof TRADE_OLYMPICS !== 'undefined') TRADE_OLYMPICS.initialize();
     });
   } else {
-    TRADE_OLYMPICS.initialize();
+    if (typeof TRADE_OLYMPICS !== 'undefined') TRADE_OLYMPICS.initialize();
   }
 }
 
@@ -535,5 +535,8 @@ if (typeof document !== 'undefined') {
 // ════════════════════════════════════════════════════════════════════════════════
 
 if (typeof module !== 'undefined' && module.exports) {
+  if (typeof global !== 'undefined') {
+    global.TRADE_OLYMPICS = TRADE_OLYMPICS;
+  }
   module.exports = { TRADE_OLYMPICS };
 }
