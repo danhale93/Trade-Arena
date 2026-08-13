@@ -1009,16 +1009,25 @@ async function updateAgentStatus() {
         const response = await fetch('/api/network/status');
         const data = await response.json();
         
+        const pairingUI = document.getElementById('agentPairingUI');
+        
         if (data.success) {
             document.getElementById('agentAddr').textContent = data.wallet.address;
-            document.getElementById('agentBalance').textContent = '$' + parseFloat(data.wallet.balance).toFixed(2);
-            document.getElementById('agentEthPrice').textContent = 'ETH: $' + parseFloat(data.network.ethPrice).toFixed(2);
+            document.getElementById('agentBalance').textContent = '$' + (parseFloat(data.wallet.balance) || 0).toFixed(2);
+            document.getElementById('agentEthPrice').textContent = 'ETH: $' + (parseFloat(data.network.ethPrice) || 0).toFixed(2);
             
             // Show authenticated email if linked
             const statusLabel = document.querySelector('.cpanel-hd span[style*="var(--dim)"]');
-            if (statusLabel && data.wallet.authenticated) {
-                statusLabel.textContent = `AGENT: ${data.wallet.signedInAs}`;
-                statusLabel.style.color = 'var(--cyan)';
+            if (statusLabel) {
+                if (data.wallet.authenticated) {
+                    statusLabel.textContent = `AGENT: ${data.wallet.signedInAs}`;
+                    statusLabel.style.color = 'var(--cyan)';
+                    if (pairingUI) pairingUI.style.display = 'none';
+                } else {
+                    statusLabel.textContent = 'AGENT: DISCONNECTED';
+                    statusLabel.style.color = 'var(--hot)';
+                    if (pairingUI) pairingUI.style.display = 'block';
+                }
             }
 
             // Update Arbitrage Status
@@ -1050,6 +1059,54 @@ async function updateAgentStatus() {
         }
     } catch (error) {
         console.error('Failed to fetch agent status:', error);
+    }
+}
+
+async function getAgentLoginUrl() {
+    try {
+        const response = await fetch('/api/agent/login-url');
+        const data = await response.json();
+        if (data.success) {
+            if (data.authenticated) {
+                showToast('Agent is already connected!', 'success');
+                updateAgentStatus();
+            } else {
+                const linkContainer = document.getElementById('pairingLinkContainer');
+                const link = document.getElementById('pairingLink');
+                link.href = data.url;
+                link.textContent = 'Click here to authorize: ' + data.url;
+                linkContainer.style.display = 'block';
+                showToast('Pairing link generated!', 'info');
+            }
+        } else {
+            showToast('Failed to generate pairing link', 'error');
+        }
+    } catch (e) {
+        showToast('Error generating pairing link', 'error');
+    }
+}
+
+async function submitAgentToken() {
+    const token = document.getElementById('cliTokenInput').value;
+    if (!token) return showToast('Please paste the CLI token', 'error');
+    
+    try {
+        const response = await fetch('/api/agent/submit-token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token })
+        });
+        const data = await response.json();
+        if (data.success) {
+            showToast('Agent Connected Successfully!', 'success');
+            document.getElementById('pairingLinkContainer').style.display = 'none';
+            document.getElementById('cliTokenInput').value = '';
+            updateAgentStatus();
+        } else {
+            showToast('Auth Failed: ' + data.error, 'error');
+        }
+    } catch (e) {
+        showToast('Error submitting token', 'error');
     }
 }
 

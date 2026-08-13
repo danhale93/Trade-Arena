@@ -461,6 +461,43 @@ app.post('/api/arbitrage/toggle', (req, res) => {
     }
 });
 
+// 🔑 AGENT PAIRING: Generate login URL for the UI
+app.get('/api/agent/login-url', async (req, res) => {
+    try {
+        // Run mm login --no-wait to get the pairing URL
+        // We use --no-wait so it doesn't block the server
+        const result = await runMM('login --no-wait');
+        
+        if (result.ok && result.data?.url) {
+            res.json({ success: true, url: result.data.url });
+        } else if (result.error?.code === 'ALREADY_AUTHENTICATED') {
+            res.json({ success: true, authenticated: true, message: 'Agent is already connected.' });
+        } else {
+            res.status(500).json({ success: false, error: result.error?.message || 'Failed to generate login URL' });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// 🔑 AGENT PAIRING: Submit CLI token from UI
+app.post('/api/agent/submit-token', async (req, res) => {
+    const { token } = req.body;
+    if (!token) return res.status(400).json({ success: false, error: 'Token is required' });
+
+    try {
+        // Authenticate the CLI with the provided token
+        const result = await runMM(`login --token "${token}"`);
+        if (result.ok) {
+            res.json({ success: true, message: 'Agent authenticated successfully!' });
+        } else {
+            res.status(400).json({ success: false, error: result.error?.message || 'Authentication failed' });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 /**
  * AI PROXY ENDPOINTS
  */

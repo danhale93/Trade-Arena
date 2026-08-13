@@ -891,6 +891,19 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
           <div style="color:var(--dim)">No recent activity...</div>
         </div>
       </div>
+
+      <!-- Agent Login/Pairing UI (Visible when disconnected) -->
+      <div id="agentPairingUI" style="display:none; margin-top:12px; padding:10px; background:rgba(255,165,0,0.1); border:1px solid rgba(255,165,0,0.3); border-radius:8px; text-align:center">
+        <div style="color:var(--amber); font-size:10px; font-weight:bold; margin-bottom:8px">⚠️ AGENT DISCONNECTED</div>
+        <button onclick="getAgentLoginUrl()" style="width:100%; padding:8px; background:var(--amber); color:#000; border:none; border-radius:4px; font-family:'Bungee'; font-size:10px; cursor:pointer">GENERATE PAIRING LINK</button>
+        <div id="pairingLinkContainer" style="display:none; margin-top:8px">
+          <a id="pairingLink" href="#" target="_blank" style="color:var(--cyan); font-size:9px; word-break:break-all">Click here to pair wallet</a>
+          <div style="margin-top:8px">
+            <input id="cliTokenInput" type="password" placeholder="Paste CLI Token here..." style="width:100%; padding:4px; background:#000; border:1px solid var(--border); color:#fff; font-size:9px; margin-bottom:4px">
+            <button onclick="submitAgentToken()" style="width:100%; padding:4px; background:var(--green); color:#000; border:none; border-radius:4px; font-family:'Bungee'; font-size:9px; cursor:pointer">SUBMIT TOKEN</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
     <span class="gen-badge" id="genBadge">GEN 0</span>
