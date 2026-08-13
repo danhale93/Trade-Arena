@@ -723,7 +723,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 <!-- Service Worker & Cache Hard Reset -->
 <script>
   (function() {
-    const CURRENT_VERSION = '4.3.2';
+    const CURRENT_VERSION = '4.3.3';
     const lastVersion = localStorage.getItem('ta_app_version');
     
     if (lastVersion !== CURRENT_VERSION) {
@@ -754,10 +754,11 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
 </head>
 <body>
+<div id="toastContainer" style="position:fixed; top:20px; right:20px; z-index:100000; display:flex; flex-direction:column; gap:10px; pointer-events:none;"></div>
 <div class="edge"></div>
 
 <!-- ══ CONNECT ══ -->
-<div style="position:fixed; top:10px; right:10px; background:var(--hot); color:white; padding:5px 10px; font-size:10px; z-index:10000; border-radius:4px; font-family:'Bungee'; box-shadow:0 0 10px var(--hot);">LIVE V4.3.2</div>
+<div style="position:fixed; top:10px; right:10px; background:var(--hot); color:white; padding:5px 10px; font-size:10px; z-index:10000; border-radius:4px; font-family:'Bungee'; box-shadow:0 0 10px var(--hot);">LIVE V4.3.3</div>
 <div id="connectScreen">
   <div class="marquee-wrap">
     <div class="marquee-inner">
@@ -774,11 +775,11 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     <div class=login-card-hd>SECURE WALLET ENTRY</div>
     <div class=login-card-bd>
       <!-- MetaMask Priority -->
-      <button id="mmConnectBtn" class="g-btn" onclick="handleMetaMaskConnect()" style="height:44px; font-size:12px; background: #f6851b; color: #fff; border: none; margin-bottom: 8px;">
+      <button id="mmConnectBtn" class="g-btn" onclick="if(window.privyLogin) window.privyLogin({ loginMethod: 'wallet' }); else handleMetaMaskConnect();" style="height:44px; font-size:12px; background: #f6851b; color: #fff; border: none; margin-bottom: 8px;">
         <span style="font-family:'Bungee'; letter-spacing:1px">CONNECT METAMASK (RECOMMENDED)</span>
       </button>
 
-      <button class=g-btn onclick="handlePrivyClick()" style="height:44px; font-size:12px; background: linear-gradient(90deg, var(--cyan), var(--hot)); color: #000; border: none;">
+      <button class=g-btn onclick="if(window.privyLogin) window.privyLogin(); else handlePrivyClick();" style="height:44px; font-size:12px; background: linear-gradient(90deg, var(--cyan), var(--hot)); color: #000; border: none;">
         <span style="font-family:'Bungee'; letter-spacing:1px">PRIVY / SOCIAL LOGIN</span>
       </button>
 
@@ -6428,8 +6429,7 @@ document.addEventListener('keydown', function(e) {
 <script src="management-bundle.js?v=4.3.2" defer></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  // checkAutoLogin(); // Legacy removed
-  // privyInit(); // Lazy loaded on interaction now
+  console.log('🚀 Trade Arena V4.3.3 Initialized');
   const savedTheme = localStorage.getItem('ta_theme') || 'default';
   if (typeof applyTheme === 'function') {
     applyTheme(savedTheme, false);
@@ -6437,16 +6437,7 @@ document.addEventListener('DOMContentLoaded', function() {
   if (typeof updateConnectionDashboard === 'function') {
     updateConnectionDashboard();
   }
-  // Auto-connect MetaMask if already connected and authorized
-  if (window.ethereum) {
-    window.ethereum.request({ method: 'eth_accounts' })
-      .then(accounts => {
-        if (accounts && accounts.length > 0) {
-          handleMetaMaskConnect();
-        }
-      })
-      .catch(err => console.warn('[MetaMask] Auto-connect check failed:', err));
-  }
+  // Auto-connect disabled to prevent broadcast channel crashes on boot
 
   // Keyboard navigation for Task Center Tablist (role="tablist")
   const taskTablist = document.getElementById('taskTablist');

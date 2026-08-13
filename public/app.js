@@ -624,7 +624,13 @@ function executeOpportunity(oppId) {
 }
 
 function showToast(message, type = 'info') {
-    const container = document.getElementById('toastContainer');
+    let container = document.getElementById('toastContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toastContainer';
+        container.style.cssText = 'position:fixed; top:20px; right:20px; z-index:100000; display:flex; flex-direction:column; gap:10px; pointer-events:none;';
+        document.body.appendChild(container);
+    }
     const toast = document.createElement('div');
     toast.className = 'toast';
     
@@ -634,7 +640,7 @@ function showToast(message, type = 'info') {
         'info': 'border-[#00d4ff] text-[#00d4ff]'
     };
 
-    toast.className = `toast ${colorMap[type]}`;
+    toast.className = `toast ${colorMap[type] || colorMap['info']}`;
     toast.textContent = message;
     
     container.appendChild(toast);
