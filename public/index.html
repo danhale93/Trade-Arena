@@ -730,7 +730,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 <div class="edge"></div>
 
 <!-- ══ CONNECT ══ -->
-<div style="position:fixed; top:10px; right:10px; background:var(--hot); color:white; padding:5px 10px; font-size:10px; z-index:10000; border-radius:4px; font-family:'Bungee'; box-shadow:0 0 10px var(--hot);">LIVE V4.2.4</div>
+<div style="position:fixed; top:10px; right:10px; background:var(--hot); color:white; padding:5px 10px; font-size:10px; z-index:10000; border-radius:4px; font-family:'Bungee'; box-shadow:0 0 10px var(--hot);">LIVE V4.2.5</div>
 <div id="connectScreen">
   <div class="marquee-wrap">
     <div class="marquee-inner">
@@ -751,13 +751,19 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         <span style="font-family:'Bungee'; letter-spacing:1px">CONNECT METAMASK (RECOMMENDED)</span>
       </button>
 
-      <button class=g-btn onclick="if(typeof privyInit==='function') privyInit(); if(window.privyLogin) window.privyLogin();" style="height:44px; font-size:12px; background: linear-gradient(90deg, var(--cyan), var(--hot)); color: #000; border: none;">
+      <button class=g-btn onclick="handlePrivyClick()" style="height:44px; font-size:12px; background: linear-gradient(90deg, var(--cyan), var(--hot)); color: #000; border: none;">
         <span style="font-family:'Bungee'; letter-spacing:1px">PRIVY / SOCIAL LOGIN</span>
       </button>
 
       <div style="margin-top:12px; display:flex; gap:8px;">
         <button class=onramp-btn onclick="window.openMoonpay && window.openMoonpay()" style="flex:1">💳 DEPOSIT</button>
         <button class=offramp-btn onclick="openWithdrawModal()" style="flex:1">💵 WITHDRAW</button>
+      </div>
+      
+      <div style="margin-top:8px; text-align:center;">
+        <button onclick="alert('Browser: ' + navigator.userAgent + '\nMetaMask: ' + (!!window.ethereum) + '\nPrivy: ' + (typeof privyLogin))" style="background:none; border:none; color:var(--dim); font-size:9px; text-decoration:underline; cursor:pointer;">
+          DIAGNOSTICS
+        </button>
       </div>
 
       <p style="font-size:9px; color:var(--dim); text-align:center; margin-top:8px; line-height:1.4">
@@ -1524,10 +1530,10 @@ function escapeHTML(str) {
 async function handleMetaMaskConnect() {
   if (!window.ethereum) {
     showToast('MetaMask extension not detected. Launching Privy / Social Login...', 'success');
-    if (typeof privyLogin === 'function') {
+    if (typeof handlePrivyClick === 'function') {
+      handlePrivyClick();
+    } else if (typeof privyLogin === 'function') {
       privyLogin();
-    } else if (typeof privyLoginGoogle === 'function') {
-      privyLoginGoogle();
     }
     return;
   }

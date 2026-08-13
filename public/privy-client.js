@@ -344,3 +344,24 @@ window.getPrivyAddress = getPrivyAddress;
 window.isPrivyConnected = isPrivyConnected;
 window.privySignMessage = privySignMessage;
 window.privyDisconnect = privyDisconnect;
+
+async function handlePrivyClick() {
+    console.log('[Privy] Handle click triggered');
+    const status = document.getElementById('loginStatus');
+    if (status) status.textContent = 'Initializing Secure Login...';
+    
+    try {
+        await privyInit();
+        if (window.privyLogin) {
+            window.privyLogin();
+        } else {
+            // Fallback if React bridge hasn't taken over yet
+            privyLoginGoogle();
+        }
+    } catch (e) {
+        console.error('[Privy] Click handler error:', e);
+        if (status) status.textContent = 'Error: ' + e.message;
+        privyLoginGoogle(); // Extreme fallback
+    }
+}
+window.handlePrivyClick = handlePrivyClick;
