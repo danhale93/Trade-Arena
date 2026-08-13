@@ -8,8 +8,7 @@ const util = require('util');
 const execPromise = util.promisify(exec);
 const tokenManager = require('./TokenManager');
 
-const mmPath = '/home/ubuntu/.nvm/versions/node/v22.18.0/bin/mm';
-const nodePath = '/home/ubuntu/.nvm/versions/node/v22.18.0/bin/node';
+const mmPath = process.env.MM_PATH || 'mm';
 
 class ArbitrageEngine {
     constructor() {
@@ -21,7 +20,7 @@ class ArbitrageEngine {
 
     async runMM(cmd) {
         try {
-            const { stdout } = await execPromise(`${nodePath} ${mmPath} ${cmd} --json`, { 
+            const { stdout } = await execPromise(`${mmPath} ${cmd} --json`, { 
                 env: { ...process.env }
             });
             return JSON.parse(stdout);
