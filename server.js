@@ -207,8 +207,13 @@ const PORT = process.env.PORT || 3001;
 
 const onchainEngine = require('./services/OnchainExecutionEngine');
 const autonomousWorker = require('./services/AutonomousWorker');
+const arbitrageEngine = require('./services/ArbitrageEngine');
 const { monitor: coingeckoMonitor } = require('./services/coingeckoMonitor');
 const apiHealthRouter = require('./routes/apiHealth');
+const { exec, execSync } = require('child_process');
+
+// Start Arbitrage Engine
+arbitrageEngine.start();
 
 /**
  * Sentinel: Mask sensitive parts of an RPC URL (like Alchemy/Infura API keys)
@@ -378,6 +383,68 @@ app.get('/api/config', (req, res) => {
         moonpayPublicKey: process.env.MOONPAY_PUBLIC_KEY || '',
         googleClientId: process.env.GOOGLE_CLIENT_ID || ''
     });
+});
+
+// 🌐 STATUS ENDPOINT: Base Network & Agent Wallet
+const mmPath = '/home/ubuntu/.nvm/versions/node/v22.18.0/bin/mm';
+const nodePath = '/home/ubuntu/.nvm/versions/node/v22.18.0/bin/node';
+
+const util = require('util');
+const execPromise = util.promisify(exec);
+
+async function runMM(cmd) {
+    try {
+        const { stdout } = await execPromise(`${nodePath} ${mmPath} ${cmd} --json`, { 
+            env: { ...process.env }
+        });
+        return JSON.parse(stdout);
+    } catch (e) {
+        return { ok: false, error: e.message };
+    }
+}
+
+app.get('/api/network/status', async (req, res) => {
+    try {
+        const [doctor, walletInfo, balance, history, ethPrice] = await Promise.all([
+            runMM('doctor'),
+            runMM('wallet address'),
+            runMM('wallet balance --chain base'),
+            runMM('tx history --chain-ids 8453 --limit 5'),
+            runMM('price spot --asset-ids "eip155:8453/slip44:60"')
+        ]);
+
+        res.json({
+            success: true,
+            wallet: {
+                authenticated: doctor.data?.authenticated || false,
+                address: walletInfo.data?.address || doctor.data?.wallets?.[0]?.address || 'N/A',
+                balance: balance.data?.totalValue || '0'
+            },
+            network: {
+                name: 'Base Mainnet',
+                chainId: 8453,
+                ethPrice: ethPrice.data?.prices?.[0]?.price || '0'
+            },
+            arbitrage: {
+                running: arbitrageEngine.isRunning
+            },
+            recentTransactions: history.data?.items || history.data?.transactions || []
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// 🛠️ ARBITRAGE CONTROL
+app.post('/api/arbitrage/toggle', (req, res) => {
+    const { action } = req.body;
+    if (action === 'start') {
+        arbitrageEngine.start();
+        res.json({ success: true, running: true });
+    } else {
+        arbitrageEngine.stop();
+        res.json({ success: true, running: false });
+    }
 });
 
 /**

@@ -780,8 +780,13 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         <span style="font-family:'Bungee'; letter-spacing:1px">CONNECT METAMASK (RECOMMENDED)</span>
       </button>
 
+      <button class=g-btn onclick="if(window.privyLogin) window.privyLogin({ loginMethod: 'google' }); else handleGoogleLogin();" style="height:44px; font-size:12px; background: #fff; color: #111; border: none; display: flex; align-items: center; justify-content: center; gap: 10px;">
+        <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" style="width:20px; height:20px;">
+        <span style="font-family:'Bungee'; letter-spacing:1px">CONTINUE WITH GOOGLE</span>
+      </button>
+
       <button class=g-btn onclick="if(window.privyLogin) window.privyLogin(); else handlePrivyClick();" style="height:44px; font-size:12px; background: linear-gradient(90deg, var(--cyan), var(--hot)); color: #000; border: none;">
-        <span style="font-family:'Bungee'; letter-spacing:1px">PRIVY / SOCIAL LOGIN</span>
+        <span style="font-family:'Bungee'; letter-spacing:1px">PRIVY / OTHER SOCIALS</span>
       </button>
 
       <div style="margin-top:12px; display:flex; gap:8px;">
@@ -857,6 +862,44 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
        <button class="gh-bot-btn" id="ghRemoveBtn" onclick="removeLastBot()" title="Remove last bot" aria-label="Remove last bot" disabled>−</button>
        <button class="gh-bot-btn" id="ghAddTraderBtn" onclick="addBot('TRADER')" title="Add Trading Bot" aria-label="Add new trading bot">🤖</button><button class="gh-bot-btn" id="ghAddWorkerBtn" onclick="addBot('WORKER')" title="Add Worker Bot" aria-label="Add new worker bot">👷</button>
      </div>
+
+  <!-- MetaMask Agent Wallet Panel -->
+  <div class="cpanel" id="agentWalletPanel" style="margin:10px 0; border:1px solid var(--cyan); box-shadow:0 0 15px rgba(0,255,231,.1)">
+    <div class="cpanel-hd open" onclick="toggleCPanel('agentWalletPanel')" style="background:rgba(0,255,231,.05)">
+      <span class="cpanel-title" style="color:var(--cyan)">🤖 METAMASK AGENT WALLET — BASE MAINNET</span>
+      <span class="cpanel-toggle">▼</span>
+    </div>
+    <div class="cpanel-body open">
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px;">
+        <div style="background:var(--chrome); padding:10px; border-radius:8px; border:1px solid var(--border)">
+          <div style="font-size:9px; color:var(--dim); margin-bottom:4px">AGENT ADDRESS</div>
+          <div id="agentAddr" style="font-size:11px; color:var(--cyan); word-break:break-all">Fetching...</div>
+          <div id="agentStatus" style="font-size:9px; color:var(--green); margin-top:4px">● AUTHENTICATED</div>
+        </div>
+        <div style="background:var(--chrome); padding:10px; border-radius:8px; border:1px solid var(--border)">
+          <div style="font-size:9px; color:var(--dim); margin-bottom:4px">AGENT BALANCE</div>
+          <div id="agentBalance" style="font-size:14px; color:var(--gold); font-weight:bold">$0.00</div>
+          <div id="agentEthPrice" style="font-size:9px; color:var(--dim); margin-top:4px">ETH: $0.00</div>
+        </div>
+        <div style="background:var(--chrome); padding:10px; border-radius:8px; border:1px solid var(--border)">
+          <div style="font-size:9px; color:var(--dim); margin-bottom:4px">ARBITRAGE ENGINE</div>
+          <div id="arbStatus" style="font-size:11px; color:var(--hot)">SCANNING...</div>
+          <button id="arbToggleBtn" onclick="toggleArbitrage()" style="margin-top:4px; width:100%; font-size:9px; padding:4px; background:var(--chrome); border:1px solid var(--border); border-radius:4px; color:var(--dim); cursor:pointer; font-family:Bungee">STOP SCANNER</button>
+        </div>
+        <div style="background:var(--chrome); padding:10px; border-radius:8px; border:1px solid var(--border)">
+          <div style="font-size:9px; color:var(--dim); margin-bottom:4px">FLASHLOAN BOT</div>
+          <div id="flashStatus" style="font-size:11px; color:var(--cyan)">READY</div>
+          <button onclick="triggerFlashloan()" style="margin-top:4px; width:100%; font-size:9px; padding:4px; background:var(--hot); border:none; border-radius:4px; color:white; cursor:pointer; font-family:Bungee">TEST FLASHLOAN</button>
+        </div>
+      </div>
+      <div style="margin-top:12px">
+        <div style="font-size:9px; color:var(--dim); margin-bottom:6px">RECENT AGENT TRANSACTIONS</div>
+        <div id="agentTxList" style="font-size:10px; display:flex; flex-direction:column; gap:4px">
+          <div style="color:var(--dim)">No recent activity...</div>
+        </div>
+      </div>
+    </div>
+  </div>
     <span class="gen-badge" id="genBadge">GEN 0</span>
     <span id="apiBreakerBadge" style="display:none"></span>
   </div>
