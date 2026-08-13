@@ -5,6 +5,7 @@
 
 const { ethers } = require('ethers');
 const crypto = require('crypto');
+const { execSync } = require('child_process');
 const tokenManager = require('./TokenManager');
 
 class OnchainExecutionEngine {
@@ -179,6 +180,60 @@ class OnchainExecutionEngine {
 
         if (!resolvedIn || !resolvedOut) {
             throw new Error(`CRITICAL: Asset validation failed. Tokens must be whitelisted Base Mainnet assets. In: ${fromToken}, Out: ${toToken}`);
+        }
+
+        // 🚀 METAMASK AGENT WALLET INTEGRATION
+        // Check if mm CLI is available and authenticated
+        let useAgentWallet = false;
+        const mmPath = '/home/ubuntu/.nvm/versions/node/v22.18.0/bin/mm';
+        const nodePath = '/home/ubuntu/.nvm/versions/node/v22.18.0/bin/node';
+
+        try {
+            const doctorOutput = execSync(`${nodePath} ${mmPath} doctor --json`, { 
+                encoding: 'utf8',
+                env: { ...process.env }
+            });
+            const doctor = JSON.parse(doctorOutput);
+            if (doctor.ok && doctor.data.authenticated && doctor.data.initialized) {
+                useAgentWallet = true;
+                console.log('[OnchainExecutionEngine] MetaMask Agent Wallet detected and authenticated. Using CLI for execution.');
+            }
+        } catch (e) {
+            console.log('[OnchainExecutionEngine] MetaMask Agent Wallet not available or not authenticated.');
+        }
+
+        if (useAgentWallet) {
+            try {
+                const slippagePct = (slippageBps / 100).toFixed(1);
+                const cmd = `${nodePath} ${mmPath} swap execute --from ${resolvedIn.symbol} --to ${resolvedOut.symbol} --amount ${amount} --from-chain-id 8453 --slippage ${slippagePct} --yes --json`;
+                console.log(`[OnchainExecutionEngine] Executing via Agent Wallet: ${cmd}`);
+                
+                const output = execSync(cmd, { 
+                    encoding: 'utf8',
+                    env: { ...process.env }
+                });
+                const result = JSON.parse(output);
+
+                if (result.ok) {
+                    const tx = result.data.transaction;
+                    return {
+                        success: true,
+                        mode: 'AGENT_WALLET',
+                        txHash: tx.hash,
+                        blockNumber: tx.blockNumber,
+                        gasUsed: tx.gasUsed || '0',
+                        gasCostETH: tx.gasCostETH || '0',
+                        fromAmount: amount,
+                        toAmount: result.data.destAssetAmountHuman || '0',
+                        timestamp: Date.now()
+                    };
+                } else {
+                    throw new Error(result.error?.message || 'Agent Wallet execution failed');
+                }
+            } catch (error) {
+                console.error('[OnchainExecutionEngine] Agent Wallet execution error:', error.message);
+                throw error;
+            }
         }
 
         const isDryRun = process.env.DRY_RUN === 'true' || !process.env.TRADING_PRIVATE_KEY;
