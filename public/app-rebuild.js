@@ -1,5 +1,5 @@
 /**
- * TRADE ARENA v4.2 - PRODUCTION BUILD
+ * TRADE ARENA v4.3.12 - PRODUCTION BUILD
  * Master Switch (FIXED), Real-Time Balance, Ticker Tracking, Market Pricing
  *
  * ✓ Master ON/OFF switch controls all 6 bots simultaneously
@@ -262,7 +262,14 @@ class AutoRecovery {
       if (stored) {
         const state = JSON.parse(stored);
         Object.assign(window, state);
-        console.log("[AutoRecovery] ✓ State restored from localStorage");
+        
+        // 🛡️ REAL WALLET OVERRIDE: Prioritize real-time synced balance if available
+        const realBal = localStorage.getItem('ta_real_balance');
+        const realStart = localStorage.getItem('ta_real_start_balance');
+        if (realBal) window.balance = parseFloat(realBal);
+        if (realStart) window.startBalance = parseFloat(realStart);
+        
+        console.log("[AutoRecovery] ✓ State restored from localStorage (Real Balance prioritised)");
       }
     } catch (e) {
       console.warn("[AutoRecovery] Recovery failed:", e);
@@ -420,15 +427,15 @@ let balanceUpdater = null;
 let autoRecovery = null;
 let realMarketPricing = null;
 
-function initAppRebuildV42() {
+function initAppRebuildV4312() {
   // Wait for DOM and game state
   if (document.readyState === "loading" || !document.getElementById("mainApp") || typeof window.balance === "undefined" || typeof window.bots === "undefined") {
-    setTimeout(initAppRebuildV42, 100); // Check again shortly
+    setTimeout(initAppRebuildV4312, 100); // Check again shortly
     return;
   }
 
   console.log(
-    "%c🚀 TRADE ARENA v4.2 INITIALIZING...",
+    "%c🚀 TRADE ARENA v4.3.12 INITIALIZING...",
     "color: #39ff14; font-weight: bold; font-size: 14px;",
   );
 
@@ -512,7 +519,7 @@ document.addEventListener('click', function(e) {
     }
 });
 // Auto-init
-initAppRebuildV42();
+initAppRebuildV4312();
 
 // ══════════════════════════════════════════════════════
 // PUBLIC API - EXTERNAL CONTROL

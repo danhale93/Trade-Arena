@@ -319,11 +319,19 @@ async function getWalletBalance() {
 
     // Synchronize with global balance variable used by trading-bundle.js
     window.balance = walletState.balanceUSD;
+    
+    // 🛡️ PERSISTENCE: Save to localStorage for app-rebuild.js AutoRecovery
+    localStorage.setItem('ta_real_balance', walletState.balanceUSD.toString());
 
     // 🛡️ INITIALIZATION: Set starting balance baseline on first successful sync
-    if (typeof window.startBalance !== 'undefined' && (window.startBalance === 0 || window.startBalance === null)) {
+    // Use stored start balance if available to maintain PnL across refreshes
+    const storedStart = localStorage.getItem('ta_real_start_balance');
+    if (storedStart) {
+        window.startBalance = parseFloat(storedStart);
+    } else if (typeof window.startBalance !== 'undefined' && (window.startBalance === 0 || window.startBalance === null)) {
         console.log('[Sync] Initializing session starting balance to:', window.balance);
         window.startBalance = window.balance;
+        localStorage.setItem('ta_real_start_balance', window.balance.toString());
         
         if (Array.isArray(window.equityHistory) && (window.equityHistory.length === 0 || (window.equityHistory.length === 1 && window.equityHistory[0] === 0))) {
             window.equityHistory = [window.balance];
