@@ -38,6 +38,11 @@ async function executeOnChainTrade(tradeRequest) {
             throw new Error(result.error || 'Swap failed');
         }
 
+        // Attach botId and method to receipt for ledger population
+        result.botId = botId;
+        result.method = method;
+        result.tokenOut = token;
+
         ExecutionState.lastTxHash = result.txHash;
         updateExecutionUI(botId, 'COMPLETE', result.txHash);
         

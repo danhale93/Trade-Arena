@@ -131,11 +131,15 @@ var ABIS = window.ABIS;
 /**
  * Helper Class for Smart Contract Interactions
  */
-class ContractHelper {
+if (typeof window.ContractHelper === 'undefined') {
+window.ContractHelper = class ContractHelper {
     constructor(provider, signer) {
         this.provider = provider;
         this.signer = signer;
     }
+};
+}
+var ContractHelper = window.ContractHelper;
 
     /**
      * Get token balance for an address
