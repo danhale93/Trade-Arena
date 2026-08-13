@@ -31,3 +31,5 @@ services:
         sync: false
       - key: ALCHEMY_API_KEY
         sync: false
+      - key: ZERO_EX_API_KEY
+        sync: false

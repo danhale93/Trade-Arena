@@ -131,7 +131,7 @@ async function get0xSwapQuote(betUSD, tokenIn, tokenOut) {
       console.log('[get0xSwapQuote] Sell USDC amount:', sellAmount.toString());
     }
 
-    const apiUrl = new URL('https://api.0x.org/swap/v1/quote');
+    const apiUrl = new URL('/api/0x/quote', window.location.origin);
     apiUrl.searchParams.append('chainId', '8453');
     apiUrl.searchParams.append('sellToken', isSellEth ? 'ETH' : tokenIn);
     apiUrl.searchParams.append('buyToken', tokenOut.toLowerCase() === 'eth' ? 'ETH' : tokenOut);

@@ -536,6 +536,26 @@ app.post('/api/gemini', aiProxyLimiter, async (req, res) => {
 });
 
 /**
+ * 0x API PROXY
+ * Forwards swap quotes with secure API key injection
+ */
+app.get('/api/0x/quote', async (req, res) => {
+    try {
+        const query = new URLSearchParams(req.query).toString();
+        const response = await fetch(`https://api.0x.org/swap/v1/quote?${query}`, {
+            headers: {
+                '0x-api-key': process.env.ZERO_EX_API_KEY || ''
+            }
+        });
+        const data = await response.json();
+        res.status(response.status).json(data);
+    } catch (error) {
+        console.error('0x Proxy error:', error);
+        res.status(500).json({ error: 'Failed to fetch swap quote' });
+    }
+});
+
+/**
  * MAINTENANCE & LOGGING
  */
 

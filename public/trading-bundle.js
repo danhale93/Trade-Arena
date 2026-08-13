@@ -2938,6 +2938,7 @@ async function getSwapQuote(buyTokenAddress, sellTokenAddress, sellAmountWei, ta
     console.log(`[Execution] Fetching quote from 0x: ${sellTokenAddress} -> ${buyTokenAddress}`);
 
     const params = new URLSearchParams({
+        chainId: '8453',
         buyToken: buyTokenAddress,
         sellToken: sellTokenAddress,
         sellAmount: sellAmountWei,
@@ -2946,11 +2947,7 @@ async function getSwapQuote(buyTokenAddress, sellTokenAddress, sellAmountWei, ta
     });
 
     try {
-        const response = await fetch(`${EXECUTION_CONFIG.zeroExApiUrl}/quote?${params.toString()}`, {
-            headers: {
-                '0x-api-key': EXECUTION_CONFIG.zeroExApiKey || ''
-            }
-        });
+        const response = await fetch(`/api/0x/quote?${params.toString()}`);
 
         if (!response.ok) {
             const error = await response.json();
