@@ -15,61 +15,27 @@ let marketChart, performanceChart, profitChart;
  * WALLET & AUTHENTICATION
  */
 async function connectWallet() {
-    try {
-        if (!window.ethereum) {
-            showToast('Please install MetaMask', 'error');
-            return;
-        }
-
-        provider = new ethers.BrowserProvider(window.ethereum);
-        await provider.send('eth_requestAccounts', []);
-        signer = await provider.getSigner();
-        userAddress = await signer.getAddress();
-
-        // Switch to Base network
-        try {
-            await window.ethereum.request({
-                method: 'wallet_switchEthereumChain',
-                params: [{ chainId: '0x2105' }] // Base Mainnet
-            });
-        } catch (e) {
-            if (e.code === 4902) {
-                showToast('Adding Base Network to MetaMask...', 'info');
-            }
-        }
-
-        // Fetch balance
-        userBalance = ethers.formatEther(
-            await provider.getBalance(userAddress)
-        );
-
-        loginSuccess();
-    } catch (error) {
-        // Silent fail for auto-connect if no extension
-        if (error.message && error.message.includes('extension not found')) {
-            console.log('ℹ️ MetaMask extension not found, skipping auto-connect.');
-        } else {
-            console.error('Wallet connection error:', error);
-            if (typeof showToast === 'function') showToast('Failed to connect wallet', 'error');
-        }
-    }
-}
-
-function demoMode() {
-    isDemoMode = true;
-    userAddress = '0x' + 'X'.repeat(40);
-    userBalance = (10 + Math.random() * 20).toFixed(2);
-    loginSuccess();
+    // Legacy MetaMask connection disabled - Redirect to Google/Agent login
+    showToast('Agent Mode Active: Please connect via Google', 'info');
+    handleGoogleLogin();
 }
 
 async function handleGoogleLogin() {
     showToast('Redirecting to Google...', 'info');
-    // This is a placeholder for the actual OAuth2 redirect or Privy flow
-    // In the current context, we rely on Privy which is already integrated
-    if (window.privyLogin) {
+    
+    // Use Privy for real Google Login
+    if (typeof window.privyLoginGoogle === 'function') {
+        try {
+            await window.privyLoginGoogle();
+            // privy-client.js will call onPrivyLoginSuccess -> loginSuccess
+        } catch (e) {
+            console.error('Google login failed:', e);
+            showToast('Google login failed', 'error');
+        }
+    } else if (window.privyLogin) {
         window.privyLogin({ loginMethod: 'google' });
     } else {
-        // Fallback for demo purposes if Privy is not loaded
+        // Fallback for demo purposes
         setTimeout(() => {
             userAddress = '0xGoogleUser...' + Math.floor(Math.random()*1000);
             userBalance = 15.50;
@@ -96,6 +62,7 @@ function loginSuccess() {
     if (addrEl && userAddress) addrEl.textContent = userAddress.substring(0, 6) + '...' + userAddress.substring(38);
 
     initializeApp();
+    updateAgentStatus(); // Immediately sync with MetaMask Agent Wallet
 }
 
 // Global Wallet State Listener - Must be registered immediately
@@ -1047,6 +1014,13 @@ async function updateAgentStatus() {
             document.getElementById('agentBalance').textContent = '$' + parseFloat(data.wallet.balance).toFixed(2);
             document.getElementById('agentEthPrice').textContent = 'ETH: $' + parseFloat(data.network.ethPrice).toFixed(2);
             
+            // Show authenticated email if linked
+            const statusLabel = document.querySelector('.cpanel-hd span[style*="var(--dim)"]');
+            if (statusLabel && data.wallet.authenticated) {
+                statusLabel.textContent = `AGENT: ${data.wallet.signedInAs}`;
+                statusLabel.style.color = 'var(--cyan)';
+            }
+
             // Update Arbitrage Status
             const arbStatus = document.getElementById('arbStatus');
             const arbBtn = document.getElementById('arbToggleBtn');

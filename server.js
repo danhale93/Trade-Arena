@@ -404,8 +404,9 @@ async function runMM(cmd) {
 
 app.get('/api/network/status', async (req, res) => {
     try {
-        const [doctor, walletInfo, balance, history, ethPrice] = await Promise.all([
+        const [doctor, authStatus, walletInfo, balance, history, ethPrice] = await Promise.all([
             runMM('doctor'),
+            runMM('auth status'),
             runMM('wallet address'),
             runMM('wallet balance --chain base'),
             runMM('tx history --chain-ids 8453 --limit 5'),
@@ -416,6 +417,7 @@ app.get('/api/network/status', async (req, res) => {
             success: true,
             wallet: {
                 authenticated: doctor.data?.authenticated || false,
+                signedInAs: authStatus.data?.signedInAs || 'Unknown',
                 address: walletInfo.data?.address || doctor.data?.wallets?.[0]?.address || 'N/A',
                 balance: balance.data?.totalValue || '0'
             },

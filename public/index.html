@@ -773,47 +773,40 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     <span>5 AI agents · Real prices · Self-learning · Politician filings</span>
   </div>
 <div class="login-card">
-    <div class=login-card-hd>SECURE WALLET ENTRY</div>
+    <div class=login-card-hd>METAMASK AGENT WALLET ENTRY</div>
     <div class=login-card-bd>
-      <!-- MetaMask Priority -->
-      <button id="mmConnectBtn" class="g-btn" onclick="if(window.privyLogin) window.privyLogin({ loginMethod: 'wallet' }); else handleMetaMaskConnect();" style="height:44px; font-size:12px; background: #f6851b; color: #fff; border: none; margin-bottom: 8px;">
-        <span style="font-family:'Bungee'; letter-spacing:1px">CONNECT METAMASK (RECOMMENDED)</span>
+      <!-- Agent Wallet via Google Only -->
+      <button class=g-btn onclick="handleGoogleLogin();" style="height:56px; font-size:14px; background: #fff; color: #111; border: none; display: flex; align-items: center; justify-content: center; gap: 12px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.4);">
+        <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" style="width:24px; height:24px;">
+        <span style="font-family:'Bungee'; letter-spacing:1px">CONNECT AGENT VIA GOOGLE</span>
       </button>
 
-      <button class=g-btn onclick="if(window.privyLogin) window.privyLogin({ loginMethod: 'google' }); else handleGoogleLogin();" style="height:44px; font-size:12px; background: #fff; color: #111; border: none; display: flex; align-items: center; justify-content: center; gap: 10px;">
-        <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" style="width:20px; height:20px;">
-        <span style="font-family:'Bungee'; letter-spacing:1px">CONTINUE WITH GOOGLE</span>
-      </button>
-
-      <button class=g-btn onclick="if(window.privyLogin) window.privyLogin(); else handlePrivyClick();" style="height:44px; font-size:12px; background: linear-gradient(90deg, var(--cyan), var(--hot)); color: #000; border: none;">
-        <span style="font-family:'Bungee'; letter-spacing:1px">PRIVY / OTHER SOCIALS</span>
-      </button>
+      <div style="margin-top:16px; padding: 12px; background: rgba(0,255,231,0.05); border: 1px solid rgba(0,255,231,0.2); border-radius: 8px;">
+        <p style="font-size:10px; color:var(--cyan); text-align:center; line-height:1.4; font-family:'JetBrains Mono'">
+          <span style="font-weight:bold">AGENT MODE ACTIVE</span><br>
+          Only authenticated MetaMask Agent Wallets are accepted. All trades are executed on-chain via the Agent CLI.
+        </p>
+      </div>
 
       <div style="margin-top:12px; display:flex; gap:8px;">
         <button class=onramp-btn onclick="window.openMoonpay && window.openMoonpay()" style="flex:1">💳 DEPOSIT</button>
         <button class=offramp-btn onclick="openWithdrawModal()" style="flex:1">💵 WITHDRAW</button>
       </div>
       
-      <div style="margin-top:8px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:8px;">
-        <button onclick="if(typeof demoMode === 'function') demoMode(); else { document.getElementById('connectScreen').style.display='none'; document.getElementById('mainApp').style.display='flex'; }" style="width:100%; height:32px; background:rgba(255,255,255,0.05); border:1px solid var(--border); color:var(--dim); font-family:'Bungee'; font-size:10px; cursor:pointer; border-radius:4px;">
-          SKIP LOGIN (DEMO MODE)
-        </button>
+      <div style="margin-top:16px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:8px;">
         <div style="display:flex; justify-content:center; gap:10px;">
-          <button onclick="alert('Browser: ' + navigator.userAgent + '\nMetaMask: ' + (!!window.ethereum) + '\nPrivy: ' + (typeof privyLogin))" style="background:none; border:none; color:var(--dim); font-size:9px; text-decoration:underline; cursor:pointer;">
+          <button onclick="alert('Browser: ' + navigator.userAgent + '\nMetaMask Agent: READY\nAuth: Privy/Google')" style="background:none; border:none; color:var(--dim); font-size:9px; text-decoration:underline; cursor:pointer;">
             DIAGNOSTICS
           </button>
           <button onclick="if(window.navigator.serviceWorker){navigator.serviceWorker.getRegistrations().then(regs=>{for(let r of regs)r.unregister()});} caches.keys().then(keys=>{for(let k of keys)caches.delete(k)}); location.reload(true);" style="background:none; border:none; color:var(--dim); font-size:9px; text-decoration:underline; cursor:pointer;">
             FORCE RELOAD
           </button>
         </div>
-        <button onclick="console.log('Emergency Bypass Triggered'); document.getElementById('connectScreen').style.display='none'; document.getElementById('mainApp').style.display='flex'; if(typeof setupApp === 'function') setupApp({name:'Bypass User', provider:'bypass', badge:'⚡ BYPASS'});" style="margin-top:10px; background:none; border:1px solid rgba(255,0,0,0.2); color:rgba(255,0,0,0.4); font-size:8px; cursor:pointer; padding:2px 5px;">
-          EMERGENCY BYPASS (IF STUCK)
-        </button>
       </div>
 
-      <p style="font-size:9px; color:var(--dim); text-align:center; margin-top:8px; line-height:1.4">
-        Secure Multi-Chain Authentication<br>
-        <span style="color:var(--green)">✓ Mainnet Ready</span> • <span style="color:var(--green)">✓ EIP-712 Secure Payouts</span>
+      <p style="font-size:9px; color:var(--dim); text-align:center; margin-top:12px; line-height:1.4">
+        MetaMask Agentic CLI v6.1.0 Integration<br>
+        <span style="color:var(--green)">✓ Base Mainnet</span> • <span style="color:var(--green)">✓ Autonomous Arbitrage</span>
       </p>
     </div>
   </div>
