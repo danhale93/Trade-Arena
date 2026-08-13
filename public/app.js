@@ -45,8 +45,13 @@ async function connectWallet() {
 
         loginSuccess();
     } catch (error) {
-        console.error('Wallet connection error:', error);
-        showToast('Failed to connect wallet', 'error');
+        // Silent fail for auto-connect if no extension
+        if (error.message && error.message.includes('extension not found')) {
+            console.log('ℹ️ MetaMask extension not found, skipping auto-connect.');
+        } else {
+            console.error('Wallet connection error:', error);
+            if (typeof showToast === 'function') showToast('Failed to connect wallet', 'error');
+        }
     }
 }
 

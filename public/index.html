@@ -719,11 +719,36 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 <!-- Theme Color -->
 <meta name="theme-color" content="#00f5ff">
 
-<!-- Service Worker Registration -->
+<!-- Service Worker & Cache Hard Reset -->
 <script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW registration failed:', err));
-  }
+  (function() {
+    const CURRENT_VERSION = '4.3.1';
+    const lastVersion = localStorage.getItem('ta_app_version');
+    
+    if (lastVersion !== CURRENT_VERSION) {
+      console.log('🚀 Version mismatch detected (Last: ' + lastVersion + ', Current: ' + CURRENT_VERSION + '). Performing hard reset...');
+      
+      // Unregister all Service Workers
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(regs => {
+          for (let r of regs) r.unregister();
+        });
+      }
+      
+      // Clear all caches
+      if ('caches' in window) {
+        caches.keys().then(keys => {
+          for (let k of keys) caches.delete(k);
+        });
+      }
+      
+      localStorage.setItem('ta_app_version', CURRENT_VERSION);
+      console.log('✅ Cache and SW cleared. Refreshing page for latest assets...');
+      setTimeout(() => location.reload(true), 500);
+    } else if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW registration failed:', err));
+    }
+  })();
 </script>
 
 </head>
@@ -731,7 +756,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 <div class="edge"></div>
 
 <!-- ══ CONNECT ══ -->
-<div style="position:fixed; top:10px; right:10px; background:var(--hot); color:white; padding:5px 10px; font-size:10px; z-index:10000; border-radius:4px; font-family:'Bungee'; box-shadow:0 0 10px var(--hot);">LIVE V4.3.0</div>
+<div style="position:fixed; top:10px; right:10px; background:var(--hot); color:white; padding:5px 10px; font-size:10px; z-index:10000; border-radius:4px; font-family:'Bungee'; box-shadow:0 0 10px var(--hot);">LIVE V4.3.1</div>
 <div id="connectScreen">
   <div class="marquee-wrap">
     <div class="marquee-inner">
@@ -6387,8 +6412,8 @@ document.addEventListener('keydown', function(e) {
 
 </script>
 <!-- Arena React Bundle -->
-<script src="arena-react-bundle.js?v=4.2.1" defer></script>
-<script src="app.js?v=4.2.1" defer></script>
+<script src="arena-react-bundle.js?v=4.3.1" defer></script>
+<script src="app.js?v=4.3.1" defer></script>
 
 <!-- ACOUSTIC Audio-Visual Engines -->
 <script src="acoustic-bundle.js" defer></script>
