@@ -18,15 +18,17 @@
   "dependencies": {
     "@biconomy/abstractjs": "^1.2.5",
     "@biconomy/account": "^4.5.7",
+    "@metamask/agent-wallet": "6.1.0",
     "@privy-io/react-auth": "^3.37.0",
+    "@stripe/stripe-js": "^9.13.0",
     "aes-js": "^4.0.0-beta.5",
     "axios": "1.18.1",
     "ccxt": "^4.5.71",
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",
+    "esbuild": "^0.28.1",
     "ethers": "6.17.0",
     "express": "5.2.1",
-    "@metamask/agent-wallet": "6.1.0",
     "express-rate-limit": "^8.6.2",
     "path-to-regexp": "^8.4.2",
     "react": "^19.2.7",
@@ -35,8 +37,7 @@
     "viem": "^2.55.11",
     "websocket": "^1.0.35",
     "ws": "^8.21.3",
-    "zod": "3.25.76",
-    "esbuild": "^0.28.1"
+    "zod": "3.25.76"
   },
   "devDependencies": {
     "concurrently": "^10.0.4",
