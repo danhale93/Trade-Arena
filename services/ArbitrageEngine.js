@@ -20,13 +20,21 @@ class ArbitrageEngine {
 
     async runMM(cmd) {
         try {
-            const { stdout } = await execPromise(`${mmPath} ${cmd} --json`, { 
+            const mmToken = process.env.MM_CLI_TOKEN;
+            const tokenFlag = mmToken ? `--token "${mmToken}"` : '';
+            const fullCmd = `${mmPath} ${cmd} ${tokenFlag} --json`;
+
+            const { stdout } = await execPromise(fullCmd, { 
                 env: { ...process.env }
             });
             return JSON.parse(stdout);
         } catch (e) {
-            console.error(`[ArbitrageEngine] mm ${cmd} failed:`, e.message);
-            return null;
+            try {
+                return JSON.parse(e.stdout);
+            } catch (parseErr) {
+                console.error(`[ArbitrageEngine] mm ${cmd} failed:`, e.message);
+                return null;
+            }
         }
     }
 
