@@ -721,10 +721,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 <meta name="theme-color" content="#00f5ff">
 
 <!-- Service Worker & Cache Hard Reset -->
-<script>
-  (function() {
-    const CURRENT_VERSION = '4.3.3';
-    const lastVersion = localStorage.getItem('ta_app_version');
+	<script>
+	  (function() {
+	    const CURRENT_VERSION = '4.3.4';
+	    const lastVersion = localStorage.getItem('ta_app_version');
     
     if (lastVersion !== CURRENT_VERSION) {
       console.log('🚀 Version mismatch detected (Last: ' + lastVersion + ', Current: ' + CURRENT_VERSION + '). Performing hard reset...');
@@ -755,10 +755,11 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 </head>
 <body>
 <div id="toastContainer" style="position:fixed; top:20px; right:20px; z-index:100000; display:flex; flex-direction:column; gap:10px; pointer-events:none;"></div>
+<div id="react-root"></div>
 <div class="edge"></div>
 
 <!-- ══ CONNECT ══ -->
-<div style="position:fixed; top:10px; right:10px; background:var(--hot); color:white; padding:5px 10px; font-size:10px; z-index:10000; border-radius:4px; font-family:'Bungee'; box-shadow:0 0 10px var(--hot);">LIVE V4.3.3</div>
+<div style="position:fixed; top:10px; right:10px; background:var(--hot); color:white; padding:5px 10px; font-size:10px; z-index:10000; border-radius:4px; font-family:'Bungee'; box-shadow:0 0 10px var(--hot);">LIVE V4.3.44</div>
 <div id="connectScreen">
   <div class="marquee-wrap">
     <div class="marquee-inner">
@@ -821,7 +822,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
   <div class="global-header">
     <div class="gh-avatar" id="ghAvatar" role="img" aria-label="User Avatar">👤</div>
     <div style="flex:1;overflow:hidden;min-width:60px">
-      <div id="react-header-root"></div>
+      <div id="react-header-portal"></div>
       <div class="gh-name" id="ghName" style="display:none">—</div>
 <span style="font-size:9px;padding:1px 6px;border-radius:10px;background:var(--chrome);border:1px solid var(--border);color:var(--green)" id="ghBadge">LIVE</span>
       <span style="font-size:8px;padding:1px 5px;border-radius:8px;background:rgba(0,255,231,.08);border:1px solid rgba(0,255,231,.2);color:var(--cyan);display:none" id="ghNetwork">BASE</span>
@@ -6417,8 +6418,8 @@ document.addEventListener('keydown', function(e) {
 
 </script>
 <!-- Arena React Bundle -->
-<script src="arena-react-bundle.js?v=4.3.2" defer></script>
-<script src="app.js?v=4.3.2" defer></script>
+<script src="arena-react-bundle.js?v=4.3.4" defer></script>
+<script src="app.js?v=4.3.4" defer></script>
 
 <!-- ACOUSTIC Audio-Visual Engines -->
 <script src="acoustic-bundle.js?v=4.3.2" defer></script>
