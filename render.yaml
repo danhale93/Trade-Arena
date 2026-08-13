@@ -3,7 +3,7 @@ services:
     name: trade-arena
     runtime: node
     plan: starter
-    buildCommand: rm -rf node_modules package-lock.json pnpm-lock.yaml && npm install && npm run build
+    buildCommand: pnpm install --no-frozen-lockfile && pnpm run build
     startCommand: node server.js
     healthCheckPath: /
     envVars:
