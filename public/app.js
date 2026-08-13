@@ -872,7 +872,7 @@ window.updateHealthMetrics = function(health) {
     setTimeout(() => {
         console.log('🛡️ SYSTEM DIAGNOSTICS INITIATED');
         console.log('   - Ethers.js:', typeof ethers !== 'undefined' ? `v${ethers.version || '6.x'}` : '❌ NOT FOUND');
-        console.log('   - Execution Engine:', typeof window.executeRealSwap !== 'undefined' ? '✅ LOADED' : '❌ MISSING');
+        console.log('   - Execution Engine:', typeof window.executeOnChainTrade !== 'undefined' ? '✅ LOADED' : '❌ MISSING');
         console.log('   - Wallet Provider:', window.ethereum ? '✅ DETECTED' : '❌ NOT FOUND');
         console.log('   - WebSocket:', ws && ws.readyState === WebSocket.OPEN ? '✅ CONNECTED' : '❌ DISCONNECTED');
         if (window.walletState) {
