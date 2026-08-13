@@ -179,7 +179,7 @@ export const PrivyWalletHeader = () => {
             (window as any).setWalletState({
                 isConnected: true,
                 address: arenaWallet.address,
-                walletType: 'privy',
+                walletType: arenaWallet.walletClientType || 'privy',
                 provider: provider,
                 signer: signer
             });
