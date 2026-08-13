@@ -23,7 +23,7 @@ async function connectWallet() {
 
         provider = new ethers.BrowserProvider(window.ethereum);
         await provider.send('eth_requestAccounts', []);
-        signer = provider.getSigner();
+        signer = await provider.getSigner();
         userAddress = await signer.getAddress();
 
         // Switch to Base network
@@ -58,8 +58,13 @@ function demoMode() {
 }
 
 function loginSuccess() {
-    document.getElementById('loginScreen').classList.add('hidden');
-    document.getElementById('mainApp').classList.remove('hidden');
+    const loginScreen = document.getElementById('loginScreen') || document.getElementById('connectScreen');
+    if (loginScreen) loginScreen.style.display = 'none';
+    const mainApp = document.getElementById('mainApp');
+    if (mainApp) {
+        mainApp.style.display = 'flex';
+        mainApp.style.flexDirection = 'column';
+    }
     
     document.getElementById('walletBalance').textContent = userBalance + ' ETH';
     document.getElementById('userAddr').textContent = 

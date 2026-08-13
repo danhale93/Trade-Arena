@@ -730,7 +730,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 <div class="edge"></div>
 
 <!-- ══ CONNECT ══ -->
-<div style="position:fixed; top:10px; right:10px; background:var(--hot); color:white; padding:5px 10px; font-size:10px; z-index:10000; border-radius:4px; font-family:'Bungee'; box-shadow:0 0 10px var(--hot);">LIVE V4.2.5</div>
+<div style="position:fixed; top:10px; right:10px; background:var(--hot); color:white; padding:5px 10px; font-size:10px; z-index:10000; border-radius:4px; font-family:'Bungee'; box-shadow:0 0 10px var(--hot);">LIVE V4.2.6</div>
 <div id="connectScreen">
   <div class="marquee-wrap">
     <div class="marquee-inner">
@@ -760,9 +760,12 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         <button class=offramp-btn onclick="openWithdrawModal()" style="flex:1">💵 WITHDRAW</button>
       </div>
       
-      <div style="margin-top:8px; text-align:center;">
+      <div style="margin-top:8px; text-align:center; display:flex; justify-content:center; gap:10px;">
         <button onclick="alert('Browser: ' + navigator.userAgent + '\nMetaMask: ' + (!!window.ethereum) + '\nPrivy: ' + (typeof privyLogin))" style="background:none; border:none; color:var(--dim); font-size:9px; text-decoration:underline; cursor:pointer;">
           DIAGNOSTICS
+        </button>
+        <button onclick="if(window.navigator.serviceWorker){navigator.serviceWorker.getRegistrations().then(regs=>{for(let r of regs)r.unregister()});} caches.keys().then(keys=>{for(let k of keys)caches.delete(k)}); location.reload(true);" style="background:none; border:none; color:var(--dim); font-size:9px; text-decoration:underline; cursor:pointer;">
+          FORCE RELOAD
         </button>
       </div>
 
