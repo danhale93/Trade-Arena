@@ -840,17 +840,7 @@ const BASE_SEPOLIA_CONFIG = {
   },
 };
 
-var BASE_CONFIG = {
-  chainId: 8453,
-  name: "Base Mainnet",
-  rpcUrl: "https://mainnet.base.org",
-  blockExplorerUrl: "https://basescan.org",
-  currency: {
-    name: "Ethereum",
-    symbol: "ETH",
-    decimals: 18,
-  },
-};
+// BASE_CONFIG removed - using global from contract-helpers.js
 
 // Token Addresses (Network Aware)
 const NETWORK_TOKENS = {

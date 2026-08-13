@@ -842,6 +842,7 @@ window.updateHealthMetrics = function(health) {
  * Forwards browser console logs to the System Monitor UI
  */
 (function() {
+    try {
     const originalConsoleLog = console.log;
     const originalConsoleError = console.error;
     const originalConsoleWarn = console.warn;
@@ -890,6 +891,9 @@ window.updateHealthMetrics = function(health) {
             console.log('   - Wallet State:', window.walletState.isConnected ? `✅ CONNECTED (${window.walletState.address})` : '❌ DISCONNECTED');
         }
     }, 2000);
+    } catch (e) {
+        console.warn('Console Interceptor Init Error:', e);
+    }
 })();
 
 /**

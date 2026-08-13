@@ -391,22 +391,7 @@ window.MARKETPLACE.init();
  * 3. Configure embedded wallet for Base only
  */
 
-var PRIVY_CONFIG = {
-    // Privy App ID from dashboard.privy.com
-    appId: 'cmpl1hc0k00ui0djsr3qo8gg8',
-    // JWKS URL for token verification
-    jwksUrl: 'https://auth.privy.io/api/v1/apps/cmpl1hc0k00ui0djsr3qo8gg8/jwks.json',
-    // Base mainnet ONLY - NO network dropdown
-    chain: 'base',
-    chainId: '0x2105',
-    chainName: 'Base',
-    // USDC only - hide all other tokens
-    defaultToken: 'USDC',
-    // Fiat display
-    fiatCurrency: 'USD',
-    // Hide blockchain complexity from user
-    hideBlockchain: true,
-};
+// PRIVY_CONFIG removed - using global from privy-client.js
 
 // Privy state
 let privyUser = null;

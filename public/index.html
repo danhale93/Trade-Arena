@@ -5,11 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>TRADE ARENA — AI TRADING FLOOR</title>
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Bungee+Shade&family=JetBrains+Mono:wght@400;700&family=Oswald:wght@400;700&family=Share+Tech+Mono&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js" defer></script>
-<script src="privy-client.js" defer></script>
-<script src="contract-helpers.js" defer></script>
-<script src="real-wallet.js" defer></script>
-<script src="blockchain-execution.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+<script src="privy-client.js?v=4.3.2"></script>
+<script src="contract-helpers.js?v=4.3.2"></script>
+<script src="real-wallet.js?v=4.3.2"></script>
+<script src="blockchain-execution.js?v=4.3.2"></script>
+<script src="execution-engine.js?v=4.3.2"></script>
 <style>
 :root{
   --gold:#ffd700;--gold2:#ffaa00;--hot:#ff2d78;--cyan:#00ffe7;
@@ -722,7 +723,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 <!-- Service Worker & Cache Hard Reset -->
 <script>
   (function() {
-    const CURRENT_VERSION = '4.3.1';
+    const CURRENT_VERSION = '4.3.2';
     const lastVersion = localStorage.getItem('ta_app_version');
     
     if (lastVersion !== CURRENT_VERSION) {
@@ -756,7 +757,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 <div class="edge"></div>
 
 <!-- ══ CONNECT ══ -->
-<div style="position:fixed; top:10px; right:10px; background:var(--hot); color:white; padding:5px 10px; font-size:10px; z-index:10000; border-radius:4px; font-family:'Bungee'; box-shadow:0 0 10px var(--hot);">LIVE V4.3.1</div>
+<div style="position:fixed; top:10px; right:10px; background:var(--hot); color:white; padding:5px 10px; font-size:10px; z-index:10000; border-radius:4px; font-family:'Bungee'; box-shadow:0 0 10px var(--hot);">LIVE V4.3.2</div>
 <div id="connectScreen">
   <div class="marquee-wrap">
     <div class="marquee-inner">
@@ -798,6 +799,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
             FORCE RELOAD
           </button>
         </div>
+        <button onclick="console.log('Emergency Bypass Triggered'); document.getElementById('connectScreen').style.display='none'; document.getElementById('mainApp').style.display='flex'; if(typeof setupApp === 'function') setupApp({name:'Bypass User', provider:'bypass', badge:'⚡ BYPASS'});" style="margin-top:10px; background:none; border:1px solid rgba(255,0,0,0.2); color:rgba(255,0,0,0.4); font-size:8px; cursor:pointer; padding:2px 5px;">
+          EMERGENCY BYPASS (IF STUCK)
+        </button>
       </div>
 
       <p style="font-size:9px; color:var(--dim); text-align:center; margin-top:8px; line-height:1.4">
@@ -6412,16 +6416,16 @@ document.addEventListener('keydown', function(e) {
 
 </script>
 <!-- Arena React Bundle -->
-<script src="arena-react-bundle.js?v=4.3.1" defer></script>
-<script src="app.js?v=4.3.1" defer></script>
+<script src="arena-react-bundle.js?v=4.3.2" defer></script>
+<script src="app.js?v=4.3.2" defer></script>
 
 <!-- ACOUSTIC Audio-Visual Engines -->
-<script src="acoustic-bundle.js" defer></script>
-<script src="ACOUSTIC_CORE.js" defer></script>
-<script src="trading-bundle.js" defer></script>
-<script src="task-center.js" defer></script>
-<script src="gas-fund.js" defer></script>
-<script src="management-bundle.js" defer></script>
+<script src="acoustic-bundle.js?v=4.3.2" defer></script>
+<script src="ACOUSTIC_CORE.js?v=4.3.2" defer></script>
+<script src="trading-bundle.js?v=4.3.2" defer></script>
+<script src="task-center.js?v=4.3.2" defer></script>
+<script src="gas-fund.js?v=4.3.2" defer></script>
+<script src="management-bundle.js?v=4.3.2" defer></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   // checkAutoLogin(); // Legacy removed

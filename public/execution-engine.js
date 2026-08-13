@@ -1,64 +1,13 @@
 /**
- * ON-CHAIN EXECUTION ENGINE
+ * ON-CHAIN EXECUTION ENGINE (V6 BRIDGE)
  * Trade Arena v4 • Real Money Trading on Base
  */
-
-// ── Secure Storage Decoder ──
-var _cfg_d = (s) => { try { return s ? atob(s) : ''; } catch(e) { return s; } };
-
-const EXECUTION_CONFIG = {
-    zeroExApiUrl: 'https://base.api.0x.org/swap/v1',
-    zeroExApiKey: _cfg_d(localStorage.getItem('ta_0x_api_key')) || '',
-    minLiquidityUSD: 50000,
-    maxSlippage: 0.01, // 1%
-    privateRpcUrl: 'https://mainnet.base.org',
-    useAtomicBundles: true
-};
-
-function reinitExecutionConfig() {
-    EXECUTION_CONFIG.zeroExApiKey = _cfg_d(localStorage.getItem('ta_0x_api_key')) || '';
-    console.log('[Execution] Config re-initialized');
-}
 
 const ExecutionState = {
     isExecuting: false,
     lastTxHash: null,
-    pendingTrades: new Map(),
-    mevProtectionActive: true
+    pendingTrades: new Map()
 };
-
-async function getSwapQuote(buyTokenAddress, sellTokenAddress, sellAmountWei, takerAddress) {
-    console.log(`[Execution] Fetching quote from 0x: ${sellTokenAddress} -> ${buyTokenAddress}`);
-
-    const params = new URLSearchParams({
-        buyToken: buyTokenAddress,
-        sellToken: sellTokenAddress,
-        sellAmount: sellAmountWei,
-        takerAddress: takerAddress,
-        slippagePercentage: EXECUTION_CONFIG.maxSlippage.toString(),
-    });
-
-    const headers = {
-        'Content-Type': 'application/json'
-    };
-    if (EXECUTION_CONFIG.zeroExApiKey) {
-        headers['0x-api-key'] = EXECUTION_CONFIG.zeroExApiKey;
-    }
-
-    try {
-        const response = await fetch(`${EXECUTION_CONFIG.zeroExApiUrl}/quote?${params.toString()}`, { headers });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(`0x API Error: ${error.reason || response.statusText}`);
-        }
-
-        return await response.json();
-    } catch (e) {
-        console.error('[Execution] Quote error:', e);
-        throw e;
-    }
-}
 
 async function executeOnChainTrade(tradeRequest) {
     if (ExecutionState.isExecuting) {
@@ -66,106 +15,46 @@ async function executeOnChainTrade(tradeRequest) {
     }
 
     const { botId, token, method, amountUSD } = tradeRequest;
-    console.log(`[Execution] EXECUTING REAL TRADE: Bot #${botId} - ${method} ${token} $${amountUSD}`);
-
-    const isConnected = (window.privyConnected) ||
-                        (window.walletState && window.walletState.isConnected);
-
-    if (!isConnected) {
-        throw new Error('Wallet not connected. Please login via Privy or connect MetaMask.');
-    }
+    console.log(`[Execution Bridge] EXECUTING: Bot #${botId} - ${method} ${token} $${amountUSD}`);
 
     ExecutionState.isExecuting = true;
     updateExecutionUI(botId, 'PREPARING');
 
     try {
-        const userAddress = window.privyWalletAddress || (window.walletState && window.walletState.address);
-        const usdcAddress = TOKENS.USDC.address;
-        const targetTokenAddress = TOKENS[token]?.address;
+        // Map token symbol to address if needed
+        const tokenIn = method.includes('LONG') ? 'USDC' : token;
+        const tokenOut = method.includes('LONG') ? token : 'USDC';
 
-        if (!targetTokenAddress) throw new Error(`Token ${token} address unknown`);
-
-        const amountWei = (amountUSD * 1000000).toString(); // USDC 6 decimals
-        const buyToken = method.includes('LONG') ? targetTokenAddress : usdcAddress;
-        const sellToken = method.includes('LONG') ? usdcAddress : targetTokenAddress;
-
-        updateExecutionUI(botId, 'QUOTING');
-        const quote = await getSwapQuote(buyToken, sellToken, amountWei, userAddress);
-
-        // Security: Validate Chain ID before signing (strictly Base Mainnet 8453)
-        const expectedChainId = 8453;
-
-        updateExecutionUI(botId, 'SIGNING');
-
-        let txHash;
-        if (window.privyConnected && window.privyProvider) {
-            // Execute via Privy Embedded Wallet
-            const provider = await window.privyProvider.getEthersProvider();
-            const signer = provider.getSigner();
-            const tx = await signer.sendTransaction({
-                to: quote.to,
-                data: quote.data,
-                value: quote.value,
-                gasPrice: quote.gasPrice,
-            });
-            txHash = tx.hash;
-        } else if (window.ethereum) {
-            // Execute via MetaMask/Injected
-            const provider = new ethers.providers.Web3Provider(window.ethereum);
-            const network = await provider.getNetwork();
-            if (network.chainId !== expectedChainId) {
-                throw new Error(`Incorrect Network: Expected Base Mainnet (8453), but got ${network.chainId}. Please switch networks.`);
-            }
-            const signer = provider.getSigner();
-            const tx = await signer.sendTransaction({
-                to: quote.to,
-                data: quote.data,
-                value: quote.value,
-                gasPrice: quote.gasPrice,
-            });
-            txHash = tx.hash;
-        } else {
-            console.warn('[Execution] No wallet provider available for signing.');
-            throw new Error('No wallet provider available');
+        updateExecutionUI(botId, 'EXECUTING');
+        
+        // Call the new Ethers v6 engine
+        if (typeof window.executeRealSwap !== 'function') {
+            throw new Error('Blockchain Engine not loaded. Please refresh.');
         }
 
-        ExecutionState.lastTxHash = txHash;
-        updateExecutionUI(botId, 'MINING', txHash);
+        const result = await window.executeRealSwap(amountUSD, tokenIn, tokenOut, method);
 
-        const receipt = await waitForTransaction(txHash);
+        if (!result.success) {
+            throw new Error(result.error || 'Swap failed');
+        }
+
+        ExecutionState.lastTxHash = result.txHash;
+        updateExecutionUI(botId, 'COMPLETE', result.txHash);
+        
+        // Notify the UI about the receipt
+        if (window.addOnChainReceipt) {
+            window.addOnChainReceipt(result);
+        }
+
         ExecutionState.isExecuting = false;
-        updateExecutionUI(botId, 'COMPLETE', txHash);
-
-        return { success: true, txHash, receipt };
+        return result;
 
     } catch (e) {
         ExecutionState.isExecuting = false;
         updateExecutionUI(botId, 'ERROR', e.message);
-        console.error('[Execution] Trade failed:', e);
+        console.error('[Execution Bridge] Trade failed:', e);
         throw e;
     }
-}
-
-async function waitForTransaction(hash) {
-    console.log(`[Execution] Waiting for tx: ${hash}`);
-    const provider = (window.privyConnected && window.privyProvider)
-        ? await window.privyProvider.getEthersProvider()
-        : (window.ethereum ? new ethers.providers.Web3Provider(window.ethereum) : null);
-
-    if (provider) {
-        const receipt = await provider.waitForTransaction(hash);
-        if (receipt && receipt.status === 0) {
-            throw new Error('Transaction reverted on-chain.');
-        }
-        return receipt;
-    }
-
-    if (window.isLiveMode) {
-        throw new Error('No wallet provider available to fetch receipt in LIVE mode.');
-    }
-
-    await new Promise(r => setTimeout(r, 3000));
-    return { status: 1, blockNumber: 12345678 };
 }
 
 function updateExecutionUI(botId, status, detail = '') {
@@ -174,7 +63,7 @@ function updateExecutionUI(botId, status, detail = '') {
 
     const colors = {
         'PREPARING': 'var(--dim)',
-        'QUOTING': 'var(--blue)',
+        'EXECUTING': 'var(--blue)',
         'SIGNING': 'var(--amber)',
         'MINING': 'var(--purple)',
         'COMPLETE': 'var(--green)',
@@ -192,5 +81,5 @@ function updateExecutionUI(botId, status, detail = '') {
 }
 
 window.executeOnChainTrade = executeOnChainTrade;
-window.getSwapQuote = getSwapQuote;
-window.reinitExecutionConfig = reinitExecutionConfig;
+window.ExecutionState = ExecutionState;
+console.log('✅ Execution Engine Bridge (V6) loaded');
