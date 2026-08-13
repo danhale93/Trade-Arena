@@ -374,7 +374,7 @@ function queueBotDeployment(deposit) {
 app.get('/api/config', (req, res) => {
     res.json({
         privyAppId: process.env.PRIVY_APP_ID || 'cmpl1hc0k00ui0djsr3qo8gg8',
-        baseRpcUrl: process.env.BASE_RPC_URL || 'https://base-mainnet.g.alchemy.com/v2/3zUWwmlHTQNjmM55sV2X0',
+        baseRpcUrl: process.env.BASE_RPC_URL || process.env.RPC_URL || 'https://base-mainnet.g.alchemy.com/v2/3zUWwmlHTQNjmM55sV2X0',
         moonpayPublicKey: process.env.MOONPAY_PUBLIC_KEY || '',
         googleClientId: process.env.GOOGLE_CLIENT_ID || ''
     });
