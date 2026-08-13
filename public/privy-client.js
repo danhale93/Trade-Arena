@@ -149,22 +149,8 @@ async function privyLoginGoogle() {
  * Fallback: Simple Google OAuth flow (no Privy SDK required)
  */
 async function privyFallbackGoogleLogin() {
-    console.log('[Privy] Using fallback Google login...');
-    
-    // TODO: Replace with your Google OAuth credentials
-    // For now, generate a simulated wallet address
-    const mockAddress = '0x' + generateRandomAddress();
-    
-    privyWalletAddress = mockAddress;
-    privyConnected = true;
-    privyUser = {
-        email: 'user@gmail.com',
-        name: 'Google User',
-        id: 'mock-user-id'
-    };
-    
-    console.log('[Privy] Fallback login:', privyWalletAddress);
-    onPrivyLoginSuccess();
+    console.log('[Privy] Google Login Fallback disabled - please use real MetaMask or Privy connection.');
+    if (window.showToast) window.showToast('Please use real wallet connection.', 'error');
 }
 
 /**

@@ -85,6 +85,14 @@ const walletState = window.walletState;
  * Ensures that external wallets (MetaMask) take precedence over embedded ones.
  */
 function setWalletState(newState) {
+    // 🛡️ ADDRESS MATCH: If the address is the same, always allow the update (e.g. refreshing provider/signer)
+    if (newState.address && walletState.address && 
+        newState.address.toLowerCase() === walletState.address.toLowerCase()) {
+        Object.assign(walletState, newState);
+        window.dispatchEvent(new CustomEvent('walletStateChanged', { detail: walletState }));
+        return;
+    }
+
     // 🛡️ STRICT OVERRIDE: If we are connected to the preferred MetaMask address, 
     // block ANY attempt to switch to the embedded Privy wallet.
     if (walletState.address?.toLowerCase() === walletState.preferredAddress?.toLowerCase() && 
