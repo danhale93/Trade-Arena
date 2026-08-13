@@ -115,9 +115,13 @@ async function executeRealSwap(betUSD, tokenIn, tokenOut, method) {
 async function get0xSwapQuote(betUSD, tokenIn, tokenOut) {
   console.log('[get0xSwapQuote] Fetching quote...', { betUSD, tokenIn, tokenOut });
   try {
+    // 🛡️ Resolve robust addresses for Base network
+    const sellTokenAddr = typeof window.getTokenAddress === 'function' ? window.getTokenAddress(tokenIn) : tokenIn;
+    const buyTokenAddr = typeof window.getTokenAddress === 'function' ? window.getTokenAddress(tokenOut) : tokenOut;
+    
     // Determine the sell amount in the correct token's decimals
     let sellAmount;
-    const isSellEth = tokenIn.toLowerCase() === '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee' || tokenIn.toLowerCase() === 'eth';
+    const isSellEth = tokenIn.toLowerCase() === 'eth' || sellTokenAddr === '0x4200000000000000000000000000000000000006';
     
     if (isSellEth) {
       const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
@@ -126,15 +130,20 @@ async function get0xSwapQuote(betUSD, tokenIn, tokenOut) {
       sellAmount = ethers.parseEther((betUSD / ethPrice).toFixed(18));
       console.log('[get0xSwapQuote] Sell ETH amount:', sellAmount.toString());
     } else {
-      // Assume USDC (6 decimals) if not ETH
-      sellAmount = ethers.parseUnits(betUSD.toString(), 6);
-      console.log('[get0xSwapQuote] Sell USDC amount:', sellAmount.toString());
+      // Use decimals from TOKENS if available, default to 6 for USDC/USDbC
+      let decimals = 6;
+      if (typeof TOKENS !== 'undefined') {
+          const t = Object.values(TOKENS).find(tk => tk.address.toLowerCase() === sellTokenAddr.toLowerCase());
+          if (t) decimals = t.decimals;
+      }
+      sellAmount = ethers.parseUnits(betUSD.toString(), decimals);
+      console.log(`[get0xSwapQuote] Sell ${tokenIn} amount (${decimals} decimals):`, sellAmount.toString());
     }
 
     const apiUrl = new URL('/api/0x/quote', window.location.origin);
     apiUrl.searchParams.append('chainId', '8453');
-    apiUrl.searchParams.append('sellToken', isSellEth ? 'ETH' : tokenIn);
-    apiUrl.searchParams.append('buyToken', tokenOut.toLowerCase() === 'eth' ? 'ETH' : tokenOut);
+    apiUrl.searchParams.append('sellToken', sellTokenAddr);
+    apiUrl.searchParams.append('buyToken', buyTokenAddr);
     apiUrl.searchParams.append('sellAmount', sellAmount.toString());
     apiUrl.searchParams.append('slippagePercentage', '0.01'); // 1% slippage for safety
 

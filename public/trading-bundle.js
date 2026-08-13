@@ -848,6 +848,9 @@ const NETWORK_TOKENS = {
     WETH: { address: "0x4200000000000000000000000000000000000006", symbol: "WETH", decimals: 18, name: "Wrapped Ethereum" },
     USDC: { address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", symbol: "USDC", decimals: 6, name: "USD Coin" },
     USDbC: { address: "0xd9aAEc860b8293fb2064Ef2953eF989f7f72396f", symbol: "USDbC", decimals: 6, name: "USD Base Coin" },
+    BTC: { address: "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf", symbol: "cbBTC", decimals: 8, name: "Coinbase Wrapped BTC" },
+    SOL: { address: "0x29683838D64aB2eB75757d59048a60f9e15f3366", symbol: "SOL", decimals: 9, name: "Wormhole SOL" },
+    PEPE: { address: "0x698dc45e4f10966f6d1d98e3bfd7071d8144c233", symbol: "PEPE", decimals: 18, name: "Pepe on Base" },
   },
   84532: { // Sepolia
     WETH: { address: "0x4200000000000000000000000000000000000006", symbol: "WETH", decimals: 18, name: "Wrapped Ethereum" },
@@ -857,7 +860,7 @@ const NETWORK_TOKENS = {
   }
 };
 
-var TOKENS = NETWORK_TOKENS[8453]; // Default to mainnet
+var TOKENS = window.TOKENS || NETWORK_TOKENS[8453]; // Prioritize enhanced TOKENS from contract-helpers.js
 
 const NETWORK_PROTOCOLS = {
   8453: { // Mainnet

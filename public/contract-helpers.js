@@ -68,9 +68,75 @@ if (typeof TOKENS === 'undefined') {
             symbol: 'OP',
             decimals: 18,
             name: 'Optimism'
+        },
+        BTC: {
+            address: '0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf', // cbBTC
+            symbol: 'cbBTC',
+            decimals: 8,
+            name: 'Coinbase Wrapped BTC'
+        },
+        WBTC: {
+            address: '0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf', // Aliasing WBTC to cbBTC for liquidity
+            symbol: 'cbBTC',
+            decimals: 8,
+            name: 'Coinbase Wrapped BTC'
+        },
+        SOL: {
+            address: '0x29683838D64aB2eB75757d59048a60f9e15f3366',
+            symbol: 'SOL',
+            decimals: 9,
+            name: 'Wormhole SOL'
+        },
+        PEPE: {
+            address: '0x698dc45e4f10966f6d1d98e3bfd7071d8144c233',
+            symbol: 'PEPE',
+            decimals: 18,
+            name: 'Pepe on Base'
+        },
+        AERO: {
+            address: '0x940181a94A35A4569E4529A3CDfB74e38FD98631',
+            symbol: 'AERO',
+            decimals: 18,
+            name: 'Aerodrome'
+        },
+        DOGE: {
+            address: '0xafb89a09d82fbde58f18ac6437b3fc81724e4df6',
+            symbol: 'DOG',
+            decimals: 18,
+            name: 'Own The Doge'
         }
     };
 }
+
+/**
+ * Robust Token Address Resolver
+ * Maps symbols to canonical Base contract addresses
+ */
+function getTokenAddress(symbol) {
+    if (!symbol) return null;
+    const s = symbol.toUpperCase();
+    
+    // Direct match
+    if (TOKENS[s]) return TOKENS[s].address;
+    
+    // Common aliases
+    const aliases = {
+        'ETH': TOKENS.WETH.address,
+        'WETH': TOKENS.WETH.address,
+        'USDC': TOKENS.USDC.address,
+        'BTC': TOKENS.BTC.address,
+        'WBTC': TOKENS.BTC.address,
+        'CBETHER': TOKENS.WETH.address, // Fallback
+    };
+    
+    if (aliases[s]) return aliases[s];
+    
+    // Return original if it looks like an address
+    if (symbol.startsWith('0x')) return symbol;
+    
+    return null;
+}
+window.getTokenAddress = getTokenAddress;
 
 // DEX & Protocol Addresses on Base
 var PROTOCOLS = {
