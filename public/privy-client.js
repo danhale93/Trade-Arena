@@ -10,7 +10,7 @@
 
 var PRIVY_CONFIG = {
     // Privy App ID from dashboard.privy.com
-    appId: 'cmpl1hc0k00ui0djsr3qo8gg8',
+    appId: 'cmpl1hc0k00ui0djsr3qo8gg8', // Fallback
     // JWKS URL for token verification
     jwksUrl: 'https://auth.privy.io/api/v1/apps/cmpl1hc0k00ui0djsr3qo8gg8/jwks.json',
     // Base mainnet ONLY - NO network dropdown
@@ -24,6 +24,21 @@ var PRIVY_CONFIG = {
     // Hide blockchain complexity from user
     hideBlockchain: true,
 };
+
+// 🛡️ DYNAMIC CONFIG: Load Privy App ID from backend
+(async function() {
+    try {
+        const response = await fetch('/api/config');
+        const config = await response.json();
+        if (config.privyAppId) {
+            PRIVY_CONFIG.appId = config.privyAppId;
+            PRIVY_CONFIG.jwksUrl = `https://auth.privy.io/api/v1/apps/${config.privyAppId}/jwks.json`;
+            console.log('[Config] Privy App ID updated from backend');
+        }
+    } catch (e) {
+        console.warn('[Config] Failed to load dynamic Privy config');
+    }
+})();
 
 // Privy state
 if (typeof window.privyUser === 'undefined') window.privyUser = null;

@@ -18,7 +18,7 @@ const REAL_WALLET_CONFIG = {
   network: {
     id: 8453,
     name: 'Base Mainnet',
-    rpcUrl: 'https://base-mainnet.g.alchemy.com/v2/3zUWwmlHTQNjmM55sV2X0',
+    rpcUrl: 'https://base-mainnet.g.alchemy.com/v2/3zUWwmlHTQNjmM55sV2X0', // Fallback
     chainId: '0x2105',
     explorerUrl: 'https://basescan.org',
     nativeCurrency: 'ETH',
@@ -67,6 +67,17 @@ let walletState = {
   nonce: 0,
   transactions: [],
 };
+
+// 🛡️ DYNAMIC CONFIG: Load RPC from backend
+(async function() {
+    try {
+        const response = await fetch('/api/config');
+        const config = await response.json();
+        if (config.baseRpcUrl) {
+            REAL_WALLET_CONFIG.network.rpcUrl = config.baseRpcUrl;
+        }
+    } catch (e) {}
+})();
 
 // ═══════════════════════════════════════════════════════════
 // METAMASK EVENT LISTENERS & SETUP

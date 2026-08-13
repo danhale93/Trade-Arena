@@ -6,10 +6,9 @@
  */
 
 const AI_CONFIG = {
-  apiKey: process.env.ANTHROPIC_API_KEY || null,
-  model: 'claude-sonnet-4-20250514',
-  maxTokens: 400,
-endpoint: 'http://localhost:3001/api/claude',
+  model: 'claude-3-5-sonnet-20240620',
+  maxTokens: 1024,
+  endpoint: '/api/claude',
 };
 
 /**
@@ -71,17 +70,10 @@ IMPORTANT:
   * LOSS: -0.2x to -0.9x of bet amount`;
 
   try {
-    if (!AI_CONFIG.apiKey) {
-      console.warn('⚠️ No API key found. Using fallback decision.');
-      return fallbackDecision(bet);
-    }
-
     const response = await fetch(AI_CONFIG.endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': AI_CONFIG.apiKey,
-        'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
         model: AI_CONFIG.model,

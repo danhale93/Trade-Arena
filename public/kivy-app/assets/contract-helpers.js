@@ -7,7 +7,7 @@
 var BASE_CONFIG = {
     chainId: 8453,
     name: 'Base Mainnet',
-    rpcUrl: 'https://base-mainnet.g.alchemy.com/v2/3zUWwmlHTQNjmM55sV2X0',
+    rpcUrl: 'https://base-mainnet.g.alchemy.com/v2/3zUWwmlHTQNjmM55sV2X0', // Fallback
     blockExplorerUrl: 'https://basescan.org',
     currency: {
         name: 'Ethereum',
@@ -15,6 +15,17 @@ var BASE_CONFIG = {
         decimals: 18
     }
 };
+
+// 🛡️ DYNAMIC CONFIG: Load RPC from backend
+(async function() {
+    try {
+        const response = await fetch('/api/config');
+        const config = await response.json();
+        if (config.baseRpcUrl) {
+            BASE_CONFIG.rpcUrl = config.baseRpcUrl;
+        }
+    } catch (e) {}
+})();
 
 // Token Addresses on Base
 if (typeof TOKENS === 'undefined') {
