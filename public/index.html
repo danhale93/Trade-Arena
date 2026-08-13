@@ -723,7 +723,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 <!-- Service Worker & Cache Hard Reset -->
 	<script>
 	  (function() {
-	    const CURRENT_VERSION = '4.3.4';
+	    const CURRENT_VERSION = '4.3.5';
 	    const lastVersion = localStorage.getItem('ta_app_version');
     
     if (lastVersion !== CURRENT_VERSION) {
@@ -759,7 +759,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 <div class="edge"></div>
 
 <!-- ══ CONNECT ══ -->
-<div style="position:fixed; top:10px; right:10px; background:var(--hot); color:white; padding:5px 10px; font-size:10px; z-index:10000; border-radius:4px; font-family:'Bungee'; box-shadow:0 0 10px var(--hot);">LIVE V4.3.44</div>
+<div style="position:fixed; top:10px; right:10px; background:var(--hot); color:white; padding:5px 10px; font-size:10px; z-index:10000; border-radius:4px; font-family:'Bungee'; box-shadow:0 0 10px var(--hot);">LIVE V4.3.5</div>
 <div id="connectScreen">
   <div class="marquee-wrap">
     <div class="marquee-inner">
@@ -6418,19 +6418,19 @@ document.addEventListener('keydown', function(e) {
 
 </script>
 <!-- Arena React Bundle -->
-<script src="arena-react-bundle.js?v=4.3.4" defer></script>
-<script src="app.js?v=4.3.4" defer></script>
+<script src="arena-react-bundle.js?v=4.3.5" defer></script>
+<script src="app.js?v=4.3.5" defer></script>
 
 <!-- ACOUSTIC Audio-Visual Engines -->
-<script src="acoustic-bundle.js?v=4.3.2" defer></script>
-<script src="ACOUSTIC_CORE.js?v=4.3.2" defer></script>
-<script src="trading-bundle.js?v=4.3.2" defer></script>
-<script src="task-center.js?v=4.3.2" defer></script>
-<script src="gas-fund.js?v=4.3.2" defer></script>
-<script src="management-bundle.js?v=4.3.2" defer></script>
+<script src="acoustic-bundle.js?v=4.3.5" defer></script>
+<script src="ACOUSTIC_CORE.js?v=4.3.5" defer></script>
+<script src="trading-bundle.js?v=4.3.5" defer></script>
+<script src="task-center.js?v=4.3.5" defer></script>
+<script src="gas-fund.js?v=4.3.5" defer></script>
+<script src="management-bundle.js?v=4.3.5" defer></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  console.log('🚀 Trade Arena V4.3.3 Initialized');
+  console.log('🚀 Trade Arena V4.3.5 Initialized');
   const savedTheme = localStorage.getItem('ta_theme') || 'default';
   if (typeof applyTheme === 'function') {
     applyTheme(savedTheme, false);
@@ -6439,6 +6439,21 @@ document.addEventListener('DOMContentLoaded', function() {
     updateConnectionDashboard();
   }
   // Auto-connect disabled to prevent broadcast channel crashes on boot
+  
+  // Real-time Balance Sync (V4.3.5)
+  setInterval(async () => {
+    if (window.walletState && window.walletState.isConnected && window.getWalletBalanceUSD) {
+      try {
+        const liveBalance = await window.getWalletBalanceUSD();
+        if (liveBalance !== undefined && liveBalance !== null) {
+          balance = liveBalance;
+          if (typeof updateLiveBalance === 'function') updateLiveBalance();
+        }
+      } catch (e) {
+        console.warn('[BalanceSync] Failed:', e);
+      }
+    }
+  }, 5000); // Sync every 5 seconds
 
   // Keyboard navigation for Task Center Tablist (role="tablist")
   const taskTablist = document.getElementById('taskTablist');

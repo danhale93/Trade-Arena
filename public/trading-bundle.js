@@ -1823,25 +1823,57 @@ if (typeof module !== 'undefined' && module.exports) {
  * Added by Jules for on-chain execution engine support
  */
 async function getWalletBalanceUSD() {
-    if (!walletState.address) return 0;
+    // Priority: window.walletState.address (connected) -> walletState.address
+    const address = window.walletState?.address || walletState.address;
+    if (!address) return 0;
 
     try {
-        const provider = new ethers.providers.JsonRpcProvider(REAL_WALLET_CONFIG.network.rpcUrl);
-        const ethBalance = await provider.getBalance(walletState.address);
+        let provider;
+        // Robust provider detection
+        if (window.privyProvider && typeof window.privyProvider.getEthersProvider === 'function') {
+            provider = await window.privyProvider.getEthersProvider();
+        } else if (window.walletState && window.walletState.provider) {
+            provider = window.walletState.provider;
+        } else if (window.ethereum) {
+            provider = new ethers.BrowserProvider(window.ethereum);
+        } else {
+            // Ethers v6 JsonRpcProvider
+            provider = new ethers.JsonRpcProvider(REAL_WALLET_CONFIG.network.rpcUrl);
+        }
+
+        const ethBalance = await provider.getBalance(address);
+        
         // Fallback price if getLivePrice fails
         let ethPrice = 2500;
         if (typeof getLivePrice === 'function') {
-            const livePrice = await getLivePrice('ETH');
-            if (livePrice) ethPrice = livePrice;
+            try {
+                const livePrice = await getLivePrice('ETH');
+                if (livePrice) ethPrice = livePrice;
+            } catch (pErr) {
+                console.warn('[RealWallet] Price fetch failed, using fallback:', pErr);
+            }
         }
 
-        walletState.balanceETH = parseFloat(ethers.formatEther(ethBalance));
-        walletState.balanceUSD = walletState.balanceETH * ethPrice;
+        const balanceETH = parseFloat(ethers.formatEther(ethBalance));
+        const balanceUSD = balanceETH * ethPrice;
 
-        return walletState.balanceUSD;
+        // Sync both global and local state
+        if (window.walletState) {
+            window.walletState.balanceETH = balanceETH;
+            window.walletState.balanceUSD = balanceUSD;
+        }
+        walletState.balanceETH = balanceETH;
+        walletState.balanceUSD = balanceUSD;
+
+        // Sync the main app 'balance' variable if it exists
+        if (typeof balance !== 'undefined') {
+            window.balance = balanceUSD;
+        }
+
+        return balanceUSD;
     } catch (e) {
         console.error('[RealWallet] Balance fetch failed:', e);
-        return walletState.balanceUSD || 0;
+        return window.walletState?.balanceUSD || walletState.balanceUSD || 0;
     }
 }
 /**
