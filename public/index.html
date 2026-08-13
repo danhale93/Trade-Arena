@@ -731,7 +731,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 <div class="edge"></div>
 
 <!-- ══ CONNECT ══ -->
-<div style="position:fixed; top:10px; right:10px; background:var(--hot); color:white; padding:5px 10px; font-size:10px; z-index:10000; border-radius:4px; font-family:'Bungee'; box-shadow:0 0 10px var(--hot);">LIVE V4.2.8</div>
+<div style="position:fixed; top:10px; right:10px; background:var(--hot); color:white; padding:5px 10px; font-size:10px; z-index:10000; border-radius:4px; font-family:'Bungee'; box-shadow:0 0 10px var(--hot);">LIVE V4.2.9</div>
 <div id="connectScreen">
   <div class="marquee-wrap">
     <div class="marquee-inner">
@@ -761,13 +761,18 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         <button class=offramp-btn onclick="openWithdrawModal()" style="flex:1">💵 WITHDRAW</button>
       </div>
       
-      <div style="margin-top:8px; text-align:center; display:flex; justify-content:center; gap:10px;">
-        <button onclick="alert('Browser: ' + navigator.userAgent + '\nMetaMask: ' + (!!window.ethereum) + '\nPrivy: ' + (typeof privyLogin))" style="background:none; border:none; color:var(--dim); font-size:9px; text-decoration:underline; cursor:pointer;">
-          DIAGNOSTICS
+      <div style="margin-top:8px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:8px;">
+        <button onclick="if(typeof demoMode === 'function') demoMode(); else { document.getElementById('connectScreen').style.display='none'; document.getElementById('mainApp').style.display='flex'; }" style="width:100%; height:32px; background:rgba(255,255,255,0.05); border:1px solid var(--border); color:var(--dim); font-family:'Bungee'; font-size:10px; cursor:pointer; border-radius:4px;">
+          SKIP LOGIN (DEMO MODE)
         </button>
-        <button onclick="if(window.navigator.serviceWorker){navigator.serviceWorker.getRegistrations().then(regs=>{for(let r of regs)r.unregister()});} caches.keys().then(keys=>{for(let k of keys)caches.delete(k)}); location.reload(true);" style="background:none; border:none; color:var(--dim); font-size:9px; text-decoration:underline; cursor:pointer;">
-          FORCE RELOAD
-        </button>
+        <div style="display:flex; justify-content:center; gap:10px;">
+          <button onclick="alert('Browser: ' + navigator.userAgent + '\nMetaMask: ' + (!!window.ethereum) + '\nPrivy: ' + (typeof privyLogin))" style="background:none; border:none; color:var(--dim); font-size:9px; text-decoration:underline; cursor:pointer;">
+            DIAGNOSTICS
+          </button>
+          <button onclick="if(window.navigator.serviceWorker){navigator.serviceWorker.getRegistrations().then(regs=>{for(let r of regs)r.unregister()});} caches.keys().then(keys=>{for(let k of keys)caches.delete(k)}); location.reload(true);" style="background:none; border:none; color:var(--dim); font-size:9px; text-decoration:underline; cursor:pointer;">
+            FORCE RELOAD
+          </button>
+        </div>
       </div>
 
       <p style="font-size:9px; color:var(--dim); text-align:center; margin-top:8px; line-height:1.4">
@@ -3643,17 +3648,27 @@ function openOskoRamp(type) {
 
 
 
-window.onPrivyLoginSuccess = function() {
+window.onPrivyLoginSuccess = function(user, address) {
   const s = document.getElementById('loginStatus');
   if(s) s.textContent = '✅ Privy Authorized! Syncing Arena instance...';
 
+  // Use provided arguments or fallback to global window state
+  const activeUser = user || window.privyUser;
+  const activeAddress = address || window.privyWalletAddress;
+
   const userData = {
-    name: window.privyUser?.google?.name || window.privyUser?.email?.address || 'Arena Trader',
-    email: window.privyUser?.email?.address || window.privyUser?.google?.email,
-    address: window.privyWalletAddress,
+    name: activeUser?.google?.name || activeUser?.email?.address || 'Arena Trader',
+    email: activeUser?.email?.address || activeUser?.google?.email,
+    address: activeAddress,
     provider: 'privy',
     badge: '💠 PRIVY'
   };
+
+  // Transition to main app immediately to prevent blocking
+  const cs = document.getElementById('connectScreen');
+  const app = document.getElementById('mainApp');
+  if (cs) cs.style.display = 'none';
+  if (app) { app.style.display = 'flex'; app.style.flexDirection = 'column'; }
 
   fetch('/api/user/login', {
     method: 'POST',
@@ -3666,6 +3681,10 @@ window.onPrivyLoginSuccess = function() {
       if(typeof balance !== 'undefined') balance = data.user.balance || 0;
       if(typeof setupApp === 'function') setupApp({ ...userData, ...data.user });
     }
+  }).catch(err => {
+      console.error('Privy Sync Error:', err);
+      // Even if API fails, ensure app is set up with local data
+      if(typeof setupApp === 'function') setupApp(userData);
   });
 };
 
