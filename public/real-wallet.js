@@ -301,8 +301,18 @@ async function validateNetwork(provider) {
 // ═══════════════════════════════════════════════════════════
 
 async function getWalletBalance() {
+  // 🛡️ Robust Provider Detection: Try to recover if provider is missing
+  if (!walletState.provider && typeof window !== 'undefined' && window.ethereum) {
+    try {
+      walletState.provider = new ethers.BrowserProvider(window.ethereum);
+      console.log('[Sync] Provider recovered in getWalletBalance');
+    } catch (e) {
+      console.warn('[Sync] Failed to recover provider:', e);
+    }
+  }
+
   if (!walletState.provider || !walletState.address) {
-    console.error('Provider or address not available');
+    // Silent fail if not ready yet to avoid console noise
     return null;
   }
   

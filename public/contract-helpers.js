@@ -146,7 +146,7 @@ var ABIS = window.ABIS;
  * Helper Class for Smart Contract Interactions
  */
 if (typeof window.ContractHelper === 'undefined') {
-window.ContractHelper = class ContractHelper {
+window.ContractHelper = class {
     constructor(provider, signer) {
         this.provider = provider;
         this.signer = signer;
@@ -293,7 +293,7 @@ var ContractHelper = window.ContractHelper;
 /**
  * MEV & Security Utilities
  */
-class SecurityHelper {
+var SecurityHelper = window.SecurityHelper || class {
     /**
      * Instance wrapper for isStablecoin
      */
@@ -374,7 +374,7 @@ class SecurityHelper {
 /**
  * Arbitrage Opportunity Analyzer
  */
-class ArbitrageAnalyzer {
+var ArbitrageAnalyzer = window.ArbitrageAnalyzer || class {
     /**
      * Calculate arbitrage profit considering all fees
      */
@@ -419,7 +419,7 @@ class ArbitrageAnalyzer {
 /**
  * Flash Loan Strategy Simulator
  */
-class FlashLoanSimulator {
+var FlashLoanSimulator = window.FlashLoanSimulator || class {
     /**
      * Simulate liquidation profit
      */

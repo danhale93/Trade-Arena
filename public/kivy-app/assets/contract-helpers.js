@@ -143,7 +143,7 @@ var ABIS = window.ABIS;
  * Helper Class for Smart Contract Interactions
  */
 if (typeof window.ContractHelper === 'undefined') {
-window.ContractHelper = class ContractHelper {
+window.ContractHelper = class {
     constructor(provider, signer) {
         this.provider = provider;
         this.signer = signer;

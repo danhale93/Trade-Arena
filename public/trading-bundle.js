@@ -14,7 +14,7 @@
 // MasterSwitch removed — global AUTO is now in the header (globalAutoToggle)
 
 if (false) {
-  class MasterSwitch {
+  var MasterSwitch = window.MasterSwitch || class {
     constructor() {
       this.isEnabled = localStorage.getItem("ta_master_enabled") !== "false";
       this.lastToggleTime = 0;
@@ -278,7 +278,7 @@ if (false) {
 // REAL-TIME BALANCE UPDATER (500MS)
 // ══════════════════════════════════════════════════════
 
-class BalanceUpdater {
+var BalanceUpdater = window.BalanceUpdater || class {
   constructor() {
     this.updateInterval = 500; // REAL-TIME - every 500ms
     this.lastDisplayBalance = 0;
@@ -438,7 +438,7 @@ class BalanceUpdater {
 // AUTO-RECOVERY & CONNECTION MANAGEMENT
 // ══════════════════════════════════════════════════════
 
-class AutoRecovery {
+var AutoRecovery = window.AutoRecovery || class {
   constructor() {
     this.isOnline = navigator.onLine;
     this.reconnectAttempts = 0;
@@ -517,7 +517,7 @@ const TRADING_TOKEN_MAP = {
   MATIC: "matic-network",
 };
 
-class RealMarketPricing {
+var RealMarketPricing = window.RealMarketPricing || class {
   constructor() {
     this.priceCache = {};
     this.cacheAge = 30000; // 30 seconds
@@ -914,7 +914,7 @@ var ABIS = window.ABIS;
  * Helper Class for Smart Contract Interactions
  */
 if (typeof window.ContractHelper === 'undefined') {
-window.ContractHelper = class ContractHelper {
+window.ContractHelper = class {
   /**
    * Switch helper context to a specific network
    */
@@ -1058,7 +1058,7 @@ var ContractHelper = window.ContractHelper;
 /**
  * MEV & Security Utilities
  */
-class SecurityHelper {
+var SecurityHelper = window.SecurityHelper || class {
   static isStablecoin(tokenSymbol) {
     return _STABLECOIN_SET.has(tokenSymbol);
   }
@@ -1106,7 +1106,7 @@ class SecurityHelper {
 /**
  * Arbitrage Opportunity Analyzer
  */
-class ArbitrageAnalyzer {
+var ArbitrageAnalyzer = window.ArbitrageAnalyzer || class {
   static calculateArbitrage(buyPrice, sellPrice, amountUSD, gasPrice = 50) {
     const gasEstimate = 150000;
     const gasCost = (gasPrice * gasEstimate) / 1e9;
@@ -1139,7 +1139,7 @@ class ArbitrageAnalyzer {
 /**
  * Flash Loan Strategy Simulator
  */
-class FlashLoanSimulator {
+var FlashLoanSimulator = window.FlashLoanSimulator || class {
   static simulateLiquidation(borrowedAmount, targetDebtAmount, collateralPrice) {
     const flashLoanFee = borrowedAmount * 0.0009;
     const liquidationBonus = targetDebtAmount * 0.05;
@@ -1180,22 +1180,10 @@ if (typeof module !== "undefined" && module.exports) {
   };
 }
 /**
- * REAL WALLET INTEGRATION MODULE
- * Trade Arena v4 • MetaMask Real Funds Trading
- *
- * Handles:
- * - Gas fee estimation
- * - Real transaction simulation
- * - Balance tracking with fees
- * - Network validation
- * - Transaction history
+ * REAL WALLET INTEGRATION MODULE (LEGACY BUNDLE)
+ * Guarded to prevent overwriting new real-wallet.js logic
  */
-
-// ═══════════════════════════════════════════════════════════
-// CONFIGURATION
-// ═══════════════════════════════════════════════════════════
-
-
+if (typeof window.REAL_WALLET_INITIALIZED === 'undefined') {
 const REAL_WALLET_NETWORKS = {
   8453: {
     id: 8453,
@@ -1831,13 +1819,14 @@ if (typeof module !== 'undefined' && module.exports) {
  * Added by Jules for on-chain execution engine support
  */
 async function getWalletBalanceUSD() {
-    // Priority: window.walletState.address (connected) -> walletState.address
+    if (window.getWalletBalanceUSD && window.getWalletBalanceUSD !== getWalletBalanceUSD) {
+        return await window.getWalletBalanceUSD();
+    }
+    // ... existing logic ...
     const address = window.walletState?.address || walletState.address;
     if (!address) return 0;
-
     try {
         let provider;
-        // Robust provider detection
         if (window.privyProvider && typeof window.privyProvider.getEthersProvider === 'function') {
             provider = await window.privyProvider.getEthersProvider();
         } else if (window.walletState && window.walletState.provider) {
@@ -1845,13 +1834,9 @@ async function getWalletBalanceUSD() {
         } else if (window.ethereum) {
             provider = new ethers.BrowserProvider(window.ethereum);
         } else {
-            // Ethers v6 JsonRpcProvider
             provider = new ethers.JsonRpcProvider(REAL_WALLET_CONFIG.network.rpcUrl);
         }
-
         const ethBalance = await provider.getBalance(address);
-        
-        // Fallback price if getLivePrice fails
         let ethPrice = 2500;
         if (typeof getLivePrice === 'function') {
             try {
@@ -1861,29 +1846,24 @@ async function getWalletBalanceUSD() {
                 console.warn('[RealWallet] Price fetch failed, using fallback:', pErr);
             }
         }
-
         const balanceETH = parseFloat(ethers.formatEther(ethBalance));
         const balanceUSD = balanceETH * ethPrice;
-
-        // Sync both global and local state
         if (window.walletState) {
             window.walletState.balanceETH = balanceETH;
             window.walletState.balanceUSD = balanceUSD;
         }
         walletState.balanceETH = balanceETH;
         walletState.balanceUSD = balanceUSD;
-
-        // Sync the main app 'balance' variable if it exists
         if (typeof balance !== 'undefined') {
             window.balance = balanceUSD;
         }
-
         return balanceUSD;
     } catch (e) {
         console.error('[RealWallet] Balance fetch failed:', e);
         return window.walletState?.balanceUSD || walletState.balanceUSD || 0;
     }
 }
+} // End of REAL_WALLET_INITIALIZED guard
 /**
  * CRUCIBLE REAL TRADING ENGINE
  * Live CoinGecko Data + Adaptive Signals + Real P&L Calculation
