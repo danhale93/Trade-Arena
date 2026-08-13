@@ -322,6 +322,20 @@ function privyDisconnect() {
     hideMainApp();
 }
 
+function privyLogin() {
+    console.log('[Privy] Login requested');
+    if (window.Privy && typeof window.Privy.login === 'function') {
+        try {
+            window.Privy.login();
+            return;
+        } catch (e) {
+            console.warn('[Privy] Widget login error, falling back:', e);
+        }
+    }
+    privyLoginGoogle();
+}
+window.privyLogin = privyLogin;
+
 // Export functions
 window.privyInit = privyInit;
 window.privyLoginGoogle = privyLoginGoogle;

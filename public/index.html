@@ -1523,7 +1523,12 @@ function escapeHTML(str) {
  */
 async function handleMetaMaskConnect() {
   if (!window.ethereum) {
-    showToast('MetaMask not found. Please install the extension.', 'error');
+    showToast('MetaMask extension not detected. Launching Privy / Social Login...', 'success');
+    if (typeof privyLogin === 'function') {
+      privyLogin();
+    } else if (typeof privyLoginGoogle === 'function') {
+      privyLoginGoogle();
+    }
     return;
   }
   const btn = document.getElementById('mmConnectBtn');
