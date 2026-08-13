@@ -8,7 +8,7 @@
  * 3. Configure embedded wallet for Base only
  */
 
-const PRIVY_CONFIG = {
+var PRIVY_CONFIG = {
     // Privy App ID from dashboard.privy.com
     appId: 'cmpl1hc0k00ui0djsr3qo8gg8',
     // JWKS URL for token verification

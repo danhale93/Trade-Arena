@@ -840,7 +840,7 @@ const BASE_SEPOLIA_CONFIG = {
   },
 };
 
-const BASE_CONFIG = {
+var BASE_CONFIG = {
   chainId: 8453,
   name: "Base Mainnet",
   rpcUrl: "https://mainnet.base.org",

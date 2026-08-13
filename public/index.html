@@ -731,7 +731,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 <div class="edge"></div>
 
 <!-- ══ CONNECT ══ -->
-<div style="position:fixed; top:10px; right:10px; background:var(--hot); color:white; padding:5px 10px; font-size:10px; z-index:10000; border-radius:4px; font-family:'Bungee'; box-shadow:0 0 10px var(--hot);">LIVE V4.2.9</div>
+<div style="position:fixed; top:10px; right:10px; background:var(--hot); color:white; padding:5px 10px; font-size:10px; z-index:10000; border-radius:4px; font-family:'Bungee'; box-shadow:0 0 10px var(--hot);">LIVE V4.3.0</div>
 <div id="connectScreen">
   <div class="marquee-wrap">
     <div class="marquee-inner">
@@ -1534,15 +1534,14 @@ function escapeHTML(str) {
  */
 async function handleMetaMaskConnect() {
   if (!window.ethereum) {
-    showToast('MetaMask extension not detected. Launching Privy / Social Login...', 'success');
     if (typeof handlePrivyClick === 'function') {
-      handlePrivyClick();
-    } else if (typeof privyLogin === 'function') {
-      privyLogin();
+      return handlePrivyClick();
     }
+    if (typeof showToast === 'function') showToast('No provider detected. Please install MetaMask or use Social Login.', 'error');
     return;
   }
   const btn = document.getElementById('mmConnectBtn');
+  const originalText = btn ? btn.textContent : 'CONNECT METAMASK (RECOMMENDED)';
   if (btn) {
     btn.disabled = true;
     btn.textContent = 'CONNECTING...';
@@ -1640,10 +1639,11 @@ async function handleMetaMaskConnect() {
       if (typeof refreshSettingsUI === 'function') refreshSettingsUI();
     }
   } catch (err) {
-    showToast(err.message, 'error');
+    console.error('MetaMask connection error:', err);
+    if (typeof showToast === 'function') showToast(err.message, 'error');
     if (btn) {
       btn.disabled = false;
-      btn.textContent = 'CONNECT METAMASK (RECOMMENDED)';
+      btn.textContent = originalText || 'CONNECT METAMASK (RECOMMENDED)';
     }
   }
 }

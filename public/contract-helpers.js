@@ -4,7 +4,7 @@
  */
 
 // Base Network Configuration
-const BASE_CONFIG = {
+var BASE_CONFIG = {
     chainId: 8453,
     name: 'Base Mainnet',
     rpcUrl: 'https://base-mainnet.g.alchemy.com/v2/3zUWwmlHTQNjmM55sV2X0',

@@ -830,7 +830,7 @@ window.updateHealthMetrics = function(health) {
     if (nodeEl && health.nodeVersion) {
         nodeEl.textContent = health.nodeVersion;
     }
-}
+};
 
 /**
  * CLIENT-SIDE CONSOLE INTERCEPTOR
