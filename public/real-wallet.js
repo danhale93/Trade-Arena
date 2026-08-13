@@ -22,6 +22,13 @@ const REAL_WALLET_CONFIG = {
     chainId: '0x2105',
     explorerUrl: 'https://basescan.org',
     nativeCurrency: 'ETH',
+    addParams: {
+      chainId: '0x2105',
+      chainName: 'Base Mainnet',
+      nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+      rpcUrls: ['https://mainnet.base.org'],
+      blockExplorerUrls: ['https://basescan.org']
+    }
   },
   
   gas: {
@@ -55,9 +62,11 @@ const REAL_WALLET_CONFIG = {
 // STATE TRACKING
 // ═══════════════════════════════════════════════════════════
 
-let walletState = {
+// 🛡️ UNIFIED GLOBAL STATE: Share walletState across all modules (Privy, App, Trading)
+window.walletState = window.walletState || {
   isConnected: false,
-  address: null,
+  address: typeof window !== 'undefined' ? localStorage.getItem('trade_arena_wallet_address') : null,
+  walletType: localStorage.getItem('trade_arena_wallet_type') || 'unknown', // 'metamask' or 'privy'
   balanceETH: 0,
   balanceUSD: 0,
   networkId: null,
@@ -66,39 +75,162 @@ let walletState = {
   signer: null,
   nonce: 0,
   transactions: [],
+  // 🛡️ STRICT ADDRESS LOCK: Prioritize this specific address if it ever connects
+  preferredAddress: '0x92CEAf1CA43deCfc443A34B915B45343BeE9c2DB'
 };
+const walletState = window.walletState;
+
+/**
+ * 🛡️ WALLET PRIORITY ENGINE
+ * Ensures that external wallets (MetaMask) take precedence over embedded ones.
+ */
+function setWalletState(newState) {
+    // 🛡️ STRICT OVERRIDE: If we are connected to the preferred MetaMask address, 
+    // block ANY attempt to switch to the embedded Privy wallet.
+    if (walletState.address?.toLowerCase() === walletState.preferredAddress?.toLowerCase() && 
+        newState.walletType === 'privy') {
+        console.log('[WalletPriority] STOCKED: Keeping preferred MetaMask address active.');
+        return;
+    }
+
+    // If current wallet is MetaMask and we're trying to set a Privy wallet, block it
+    if (walletState.walletType === 'metamask' && newState.walletType === 'privy') {
+        console.log('[WalletPriority] Blocking Privy overwrite - MetaMask is currently active.');
+        return;
+    }
+    
+    Object.assign(walletState, newState);
+    if (newState.address) {
+        localStorage.setItem('trade_arena_wallet_address', newState.address);
+        localStorage.setItem('trade_arena_wallet_type', newState.walletType || 'unknown');
+    }
+    
+    window.dispatchEvent(new CustomEvent('walletStateChanged', { detail: walletState }));
+}
+window.setWalletState = setWalletState;
 
 // ═══════════════════════════════════════════════════════════
 // METAMASK EVENT LISTENERS & SETUP
 // ═══════════════════════════════════════════════════════════
 
+// Auto-reconnect and initialize on load if previously connected
 if (typeof window !== 'undefined' && window.ethereum) {
+  window.addEventListener('DOMContentLoaded', async () => {
+    const savedAddress = localStorage.getItem('trade_arena_wallet_address');
+    if (savedAddress) {
+      console.log('🔄 Restoring previous wallet session for:', savedAddress);
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        if (accounts && accounts.length > 0) {
+          setWalletState({
+            address: accounts[0],
+            isConnected: true,
+            walletType: 'metamask',
+            provider: new ethers.BrowserProvider(window.ethereum)
+          });
+          walletState.signer = await walletState.provider.getSigner();
+          await validateNetwork(walletState.provider);
+          await getWalletBalance();
+          console.log('✅ MetaMask session restored successfully:', accounts[0]);
+        }
+      } catch (err) {
+        console.warn('⚠️ Failed to restore wallet session:', err);
+      }
+    }
+  });
+
+  // Proactive watcher for walletState initialization (e.g. from Privy bridge)
+  let lastConnectedState = false;
+  setInterval(async () => {
+    if (walletState.isConnected && walletState.provider && walletState.address) {
+      // If we just connected, or it's been 15 seconds, fetch balance
+      const now = Date.now();
+      const shouldFetch = !lastConnectedState || (now - (walletState.lastFetchTime || 0) > 15000);
+      
+      if (shouldFetch) {
+        try {
+          console.log('[RealWallet] Proactive sync triggered...');
+          await getWalletBalance();
+          walletState.lastFetchTime = now;
+          window.dispatchEvent(new CustomEvent('walletStateChanged', { detail: walletState }));
+        } catch (err) {
+          console.warn('[RealWallet] Background sync failed:', err.message);
+        }
+      }
+      lastConnectedState = true;
+    } else {
+      lastConnectedState = false;
+    }
+  }, 2000);
+
   try {
-    // Listen for account changes
-    window.ethereum.on('accountsChanged', (accounts) => {
+    // Listen for account changes with proactive balance fetch
+    window.ethereum.on('accountsChanged', async (accounts) => {
       try {
         console.log('👤 Account changed:', accounts);
         if (accounts.length > 0) {
-          walletState.address = accounts[0];
+          setWalletState({
+            address: accounts[0],
+            isConnected: true,
+            walletType: 'metamask'
+          });
+          
+          if (typeof ethers !== 'undefined' && window.ethereum) {
+            walletState.provider = new ethers.BrowserProvider(window.ethereum);
+            walletState.signer = await walletState.provider.getSigner();
+          }
+          await getWalletBalance();
         } else {
-          walletState.isConnected = false;
-          walletState.address = null;
+          setWalletState({
+            isConnected: false,
+            address: null,
+            walletType: 'none',
+            balanceETH: 0,
+            balanceUSD: 0,
+            provider: null,
+            signer: null
+          });
+          localStorage.removeItem('trade_arena_wallet_address');
+          localStorage.removeItem('trade_arena_wallet_type');
         }
       } catch (e) {
         console.warn('⚠️ Error in accountsChanged listener:', e);
       }
     });
     
-    // Listen for network changes
-    window.ethereum.on('chainChanged', (chainId) => {
+    // Listen for network changes with automatic programmatic switching
+    window.ethereum.on('chainChanged', async (chainId) => {
       try {
         console.log('🔗 Chain changed to:', chainId);
-        walletState.networkId = parseInt(chainId, 16);
-        walletState.isCorrectNetwork = walletState.networkId === REAL_WALLET_CONFIG.network.id;
-        // Don't auto-reload, let user decide
-        console.log('🔄 Please refresh the page to apply network changes');
+        const targetHex = '0x' + REAL_WALLET_CONFIG.network.id.toString(16);
+        
+        if (chainId !== targetHex) {
+          console.log(`🔄 Wrong network detected (${chainId}). Requesting switch to Base (${targetHex})...`);
+          try {
+            await window.ethereum.request({
+              method: 'wallet_switchEthereumChain',
+              params: [{ chainId: targetHex }],
+            });
+          } catch (switchError) {
+            // This error code indicates that the chain has not been added to MetaMask.
+            if (switchError.code === 4902) {
+              console.log('Adding Base network to MetaMask...');
+              await window.ethereum.request({
+                method: 'wallet_addEthereumChain',
+                params: [REAL_WALLET_CONFIG.network.addParams],
+              });
+            } else {
+              throw switchError;
+            }
+          }
+        } else {
+          // Correct network, reload to ensure clean Ethers state
+          window.location.reload();
+        }
       } catch (e) {
         console.warn('⚠️ Error in chainChanged listener:', e);
+        // Fallback to reload if programmatic switch fails
+        window.location.reload();
       }
     });
     
@@ -156,31 +288,56 @@ async function getWalletBalance() {
     const balanceWei = await walletState.provider.getBalance(walletState.address);
     const balanceETH = parseFloat(ethers.formatEther(balanceWei));
     
-    // Get ETH price from CoinGecko
+    // Get strict real-time ETH price from CoinGecko without fallbacks
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
     const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd', {
-      timeout: 5000
+      signal: controller.signal
     });
-    const priceData = await priceResponse.json();
-    const ethPrice = priceData.ethereum?.usd || 3200;
+    clearTimeout(timeoutId);
     
+    if (!priceResponse.ok) {
+      throw new Error(`CoinGecko API error: ${priceResponse.statusText}`);
+    }
+    
+    const priceData = await priceResponse.json();
+    if (!priceData.ethereum || !priceData.ethereum.usd) {
+      throw new Error('Invalid price data received from CoinGecko API');
+    }
+    
+    const ethPrice = priceData.ethereum.usd;
     walletState.balanceETH = balanceETH;
     walletState.balanceUSD = balanceETH * ethPrice;
+
+    // Synchronize with global balance variable used by trading-bundle.js
+    window.balance = walletState.balanceUSD;
+
+    // 🛡️ INITIALIZATION: Set starting balance baseline on first successful sync
+    if (typeof window.startBalance !== 'undefined' && (window.startBalance === 0 || window.startBalance === null)) {
+        console.log('[Sync] Initializing session starting balance to:', window.balance);
+        window.startBalance = window.balance;
+        
+        if (Array.isArray(window.equityHistory) && (window.equityHistory.length === 0 || (window.equityHistory.length === 1 && window.equityHistory[0] === 0))) {
+            window.equityHistory = [window.balance];
+        }
+    }
     
-    console.log(`✅ Balance fetched: ${balanceETH} ETH = $${walletState.balanceUSD.toFixed(2)}`);
+    console.log(`✅ On-Chain Balance fetched: ${balanceETH} ETH = $${walletState.balanceUSD.toFixed(2)} (Live ETH Price: $${ethPrice})`);
     
+    // Proactively update UI if element exists
+    const balEl = document.getElementById('ghBalance');
+    if (balEl) {
+        balEl.textContent = '$' + walletState.balanceUSD.toFixed(2);
+    }
+
     return {
       eth: balanceETH,
       usd: walletState.balanceUSD,
       ethPrice: ethPrice,
     };
   } catch (e) {
-    console.error('❌ Balance fetch error:', e);
-    // Return fallback with 0 balance
-    return {
-      eth: 0,
-      usd: 0,
-      ethPrice: 3200,
-    };
+    console.error('❌ On-Chain Balance fetch error:', e);
+    throw e;
   }
 }
 
@@ -295,8 +452,8 @@ async function validateSufficientBalance(betUSD) {
   const gasCost = await estimateSwapGasCost();
   if (!gasCost) return false;
   
-  // Need bet amount + gas cost + 10% buffer
-  const requiredETH = (betUSD / (balance.ethPrice || 3200)) + gasCost.costETH + 0.001; // Extra 0.001 ETH buffer
+  // Need bet amount + gas cost + 0.0005 ETH safety buffer (reduced from 0.001 to prevent false negatives)
+  const requiredETH = (betUSD / balance.ethPrice) + gasCost.costETH + 0.0005;
   
   return {
     hasEnoughBalance: balance.eth >= requiredETH,
@@ -304,56 +461,75 @@ async function validateSufficientBalance(betUSD) {
     balanceUSD: balance.usd,
     requiredETH: requiredETH,
     gasETH: gasCost.costETH,
-    betETH: betUSD / (balance.ethPrice || 3200),
+    betETH: betUSD / balance.ethPrice,
   };
 }
 
 // ═══════════════════════════════════════════════════════════
-// TRANSACTION SIMULATION
+// ON-CHAIN REAL TRANSACTION EXECUTION
 // ═══════════════════════════════════════════════════════════
 
-async function simulateRealTrade(betUSD, method, volatility, pnlMultiplier) {
-  const validation = await validateSufficientBalance(betUSD);
-  
-  if (!validation.hasEnoughBalance) {
-    return {
-      success: false,
-      error: `Insufficient balance. Need ${validation.requiredETH.toFixed(4)} ETH, have ${validation.balanceETH.toFixed(4)} ETH`,
-      validation: validation,
-    };
+async function executeOnChainTrade(betUSD, method = 'ARBITRAGE', targetContractAddress = REAL_WALLET_CONFIG.tokens.WETH) {
+  if (!walletState.signer || !walletState.provider) {
+    throw new Error('Wallet signer or provider not initialized. Connect MetaMask first.');
   }
-  
+
+  const validation = await validateSufficientBalance(betUSD);
+  if (!validation || !validation.hasEnoughBalance) {
+    throw new Error(`Insufficient on-chain balance. Required: ${validation?.requiredETH.toFixed(4)} ETH, Available: ${validation?.balanceETH.toFixed(4)} ETH`);
+  }
+
   const gasCost = await estimateSwapGasCost(method);
-  const slippage = calculateSlippage(betUSD, volatility, method);
-  
-  const totalCostUSD = gasCost.costUSD + parseFloat(slippage.usd);
-  const pnl = betUSD * pnlMultiplier;
-  const netPnL = pnl - totalCostUSD;
-  
-  const transaction = {
-    timestamp: new Date().toISOString(),
-    bot: null,
-    betUSD: betUSD,
-    method: method,
-    volatility: volatility,
-    gasCostUSD: gasCost.costUSD.toFixed(4),
-    slippageUSD: slippage.usd,
-    totalCostUSD: totalCostUSD.toFixed(4),
-    grossPnL: pnl.toFixed(4),
-    netPnL: netPnL.toFixed(4),
-    pnlMultiplier: pnlMultiplier,
-    outcome: pnlMultiplier >= 1 ? 'WIN' : 'LOSS',
-    status: 'SIMULATED',
-    txHash: null,
-  };
-  
-  walletState.transactions.push(transaction);
-  
-  return {
-    success: true,
-    transaction: transaction,
-    validation: validation,
-  };
+  if (!gasCost) {
+    throw new Error('Failed to estimate gas cost for on-chain execution.');
+  }
+
+  // Convert bet USD to Wei ETH for transaction value
+  const betETH = betUSD / validation.ethPrice;
+  const valueWei = ethers.parseEther(betETH.toFixed(18));
+
+  console.log(`🚀 Submitting real on-chain transaction on Base Mainnet (Chain ID: 8453)...`);
+  console.log(`   Target Contract: ${targetContractAddress}`);
+  console.log(`   Value: ${betETH.toFixed(6)} ETH ($${betUSD})`);
+  console.log(`   Gas Limit: ${gasCost.gasLimit}, Max Fee Per Gas: ${gasCost.gasPrice} Gwei`);
+
+  try {
+    // Prompt MetaMask modal for real on-chain transaction signing & broadcast
+    const tx = await walletState.signer.sendTransaction({
+      to: targetContractAddress,
+      value: valueWei,
+      gasLimit: BigInt(gasCost.gasLimit),
+    });
+
+    console.log(`⏳ Transaction broadcasted! Hash: ${tx.hash}. Waiting for confirmation...`);
+    const receipt = await tx.wait();
+    console.log(`✅ Transaction confirmed in block ${receipt.blockNumber} on Base Mainnet!`);
+
+    const transactionRecord = {
+      timestamp: new Date().toISOString(),
+      method: method,
+      betUSD: betUSD,
+      betETH: betETH,
+      gasCostETH: gasCost.costETH,
+      txHash: receipt.hash,
+      blockNumber: receipt.blockNumber,
+      status: 'CONFIRMED',
+      network: 'Base Mainnet (8453)',
+    };
+
+    walletState.transactions.push(transactionRecord);
+
+    return {
+      success: true,
+      txHash: receipt.hash,
+      blockNumber: receipt.blockNumber,
+      receipt: receipt,
+      transaction: transactionRecord,
+    };
+  } catch (txError) {
+    console.error('❌ On-chain transaction failed or rejected by user in MetaMask:', txError);
+    throw txError;
+  }
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -592,7 +768,7 @@ if (typeof module !== 'undefined' && module.exports) {
     calculateSlippage,
     estimateTransactionCost,
     validateSufficientBalance,
-    simulateRealTrade,
+    executeOnChainTrade,
     switchToBaseNetwork,
     verifyWalletReadiness,
     getTransactionHistory,

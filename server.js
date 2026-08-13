@@ -207,6 +207,8 @@ const PORT = process.env.PORT || 3001;
 
 const onchainEngine = require('./services/OnchainExecutionEngine');
 const autonomousWorker = require('./services/AutonomousWorker');
+const { monitor: coingeckoMonitor } = require('./services/coingeckoMonitor');
+const apiHealthRouter = require('./routes/apiHealth');
 
 /**
  * Sentinel: Mask sensitive parts of an RPC URL (like Alchemy/Infura API keys)
@@ -322,6 +324,7 @@ app.use((req, res, next) => {
 // Sentinel: Limit JSON payload size to prevent DoS attacks
 app.use(express.json({ limit: '100kb' }));
 app.use("/api/v1/payouts", payoutRoutes);
+app.use("/api/health", apiHealthRouter);
 
 // Security: Use a more restrictive CORS policy
 const allowedOrigin = process.env.ALLOWED_ORIGIN;
@@ -1532,6 +1535,8 @@ server.listen(PORT, () => {
     autonomousWorker.start().catch(err => {
         console.error('[Startup] Autonomous worker failed to start:', err.message);
     });
+    // Start CoinGecko production health and rate limit monitor
+    coingeckoMonitor.startMonitoring();
 });
 
 module.exports = app;

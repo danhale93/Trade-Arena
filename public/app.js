@@ -71,12 +71,48 @@ function loginSuccess() {
         mainApp.style.flexDirection = 'column';
     }
     
-    document.getElementById('walletBalance').textContent = userBalance + ' ETH';
-    document.getElementById('userAddr').textContent = 
-        userAddress.substring(0, 6) + '...' + userAddress.substring(38);
+    // Use ghBalance if it exists, fallback to walletBalance
+    const balanceEl = document.getElementById('ghBalance') || document.getElementById('walletBalance');
+    const addrEl = document.getElementById('userAddr');
+
+    if (balanceEl) balanceEl.textContent = '$' + (parseFloat(userBalance) || 0).toFixed(2);
+    if (addrEl && userAddress) addrEl.textContent = userAddress.substring(0, 6) + '...' + userAddress.substring(38);
 
     initializeApp();
 }
+
+// Global Wallet State Listener - Must be registered immediately
+window.addEventListener('walletStateChanged', (event) => {
+    const state = event.detail;
+    const currentBalanceEl = document.getElementById('ghBalance') || document.getElementById('walletBalance');
+    const currentAddrEl = document.getElementById('userAddr');
+
+    if (state.isConnected && state.address) {
+        userAddress = state.address;
+        userBalance = state.balanceUSD;
+        
+        if (currentBalanceEl) currentBalanceEl.textContent = '$' + state.balanceUSD.toFixed(2);
+        if (currentAddrEl) currentAddrEl.textContent = userAddress.substring(0, 6) + '...' + userAddress.substring(38);
+        
+        console.log('🔄 UI Synced with Wallet State:', userAddress, '$' + state.balanceUSD.toFixed(2));
+        
+        // Ensure UI is visible if we have a connection
+        const loginScreen = document.getElementById('loginScreen') || document.getElementById('connectScreen');
+        const mainApp = document.getElementById('mainApp');
+        if (loginScreen && loginScreen.style.display !== 'none') {
+            loginScreen.style.display = 'none';
+            if (mainApp) {
+                mainApp.style.display = 'flex';
+                mainApp.style.flexDirection = 'column';
+                initializeApp();
+            }
+        }
+    } else {
+        // Handle disconnected state UI
+        if (currentBalanceEl) currentBalanceEl.textContent = '$0.00';
+        if (currentAddrEl) currentAddrEl.textContent = '0x...';
+    }
+});
 
 /**
  * APP INITIALIZATION

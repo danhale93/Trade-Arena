@@ -873,7 +873,9 @@ const NETWORK_PROTOCOLS = {
 var PROTOCOLS = NETWORK_PROTOCOLS[8453]; // Default to mainnet
 
 // Contract ABIs (Simplified)
-const ABIS = {
+// Use existing global ABIS or initialize if missing
+if (typeof window.ABIS === 'undefined') {
+  window.ABIS = {
   ERC20: [
     "function balanceOf(address account) public view returns (uint256)",
     "function approve(address spender, uint256 amount) public returns (bool)",
@@ -905,6 +907,8 @@ const ABIS = {
     "function ADDRESSES_PROVIDER() external view returns (address)",
   ],
 };
+}
+var ABIS = window.ABIS;
 
 /**
  * Helper Class for Smart Contract Interactions

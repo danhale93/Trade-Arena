@@ -26,9 +26,13 @@ var PRIVY_CONFIG = {
 };
 
 // Privy state
-let privyUser = null;
-let privyWalletAddress = null;
-let privyConnected = false;
+if (typeof window.privyUser === 'undefined') window.privyUser = null;
+if (typeof window.privyWalletAddress === 'undefined') window.privyWalletAddress = null;
+if (typeof window.privyConnected === 'undefined') window.privyConnected = false;
+
+var privyUser = window.privyUser;
+var privyWalletAddress = window.privyWalletAddress;
+var privyConnected = window.privyConnected;
 
 /**
  * Initialize Privy embedded wallet
@@ -56,8 +60,22 @@ async function privyInit() {
         // Check for existing session
         const user = window.Privy.getUser();
         if (user) {
+            const walletAddr = user.wallet?.address;
+            const preferredAddress = '0x92CEAf1CA43deCfc443A34B915B45343BeE9c2DB';
+            
+            // 🛡️ PRIORITY LOCK: If MetaMask is already connected or this is the wrong address, 
+            // do not auto-login to the embedded wallet.
+            if (window.walletState && window.walletState.walletType === 'metamask') {
+                console.log('[Privy] Skipping auto-login - MetaMask is already active.');
+                return true;
+            }
+            
+            if (walletAddr && walletAddr.toLowerCase() !== preferredAddress.toLowerCase()) {
+                console.log('[Privy] Embedded wallet detected, but MetaMask is preferred. Standing by.');
+            }
+
             privyUser = user;
-            privyWalletAddress = user.wallet?.address;
+            privyWalletAddress = walletAddr;
             privyConnected = true;
             console.log('[Privy] Restored session:', privyWalletAddress);
             onPrivyLoginSuccess();
@@ -251,10 +269,16 @@ function onPrivyLoginSuccess() {
  * Update wallet-related UI elements
  */
 function updateWalletUI() {
-    const balanceEl = document.getElementById('walletBalance');
+    const balanceEl = document.getElementById('ghBalance') || document.getElementById('walletBalance');
     if (balanceEl) {
         // Show USD balance instead of ETH
-        if (window.getWalletBalanceUSD) { window.getWalletBalanceUSD().then(bal => { balanceEl.textContent = '$' + bal.toFixed(2); }); } else { balanceEl.textContent = '$0.00'; }
+        if (window.walletState && window.walletState.balanceUSD) {
+            balanceEl.textContent = '$' + window.walletState.balanceUSD.toFixed(2);
+        } else if (window.getWalletBalanceUSD) { 
+            window.getWalletBalanceUSD().then(bal => { balanceEl.textContent = '$' + bal.toFixed(2); }); 
+        } else { 
+            balanceEl.textContent = '$0.00'; 
+        }
     }
     
     const userAddrEl = document.getElementById('userAddr');

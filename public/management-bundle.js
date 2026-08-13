@@ -394,9 +394,13 @@ window.MARKETPLACE.init();
 // PRIVY_CONFIG removed - using global from privy-client.js
 
 // Privy state
-let privyUser = null;
-let privyWalletAddress = null;
-let privyConnected = false;
+if (typeof window.privyUser === 'undefined') window.privyUser = null;
+if (typeof window.privyWalletAddress === 'undefined') window.privyWalletAddress = null;
+if (typeof window.privyConnected === 'undefined') window.privyConnected = false;
+
+var privyUser = window.privyUser;
+var privyWalletAddress = window.privyWalletAddress;
+var privyConnected = window.privyConnected;
 
 /**
  * Initialize Privy embedded wallet

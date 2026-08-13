@@ -4,7 +4,7 @@
  */
 
 // Base Network Configuration
-const BASE_CONFIG = {
+var BASE_CONFIG = {
     chainId: 8453,
     name: 'Base Mainnet',
     rpcUrl: 'https://base-mainnet.g.alchemy.com/v2/3zUWwmlHTQNjmM55sV2X0',
@@ -59,7 +59,7 @@ if (typeof TOKENS === 'undefined') {
 }
 
 // DEX & Protocol Addresses on Base
-const PROTOCOLS = {
+var PROTOCOLS = {
     UNISWAP_V3: {
         name: 'Uniswap V3',
         router: '0x68b3465833fb72B5A828cCEA02FFAD6bCFB8ACBA',
@@ -92,7 +92,8 @@ const PROTOCOLS = {
 };
 
 // Contract ABIs (Simplified)
-const ABIS = {
+if (typeof window.ABIS === 'undefined') {
+    window.ABIS = {
     ERC20: [
         'function balanceOf(address account) public view returns (uint256)',
         'function approve(address spender, uint256 amount) public returns (bool)',
@@ -124,6 +125,8 @@ const ABIS = {
         'function ADDRESSES_PROVIDER() external view returns (address)'
     ]
 };
+}
+var ABIS = window.ABIS;
 
 /**
  * Helper Class for Smart Contract Interactions

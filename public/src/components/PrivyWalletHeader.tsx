@@ -84,14 +84,31 @@ export const PrivyWalletHeader = () => {
    */
   const arenaWallet = useMemo(() => {
     if (!wallets || !Array.isArray(wallets)) return null;
-    const isolatedWallet = wallets.find((w) => w.walletClientType === 'privy') || null;
-    if (isolatedWallet) {
-      console.log('[Privy] Successfully pulled the user\'s active Privy embedded wallet (walletClientType === \'privy\'):', isolatedWallet.address);
-      if (user?.google) {
-        console.log('[Privy] Google login was successful. Isolated active embedded wallet immediately:', isolatedWallet.address);
+    
+    // 🛡️ ALIGNMENT: Prioritize external wallets (MetaMask, etc.) over the embedded Privy wallet
+    // This ensures that if a user connects their own wallet (like 0x92CE...), it is used for trading.
+    const externalWallet = wallets.find((w) => w.walletClientType !== 'privy');
+    const embeddedWallet = wallets.find((w) => w.walletClientType === 'privy');
+    
+    // 🛡️ PREFERRED ADDRESS LOCK: If the embedded wallet is NOT the user's preferred address,
+    // and an external wallet IS available, use the external one.
+    const preferredAddress = '0x92CEAf1CA43deCfc443A34B915B45343BeE9c2DB';
+    const isPreferredConnected = wallets.some(w => w.address.toLowerCase() === preferredAddress.toLowerCase());
+    
+    let activeWallet = externalWallet || embeddedWallet || null;
+    
+    // If the preferred wallet is connected, force it to be the active one
+    if (isPreferredConnected) {
+        activeWallet = wallets.find(w => w.address.toLowerCase() === preferredAddress.toLowerCase()) || activeWallet;
+    }
+    
+    if (activeWallet) {
+      console.log(`[Privy] Active Wallet Isolated (${activeWallet.walletClientType}):`, activeWallet.address);
+      if (activeWallet.address.toLowerCase() === preferredAddress.toLowerCase()) {
+          console.log('[Privy] ✅ Preferred MetaMask address identified and locked.');
       }
     }
-    return isolatedWallet;
+    return activeWallet;
   }, [wallets, user]);
 
   /**
@@ -155,21 +172,33 @@ export const PrivyWalletHeader = () => {
       window.privyProvider = privyProviderInstance;
 
       // Keep window.walletState fully synchronized with the Privy embedded wallet
-      if (window.walletState) {
-        window.walletState.isConnected = true;
-        window.walletState.address = arenaWallet.address;
+      if (window.walletState && (window as any).setWalletState) {
         privyProviderInstance.getEthersProvider().then(async (provider) => {
-          window.walletState.provider = provider;
           try {
-            // getSigner is async in Ethers v6
-            window.walletState.signer = await provider.getSigner();
-            console.log('[Privy] Signer synchronized to walletState');
+            const signer = await provider.getSigner();
+            (window as any).setWalletState({
+                isConnected: true,
+                address: arenaWallet.address,
+                walletType: 'privy',
+                provider: provider,
+                signer: signer
+            });
+            console.log('[Privy] Signer synchronized to walletState via priority engine');
+            
+            // Trigger immediate balance fetch upon successful synchronization
+            if (typeof window.getWalletBalance === 'function') {
+                await window.getWalletBalance();
+            }
           } catch (sErr) {
-            console.error('[Privy] Failed to get signer:', sErr);
+            console.error('[Privy] Failed to get signer or fetch balance:', sErr);
           }
         }).catch((err) => {
           console.error('[Privy] Failed to initialize provider in walletState:', err);
         });
+      } else if (window.walletState) {
+        // Fallback for older script versions
+        window.walletState.isConnected = true;
+        window.walletState.address = arenaWallet.address;
       }
 
       // Trigger legacy initialization callbacks
