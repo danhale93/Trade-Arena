@@ -1,7 +1,6 @@
-# Trade-Arena CLI Integration TODO
+# Trade-Arena Settings & Token Vault TODO
 
-- [x] Create server/cli.ts wrapper for MetaMask Agent CLI with mutex and safe spawn execution
-- [x] Update submitToken tRPC procedure with owner authorization and CLI session validation
-- [x] Implement runArbitrageCheck tRPC procedure with simulation vs live execution adapter and profit/slippage enforcement
-- [x] Run test suite and production build check
-- [x] Deliver final backend connection status and activation notice to user
+- [x] Inspect current settings route and token mutation
+- [x] Implement secure settings-page token form with masking and owner validation
+- [x] Verify token handling, test suite, and production build check
+- [x] Save checkpoint and deliver updated dashboard

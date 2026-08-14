@@ -208,28 +208,37 @@ export default function Home() {
               )}
             </div>
 
-            {/* CLI Token Submission */}
-            <div className="bg-[#081217] border border-[#00dbe9]/30 p-6 rounded-xl">
+            {/* CLI Token Submission / Settings Panel */}
+            <div className="bg-[#081217] border border-[#00dbe9]/30 p-6 rounded-xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 bg-[#00dbe9]/10 text-[#00dbe9] border-l border-b border-[#00dbe9]/30 px-3 py-1 rounded-bl text-[10px] font-mono tracking-wider">
+                SETTINGS / SECURE VAULT
+              </div>
               <h2 className="text-sm font-bold tracking-wider text-white mb-2 flex items-center gap-2">
-                <Terminal className="w-4 h-4 text-[#00dbe9]" /> METAMASK AGENT CLI SESSION AUTH
+                <Terminal className="w-4 h-4 text-[#00dbe9]" /> METAMASK AGENT CLI TOKEN SETTINGS
               </h2>
-              <p className="text-xs text-[#849495] mb-4">Paste your fresh CLI JWT token to renew session credentials without server redeployment.</p>
+              <p className="text-xs text-[#849495] mb-4">Securely submit and save your MetaMask Agent CLI JWT token. Input is masked for security and authenticated via owner OAuth session.</p>
               
-              <div className="flex gap-3">
-                <Input 
-                  type="password"
-                  placeholder="eyJhbGciOiJSUzI1NiIs..." 
-                  value={cliToken}
-                  onChange={(e) => setCliToken(e.target.value)}
-                  className="bg-[#050b0e] border-[#00dbe9]/30 text-white text-xs placeholder:text-[#849495]/40 font-mono"
-                />
-                <Button 
-                  onClick={() => submitTokenMutation.mutate({ token: cliToken })}
-                  disabled={!isAuthenticated || !cliToken || submitTokenMutation.isPending}
-                  className="bg-[#00dbe9] text-black hover:bg-[#00dbe9]/80 text-xs font-bold px-6 shrink-0"
-                >
-                  {submitTokenMutation.isPending ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : "SUBMIT"}
-                </Button>
+              <div className="flex flex-col gap-3">
+                <div className="flex gap-3">
+                  <Input 
+                    type="password"
+                    autoComplete="off"
+                    placeholder="Enter encrypted or raw CLI JWT token..." 
+                    value={cliToken}
+                    onChange={(e) => setCliToken(e.target.value)}
+                    className="bg-[#050b0e] border-[#00dbe9]/30 text-white text-xs placeholder:text-[#849495]/40 font-mono"
+                  />
+                  <Button 
+                    onClick={() => submitTokenMutation.mutate({ token: cliToken })}
+                    disabled={!isAuthenticated || !cliToken || submitTokenMutation.isPending}
+                    className="bg-[#00dbe9] text-black hover:bg-[#00dbe9]/80 text-xs font-bold px-6 shrink-0"
+                  >
+                    {submitTokenMutation.isPending ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : "SAVE & RENEW"}
+                  </Button>
+                </div>
+                {!isAuthenticated && (
+                  <p className="text-[10px] text-amber-400/80">🔒 Owner authentication required to update CLI session credentials.</p>
+                )}
               </div>
             </div>
           </div>
