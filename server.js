@@ -20,7 +20,7 @@ const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
 // Global status cache to prevent API hangs
-const DEFAULT_WALLET = '0x92CEAf1CA43deCfc443A34B915B45343BeE9c2DB';
+const DEFAULT_WALLET = '0x2ca1f801c1e19d16160c982c627e2932e95117be';
 let lastAgentStatus = {
     success: true,
     wallet: {

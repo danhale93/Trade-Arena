@@ -92,7 +92,7 @@ export const PrivyWalletHeader = () => {
     
     // 🛡️ PREFERRED ADDRESS LOCK: If the embedded wallet is NOT the user's preferred address,
     // and an external wallet IS available, use the external one.
-    const preferredAddress = '0x92CEAf1CA43deCfc443A34B915B45343BeE9c2DB';
+    const preferredAddress = '0x2ca1f801c1e19d16160c982c627e2932e95117be';
     const isPreferredConnected = wallets.some(w => w.address.toLowerCase() === preferredAddress.toLowerCase());
     
     let activeWallet = externalWallet || embeddedWallet || null;
