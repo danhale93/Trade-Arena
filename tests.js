@@ -2236,9 +2236,10 @@ async function run() {
 
   if (testFailures > 0) {
     console.error(`❌ Test suite failed with ${testFailures} failure(s).`);
-    process.exitCode = 1;
+    process.exit(1);
   } else {
     console.log("✅ Test suite passed with 0 failures.");
+    process.exit(0);
   }
 
   console.log("=".repeat(50) + "\n");
@@ -2246,5 +2247,5 @@ async function run() {
 
 run().catch((error) => {
   console.error("❌ Test runner failed:", error);
-  process.exitCode = 1;
+  process.exit(1);
 });

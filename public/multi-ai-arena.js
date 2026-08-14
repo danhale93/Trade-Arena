@@ -399,12 +399,8 @@ const ARENA_COMPETITION = {
 
   // Get model ELO rating
   getModelElo(modelName) {
-    for (const tier in LM_ARENA_MODELS) {
-      if (LM_ARENA_MODELS[tier][modelName]) {
-        return LM_ARENA_MODELS[tier][modelName].elo;
-      }
-    }
-    return 1000; // Default
+    const config = getModelConfig(modelName);
+    return config ? config.elo : 1000;
   },
 
   // Record trade result
@@ -512,7 +508,13 @@ function getModelConfig(modelName) {
       return LM_ARENA_MODELS[tier][modelName];
     }
   }
-  return null;
+  // Return a fallback configuration object for custom/dynamic tournament models
+  return {
+    elo: 1200,
+    provider: 'Tournament',
+    personality: 'BALANCED',
+    characteristics: 'Dynamic tournament model'
+  };
 }
 
 function getModelTier(modelName) {
@@ -608,17 +610,19 @@ async function callAIModel(marketData, bet, botId) {
 
     const modelConfig = getModelConfig(modelName);
 
+    // Populate basic fields
+    decision.aiModel = modelName;
+    decision.olympicsBracket = olympicsBracket;
+    decision.isOlympicsMatch = !!olympicsBracket;
+
     // Apply model-specific personality adjustments
     if (modelConfig && modelConfig.personality) {
       const personality = BOT_MODEL_ASSIGNMENT.personalityTraits[modelConfig.personality] || {};
       decision.edge_pct *= personality.edgeMultiplier || 1.0;
       decision.win_probability *= (1 - (personality.riskAversion || 1.0) * 0.1);
-      decision.aiModel = modelName;
       decision.modelProvider = modelConfig.provider;
       decision.modelElo = modelConfig.elo;
       decision.modelPersonality = modelConfig.personality;
-      decision.olympicsBracket = olympicsBracket;
-      decision.isOlympicsMatch = !!olympicsBracket;
     }
 
     // Record trade result in Trade Olympics if applicable

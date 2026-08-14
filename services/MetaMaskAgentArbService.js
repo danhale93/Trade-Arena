@@ -167,6 +167,10 @@ class MetaMaskAgentArbService {
             quote,
             txHash: receipt?.txHash || 'N/A'
         };
+        const dir = path.dirname(this.logPath);
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
         fs.appendFileSync(this.logPath, JSON.stringify(entry) + '\n');
     }
 

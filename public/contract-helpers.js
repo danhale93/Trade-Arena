@@ -224,7 +224,8 @@ class ArbitrageAnalyzer {
         const netProfit = grossProfit - (buyFee + sellFee);
         return {
             netProfit,
-            profitPercent: (netProfit / amountUSD) * 100
+            profitPercent: (netProfit / amountUSD) * 100,
+            isViable: netProfit > 0
         };
     }
 
@@ -232,7 +233,8 @@ class ArbitrageAnalyzer {
         return {
             path: [tokenA, tokenB, tokenC, tokenA],
             expectedProfit: 0.05,
-            isViable: true
+            isViable: true,
+            opportunity: true
         };
     }
 }
@@ -256,7 +258,8 @@ class FlashLoanSimulator {
     static simulateLiquidation(collateral, debt, price) {
         return {
             liquidatable: true,
-            profit: 100
+            profit: 100,
+            flashLoanFee: (collateral * 0.0009).toFixed(4)
         };
     }
 
