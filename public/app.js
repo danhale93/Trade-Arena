@@ -824,7 +824,7 @@ function connectWebSocket() {
 
 // Start WebSocket connection on load
 if (typeof window !== 'undefined') {
-    console.log('🚀 TRADE ARENA V4.3.17 INITIALIZED');
+    console.log('🚀 TRADE ARENA V4.3.20 INITIALIZED');
     connectWebSocket();
     
     // Export notify function
@@ -1013,7 +1013,8 @@ async function updateAgentStatus() {
         
         if (data.success) {
             document.getElementById('agentAddr').textContent = data.wallet.address;
-            document.getElementById('agentBalance').textContent = '$' + (parseFloat(data.wallet.balance) || 0).toFixed(2);
+            const balUsd = (parseFloat(data.wallet.balance) || 0).toFixed(2);
+            document.getElementById('agentBalance').textContent = data.wallet.ethBalance ? `${data.wallet.ethBalance} ETH ($${balUsd})` : `$${balUsd}`;
             document.getElementById('agentEthPrice').textContent = 'ETH: $' + (parseFloat(data.network.ethPrice) || 0).toFixed(2);
             
             // Show authenticated email if linked
