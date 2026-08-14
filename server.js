@@ -432,14 +432,19 @@ setTimeout(initAgentSession, 2000);
 app.get('/api/network/status', async (req, res) => {
     const DEFAULT_WALLET = '0x92CEAf1CA43deCfc443A34B915B45343BeE9c2DB';
     try {
-        // Fetch from MM CLI with timeout / fallback
+        // Fetch from MM CLI with individual error handling to prevent Promise.all timeout
+        const runSafe = async (cmd) => {
+            try { return await runMM(cmd); }
+            catch (e) { return { ok: false, error: e.message }; }
+        };
+
         const [doctor, authStatus, walletInfo, balance, history, ethPrice] = await Promise.all([
-            runMM('doctor'),
-            runMM('auth status'),
-            runMM('wallet address'),
-            runMM('wallet balance --chain base'),
-            runMM('tx history --chain-ids 8453 --limit 5'),
-            runMM('price spot --asset-ids "eip155:8453/slip44:60"')
+            runSafe('doctor'),
+            runSafe('auth status'),
+            runSafe('wallet address'),
+            runSafe('wallet balance --chain base'),
+            runSafe('tx history --chain-ids 8453 --limit 5'),
+            runSafe('price spot --asset-ids "eip155:8453/slip44:60"')
         ]);
 
         let resolvedAddress = walletInfo.data?.address || doctor.data?.wallets?.[0]?.address || DEFAULT_WALLET;

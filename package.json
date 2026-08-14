@@ -1,6 +1,6 @@
 {
   "name": "trade-arena",
-  "version": "4.3.20",
+  "version": "4.3.21",
   "description": "Multi-AI Trading Arena with Ridges Integration",
   "main": "server.js",
   "engines": {
