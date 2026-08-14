@@ -159,10 +159,17 @@
 
     <script>
         let scannerRunning = true;
+        
+        // Backend API Base URL (defaults to window location or Render backend)
+        let API_BASE = localStorage.getItem('trade_arena_api_base') || '';
+        
+        function getApiUrl(endpoint) {
+            return API_BASE ? `${API_BASE}${endpoint}` : endpoint;
+        }
 
         async function fetchAgentStatus() {
             try {
-                const res = await fetch('/api/agent/status');
+                const res = await fetch(getApiUrl('/api/agent/status'));
                 const data = await res.json();
                 if (data.success && data.agent) {
                     const agent = data.agent;
@@ -232,7 +239,7 @@
         async function toggleScanner() {
             const endpoint = scannerRunning ? '/api/agent/pause' : '/api/agent/resume';
             try {
-                const res = await fetch(endpoint, { method: 'POST' });
+                const res = await fetch(getApiUrl(endpoint), { method: 'POST' });
                 const data = await res.json();
                 if (data.success) {
                     fetchAgentStatus();
@@ -258,7 +265,7 @@
                 statusDiv.innerText = 'Connecting to MetaMask Agent...';
                 statusDiv.classList.remove('hidden');
 
-                const res = await fetch('/api/agent/submit-token', {
+                const res = await fetch(getApiUrl('/api/agent/submit-token'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ token })
