@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Trade Arena - Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "surface-container-high": "#272a30",
+                "primary": "#dbfcff",
+                "surface-container-lowest": "#0b0e13",
+                "inverse-surface": "#e1e2ea",
+                "outline-variant": "#3b494b",
+                "on-error-container": "#ffdad6",
+                "on-primary-fixed": "#002022",
+                "surface-container": "#1d2025",
+                "on-tertiary-container": "#715d00",
+                "secondary-fixed-dim": "#d1bcff",
+                "on-primary-fixed-variant": "#004f54",
+                "secondary-fixed": "#e9ddff",
+                "on-surface": "#e1e2ea",
+                "on-primary": "#00363a",
+                "on-tertiary": "#3b2f00",
+                "tertiary-fixed": "#ffe179",
+                "on-secondary": "#3c0090",
+                "on-error": "#690005",
+                "inverse-on-surface": "#2e3036",
+                "error-container": "#93000a",
+                "on-primary-container": "#006970",
+                "on-surface-variant": "#b9cacb",
+                "primary-fixed": "#7df4ff",
+                "primary-container": "#00f0ff",
+                "inverse-primary": "#006970",
+                "on-tertiary-fixed-variant": "#554500",
+                "secondary-container": "#7000ff",
+                "on-tertiary-fixed": "#231b00",
+                "on-secondary-fixed-variant": "#5700c9",
+                "background": "#111319",
+                "surface-container-highest": "#32353b",
+                "primary-fixed-dim": "#00dbe9",
+                "on-secondary-container": "#ddcdff",
+                "error": "#ffb4ab",
+                "tertiary-fixed-dim": "#eac324",
+                "surface-dim": "#111319",
+                "on-background": "#e1e2ea",
+                "surface-container-low": "#191c21",
+                "outline": "#849495",
+                "on-secondary-fixed": "#23005b",
+                "surface": "#111319",
+                "secondary": "#d1bcff",
+                "surface-bright": "#36393f",
+                "surface-variant": "#32353b",
+                "tertiary-container": "#fed639",
+                "surface-tint": "#00dbe9",
+                "tertiary": "#fff5de"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+        },
+        "spacing": {
+                "container-padding": "1.5rem",
+                "unit": "4px",
+                "module-gap": "0.75rem",
+                "data-row-height": "2rem",
+                "input-height": "2.5rem"
+        },
+        "fontFamily": {
+                "display-lg": [
+                        "Hanken Grotesk"
+                ],
+                "data-lg": [
+                        "JetBrains Mono"
+                ],
+                "headline-md": [
+                        "Hanken Grotesk"
+                ],
+                "data-sm": [
+                        "JetBrains Mono"
+                ],
+                "body-md": [
+                        "Hanken Grotesk"
+                ],
+                "label-caps": [
+                        "JetBrains Mono"
+                ]
+        },
+        "fontSize": {
+                "display-lg": [
+                        "48px",
+                        {
+                                "lineHeight": "56px",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "700"
+                        }
+                ],
+                "data-lg": [
+                        "18px",
+                        {
+                                "lineHeight": "24px",
+                                "letterSpacing": "-0.01em",
+                                "fontWeight": "500"
+                        }
+                ],
+                "headline-md": [
+                        "24px",
+                        {
+                                "lineHeight": "32px",
+                                "fontWeight": "600"
+                        }
+                ],
+                "data-sm": [
+                        "12px",
+                        {
+                                "lineHeight": "16px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "body-md": [
+                        "14px",
+                        {
+                                "lineHeight": "20px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "label-caps": [
+                        "10px",
+                        {
+                                "lineHeight": "12px",
+                                "letterSpacing": "0.08em",
+                                "fontWeight": "700"
+                        }
+                ]
+        }
+},
+    },
+  }
+</script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+            margin: 0;
+            overflow-x: hidden;
+        }
+        
+        .glass-panel {
+            background-color: rgba(17, 19, 25, 0.55);
+            backdrop-filter: blur(32px);
+            -webkit-backdrop-filter: blur(32px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+        }
+
+        .data-table-row {
+            border-bottom: 1px solid theme('colors.outline-variant');
+        }
+
+        .data-table-row:last-child {
+            border-bottom: none;
+        }
+
+        /* Custom scrollbar for terminal effect */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: theme('colors.outline-variant');
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: theme('colors.primary-fixed-dim');
+        }
+        
+        @keyframes pulse-cyan {
+            0% { box-shadow: 0 0 0 0 rgba(0, 219, 233, 0.4); }
+            70% { box-shadow: 0 0 0 6px rgba(0, 219, 233, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 219, 233, 0); }
+        }
+        
+        .live-indicator {
+            animation: pulse-cyan 2s infinite;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="antialiased min-h-screen relative flex flex-col font-body-md text-body-md text-on-background">
+<!-- Shader Background -->
+<div class="fixed inset-0 z-[-1] pointer-events-none">
+<div class="absolute inset-0 bg-background/80"></div>
+<div class="absolute inset-0 bg-gradient-to-br from-primary-fixed-dim/5 to-[#ff00ff]/5 mix-blend-overlay"></div>
+</div>
+<!-- Shared TopAppBar -->
+<header class="bg-surface-container-lowest/80 backdrop-blur-xl fixed top-0 w-full z-50 shadow-none border-b border-white/10 text-primary-fixed-dim">
+<div class="flex justify-between items-center px-container-padding h-16 w-full">
+<div aria-label="Home - Trade Arena" class="flex items-center gap-2 font-display-lg text-[32px] tracking-tighter text-primary-fixed hover:text-primary transition-colors active:scale-95 duration-75 p-2 rounded cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-container" role="button" tabindex="0">
+<span class="material-symbols-outlined text-[32px]" style="font-variation-settings: 'FILL' 1;">hub</span>
+<span>TRADE ARENA</span>
+</div>
+<button aria-label="Trigger Kill Switch" class="bg-primary-container text-on-primary-container font-label-caps text-label-caps px-4 py-2 rounded uppercase tracking-wider hover:bg-primary-fixed transition-colors active:scale-95 focus:outline-none focus:ring-2 focus:ring-white">
+                KILL SWITCH
+            </button>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 mt-16 md:mt-16 mb-20 md:mb-0 px-container-padding py-6 max-w-[1920px] mx-auto w-full grid grid-cols-1 md:grid-cols-12 gap-module-gap z-10 relative">
+<!-- Left Column: P/L & Consensus -->
+<div class="md:col-span-4 flex flex-col gap-module-gap">
+<!-- P/L Summary Module -->
+<div aria-labelledby="pl-summary-heading" class="glass-panel rounded-xl p-5 flex flex-col gap-4" role="region">
+<div class="flex justify-between items-center border-b border-white/10 pb-3">
+<h2 class="font-headline-md text-headline-md text-on-surface" id="pl-summary-heading">P/L SUMMARY</h2>
+<span aria-hidden="true" class="material-symbols-outlined text-outline">account_balance_wallet</span>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="flex flex-col">
+<span class="font-label-caps text-label-caps text-outline uppercase tracking-widest">Daily P/L</span>
+<span class="font-data-lg text-data-lg text-primary-fixed-dim">+$12,450.80</span>
+</div>
+<div class="flex flex-col text-right">
+<span class="font-label-caps text-label-caps text-outline uppercase tracking-widest">Win Rate</span>
+<span class="font-data-lg text-data-lg text-[#ff00ff]">78.4%</span>
+</div>
+</div>
+<div class="flex flex-col mt-2">
+<span class="font-label-caps text-label-caps text-outline uppercase tracking-widest mb-1">Session Volume</span>
+<div class="flex items-baseline gap-2">
+<span class="font-data-lg text-data-lg text-on-surface">$1,452,890.00</span>
+<span class="font-data-sm text-data-sm text-primary-fixed-dim">/ 24H</span>
+</div>
+<div aria-label="Session Volume Progress: 65%" aria-valuemax="100" aria-valuemin="0" aria-valuenow="65" class="w-full bg-surface-container-highest/50 h-1.5 mt-3 rounded-full overflow-hidden" role="progressbar">
+<div class="bg-primary-fixed-dim h-full w-[65%] rounded-full shadow-[0_0_10px_rgba(0,219,233,0.5)]"></div>
+</div>
+</div>
+</div>
+<!-- AI Consensus Weights -->
+<div aria-labelledby="consensus-weights-heading" class="glass-panel rounded-xl p-5 flex flex-col gap-4 flex-1" role="region">
+<div class="flex justify-between items-center border-b border-white/10 pb-3">
+<h2 class="font-headline-md text-headline-md text-on-surface" id="consensus-weights-heading">CONSENSUS WEIGHTS</h2>
+<span aria-hidden="true" class="material-symbols-outlined text-outline">memory</span>
+</div>
+<div class="flex flex-col gap-5 h-full justify-center">
+<!-- AlphaQuant -->
+<div class="flex flex-col gap-1.5">
+<div class="flex justify-between items-center">
+<span class="font-data-sm text-data-sm text-on-surface-variant">AlphaQuant v4.2</span>
+<span class="font-data-sm text-data-sm text-primary-fixed-dim">85%</span>
+</div>
+<div aria-label="AlphaQuant Weight: 85%" aria-valuemax="100" aria-valuemin="0" aria-valuenow="85" class="w-full bg-surface-container-highest/50 h-2 rounded-full overflow-hidden" role="progressbar">
+<div class="bg-primary-fixed-dim h-full w-[85%] rounded-full shadow-[0_0_10px_rgba(0,219,233,0.5)]"></div>
+</div>
+</div>
+<!-- DeepArbitrage -->
+<div class="flex flex-col gap-1.5">
+<div class="flex justify-between items-center">
+<span class="font-data-sm text-data-sm text-on-surface-variant">DeepArbitrage_X</span>
+<span class="font-data-sm text-data-sm text-tertiary-fixed-dim">62%</span>
+</div>
+<div aria-label="DeepArbitrage Weight: 62%" aria-valuemax="100" aria-valuemin="0" aria-valuenow="62" class="w-full bg-surface-container-highest/50 h-2 rounded-full overflow-hidden" role="progressbar">
+<div class="bg-tertiary-fixed-dim h-full w-[62%] rounded-full shadow-[0_0_10px_rgba(234,195,36,0.5)]"></div>
+</div>
+</div>
+<!-- NeuralTrend -->
+<div class="flex flex-col gap-1.5">
+<div class="flex justify-between items-center">
+<span class="font-data-sm text-data-sm text-on-surface-variant">NeuralTrend (Beta)</span>
+<span class="font-data-sm text-data-sm text-[#ff00ff]">41%</span>
+</div>
+<div aria-label="NeuralTrend Weight: 41%" aria-valuemax="100" aria-valuemin="0" aria-valuenow="41" class="w-full bg-surface-container-highest/50 h-2 rounded-full overflow-hidden" role="progressbar">
+<div class="bg-[#ff00ff] h-full w-[41%] rounded-full shadow-[0_0_10px_rgba(255,0,255,0.5)]"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Center Column: DEX Matrix -->
+<div class="md:col-span-8 flex flex-col gap-module-gap">
+<div aria-labelledby="dex-scan-heading" class="glass-panel rounded-xl p-5 flex flex-col h-full" role="region">
+<div class="flex justify-between items-center border-b border-white/10 pb-3 mb-4">
+<div class="flex items-center gap-3">
+<h2 class="font-headline-md text-headline-md text-on-surface" id="dex-scan-heading">DEX SCAN MATRIX</h2>
+<div class="w-2.5 h-2.5 rounded-full bg-[#ff00ff] live-indicator shadow-[0_0_8px_rgba(255,0,255,0.8)]" style="animation-name: pulse-magenta;"></div>
+<style>
+@keyframes pulse-magenta {
+    0% { box-shadow: 0 0 0 0 rgba(255, 0, 255, 0.4); }
+    70% { box-shadow: 0 0 0 6px rgba(255, 0, 255, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 0, 255, 0); }
+}
+</style>
+<span class="font-label-caps text-label-caps text-[#ff00ff] tracking-widest">LIVE</span>
+</div>
+<span aria-hidden="true" class="material-symbols-outlined text-outline">grid_on</span>
+</div>
+<div class="flex-1 overflow-auto">
+<!-- Conceptual Grid -->
+<div class="grid grid-cols-5 grid-rows-2 gap-[1px] bg-white/10 border border-white/10 h-64 rounded-lg overflow-hidden" role="grid">
+<!-- Row 1 -->
+<div aria-label="Uniswap ETH/USDC Scanned" class="bg-surface-container-lowest/80 flex flex-col items-center justify-center p-2 relative hover:bg-surface-container-highest/80 transition-colors group cursor-crosshair focus:outline-none focus:ring-2 focus:ring-primary-container inset-ring" role="gridcell" tabindex="0">
+<img alt="" class="h-6 w-6 mb-1 object-contain opacity-80 group-hover:opacity-100 transition-opacity" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD_pYh4vNS9N4Ar4mfGaYnogmCmArTB--CIzwCh07b25nwwT2LgKKSKm2l4VAxc9EuEeeAuw4sCOwoqimKEZ22OdRaOYwgPjmF5s-_bt5oqxFHqSYpLF7wtdnCaS7eHLnLcAR3BjZxjuSgPEZoikmPzJv_NQLzGRqonju_GtM6vXYnI2ft9S5Ih9-FGixnZlfOoJ2enQDugXLVE9q1XtAw72De3mJwi6TFng2IF3x8rtd4IJRl8_iXR"/>
+<div class="mt-2 text-center">
+<span class="block font-data-sm text-data-sm text-primary-fixed-dim drop-shadow-[0_0_2px_rgba(0,219,233,0.5)]">ETH/USDC</span>
+<span class="block font-data-sm text-[10px] text-outline uppercase tracking-wider mt-1">Scanned</span>
+</div>
+</div>
+<div aria-label="SushiSwap WBTC/ETH Idle" class="bg-surface-container-lowest/80 flex flex-col items-center justify-center p-2 relative hover:bg-surface-container-highest/80 transition-colors group cursor-crosshair focus:outline-none focus:ring-2 focus:ring-primary-container inset-ring" role="gridcell" tabindex="0">
+<img alt="" class="h-6 w-6 mb-1 object-contain opacity-80 group-hover:opacity-100 transition-opacity" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDi_n2i1ZDglb7Yr0I6MZ_fJJSiHPpukyyyglVIvqZb77mCwCN31Gj733z1FcLraeSgOb0o6zTWqn_pZ-rB4ZCZuLIpxkeyzQruyWdIAjya3TUmSsI5fIos4D_iyc1H1PLH-IXipsHLRoyXTnA_B6br6BsHt3-35PNO3MPuMEcPUdnzNLWC44CS7mQp79ujYaP60mn2PJ6JUyA71bEVQIgXXCtZXhLWYwRzsqgKCI0V7PWaPzwQXSkD"/>
+<div class="mt-2 text-center">
+<span class="block font-data-sm text-data-sm text-[#ff00ff] drop-shadow-[0_0_2px_rgba(255,0,255,0.5)]">WBTC/ETH</span>
+<span class="block font-data-sm text-[10px] text-outline uppercase tracking-wider mt-1">Idle</span>
+</div>
+</div>
+<div aria-label="PancakeSwap BNB/BUSD Scanned" class="bg-surface-container-lowest/80 flex flex-col items-center justify-center p-2 relative hover:bg-surface-container-highest/80 transition-colors group cursor-crosshair focus:outline-none focus:ring-2 focus:ring-primary-container inset-ring" role="gridcell" tabindex="0">
+<span class="font-label-caps text-label-caps text-on-surface-variant group-hover:text-primary-fixed-dim transition-colors">PANCAKESWAP</span>
+<div class="mt-2 text-center">
+<span class="block font-data-sm text-data-sm text-primary-fixed-dim drop-shadow-[0_0_2px_rgba(0,219,233,0.5)]">BNB/BUSD</span>
+<span class="block font-data-sm text-[10px] text-outline uppercase tracking-wider mt-1">Scanned</span>
+</div>
+</div>
+<div aria-label="Curve USDT/DAI Idle" class="bg-surface-container-lowest/80 flex flex-col items-center justify-center p-2 relative hover:bg-surface-container-highest/80 transition-colors group cursor-crosshair focus:outline-none focus:ring-2 focus:ring-primary-container inset-ring" role="gridcell" tabindex="0">
+<img alt="" class="h-6 w-6 mb-1 object-contain opacity-80 group-hover:opacity-100 transition-opacity" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA-GUsB4MLaLh5-S1Vyg0rMWUlBAUrgU4p3anlKhuV92chV7zOSuqs1CFc6i-p-8XBUzTZzluR6gW5zO3Qz1NZhpP4PjC7aVE7H_1ypXU4gkk-K9wJTnAsKj1i6LuOO9XF_d4PZUbHN0ZlLG5c766mD9jN-yeB9EEl_COMmuRffP77v0MR0Wkp0xL_2CFED3HxFFXlKnm9qs7MzdRd6wLcxJRnVYJAQUmolLZO5spC9XbUybk1fVByq"/>
+<div class="mt-2 text-center">
+<span class="block font-data-sm text-data-sm text-outline group-hover:text-on-surface transition-colors">USDT/DAI</span>
+<span class="block font-data-sm text-[10px] text-outline uppercase tracking-wider mt-1">Idle</span>
+</div>
+</div>
+<div aria-label="Balancer LINK/ETH Idle" class="bg-surface-container-lowest/80 flex flex-col items-center justify-center p-2 relative hover:bg-surface-container-highest/80 transition-colors group cursor-crosshair focus:outline-none focus:ring-2 focus:ring-primary-container inset-ring" role="gridcell" tabindex="0">
+<img alt="" class="h-6 w-6 mb-1 object-contain opacity-80 group-hover:opacity-100 transition-opacity" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD92SOPyC18MtD6Shu1GYRJbX1150K29Y29xjBikyDiuVWkfXIn_sS0CQwgbYyQ8pJt8qubcjUgvo0kROEPD3y232nf9Xhf1BFl9j4tXHiSWVeQurk42c92bWQbS3ugzLt_kXWi-UNjIEeXYOEBA_Md-pz8fqJPpZLUTjQ0FiuqS2U5YTFFAYU3sB0jkjYfLv4ZmgqZgagalv3O_vOjBtcsxZ0wAklLlbt3n-4CM-kzXY1f_sshpmK8"/>
+<div class="mt-2 text-center">
+<span class="block font-data-sm text-data-sm text-outline group-hover:text-on-surface transition-colors">LINK/ETH</span>
+<span class="block font-data-sm text-[10px] text-outline uppercase tracking-wider mt-1">Idle</span>
+</div>
+</div>
+<!-- Row 2 -->
+<div aria-label="Aerodrome OP/USDC Idle" class="bg-surface-container-lowest/80 flex flex-col items-center justify-center p-2 relative hover:bg-surface-container-highest/80 transition-colors group cursor-crosshair focus:outline-none focus:ring-2 focus:ring-primary-container inset-ring" role="gridcell" tabindex="0">
+<span class="font-label-caps text-label-caps text-on-surface-variant group-hover:text-primary-fixed-dim transition-colors">AERODROME</span>
+<div class="mt-2 text-center">
+<span class="block font-data-sm text-data-sm text-outline group-hover:text-on-surface transition-colors">OP/USDC</span>
+<span class="block font-data-sm text-[10px] text-outline uppercase tracking-wider mt-1">Idle</span>
+</div>
+</div>
+<div aria-label="1inch ARB/ETH Scanned" class="bg-surface-container-lowest/80 flex flex-col items-center justify-center p-2 relative hover:bg-surface-container-highest/80 transition-colors group cursor-crosshair focus:outline-none focus:ring-2 focus:ring-primary-container inset-ring" role="gridcell" tabindex="0">
+<img alt="" class="h-6 w-6 mb-1 object-contain opacity-80 group-hover:opacity-100 transition-opacity" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCqW3_zmMdZN7Q1FuXkUYt0ek8WG4XLUvzJCHuj2tbPc7pKtIUdW7y8-qqsvPSTcjimfkrjR_8nudkDkvBI0RlvAnlMOadnrq3Q9qjbdDHCr9Y_V7gXK8eGKxHqQx4wq72UO9RS9PqVyx9Vmw0OuEd-r6K0qGWRjPRIf6ejVtXyNz_hfnHb-vGdbA5ZYRU6p0ZPKtqrcmrbnHB0IvSb8RqVFJhVFeRvtiwMLfNL9aVhMHyZFfV8Y0nk"/>
+<div class="mt-2 text-center">
+<span class="block font-data-sm text-data-sm text-[#ff00ff] drop-shadow-[0_0_2px_rgba(255,0,255,0.5)]">ARB/ETH</span>
+<span class="block font-data-sm text-[10px] text-outline uppercase tracking-wider mt-1">Scanned</span>
+</div>
+</div>
+<div aria-label="Kyber MATIC/ETH Idle" class="bg-surface-container-lowest/80 flex flex-col items-center justify-center p-2 relative hover:bg-surface-container-highest/80 transition-colors group cursor-crosshair focus:outline-none focus:ring-2 focus:ring-primary-container inset-ring" role="gridcell" tabindex="0">
+<img alt="" class="h-6 w-6 mb-1 object-contain opacity-80 group-hover:opacity-100 transition-opacity" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZVtj2tmpCR16P3pxZGeoABXWlzLsnpUclHzg3o-IF-TILJm5K6jqoQhC2ut0WTIXElMbosb5Xr-TYfEkfBHym2DmwJCQ8mgf-r-qUCxfIOEdAnR-_eypbr6J5h9cjYoYlJocbBhXhhfZTiL7mu-VmMHOxkC67OuHoj2cPtO8A6X-1PJ5Yc-fYqmcC1F-PVyLJx1NYCR94HmO2jsR0ICuo0Lxd1Id1sZYnOwFL6BbzEcxR10OlO7H7"/>
+<div class="mt-2 text-center">
+<span class="block font-data-sm text-data-sm text-outline group-hover:text-on-surface transition-colors">MATIC/ETH</span>
+<span class="block font-data-sm text-[10px] text-outline uppercase tracking-wider mt-1">Idle</span>
+</div>
+</div>
+<div aria-label="DODO USDC/USDT Idle" class="bg-surface-container-lowest/80 flex flex-col items-center justify-center p-2 relative hover:bg-surface-container-highest/80 transition-colors group cursor-crosshair focus:outline-none focus:ring-2 focus:ring-primary-container inset-ring" role="gridcell" tabindex="0">
+<span class="font-label-caps text-label-caps text-on-surface-variant group-hover:text-primary-fixed-dim transition-colors">DODO</span>
+<div class="mt-2 text-center">
+<span class="block font-data-sm text-data-sm text-outline group-hover:text-on-surface transition-colors">USDC/USDT</span>
+<span class="block font-data-sm text-[10px] text-outline uppercase tracking-wider mt-1">Idle</span>
+</div>
+</div>
+<div aria-label="Maverick ETH/stETH Idle" class="bg-surface-container-lowest/80 flex flex-col items-center justify-center p-2 relative hover:bg-surface-container-highest/80 transition-colors group cursor-crosshair focus:outline-none focus:ring-2 focus:ring-primary-container inset-ring" role="gridcell" tabindex="0">
+<span class="font-label-caps text-label-caps text-on-surface-variant group-hover:text-primary-fixed-dim transition-colors">MAVERICK</span>
+<div class="mt-2 text-center">
+<span class="block font-data-sm text-data-sm text-outline group-hover:text-on-surface transition-colors">ETH/stETH</span>
+<span class="block font-data-sm text-[10px] text-outline uppercase tracking-wider mt-1">Idle</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Live Tally Log Module -->
+<div aria-labelledby="live-tally-heading" class="glass-panel rounded-xl p-5 flex flex-col flex-1 max-h-[320px]" role="region">
+<div class="flex justify-between items-center border-b border-white/10 pb-3 mb-3">
+<h2 class="font-headline-md text-headline-md text-on-surface" id="live-tally-heading">LIVE TALLY LOG</h2>
+<span aria-hidden="true" class="material-symbols-outlined text-outline">receipt_long</span>
+</div>
+<div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+<div class="w-full text-left" role="table">
+<div class="grid grid-cols-4 font-label-caps text-label-caps text-on-surface/50 bg-white/5 p-2 mb-1 sticky top-0 rounded-t border-b border-white/10 backdrop-blur-md" role="row">
+<div role="columnheader">TYPE</div>
+<div role="columnheader">ASSET</div>
+<div class="text-right" role="columnheader">PROFIT</div>
+<div class="text-right" role="columnheader">SL TIMER</div>
+</div>
+<div class="data-table-row grid grid-cols-4 items-center p-2 font-data-sm text-data-sm hover:bg-white/5 transition-colors group cursor-default" role="row">
+<div class="text-primary-fixed-dim font-bold tracking-wide" role="cell">ARB</div>
+<div class="text-on-surface" role="cell"><div class="flex items-center gap-2"><img alt="" class="w-4 h-4 rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLKdLQrUv8RajB5G_YgH_mIANC9IFfWWOn_RUBIwba-vEswJSHAbJvx4HJ6fmVU0eKiHxWKY9jfI2iNvnXwVafzeSP3zEfs7F0FIDgb4yNt32rRO6mDgnYhW_Ao0E1AAu4dgVR8PsWCQN16IqF6uz_lu7yOfINKLDNXAhsBL5cKIMG_dlDk_bPmCbPvKARVWQiPaEfhcJ653FEcPUlgzlBlIQ69bO6ufxCRL79zfu0ikRrkaTmshET"/><span>ETH/USDC</span></div></div>
+<div class="text-right text-primary-fixed-dim drop-shadow-[0_0_2px_rgba(0,219,233,0.5)]" role="cell">+$45.20</div>
+<div class="text-right text-outline font-data-sm" role="cell">00:14s</div>
+</div>
+<div class="data-table-row grid grid-cols-4 items-center p-2 font-data-sm text-data-sm hover:bg-white/5 transition-colors group cursor-default" role="row">
+<div class="text-[#ff00ff] font-bold tracking-wide" role="cell">SHORT</div>
+<div class="text-on-surface" role="cell"><div class="flex items-center gap-2"><img alt="" class="w-4 h-4 rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAgmzdbZ-rkecypU9HiEoJmdiPxXBzNlz_cLTTEGDSVODZIcWuqt3gHWVa_onN_LjTJ4Qi06JjW3bxOtZri6nnUaB9XusNSzJC2pOJlqHAsxF8hgradmjkCHKqmvcYfFxw0c93xhnox5pcz4aWfmxpgEREa9lsCHi8d5RmzojGjwwYdGjD6oAbUGf-ieEBTOgWWEEtuKeYlSBAgv-cS-BGU2TodiCTDWZngp1DLvkKTvy4frOg56807"/><span>WBTC</span></div></div>
+<div class="text-right text-outline" role="cell">PENDING</div>
+<div class="text-right text-[#ff00ff] font-data-sm" role="cell">01:42s</div>
+</div>
+<div class="data-table-row grid grid-cols-4 items-center p-2 font-data-sm text-data-sm hover:bg-white/5 transition-colors group cursor-default" role="row">
+<div class="text-primary-fixed-dim font-bold tracking-wide" role="cell">LONG</div>
+<div class="text-on-surface" role="cell"><div class="flex items-center gap-2"><img alt="" class="w-4 h-4 rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXXZ-YDb-oTGNalIatrso_llUNXUxK9vbTAbmgvK_TFIXRuaIEWl1v9pFnkFdU0lFsYPP_7pEvBySs-CqSWifC2mzshU6pCBwvWhAsXM8N1o-koST9qehpUAq2pqPlqzTq2BHNbqLfMS9e6yMCYsdeSSpGjv9drwx-RbzbxgfUCbKL7NOpkU6D5KEToXkypu8CyXI6ty2wDtrsDMnAECRPZV1wMOVbI_U8bl-KLlnWZicWKLDTORYs"/><span>SOL</span></div></div>
+<div class="text-right text-primary-fixed-dim drop-shadow-[0_0_2px_rgba(0,219,233,0.5)]" role="cell">+$12.80</div>
+<div class="text-right text-outline font-data-sm" role="cell">00:00s</div>
+</div>
+<div class="data-table-row grid grid-cols-4 items-center p-2 font-data-sm text-data-sm hover:bg-white/5 transition-colors group cursor-default" role="row">
+<div class="text-primary-fixed-dim font-bold tracking-wide" role="cell">ARB</div>
+<div class="text-on-surface" role="cell"><div class="flex items-center gap-2"><img alt="" class="w-4 h-4 rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDe1BdPvBbTs4KuPZYGxhMuzAIGpuZTKRA2WhdWwSNVypz2qTTvMjV7tBy-Y8v8IrWzO6DRRdejh7fvK0lix4mlESouXczheugYHj8Bnk_9vRUQv-DugK0xqCk6c-prPrTN6QLeRavAEuvqutUXyxZV-ogCH-nrDFZrU-mokqffmjRMYSOAy872vy_vssZTb92vHjW8zoKWOMSF3rzl6enZTTiQY6SszVxkTnn7TL8Lhp5nw4Sb4mt0"/><span>UNI/ETH</span></div></div>
+<div class="text-right text-[#ff00ff] drop-shadow-[0_0_2px_rgba(255,0,255,0.5)]" role="cell">-$2.10</div>
+<div class="text-right text-outline font-data-sm" role="cell">00:00s</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Shared BottomNavBar (Mobile Only) -->
+<nav aria-label="Mobile Navigation" class="md:hidden bg-surface-container-lowest/90 backdrop-blur-2xl fixed bottom-0 w-full z-50 h-20 border-t border-white/10 shadow-[0_-8px_32px_rgba(0,0,0,0.6)]">
+<div class="flex justify-around items-center px-4 h-full">
+<button aria-current="page" aria-label="Dashboard" class="flex flex-col items-center justify-center text-primary-fixed-dim bg-primary-fixed-dim/10 rounded-xl px-5 py-2 hover:text-primary transition-all active:scale-90 duration-100 focus:outline-none focus:ring-2 focus:ring-primary-container">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-label-caps text-label-caps mt-1 tracking-wider">Dashboard</span>
+</button>
+<button aria-label="Modules" class="flex flex-col items-center justify-center text-outline hover:text-[#ff00ff] transition-all active:scale-90 duration-100 px-5 py-2 focus:outline-none focus:ring-2 focus:ring-[#ff00ff] rounded-xl">
+<span class="material-symbols-outlined">extension</span>
+<span class="font-label-caps text-label-caps mt-1 tracking-wider">Modules</span>
+</button>
+<button aria-label="Log" class="flex flex-col items-center justify-center text-outline hover:text-[#ff00ff] transition-all active:scale-90 duration-100 px-5 py-2 focus:outline-none focus:ring-2 focus:ring-[#ff00ff] rounded-xl">
+<span class="material-symbols-outlined">terminal</span>
+<span class="font-label-caps text-label-caps mt-1 tracking-wider">Log</span>
+</button>
+<button aria-label="Settings" class="flex flex-col items-center justify-center text-outline hover:text-[#ff00ff] transition-all active:scale-90 duration-100 px-5 py-2 focus:outline-none focus:ring-2 focus:ring-[#ff00ff] rounded-xl">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-caps text-label-caps mt-1 tracking-wider">Settings</span>
+</button>
+</div>
+</nav>
+</body></html>

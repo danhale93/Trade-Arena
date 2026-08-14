@@ -53,6 +53,30 @@ app.get('/api/health', (req, res) => {
 });
 
 /**
+ * GET /api/agent/status - Read-only control-plane state for the managed Agent Wallet.
+ */
+app.get('/api/agent/status', (req, res) => {
+    res.json({ success: true, agent: mmArbService.getStatus(), timestamp: Date.now() });
+});
+
+/**
+ * POST /api/agent/pause - Pause quote polling and execution decisions.
+ */
+app.post('/api/agent/pause', (req, res) => {
+    mmArbService.pause();
+    res.json({ success: true, agent: mmArbService.getStatus(), timestamp: Date.now() });
+});
+
+/**
+ * POST /api/agent/resume - Resume quote polling. Execution remains disabled unless
+ * AGENT_EXECUTION_ENABLED=true is explicitly configured on the server.
+ */
+app.post('/api/agent/resume', (req, res) => {
+    mmArbService.resume();
+    res.json({ success: true, agent: mmArbService.getStatus(), timestamp: Date.now() });
+});
+
+/**
  * POST /api/analyze/arbitrage - Detect arbitrage opportunities
  */
 app.post('/api/analyze/arbitrage', async (req, res) => {

@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AI Arbitrage Terminal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&amp;family=Inter:wght@400;500&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-high": "#272a2f",
+                        "primary": "#a4c9ff",
+                        "surface-variant": "#32353a",
+                        "tertiary-container": "#c58305",
+                        "secondary-fixed-dim": "#ffb1c4",
+                        "secondary-container": "#b20055",
+                        "on-background": "#e1e2e9",
+                        "on-error": "#690005",
+                        "on-secondary-fixed-variant": "#8f0043",
+                        "tertiary-fixed": "#ffddb4",
+                        "surface-dim": "#101418",
+                        "on-primary": "#00315d",
+                        "on-primary-fixed-variant": "#004883",
+                        "on-surface": "#e1e2e9",
+                        "on-tertiary-fixed-variant": "#633f00",
+                        "on-tertiary-fixed": "#291800",
+                        "surface-container-low": "#191c21",
+                        "secondary": "#ffb1c4",
+                        "outline": "#8b919d",
+                        "on-primary-fixed": "#001c39",
+                        "surface-container-lowest": "#0b0e13",
+                        "inverse-on-surface": "#2e3036",
+                        "surface": "#101418",
+                        "surface-container-highest": "#32353a",
+                        "outline-variant": "#414751",
+                        "on-secondary": "#65002e",
+                        "inverse-surface": "#e1e2e9",
+                        "primary-fixed": "#d4e3ff",
+                        "on-secondary-fixed": "#3f001a",
+                        "primary-container": "#4d93e5",
+                        "primary-fixed-dim": "#a4c9ff",
+                        "background": "#101418",
+                        "on-error-container": "#ffdad6",
+                        "on-surface-variant": "#c1c7d3",
+                        "error-container": "#93000a",
+                        "on-primary-container": "#002a51",
+                        "on-tertiary-container": "#3c2500",
+                        "tertiary": "#ffb953",
+                        "inverse-primary": "#0060ac",
+                        "error": "#ffb4ab",
+                        "tertiary-fixed-dim": "#ffb953",
+                        "surface-bright": "#36393f",
+                        "secondary-fixed": "#ffd9e0",
+                        "surface-container": "#1d2025",
+                        "on-secondary-container": "#ffc0cf",
+                        "surface-tint": "#a4c9ff",
+                        "on-tertiary": "#452b00",
+                        
+                        // Terminal Accents
+                        "terminal-green": "#00ff66",
+                        "terminal-red": "#ff3333",
+                        "terminal-blue": "#00f0ff",
+                        "terminal-warn": "#ffb800",
+                        "terminal-purple": "#b200ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "16px",
+                        "container-max": "1440px",
+                        "margin-mobile": "16px",
+                        "unit": "4px",
+                        "margin-desktop": "32px"
+                    },
+                    "fontFamily": {
+                        "headline-lg-mobile": ["Montserrat"],
+                        "headline-md": ["Montserrat"],
+                        "body-sm": ["Inter"],
+                        "display-lg": ["Montserrat"],
+                        "label-mono": ["JetBrains Mono", "monospace"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg-mobile": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-mono": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .terminal-container {
+            width: 100%;
+            max-width: 100%;
+            background: #0b0e13;
+            border: 1px solid #32353a;
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: inset 0 0 40px rgba(0, 240, 255, 0.05);
+            position: relative;
+            overflow-x: auto;
+        }
+
+        .exchange-grid {
+            display: grid;
+            grid-template-columns: 120px repeat(var(--reel-count, 5), minmax(80px, 1fr));
+            gap: 4px;
+            background: #101418;
+            border-radius: 4px;
+            padding: 4px;
+            position: relative;
+            min-width: max-content;
+        }
+
+        .exchange-row-label {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 6px;
+            padding-left: 8px;
+            padding-right: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: #8b919d;
+            height: 48px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            text-transform: uppercase;
+        }
+
+        .exchange-row-label .material-symbols-outlined {
+            font-size: 14px;
+            color: #414751;
+        }
+
+        .bot-column {
+            position: relative;
+            background: rgba(39, 42, 47, 0.3);
+            border-left: 1px solid rgba(139, 145, 157, 0.1);
+            border-right: 1px solid rgba(139, 145, 157, 0.1);
+        }
+
+        .bot-header {
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: #00f0ff;
+            background: #191c21;
+            border-bottom: 1px solid #32353a;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .bot-cell {
+            height: 48px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .bot-cell.scanning {
+            background: repeating-linear-gradient(
+                45deg,
+                rgba(0, 240, 255, 0.02),
+                rgba(0, 240, 255, 0.02) 10px,
+                rgba(0, 240, 255, 0.05) 10px,
+                rgba(0, 240, 255, 0.05) 20px
+            );
+            animation: scan-scroll 1s linear infinite;
+        }
+
+        @keyframes scan-scroll {
+            from { background-position: 0 0; }
+            to { background-position: 28px 0; }
+        }
+
+        /* States */
+        .state-processing {
+            animation: pulse-processing 1s infinite alternate;
+            color: #00f0ff;
+        }
+        @keyframes pulse-processing {
+            0% { opacity: 0.5; box-shadow: inset 0 0 5px rgba(0, 240, 255, 0.2); }
+            100% { opacity: 1; box-shadow: inset 0 0 15px rgba(0, 240, 255, 0.5); }
+        }
+
+        .state-win {
+            background: rgba(0, 255, 102, 0.1);
+            border: 1px solid rgba(0, 255, 102, 0.5);
+            box-shadow: 0 0 15px rgba(0, 255, 102, 0.2);
+            color: #00ff66;
+            animation: win-glow 2s infinite alternate;
+        }
+        @keyframes win-glow {
+            0% { box-shadow: 0 0 10px rgba(0, 255, 102, 0.2); }
+            100% { box-shadow: 0 0 20px rgba(0, 255, 102, 0.6); }
+        }
+
+        .state-loss {
+            background: rgba(255, 51, 51, 0.1);
+            border: 1px solid rgba(255, 51, 51, 0.5);
+            color: #ff3333;
+            position: relative;
+            overflow: hidden;
+        }
+        .state-loss::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,51,51,0.1) 3px, rgba(255,51,51,0.1) 4px);
+            pointer-events: none;
+            opacity: 0.5;
+        }
+        
+        .state-hold {
+            background: rgba(178, 0, 255, 0.1);
+            border: 1px solid rgba(178, 0, 255, 0.5);
+            color: #b200ff;
+        }
+        
+        .state-spot {
+            background: rgba(255, 184, 0, 0.1);
+            border: 1px solid rgba(255, 184, 0, 0.5);
+            color: #ffb800;
+        }
+
+        .glass-panel {
+            background: rgba(11, 14, 19, 0.8);
+            border: 1px solid #32353a;
+        }
+
+        .cyber-btn {
+            background: rgba(0, 240, 255, 0.1);
+            border: 1px solid #00f0ff;
+            color: #00f0ff;
+            text-transform: uppercase;
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 2px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .cyber-btn:hover {
+            background: rgba(0, 240, 255, 0.2);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+        }
+
+        .cyber-btn.scanning-active {
+            background: rgba(0, 255, 102, 0.1);
+            border-color: #00ff66;
+            color: #00ff66;
+            animation: pulse-active 2s infinite;
+        }
+
+        @keyframes pulse-active {
+            0% { box-shadow: 0 0 0 0 rgba(0, 255, 102, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 255, 102, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 255, 102, 0); }
+        }
+
+        /* Progress Bar */
+        .progress-track {
+            background: #191c21;
+            border-radius: 2px;
+            height: 4px;
+            width: 100%;
+            overflow: hidden;
+        }
+        .progress-fill {
+            background: #00f0ff;
+            height: 100%;
+        }
+        .progress-fill.high { background: #00ff66; }
+        .progress-fill.warn { background: #ffb800; }
+        
+        /* Range Slider Styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 12px;
+            width: 12px;
+            border-radius: 50%;
+            background: #00f0ff;
+            cursor: pointer;
+            margin-top: -4px;
+            box-shadow: 0 0 5px rgba(0, 240, 255, 0.5);
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #191c21;
+            border-radius: 2px;
+        }
+
+        /* Toggle Switch Styling */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 34px;
+            height: 20px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #191c21;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
+            background-color: #8b919d;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: rgba(0, 240, 255, 0.2);
+            border: 1px solid #00f0ff;
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(14px);
+            background-color: #00f0ff;
+            box-shadow: 0 0 5px rgba(0, 240, 255, 0.5);
+        }
+        
+        /* Audio Visualizer */
+        .visualizer-bar {
+            width: 3px;
+            background: #00f0ff;
+            display: inline-block;
+            margin: 0 1px;
+            border-radius: 1px;
+            animation: equalize 1s infinite alternate ease-in-out;
+        }
+        
+        @keyframes equalize {
+            0% { height: 4px; }
+            100% { height: 16px; }
+        }
+        
+        .visualizer-bar:nth-child(1) { animation-delay: 0.1s; animation-duration: 0.7s; }
+        .visualizer-bar:nth-child(2) { animation-delay: 0.4s; animation-duration: 0.5s; }
+        .visualizer-bar:nth-child(3) { animation-delay: 0.2s; animation-duration: 0.8s; }
+        .visualizer-bar:nth-child(4) { animation-delay: 0.6s; animation-duration: 0.6s; }
+        .visualizer-bar:nth-child(5) { animation-delay: 0.3s; animation-duration: 0.9s; }
+        .visualizer-bar:nth-child(6) { animation-delay: 0.5s; animation-duration: 0.5s; }
+        
+        /* Live Price Ticker */
+        .ticker-wrap {
+            width: 100%;
+            overflow: hidden;
+            background: rgba(11, 14, 19, 0.95);
+            border-top: 1px solid #32353a;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            z-index: 100;
+            height: 36px;
+            display: flex;
+            align-items: center;
+        }
+        .ticker-move {
+            display: inline-block;
+            white-space: nowrap;
+            animation: ticker 30s linear infinite;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+        }
+        @keyframes ticker {
+            0% { transform: translateX(100vw); }
+            100% { transform: translateX(-100%); }
+        }
+        .ticker-item {
+            margin-right: 48px;
+            display: inline-flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        /* Scanline Overlay */
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.1) 3px, rgba(0,0,0,0.1) 4px);
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.3;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col font-body-lg pb-10">
+<!-- TopAppBar -->
+<header class="bg-surface-container-lowest border-b border-surface-variant fixed top-0 w-full flex justify-between items-center px-margin-mobile md:px-margin-desktop h-16 z-50">
+<div class="flex items-center gap-2 text-terminal-blue font-label-mono text-lg font-bold tracking-widest">
+<span class="material-symbols-outlined">terminal</span>
+<span class="">AI_ARB_TERMINAL</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden md:flex items-center gap-2 text-xs font-label-mono">
+<span class="w-2 h-2 rounded-full bg-terminal-green animate-pulse"></span>
+<span class="text-terminal-green">SYS.ONLINE</span>
+</div>
+<button class="text-on-surface-variant hover:text-terminal-blue transition-colors p-2 rounded-full scale-95 active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined">settings_system_daydream</span>
+</button>
+</div>
+</header>
+<main class="flex-1 mt-16 pb-24 flex flex-col p-gutter md:p-margin-desktop overflow-x-hidden relative max-w-7xl mx-auto w-full">
+<!-- Top Dashboard Row -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+<!-- Execution Data -->
+<div class="glass-panel p-4 rounded-lg flex flex-col justify-between">
+<h3 class="font-label-mono text-xs text-outline mb-2">EXECUTION_DATA</h3>
+<div class="grid grid-cols-3 gap-4">
+<div>
+<p class="font-label-mono text-[10px] text-on-surface-variant">AVG_GAS_FEE</p>
+<p class="font-label-mono text-terminal-blue">12.4 Gwei</p>
+</div>
+<div><span class="w-1.5 h-1.5 rounded-full bg-terminal-green animate-pulse"></span>
+<span class="text-on-surface">FLASHLOAN: SECURED</span></div>
+<div>
+<p class="font-label-mono text-[10px] text-on-surface-variant">FLASH_LIQUIDITY</p>
+<p class="font-label-mono text-terminal-green">$4.2M <span class="text-[8px] opacity-70">STABLE</span></p>
+</div>
+</div>
+<div class="mt-3 pt-3 border-t border-surface-variant">
+<p class="font-label-mono text-[10px] text-on-surface-variant mb-1">OPEN_ORDERS (LIVE)</p>
+<div class="flex justify-between font-label-mono text-xs">
+<span class="text-terminal-green">L: 42</span>
+<span class="text-terminal-red">S: 18</span>
+<span class="text-on-surface">SP: 104</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-4">
+<div class="glass-panel p-4 rounded-lg flex flex-col relative">
+<div class="flex justify-between items-center mb-2">
+<h3 class="font-label-mono text-xs text-outline">PROFIT_LOSS_SUMMARY</h3>
+<div class="flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-terminal-green animate-pulse"></span>
+<span class="text-[8px] font-label-mono text-terminal-green">LIVE</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-y-3 gap-x-4 mb-3">
+<div>
+<p class="font-label-mono text-[10px] text-on-surface-variant">DAILY_PL</p>
+<p class="font-label-mono text-terminal-green font-bold">+$12,450.80</p>
+</div>
+<div>
+<p class="font-label-mono text-[10px] text-on-surface-variant">WIN_RATE</p>
+<p class="font-label-mono text-on-surface">78.4%</p>
+</div>
+<div>
+<p class="font-label-mono text-[10px] text-on-surface-variant">BEST_TRADE</p>
+<p class="font-label-mono text-terminal-blue">SOL/USDT (+4.2%)</p>
+</div>
+<div>
+<p class="font-label-mono text-[10px] text-on-surface-variant">SESSION_VOL</p>
+<p class="font-label-mono text-on-surface">$1.2M</p>
+</div>
+</div>
+<div class="border-t border-surface-variant pt-2">
+<div class="flex justify-between font-label-mono text-[10px] mb-1">
+<span class="text-on-surface-variant">AUDIO_INTENSITY</span>
+<span class="text-terminal-red">95%</span>
+</div>
+<div class="progress-track"><div class="progress-fill" style="width: 95%; background: #ff3333;"></div></div>
+</div>
+</div>
+<!-- Audio Telemetry Panel -->
+<div class="glass-panel p-4 rounded-lg flex flex-col">
+<h3 class="font-label-mono text-xs text-terminal-blue mb-3">AUDIO_TELEMETRY</h3>
+<div class="space-y-4">
+<div>
+<div class="flex justify-between font-label-mono text-[10px] mb-2">
+<span class="text-on-surface-variant">MASTER_GAIN</span>
+<span class="text-terminal-blue">75%</span>
+</div>
+<input max="100" min="0" type="range" value="75"/>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex flex-col">
+<span class="font-label-mono text-[10px] text-on-surface-variant">DYNAMIC_DRUM_ENGINE</span>
+<span class="font-label-mono text-xs text-terminal-red font-bold">INTENSE</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-mono text-[10px] text-on-surface-variant">VOICE</span>
+<label class="toggle-switch">
+<input checked="" type="checkbox"/>
+<span class="toggle-slider"></span>
+</label>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- AI Consensus Panel -->
+<div class="glass-panel p-4 rounded-lg md:col-span-1 flex flex-col">
+<h3 class="font-label-mono text-xs text-outline mb-3">MODEL_CONSENSUS_WEIGHTS</h3>
+<div class="space-y-3 flex-1 flex flex-col justify-center">
+<!-- Model 1 -->
+<div>
+<div class="flex justify-between font-label-mono text-[10px] mb-1">
+<span class="text-on-surface">AlphaQuant [v2.4]</span>
+<span class="text-terminal-green">89% ACC</span>
+</div>
+<div class="progress-track"><div class="progress-fill high" style="width: 89%"></div></div>
+</div>
+<!-- Model 2 -->
+<div>
+<div class="flex justify-between font-label-mono text-[10px] mb-1">
+<span class="text-on-surface">DeepArbitrage [v1.1]</span>
+<span class="text-terminal-blue">64% ACC</span>
+</div>
+<div class="progress-track"><div class="progress-fill" style="width: 64%"></div></div>
+</div>
+<!-- Model 3 -->
+<div>
+<div class="flex justify-between font-label-mono text-[10px] mb-1">
+<span class="text-on-surface">NeuralTrend [v4.0]</span>
+<span class="text-terminal-warn">42% ACC</span>
+</div>
+<div class="progress-track"><div class="progress-fill warn" style="width: 42%"></div></div>
+</div>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter md:gap-margin-desktop">
+<!-- Left Column: Slots & Controls -->
+<div class="lg:col-span-8 flex flex-col gap-6 w-full">
+<!-- Terminal Grid Area -->
+<div class="glass-panel p-4 rounded-lg w-full">
+<div class="flex justify-between items-center mb-4">
+<h2 class="font-label-mono text-sm text-terminal-blue">DEX_SCAN_MATRIX</h2>
+<div class="flex items-center gap-2">
+<span class="font-label-mono text-[10px] text-on-surface-variant">ACTIVE_BOTS:</span>
+<div class="flex items-center bg-surface-container-low rounded border border-surface-variant">
+<button class="px-2 py-1 text-on-surface hover:text-terminal-blue disabled:opacity-50" id="removeReelBtn">-</button>
+<span class="font-label-mono text-xs px-2 text-terminal-blue" id="reelCountDisplay">5</span>
+<button class="px-2 py-1 text-on-surface hover:text-terminal-blue disabled:opacity-50" id="addReelBtn">+</button>
+</div>
+</div>
+</div>
+<div class="terminal-container">
+<div class="exchange-grid" id="slotsGrid" style="--reel-count: 5;"><div class="flex flex-col" id="exchangeLabels"><div class="bot-header border-r border-surface-variant text-[8px] justify-start pl-2">EXCHANGE</div><div class="exchange-row-label"><span class="material-symbols-outlined">swap_calls</span> Uniswap</div><div class="exchange-row-label"><span class="material-symbols-outlined">set_meal</span> SushiSwap</div><div class="exchange-row-label"><span class="material-symbols-outlined">breakfast_dining</span> PancakeSwap</div><div class="exchange-row-label"><span class="material-symbols-outlined">waves</span> Curve</div><div class="exchange-row-label"><span class="material-symbols-outlined">balance</span> Balancer</div><div class="exchange-row-label"><span class="material-symbols-outlined">filter_1</span> 1inch</div><div class="exchange-row-label"><span class="material-symbols-outlined">diamond</span> Kyber</div><div class="exchange-row-label"><span class="material-symbols-outlined">shield</span> Bancor</div><div class="exchange-row-label"><span class="material-symbols-outlined">local_cafe</span> TraderJoe</div><div class="exchange-row-label"><span class="material-symbols-outlined">bolt</span> Raydium</div></div><div class="bot-column flex flex-col" id="bot-0"><div class="bot-header">BOT_01</div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="Uniswap" data-row="0"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="SushiSwap" data-row="1"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="PancakeSwap" data-row="2"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] state-win font-bold" data-exchange="Curve" data-row="3"><span class="">+BTC</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="Balancer" data-row="4"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="1inch" data-row="5"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="Kyber" data-row="6"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="Bancor" data-row="7"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="TraderJoe" data-row="8"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="Raydium" data-row="9"><span class="">...</span></div></div><div class="bot-column flex flex-col" id="bot-1"><div class="bot-header">BOT_02</div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="Uniswap" data-row="0"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="SushiSwap" data-row="1"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="PancakeSwap" data-row="2"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="Curve" data-row="3"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="Balancer" data-row="4"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="1inch" data-row="5"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="Kyber" data-row="6"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="Bancor" data-row="7"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="TraderJoe" data-row="8"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] state-loss font-bold" data-exchange="Raydium" data-row="9"><span class="">-DOGE</span></div></div><div class="bot-column flex flex-col" id="bot-2"><div class="bot-header">BOT_03</div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="Uniswap" data-row="0"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="SushiSwap" data-row="1"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="PancakeSwap" data-row="2"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="Curve" data-row="3"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="Balancer" data-row="4"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="1inch" data-row="5"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="Kyber" data-row="6"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="Bancor" data-row="7"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] state-win font-bold" data-exchange="TraderJoe" data-row="8"><span class="">+SOL</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="Raydium" data-row="9"><span class="">...</span></div></div><div class="bot-column flex flex-col" id="bot-3"><div class="bot-header">BOT_04</div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="Uniswap" data-row="0"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="SushiSwap" data-row="1"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] state-hold font-bold" data-exchange="PancakeSwap" data-row="2"><span class="">ADA</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="Curve" data-row="3"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="Balancer" data-row="4"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="1inch" data-row="5"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="Kyber" data-row="6"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="Bancor" data-row="7"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="TraderJoe" data-row="8"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="Raydium" data-row="9"><span class="">...</span></div></div><div class="bot-column flex flex-col" id="bot-4"><div class="bot-header">BOT_05</div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="Uniswap" data-row="0"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="SushiSwap" data-row="1"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="PancakeSwap" data-row="2"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="Curve" data-row="3"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="Balancer" data-row="4"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="1inch" data-row="5"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="Kyber" data-row="6"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="Bancor" data-row="7"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="TraderJoe" data-row="8"><span class="">...</span></div><div class="bot-cell font-label-mono text-[10px] text-outline scanning" data-exchange="Raydium" data-row="9"><span class="">...</span></div></div></div>
+</div>
+</div>
+<!-- Controls -->
+<div class="flex flex-col sm:flex-row items-center gap-4 w-full">
+<button class="cyber-btn scanning-active py-4 px-8 rounded flex-1 font-bold text-lg w-full sm:w-auto transition-all flex items-center justify-center gap-2" id="spinBtn">
+<span class="material-symbols-outlined text-xl" id="spinIcon">radar</span>
+<span class="" id="spinText">AUTO_SCANNING</span>
+</button>
+<!-- Current Target Display -->
+<div class="glass-panel p-3 rounded flex-1 w-full text-center min-h-[60px] flex flex-col justify-center border-terminal-blue/30" id="resultDisplay" style="border-color: rgba(0, 255, 102, 0.5);">
+<p class="font-label-mono text-[10px] text-outline mb-1">LAST_ARBITRAGE_OP</p>
+<div class="font-label-mono text-xs text-on-surface-variant" id="comboDisplay"><span class="text-terminal-green">SUCCESS: SHORT SOL on TraderJoe (+0.4510)</span></div>
+</div>
+</div>
+</div>
+<!-- Right Column: Logs & Status -->
+<div class="lg:col-span-4 flex flex-col gap-4">
+<!-- Status Badges -->
+<div class="glass-panel rounded-lg p-4">
+<h3 class="font-label-mono text-xs text-outline mb-3">SYSTEM_STATUS</h3>
+<div class="grid grid-cols-2 gap-2 font-label-mono text-[10px]">
+<div class="bg-surface-container-low p-2 rounded border border-surface-variant flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-terminal-green"></span>
+<span class="text-on-surface">ROUTER: ACTIVE</span>
+</div>
+<div class="bg-surface-container-low p-2 rounded border border-surface-variant flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-terminal-green animate-pulse"></span>
+<span class="text-on-surface">FLASHLOAN: SECURED</span></div>
+<div class="bg-surface-container-low p-2 rounded border border-surface-variant flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-terminal-red"></span>
+<span class="text-on-surface">MEMPOOL: SUSPEND</span>
+</div>
+<div class="bg-surface-container-low p-2 rounded border border-surface-variant flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-terminal-blue"></span>
+<span class="text-on-surface">RPC: REINSTATED</span>
+</div>
+</div>
+</div>
+<!-- Tally Ticker Log (History) -->
+<div class="glass-panel rounded-lg p-4 flex-1 flex flex-col h-[400px]">
+<div class="flex items-center justify-between mb-3 border-b border-surface-variant pb-2">
+<div class="flex items-center gap-3">
+<h3 class="font-label-mono text-xs text-terminal-blue">TALLY_TICKER_LOG</h3>
+<div class="flex h-4 items-end" id="audioVisualizer">
+<div class="visualizer-bar"></div>
+<div class="visualizer-bar"></div>
+<div class="visualizer-bar"></div>
+<div class="visualizer-bar"></div>
+<div class="visualizer-bar"></div>
+<div class="visualizer-bar"></div>
+</div>
+</div>
+<span class="material-symbols-outlined text-sm text-outline">receipt_long</span>
+</div>
+<div class="flex-1 overflow-y-auto space-y-2 pr-1 font-label-mono text-[10px]" id="historyList"><div class="flex flex-col p-2 bg-surface-container-highest border border-surface-variant mb-1 font-label-mono text-[10px]">
+<div class="flex justify-between text-outline mb-1 text-[8px] uppercase">
+<span class="">[19:09:09] BOT_04 • <span class="text-terminal-purple">HOLD</span></span>
+<span class="">PancakeSwap • SL: <span class="text-terminal-warn">03:43</span></span>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-1 text-on-surface"><span class="material-symbols-outlined text-[10px] text-terminal-blue opacity-50">volume_up</span>ARB_EXEC: <span class="font-bold">ADA/USDT</span></div>
+<span class="text-on-surface font-bold">0.0000</span>
+</div>
+</div><div class="flex flex-col p-2 bg-surface-container-highest border border-surface-variant mb-1 font-label-mono text-[10px]">
+<div class="flex justify-between text-outline mb-1 text-[8px] uppercase">
+<span class="">[19:09:09] BOT_03 • <span class="text-terminal-red">SHORT</span></span>
+<span class="">TraderJoe • SL: <span class="text-terminal-warn">00:18</span></span>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-1 text-on-surface"><span class="material-symbols-outlined text-[10px] text-terminal-green">volume_up</span>ARB_EXEC: <span class="font-bold">SOL/USDT</span></div>
+<span class="text-terminal-green font-bold">+0.4510</span>
+</div>
+</div><div class="flex flex-col p-2 bg-surface-container-highest border border-surface-variant mb-1 font-label-mono text-[10px]">
+<div class="flex justify-between text-outline mb-1 text-[8px] uppercase">
+<span class="">[19:09:09] BOT_02 • <span class="text-terminal-red">SHORT</span></span>
+<span class="">Raydium • SL: <span class="text-terminal-warn">03:21</span></span>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-1 text-on-surface"><span class="material-symbols-outlined text-[10px] text-terminal-red">volume_up</span>ARB_EXEC: <span class="font-bold">DOGE/USDT</span></div>
+<span class="text-terminal-red font-bold">-0.2427</span>
+</div>
+</div><div class="flex flex-col p-2 bg-surface-container-highest border border-surface-variant mb-1 font-label-mono text-[10px]">
+<div class="flex justify-between text-outline mb-1 text-[8px] uppercase">
+<span class="">[19:09:09] BOT_01 • <span class="text-terminal-green">LONG</span></span>
+<span class="">Curve • SL: <span class="text-terminal-warn">04:22</span></span>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-1 text-on-surface"><span class="material-symbols-outlined text-[10px] text-terminal-green">volume_up</span>ARB_EXEC: <span class="font-bold">BTC/USDT</span></div>
+<span class="text-terminal-green font-bold">+0.4876</span>
+</div>
+</div><div class="flex flex-col p-2 bg-surface-container-highest border border-surface-variant mb-1 font-label-mono text-[10px]">
+<div class="flex justify-between text-outline mb-1 text-[8px] uppercase">
+<span class="">[19:09:08] BOT_02 • <span class="text-terminal-blue">SPOT</span></span>
+<span class="">TraderJoe • SL: <span class="text-terminal-warn">--:--</span></span>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-1 text-on-surface"><span class="material-symbols-outlined text-[10px] text-terminal-green">volume_up</span>ARB_EXEC: <span class="font-bold">XRP/USDT</span></div>
+<span class="text-terminal-green font-bold">+1.8398</span>
+</div>
+</div><div class="flex flex-col p-2 bg-surface-container-highest border border-surface-variant mb-1 font-label-mono text-[10px]">
+<div class="flex justify-between text-outline mb-1 text-[8px] uppercase">
+<span class="">[19:09:06] BOT_05 • <span class="text-terminal-blue">SPOT</span></span>
+<span class="">Uniswap • SL: <span class="text-terminal-warn">--:--</span></span>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-1 text-on-surface"><span class="material-symbols-outlined text-[10px] text-terminal-green">volume_up</span>ARB_EXEC: <span class="font-bold">DOGE/USDT</span></div>
+<span class="text-terminal-green font-bold">+0.6514</span>
+</div>
+</div><div class="flex flex-col p-2 bg-surface-container-highest border border-surface-variant mb-1 font-label-mono text-[10px]">
+<div class="flex justify-between text-outline mb-1 text-[8px] uppercase">
+<span class="">[19:09:05] BOT_05 • <span class="text-terminal-purple">HOLD</span></span>
+<span class="">SushiSwap • SL: <span class="text-terminal-warn">04:05</span></span>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-1 text-on-surface"><span class="material-symbols-outlined text-[10px] text-terminal-blue opacity-50">volume_up</span>ARB_EXEC: <span class="font-bold">AVAX/USDT</span></div>
+<span class="text-on-surface font-bold">0.0000</span>
+</div>
+</div><div class="flex flex-col p-2 bg-surface-container-highest border border-surface-variant mb-1 font-label-mono text-[10px]">
+<div class="flex justify-between text-outline mb-1 text-[8px] uppercase">
+<span class="">[19:09:03] BOT_01 • <span class="text-terminal-green">LONG</span></span>
+<span class="">PancakeSwap • SL: <span class="text-terminal-warn">03:17</span></span>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-1 text-on-surface"><span class="material-symbols-outlined text-[10px] text-terminal-green">volume_up</span>ARB_EXEC: <span class="font-bold">BTC/USDT</span></div>
+<span class="text-terminal-green font-bold">+1.4170</span>
+</div>
+</div><div class="flex flex-col p-2 bg-surface-container-highest border border-surface-variant mb-1 font-label-mono text-[10px]">
+<div class="flex justify-between text-outline mb-1 text-[8px] uppercase">
+<span class="">[19:09:02] BOT_04 • <span class="text-terminal-purple">HOLD</span></span>
+<span class="">1inch • SL: <span class="text-terminal-warn">01:48</span></span>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-1 text-on-surface"><span class="material-symbols-outlined text-[10px] text-terminal-blue opacity-50">volume_up</span>ARB_EXEC: <span class="font-bold">DOT/USDT</span></div>
+<span class="text-on-surface font-bold">0.0000</span>
+</div>
+</div><div class="flex flex-col p-2 bg-surface-container-highest border border-surface-variant mb-1 font-label-mono text-[10px]">
+<div class="flex justify-between text-outline mb-1 text-[8px] uppercase">
+<span class="">[19:09:02] BOT_01 • <span class="text-terminal-green">LONG</span></span>
+<span class="">Kyber • SL: <span class="text-terminal-warn">02:49</span></span>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-1 text-on-surface"><span class="material-symbols-outlined text-[10px] text-terminal-green">volume_up</span>ARB_EXEC: <span class="font-bold">ADA/USDT</span></div>
+<span class="text-terminal-green font-bold">+1.4261</span>
+</div>
+</div><div class="flex flex-col p-2 bg-surface-container-highest border border-surface-variant mb-1 font-label-mono text-[10px]">
+<div class="flex justify-between text-outline mb-1 text-[8px] uppercase">
+<span class="">[19:09:00] BOT_05 • <span class="text-terminal-red">SHORT</span></span>
+<span class="">SushiSwap • SL: <span class="text-terminal-warn">04:56</span></span>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-1 text-on-surface"><span class="material-symbols-outlined text-[10px] text-terminal-red">volume_up</span>ARB_EXEC: <span class="font-bold">BTC/USDT</span></div>
+<span class="text-terminal-red font-bold">-0.4077</span>
+</div>
+</div><div class="flex flex-col p-2 bg-surface-container-highest border border-surface-variant mb-1 font-label-mono text-[10px]">
+<div class="flex justify-between text-outline mb-1 text-[8px] uppercase">
+<span class="">[19:09:00] BOT_02 • <span class="text-terminal-green">LONG</span></span>
+<span class="">PancakeSwap • SL: <span class="text-terminal-warn">01:59</span></span>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-1 text-on-surface"><span class="material-symbols-outlined text-[10px] text-terminal-green">volume_up</span>ARB_EXEC: <span class="font-bold">BTC/USDT</span></div>
+<span class="text-terminal-green font-bold">+1.6130</span>
+</div>
+</div><div class="flex flex-col p-2 bg-surface-container-highest border border-surface-variant mb-1 font-label-mono text-[10px]">
+<div class="flex justify-between text-outline mb-1 text-[8px] uppercase">
+<span class="">[19:08:59] BOT_02 • <span class="text-terminal-blue">SPOT</span></span>
+<span class="">Raydium • SL: <span class="text-terminal-warn">--:--</span></span>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-1 text-on-surface"><span class="material-symbols-outlined text-[10px] text-terminal-green">volume_up</span>ARB_EXEC: <span class="font-bold">USDT/USDT</span></div>
+<span class="text-terminal-green font-bold">+1.3436</span>
+</div>
+</div><div class="flex flex-col p-2 bg-surface-container-highest border border-surface-variant mb-1 font-label-mono text-[10px]">
+<div class="flex justify-between text-outline mb-1 text-[8px] uppercase">
+<span class="">[19:08:57] BOT_05 • <span class="text-terminal-red">SHORT</span></span>
+<span class="">Raydium • SL: <span class="text-terminal-warn">01:22</span></span>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-1 text-on-surface"><span class="material-symbols-outlined text-[10px] text-terminal-green">volume_up</span>ARB_EXEC: <span class="font-bold">AVAX/USDT</span></div>
+<span class="text-terminal-green font-bold">+1.8418</span>
+</div>
+</div><div class="flex flex-col p-2 bg-surface-container-highest border border-surface-variant mb-1 font-label-mono text-[10px]">
+<div class="flex justify-between text-outline mb-1 text-[8px] uppercase">
+<span class="">[19:08:57] BOT_01 • <span class="text-terminal-purple">HOLD</span></span>
+<span class="">Kyber • SL: <span class="text-terminal-warn">02:49</span></span>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-1 text-on-surface"><span class="material-symbols-outlined text-[10px] text-terminal-blue opacity-50">volume_up</span>ARB_EXEC: <span class="font-bold">BTC/USDT</span></div>
+<span class="text-on-surface font-bold">0.0000</span>
+</div>
+</div><div class="flex flex-col p-2 bg-surface-container-highest border border-surface-variant mb-1 font-label-mono text-[10px]">
+<div class="flex justify-between text-outline mb-1 text-[8px] uppercase">
+<span class="">[19:08:56] BOT_05 • <span class="text-terminal-blue">SPOT</span></span>
+<span class="">Curve • SL: <span class="text-terminal-warn">--:--</span></span>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-1 text-on-surface"><span class="material-symbols-outlined text-[10px] text-terminal-green">volume_up</span>ARB_EXEC: <span class="font-bold">USDC/USDT</span></div>
+<span class="text-terminal-green font-bold">+0.9611</span>
+</div>
+</div><div class="flex flex-col p-2 bg-surface-container-highest border border-surface-variant mb-1 font-label-mono text-[10px]">
+<div class="flex justify-between text-outline mb-1 text-[8px] uppercase">
+<span class="">[19:08:54] BOT_05 • <span class="text-terminal-blue">SPOT</span></span>
+<span class="">Bancor • SL: <span class="text-terminal-warn">--:--</span></span>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-1 text-on-surface"><span class="material-symbols-outlined text-[10px] text-terminal-green">volume_up</span>ARB_EXEC: <span class="font-bold">ADA/USDT</span></div>
+<span class="text-terminal-green font-bold">+0.5233</span>
+</div>
+</div><div class="flex flex-col p-2 bg-surface-container-highest border border-surface-variant mb-1 font-label-mono text-[10px]">
+<div class="flex justify-between text-outline mb-1 text-[8px] uppercase">
+<span class="">[19:08:54] BOT_02 • <span class="text-terminal-purple">HOLD</span></span>
+<span class="">Kyber • SL: <span class="text-terminal-warn">03:24</span></span>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-1 text-on-surface"><span class="material-symbols-outlined text-[10px] text-terminal-blue opacity-50">volume_up</span>ARB_EXEC: <span class="font-bold">DOGE/USDT</span></div>
+<span class="text-on-surface font-bold">0.0000</span>
+</div>
+</div><div class="flex flex-col p-2 bg-surface-container-highest border border-surface-variant mb-1 font-label-mono text-[10px]">
+<div class="flex justify-between text-outline mb-1 text-[8px] uppercase">
+<span class="">[19:08:53] BOT_04 • <span class="text-terminal-green">LONG</span></span>
+<span class="">Kyber • SL: <span class="text-terminal-warn">01:44</span></span>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-1 text-on-surface"><span class="material-symbols-outlined text-[10px] text-terminal-green">volume_up</span>ARB_EXEC: <span class="font-bold">BTC/USDT</span></div>
+<span class="text-terminal-green font-bold">+0.4973</span>
+</div>
+</div><div class="flex flex-col p-2 bg-surface-container-highest border border-surface-variant mb-1 font-label-mono text-[10px]">
+<div class="flex justify-between text-outline mb-1 text-[8px] uppercase">
+<span class="">[19:08:51] BOT_05 • <span class="text-terminal-red">SHORT</span></span>
+<span class="">PancakeSwap • SL: <span class="text-terminal-warn">01:18</span></span>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-1 text-on-surface"><span class="material-symbols-outlined text-[10px] text-terminal-green">volume_up</span>ARB_EXEC: <span class="font-bold">USDC/USDT</span></div>
+<span class="text-terminal-green font-bold">+0.3431</span>
+</div>
+</div><div class="flex flex-col p-2 bg-surface-container-highest border border-surface-variant mb-1 font-label-mono text-[10px]">
+<div class="flex justify-between text-outline mb-1 text-[8px] uppercase">
+<span class="">[19:08:51] BOT_02 • <span class="text-terminal-purple">HOLD</span></span>
+<span class="">Raydium • SL: <span class="text-terminal-warn">00:25</span></span>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-1 text-on-surface"><span class="material-symbols-outlined text-[10px] text-terminal-blue opacity-50">volume_up</span>ARB_EXEC: <span class="font-bold">SOL/USDT</span></div>
+<span class="text-on-surface font-bold">0.0000</span>
+</div>
+</div><div class="flex flex-col p-2 bg-surface-container-highest border border-surface-variant mb-1 font-label-mono text-[10px]">
+<div class="flex justify-between text-outline mb-1 text-[8px] uppercase">
+<span class="">[19:08:51] BOT_01 • <span class="text-terminal-purple">HOLD</span></span>
+<span class="">1inch • SL: <span class="text-terminal-warn">03:14</span></span>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-1 text-on-surface"><span class="material-symbols-outlined text-[10px] text-terminal-blue opacity-50">volume_up</span>ARB_EXEC: <span class="font-bold">ADA/USDT</span></div>
+<span class="text-on-surface font-bold">0.0000</span>
+</div>
+</div><div class="flex flex-col p-2 bg-surface-container-highest border border-surface-variant mb-1 font-label-mono text-[10px]">
+<div class="flex justify-between text-outline mb-1 text-[8px] uppercase">
+<span class="">[19:08:50] BOT_04 • <span class="text-terminal-green">LONG</span></span>
+<span class="">Bancor • SL: <span class="text-terminal-warn">02:05</span></span>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-1 text-on-surface"><span class="material-symbols-outlined text-[10px] text-terminal-green">volume_up</span>ARB_EXEC: <span class="font-bold">AVAX/USDT</span></div>
+<span class="text-terminal-green font-bold">+1.3169</span>
+</div>
+</div><div class="flex flex-col p-2 bg-surface-container-highest border border-surface-variant mb-1 font-label-mono text-[10px]">
+<div class="flex justify-between text-outline mb-1 text-[8px] uppercase">
+<span class="">[19:08:48] BOT_03 • <span class="text-terminal-blue">SPOT</span></span>
+<span class="">1inch • SL: <span class="text-terminal-warn">--:--</span></span>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-1 text-on-surface"><span class="material-symbols-outlined text-[10px] text-terminal-green">volume_up</span>ARB_EXEC: <span class="font-bold">ETH/USDT</span></div>
+<span class="text-terminal-green font-bold">+1.2711</span>
+</div>
+</div><div class="flex flex-col p-2 bg-surface-container-highest border border-surface-variant mb-1 font-label-mono text-[10px]">
+<div class="flex justify-between text-outline mb-1 text-[8px] uppercase">
+<span class="">[19:08:48] BOT_02 • <span class="text-terminal-red">SHORT</span></span>
+<span class="">Raydium • SL: <span class="text-terminal-warn">04:32</span></span>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-1 text-on-surface"><span class="material-symbols-outlined text-[10px] text-terminal-red">volume_up</span>ARB_EXEC: <span class="font-bold">DOT/USDT</span></div>
+<span class="text-terminal-red font-bold">-0.2302</span>
+</div>
+</div></div>
+</div>
+</div>
+</div>
+</main>
+<!-- Live Price Ticker -->
+<div class="ticker-wrap text-on-surface">
+<div class="ticker-move text-terminal-blue">
+<span class="ticker-item">BTC/USDT <span class="text-terminal-green font-bold">64,230.50 ▲ 1.2%</span></span>
+<span class="ticker-item">ETH/USDT <span class="text-terminal-red font-bold">3,450.20 ▼ 0.5%</span></span>
+<span class="ticker-item">SOL/USDT <span class="text-terminal-green font-bold">145.80 ▲ 2.1%</span></span>
+<span class="ticker-item">BNB/USDT <span class="text-terminal-green font-bold">590.10 ▲ 0.3%</span></span>
+<span class="ticker-item">XRP/USDT <span class="text-terminal-red font-bold">0.5820 ▼ 1.4%</span></span>
+<span class="ticker-item">ADA/USDT <span class="text-terminal-green font-bold">0.4510 ▲ 0.8%</span></span>
+<span class="ticker-item">AVAX/USDT <span class="text-terminal-red font-bold">35.60 ▼ 1.1%</span></span>
+<span class="ticker-item">DOGE/USDT <span class="text-terminal-green font-bold">0.1240 ▲ 3.4%</span></span>
+<!-- Repeat for continuous scroll -->
+<span class="ticker-item">BTC/USDT <span class="text-terminal-green font-bold">64,230.50 ▲ 1.2%</span></span>
+<span class="ticker-item">ETH/USDT <span class="text-terminal-red font-bold">3,450.20 ▼ 0.5%</span></span>
+<span class="ticker-item">SOL/USDT <span class="text-terminal-green font-bold">145.80 ▲ 2.1%</span></span>
+<span class="ticker-item">BNB/USDT <span class="text-terminal-green font-bold">590.10 ▲ 0.3%</span></span>
+</div>
+</div>
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const spinBtn = document.getElementById('spinBtn');
+            const spinIcon = document.getElementById('spinIcon');
+            const spinText = document.getElementById('spinText');
+            const comboDisplay = document.getElementById('comboDisplay');
+            const resultDisplay = document.getElementById('resultDisplay');
+            const historyList = document.getElementById('historyList');
+            const emptyHistory = document.getElementById('emptyHistory');
+            const slotsGrid = document.getElementById('slotsGrid');
+            const addReelBtn = document.getElementById('addReelBtn');
+            const removeReelBtn = document.getElementById('removeReelBtn');
+            const reelCountDisplay = document.getElementById('reelCountDisplay');
+
+            let currentReelCount = 5;
+            const maxReels = 10;
+            const minReels = 1;
+            let botColumns = [];
+            let autoScanInterval;
+            
+            const exchanges = [
+                { name: "Uniswap", icon: "swap_calls" },
+                { name: "SushiSwap", icon: "set_meal" },
+                { name: "PancakeSwap", icon: "breakfast_dining" },
+                { name: "Curve", icon: "waves" },
+                { name: "Balancer", icon: "balance" },
+                { name: "1inch", icon: "filter_1" },
+                { name: "Kyber", icon: "diamond" },
+                { name: "Bancor", icon: "shield" },
+                { name: "TraderJoe", icon: "local_cafe" },
+                { name: "Raydium", icon: "bolt" }
+            ];
+
+            const tickers = ["BTC", "ETH", "USDT", "SOL", "XRP", "USDC", "ADA", "AVAX", "DOGE", "DOT"];
+            const tradeTypes = ["LONG", "SHORT", "SPOT", "HOLD"];
+            
+            function initGrid() {
+                slotsGrid.innerHTML = '';
+                
+                const exchangeLabels = document.createElement('div');
+                exchangeLabels.className = 'flex flex-col';
+                exchangeLabels.id = 'exchangeLabels';
+                exchangeLabels.innerHTML = '<div class="bot-header border-r border-surface-variant text-[8px] justify-start pl-2">EXCHANGE</div>';
+                
+                exchanges.forEach(ex => {
+                    const row = document.createElement('div');
+                    row.className = 'exchange-row-label';
+                    row.innerHTML = `<span class="material-symbols-outlined">${ex.icon}</span> ${ex.name}`;
+                    exchangeLabels.appendChild(row);
+                });
+                
+                slotsGrid.appendChild(exchangeLabels);
+
+                botColumns = [];
+                slotsGrid.style.setProperty('--reel-count', currentReelCount);
+                
+                for (let r = 0; r < currentReelCount; r++) {
+                    createBotColumn(r);
+                }
+                updateReelControls();
+            }
+
+            function createBotColumn(index) {
+                const col = document.createElement('div');
+                col.className = 'bot-column flex flex-col';
+                col.id = `bot-${index}`;
+                
+                const header = document.createElement('div');
+                header.className = 'bot-header';
+                header.textContent = `BOT_0${index+1}`;
+                col.appendChild(header);
+
+                const cells = [];
+                exchanges.forEach((ex, rowIdx) => {
+                    const cell = document.createElement('div');
+                    cell.className = 'bot-cell font-label-mono text-[10px] text-outline scanning';
+                    cell.dataset.exchange = ex.name;
+                    cell.dataset.row = rowIdx;
+                    cell.innerHTML = `<span>...</span>`;
+                    col.appendChild(cell);
+                    cells.push(cell);
+                });
+                
+                slotsGrid.appendChild(col);
+                botColumns.push({ el: col, cells: cells });
+            }
+
+            function updateReelControls() {
+                reelCountDisplay.textContent = currentReelCount;
+                addReelBtn.disabled = currentReelCount >= maxReels;
+                removeReelBtn.disabled = currentReelCount <= minReels;
+            }
+
+            addReelBtn.addEventListener('click', () => {
+                if (currentReelCount < maxReels) {
+                    currentReelCount++;
+                    initGrid();
+                    if(isScanning) startScanVisuals();
+                }
+            });
+
+            removeReelBtn.addEventListener('click', () => {
+                if (currentReelCount > minReels) {
+                    currentReelCount--;
+                    initGrid();
+                    if(isScanning) startScanVisuals();
+                }
+            });
+
+            initGrid();
+
+            let isScanning = true;
+            
+            function startScanVisuals() {
+                botColumns.forEach(bot => {
+                    bot.cells.forEach(cell => {
+                        cell.className = 'bot-cell font-label-mono text-[10px] text-outline scanning';
+                        cell.innerHTML = `<span>...</span>`;
+                    });
+                });
+            }
+
+            function performScanCycle() {
+                if (!isScanning) return;
+                
+                // Randomly trigger a find on one or more bots
+                botColumns.forEach((bot, botIdx) => {
+                    if(Math.random() > 0.7) { // 30% chance to find something
+                        const randomRow = Math.floor(Math.random() * exchanges.length);
+                        const randomToken = tickers[Math.floor(Math.random() * tickers.length)];
+                        const tradeType = tradeTypes[Math.floor(Math.random() * tradeTypes.length)];
+                        
+                        let isWin = false;
+                        if(tradeType === 'LONG' || tradeType === 'SPOT') isWin = Math.random() > 0.3;
+                        if(tradeType === 'SHORT') isWin = Math.random() > 0.6;
+                        
+                        const cell = bot.cells[randomRow];
+                        
+                        // Briefly process
+                        cell.className = 'bot-cell font-label-mono text-[10px] state-processing font-bold';
+                        cell.innerHTML = `<span>[${randomToken}]</span>`;
+                        
+                        setTimeout(() => {
+                            if (!isScanning) return;
+                            
+                            if (tradeType === 'HOLD') {
+                                cell.className = 'bot-cell font-label-mono text-[10px] state-hold font-bold';
+                                cell.innerHTML = `<span>${randomToken}</span>`;
+                                logTrade(botIdx, exchanges[randomRow].name, randomToken, tradeType, 0);
+                            } else if (tradeType === 'SPOT') {
+                                cell.className = 'bot-cell font-label-mono text-[10px] state-spot font-bold';
+                                cell.innerHTML = `<span>${randomToken}</span>`;
+                                logTrade(botIdx, exchanges[randomRow].name, randomToken, tradeType, isWin ? 1 : -1);
+                            } else if (isWin) {
+                                cell.className = 'bot-cell font-label-mono text-[10px] state-win font-bold';
+                                cell.innerHTML = `<span>+${randomToken}</span>`;
+                                logTrade(botIdx, exchanges[randomRow].name, randomToken, tradeType, 1);
+                            } else {
+                                cell.className = 'bot-cell font-label-mono text-[10px] state-loss font-bold';
+                                cell.innerHTML = `<span>-${randomToken}</span>`;
+                                logTrade(botIdx, exchanges[randomRow].name, randomToken, tradeType, -1);
+                            }
+                            
+                            // Reset back to scanning after a bit
+                            setTimeout(() => {
+                                if(isScanning) {
+                                    cell.className = 'bot-cell font-label-mono text-[10px] text-outline scanning';
+                                    cell.innerHTML = `<span>...</span>`;
+                                }
+                            }, 2000);
+                            
+                        }, 500);
+                    }
+                });
+            }
+
+            // Start initial auto-scan
+            startScanVisuals();
+            autoScanInterval = setInterval(performScanCycle, 1500);
+
+            spinBtn.addEventListener('click', () => {
+                isScanning = !isScanning;
+                
+                if (isScanning) {
+                    spinBtn.classList.add('scanning-active');
+                    spinBtn.classList.remove('border-surface-variant', 'text-on-surface');
+                    spinIcon.textContent = 'radar';
+                    spinText.textContent = 'AUTO_SCANNING';
+                    startScanVisuals();
+                    autoScanInterval = setInterval(performScanCycle, 1500);
+                } else {
+                    spinBtn.classList.remove('scanning-active');
+                    spinBtn.classList.add('border-surface-variant', 'text-on-surface');
+                    spinIcon.textContent = 'stop_circle';
+                    spinText.textContent = 'SYS_PAUSED';
+                    clearInterval(autoScanInterval);
+                    
+                    // Freeze current state
+                    botColumns.forEach(bot => {
+                        bot.cells.forEach(cell => {
+                            if(cell.classList.contains('scanning')) {
+                                cell.classList.remove('scanning');
+                                cell.innerHTML = `<span class="opacity-30">-</span>`;
+                            }
+                        });
+                    });
+                }
+            });
+
+            function logTrade(botId, exchange, token, type, result) {
+                if (emptyHistory) emptyHistory.style.display = 'none';
+
+                const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                
+                let profitStr = "0.0000";
+                let colorClass = "text-on-surface";
+                let audioIconColor = "text-terminal-blue opacity-50";
+                
+                if(result > 0) {
+                    profitStr = `+${(Math.random() * 2).toFixed(4)}`;
+                    colorClass = 'text-terminal-green';
+                    audioIconColor = 'text-terminal-green';
+                } else if (result < 0) {
+                    profitStr = `-${(Math.random() * 0.5).toFixed(4)}`;
+                    colorClass = 'text-terminal-red';
+                    audioIconColor = 'text-terminal-red';
+                }
+                
+                let typeColor = "text-on-surface";
+                if(type === 'LONG') typeColor = "text-terminal-green";
+                if(type === 'SHORT') typeColor = "text-terminal-red";
+                if(type === 'SPOT') typeColor = "text-terminal-blue";
+                if(type === 'HOLD') typeColor = "text-terminal-purple";
+                
+                // Generate a random stop loss timer
+                const m = Math.floor(Math.random() * 5);
+                const s = Math.floor(Math.random() * 60).toString().padStart(2, '0');
+                const slTimer = type === 'SPOT' ? '--:--' : `0${m}:${s}`;
+
+                const item = document.createElement('div');
+                item.className = 'flex flex-col p-2 bg-surface-container-highest border border-surface-variant mb-1 font-label-mono text-[10px]';
+                item.innerHTML = `
+                    <div class="flex justify-between text-outline mb-1 text-[8px] uppercase">
+                        <span class="">[${time}] BOT_0${botId+1} &bull; <span class="${typeColor}">${type}</span></span>
+                        <span class="">${exchange} &bull; SL: <span class="text-terminal-warn">${slTimer}</span></span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center gap-1 text-on-surface"><span class="material-symbols-outlined text-[10px] ${audioIconColor}">volume_up</span>ARB_EXEC: <span class="font-bold">${token}/USDT</span></div>
+                        <span class="${colorClass} font-bold">${profitStr}</span>
+                    </div>
+                `;
+                
+                historyList.insertBefore(item, historyList.firstChild);
+                
+                if (historyList.children.length > 20) {
+                    historyList.removeChild(historyList.lastChild);
+                }
+                
+                if(result > 0) {
+                     comboDisplay.innerHTML = `<span class="text-terminal-green">SUCCESS: ${type} ${token} on ${exchange} (${profitStr})</span>`;
+                     resultDisplay.style.borderColor = 'rgba(0, 255, 102, 0.5)';
+                     setTimeout(()=> { resultDisplay.style.borderColor = 'rgba(0, 240, 255, 0.3)'; }, 1000);
+                }
+            }
+        });
+    </script>
+</body></html>

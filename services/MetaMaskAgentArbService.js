@@ -57,11 +57,18 @@ class MetaMaskAgentArbService {
         };
 
         this.discordWebhookUrl = process.env.DISCORD_WEBHOOK_URL || '';
+        this.walletAddress = process.env.AGENT_WALLET_ADDRESS || null;
         this.profitThresholdUsd = parseFloat(process.env.ARB_PROFIT_THRESHOLD_USD || '2.00');
         this.slippage = parseFloat(process.env.ARB_SLIPPAGE || '0.1'); // 0.1% default for MEV protection
+        this.executionEnabled = process.env.AGENT_EXECUTION_ENABLED === 'true';
+        this.scannerEnabled = process.env.AGENT_SCANNER_ENABLED === 'true';
         this.isRunning = false;
         this.intervalId = null;
+        this.lastScanAt = null;
+        this.lastTradeAt = null;
+        this.lastError = null;
         this.pollIntervalMs = parseInt(process.env.ARB_POLL_INTERVAL_MS || '10000');
+        this.tradeCount = { success: 0, failed: 0 };
     }
 
     /**
@@ -154,8 +161,12 @@ class MetaMaskAgentArbService {
      */
     start() {
         if (this.isRunning) return;
+        if (!this.scannerEnabled) {
+            console.log('[MetaMaskAgentArb] ⏸️ Scanner is disabled by default. Set AGENT_SCANNER_ENABLED=true to enable quote polling.');
+            return;
+        }
         this.isRunning = true;
-        console.log('[MetaMaskAgentArb] 🤖 Multi-Chain Autonomous Arbitrage Worker started across Base, Arbitrum, and Optimism.');
+        console.log(`[MetaMaskAgentArb] 🤖 Multi-Chain worker started in ${this.executionEnabled ? 'EXECUTION' : 'SIMULATION-ONLY'} mode across Base, Arbitrum, and Optimism.`);
 
         this.intervalId = setInterval(async () => {
             if (process.env.TRADING_PAUSED === 'true') {
@@ -165,6 +176,7 @@ class MetaMaskAgentArbService {
             // Iterate over all configured networks
             for (const [network, config] of Object.entries(this.networksConfig)) {
                 try {
+                    this.lastScanAt = new Date().toISOString();
                     // 1. Simulate trade on current network
                     const quote = await this.simulateOrExecuteSwap(network, config.tokenIn, config.tokenOut, '1.0', config.dex, false);
                     if (!quote || !quote.netProfit) continue;
@@ -176,10 +188,17 @@ class MetaMaskAgentArbService {
                     if (netProfit >= this.profitThresholdUsd) {
                         console.log(`🎯 [${network.toUpperCase()}] Profit threshold met! Executing atomic swap with MEV protection...`);
                         
-                        // 3. Execute Trade
+                        // 3. Execute Trade only when explicitly enabled. Otherwise record a dry-run decision.
+                        if (!this.executionEnabled) {
+                            console.log(`[MetaMaskAgentArb] [${network.toUpperCase()}] Simulation-only mode: execution skipped.`);
+                            await this.sendDiscordAlert(network, 'Arbitrage Opportunity (Simulation Only)', quote, null, true);
+                            continue;
+                        }
                         const receipt = await this.simulateOrExecuteSwap(network, config.tokenIn, config.tokenOut, '1.0', config.dex, true);
                         if (receipt && receipt.txHash) {
                             console.log(`✅ [${network.toUpperCase()}] Trade successfully settled! TxHash: ${receipt.txHash}`);
+                            this.lastTradeAt = new Date().toISOString();
+                            this.tradeCount.success += 1;
                             
                             // Update Prometheus metrics with network label
                             arbTradesTotal.inc({ status: 'success', dex: config.dex, network });
@@ -191,10 +210,13 @@ class MetaMaskAgentArbService {
                             // Send Discord alert
                             await this.sendDiscordAlert(network, 'Multi-Chain Arbitrage Success', quote, receipt, true);
                         } else {
+                            this.tradeCount.failed += 1;
+                            this.lastError = `Trade execution failed on ${network}`;
                             arbTradesTotal.inc({ status: 'failed', dex: config.dex, network });
                         }
                     }
                 } catch (netErr) {
+                    this.lastError = netErr.message;
                     console.error(`[MetaMaskAgentArb] Error scanning network ${network}:`, netErr.message);
                 }
             }
@@ -209,6 +231,34 @@ class MetaMaskAgentArbService {
             this.intervalId = null;
         }
         console.log('[MetaMaskAgentArb] 🛑 Multi-chain worker stopped.');
+    }
+
+    pause() {
+        this.stop();
+        this.scannerEnabled = false;
+    }
+
+    resume() {
+        this.scannerEnabled = true;
+        this.start();
+    }
+
+    getStatus() {
+        return {
+            walletMode: 'managed-agent',
+            walletAddress: this.walletAddress,
+            executionEnabled: this.executionEnabled,
+            scannerEnabled: this.scannerEnabled,
+            running: this.isRunning,
+            networks: Object.keys(this.networksConfig),
+            profitThresholdUsd: this.profitThresholdUsd,
+            slippagePercent: this.slippage,
+            pollIntervalMs: this.pollIntervalMs,
+            lastScanAt: this.lastScanAt,
+            lastTradeAt: this.lastTradeAt,
+            lastError: this.lastError,
+            tradeCount: { ...this.tradeCount }
+        };
     }
 
     getMetricsRegistry() {
