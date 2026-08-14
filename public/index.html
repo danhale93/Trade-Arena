@@ -6,11 +6,11 @@
 <title>TRADE ARENA — AI TRADING FLOOR</title>
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Bungee+Shade&family=JetBrains+Mono:wght@400;700&family=Oswald:wght@400;700&family=Share+Tech+Mono&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
-<script src="privy-client.js?v=4.3.39"></script>
-<script src="contract-helpers.js?v=4.3.39"></script>
-<script src="real-wallet.js?v=4.3.39"></script>
-<script src="blockchain-execution.js?v=4.3.39"></script>
-<script src="execution-engine.js?v=4.3.39"></script>
+<script src="privy-client.js?v=4.3.40"></script>
+<script src="contract-helpers.js?v=4.3.40"></script>
+<script src="real-wallet.js?v=4.3.40"></script>
+<script src="blockchain-execution.js?v=4.3.40"></script>
+<script src="execution-engine.js?v=4.3.40"></script>
 <style>
 :root{
   --gold:#ffd700;--gold2:#ffaa00;--hot:#ff2d78;--cyan:#00ffe7;
@@ -759,7 +759,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 <div class="edge"></div>
 
 <!-- ══ CONNECT ══ -->
-<div style="position:fixed; top:10px; right:10px; background:var(--hot); color:white; padding:5px 10px; font-size:10px; z-index:10000; border-radius:4px; font-family:'Bungee'; box-shadow:0 0 10px var(--hot);">LIVE V4.3.39</div>
+<div style="position:fixed; top:10px; right:10px; background:var(--hot); color:white; padding:5px 10px; font-size:10px; z-index:10000; border-radius:4px; font-family:'Bungee'; box-shadow:0 0 10px var(--hot);">LIVE V4.3.40</div>
 <div id="connectScreen">
   <div class="marquee-wrap">
     <div class="marquee-inner">
@@ -6460,19 +6460,19 @@ document.addEventListener('keydown', function(e) {
 
 </script>
 <!-- Arena React Bundle -->
-<script src="arena-react-bundle.js?v=4.3.39" defer></script>
-<script src="app.js?v=4.3.39" defer></script>
+<script src="arena-react-bundle.js?v=4.3.40" defer></script>
+<script src="app.js?v=4.3.40" defer></script>
 
 <!-- ACOUSTIC Audio-Visual Engines -->
-<script src="acoustic-bundle.js?v=4.3.39" defer></script>
-<script src="ACOUSTIC_CORE.js?v=4.3.39" defer></script>
-<script src="trading-bundle.js?v=4.3.39" defer></script>
-<script src="task-center.js?v=4.3.39" defer></script>
-<script src="gas-fund.js?v=4.3.39" defer></script>
-<script src="management-bundle.js?v=4.3.39" defer></script>
+<script src="acoustic-bundle.js?v=4.3.40" defer></script>
+<script src="ACOUSTIC_CORE.js?v=4.3.40" defer></script>
+<script src="trading-bundle.js?v=4.3.40" defer></script>
+<script src="task-center.js?v=4.3.40" defer></script>
+<script src="gas-fund.js?v=4.3.40" defer></script>
+<script src="management-bundle.js?v=4.3.40" defer></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  console.log('🚀 Trade Arena V4.3.39 Initialized');
+  console.log('🚀 Trade Arena V4.3.40 Initialized');
   const savedTheme = localStorage.getItem('ta_theme') || 'default';
   if (typeof applyTheme === 'function') {
     applyTheme(savedTheme, false);
@@ -6482,7 +6482,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   // Auto-connect disabled to prevent broadcast channel crashes on boot
   
-  // Real-time Balance Sync (V4.3.39)
+  // Real-time Balance Sync (V4.3.40)
   setInterval(async () => {
     // 🛡️ UNIFIED SYNC: Prioritize on-chain walletState balance
     if (window.walletState && window.walletState.isConnected && window.walletState.balanceUSD > 0) {
@@ -6775,7 +6775,7 @@ function refreshSettingsUI() {
     if (b2) { b2.classList.toggle('active', voiceOn); b2.setAttribute('aria-pressed', voiceOn.toString()); }
     if (b3) { b3.classList.toggle('active', audioOn); b3.setAttribute('aria-pressed', audioOn.toString()); }
 
-    // Flashloan Arb Status (V4.3.39)
+    // Flashloan Arb Status (V4.3.40)
     if (window.lastAgentStatus && window.lastAgentStatus.arbitrage) {
         const arb = window.lastAgentStatus.arbitrage;
         const elExec = document.getElementById('settingsArbExecution');

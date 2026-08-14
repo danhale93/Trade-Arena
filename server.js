@@ -578,7 +578,9 @@ app.post('/api/agent/submit-token', async (req, res) => {
             if (doc.ok && doc.data.authenticated) {
                 console.log('[Server] Agent verified and ready.');
                 arbitrageEngine.isAgentReady = true;
-                arbitrageEngine.isRunning = wasRunning; // Resume if it was running
+                if (wasRunning) {
+                    arbitrageEngine.start(); // Properly restart the loop
+                }
                 res.json({ success: true, message: 'Agent authenticated and verified successfully!' });
             } else {
                 console.error('[Server] Login succeeded but doctor verification failed:', JSON.stringify(doc));
