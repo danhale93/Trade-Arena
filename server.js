@@ -19,6 +19,10 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
+// Global status cache to prevent API hangs
+let lastAgentStatus = null;
+let isUpdatingStatus = false;
+
 // WebSocket connection registry & Log Interceptor
 const clients = new Set();
 const logBuffer = [];
@@ -140,10 +144,8 @@ const ALLOWED_TASK_IDS = new Set(Object.keys(TASK_REWARDS));
 
 // Sentinel: Security hardening
 app.set('trust proxy', 1); // Trust first proxy (Render, Heroku, etc.)
-app.disable('x-powered-by'); // Mitigate information disclosure
-
-// 🏥 HEALTH CHECK: For Render zero-downtime deployment
 app.get('/health', (req, res) => res.status(200).send('OK'));
+app.disable('x-powered-by'); // Mitigate information disclosure
 
 // Sentinel: Security headers middleware
 app.use((req, res, next) => {
@@ -436,7 +438,14 @@ setTimeout(initAgentSession, 2000);
 
 app.get('/api/network/status', async (req, res) => {
     const DEFAULT_WALLET = '0x92CEAf1CA43deCfc443A34B915B45343BeE9c2DB';
+    
+    // Return cached status if available and update in background
+    if (lastAgentStatus && isUpdatingStatus) {
+        return res.json(lastAgentStatus);
+    }
+
     try {
+        isUpdatingStatus = true;
         // Fetch from MM CLI with individual error handling to prevent Promise.all timeout
         const runSafe = async (cmd) => {
             try { return await runMM(cmd); }
@@ -476,7 +485,7 @@ app.get('/api/network/status', async (req, res) => {
             ethBalanceFormatted = (parseFloat(resolvedBalance) / (parseFloat(ethPrice.data?.prices?.[0]?.price) || 3200)).toFixed(4);
         }
 
-        res.json({
+        const statusData = {
             success: true,
             wallet: {
                 authenticated: true, // Always show active connection for MetaMask Agent Wallet
@@ -497,7 +506,10 @@ app.get('/api/network/status', async (req, res) => {
                 { hash: '0x48a1...9b21', type: 'ARBITRAGE_SWAP', amount: '0.05 ETH', status: 'SUCCESS', timestamp: '2 mins ago' },
                 { hash: '0x12c4...8e90', type: 'FLASHLOAN_EXEC', amount: '1.2 WETH', status: 'SUCCESS', timestamp: '14 mins ago' }
             ]
-        });
+        };
+
+        lastAgentStatus = statusData;
+        res.json(statusData);
     } catch (error) {
         // Ultimate fallback response so dashboard never fails
         res.json({
@@ -522,6 +534,8 @@ app.get('/api/network/status', async (req, res) => {
                 { hash: '0x12c4...8e90', type: 'FLASHLOAN_EXEC', amount: '1.2 WETH', status: 'SUCCESS', timestamp: '14 mins ago' }
             ]
         });
+    } finally {
+        isUpdatingStatus = false;
     }
 });
 
