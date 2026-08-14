@@ -824,7 +824,7 @@ function connectWebSocket() {
 
 // Start WebSocket connection on load
 if (typeof window !== 'undefined') {
-    console.log('🚀 TRADE ARENA V4.3.25 INITIALIZED');
+    console.log('🚀 TRADE ARENA V4.3.26 INITIALIZED');
     connectWebSocket();
     
     // Export notify function

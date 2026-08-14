@@ -27,8 +27,8 @@ let lastAgentStatus = {
         authenticated: true,
         signedInAs: 'danhale93@gmail.com',
         address: DEFAULT_WALLET,
-        balance: '164.50',
-        ethBalance: '0.0514'
+        balance: '0.00',
+        ethBalance: '0.00'
     },
     network: {
         name: 'Base Mainnet',
@@ -41,6 +41,76 @@ let lastAgentStatus = {
     recentTransactions: []
 };
 let isUpdatingStatus = false;
+
+async function updateStatusInBackground() {
+    if (isUpdatingStatus) return;
+    isUpdatingStatus = true;
+    try {
+        const runSafe = async (cmd) => {
+            try { return await runMM(cmd); }
+            catch (e) { return { ok: false, error: e.message }; }
+        };
+
+        const [doctor, authStatus, walletInfo, balance, history, ethPrice] = await Promise.all([
+            runSafe('doctor'),
+            runSafe('auth status'),
+            runSafe('wallet address'),
+            runSafe('wallet balance --chain base'),
+            runSafe('tx history --chain-ids 8453 --limit 5'),
+            runSafe('price spot --asset-ids "eip155:8453/slip44:60"')
+        ]);
+
+        let resolvedAddress = walletInfo.data?.address || doctor.data?.wallets?.[0]?.address || DEFAULT_WALLET;
+        if (!resolvedAddress || resolvedAddress === 'NIFTY' || resolvedAddress === 'N/A') {
+            resolvedAddress = DEFAULT_WALLET;
+        }
+
+        let resolvedBalance = balance.data?.totalValue;
+        let ethBalanceFormatted = '0.00';
+
+        if (!resolvedBalance || resolvedBalance === '0' || balance.error) {
+            try {
+                const provider = new ethers.JsonRpcProvider('https://mainnet.base.org');
+                const rawBal = await provider.getBalance(resolvedAddress);
+                ethBalanceFormatted = ethers.formatEther(rawBal);
+                const price = ethPrice.data?.prices?.[0]?.price || '3200';
+                resolvedBalance = (parseFloat(ethBalanceFormatted) * parseFloat(price)).toFixed(2);
+            } catch (rpcErr) {
+                resolvedBalance = '0.00';
+            }
+        } else {
+            ethBalanceFormatted = (parseFloat(resolvedBalance) / (parseFloat(ethPrice.data?.prices?.[0]?.price) || 3200)).toFixed(4);
+        }
+
+        lastAgentStatus = {
+            success: true,
+            wallet: {
+                authenticated: true,
+                signedInAs: authStatus.data?.signedInAs || 'danhale93@gmail.com',
+                address: resolvedAddress,
+                balance: resolvedBalance,
+                ethBalance: ethBalanceFormatted
+            },
+            network: {
+                name: 'Base Mainnet',
+                chainId: 8453,
+                ethPrice: ethPrice.data?.prices?.[0]?.price || '3200'
+            },
+            arbitrage: {
+                running: arbitrageEngine.isRunning
+            },
+            recentTransactions: history.data?.items || history.data?.transactions || []
+        };
+    } catch (e) {
+        console.error('[Status] Background update failed:', e.message);
+    } finally {
+        isUpdatingStatus = false;
+    }
+}
+
+// Update status every 30 seconds
+setInterval(updateStatusInBackground, 30000);
+setTimeout(updateStatusInBackground, 5000);
 
 // WebSocket connection registry & Log Interceptor
 const clients = new Set();
@@ -455,107 +525,11 @@ async function initAgentSession() {
 }
 setTimeout(initAgentSession, 2000);
 
-app.get('/api/network/status', async (req, res) => {
-    const DEFAULT_WALLET = '0x92CEAf1CA43deCfc443A34B915B45343BeE9c2DB';
-    
-    // Return cached status if available and update in background
-    if (lastAgentStatus && isUpdatingStatus) {
-        return res.json(lastAgentStatus);
-    }
-
-    try {
-        isUpdatingStatus = true;
-        // Fetch from MM CLI with individual error handling to prevent Promise.all timeout
-        const runSafe = async (cmd) => {
-            try { return await runMM(cmd); }
-            catch (e) { return { ok: false, error: e.message }; }
-        };
-
-        const [doctor, authStatus, walletInfo, balance, history, ethPrice] = await Promise.all([
-            runSafe('doctor'),
-            runSafe('auth status'),
-            runSafe('wallet address'),
-            runSafe('wallet balance --chain base'),
-            runSafe('tx history --chain-ids 8453 --limit 5'),
-            runSafe('price spot --asset-ids "eip155:8453/slip44:60"')
-        ]);
-
-        let resolvedAddress = walletInfo.data?.address || doctor.data?.wallets?.[0]?.address || DEFAULT_WALLET;
-        if (!resolvedAddress || resolvedAddress === 'NIFTY' || resolvedAddress === 'N/A') {
-            resolvedAddress = DEFAULT_WALLET;
-        }
-
-        let resolvedBalance = balance.data?.totalValue;
-        let ethBalanceFormatted = '0.00';
-
-        if (!resolvedBalance || resolvedBalance === '0' || balance.error) {
-            // Fallback: Query Base Mainnet RPC directly for real-time balance
-            try {
-                const provider = new ethers.JsonRpcProvider('https://mainnet.base.org');
-                const rawBal = await provider.getBalance(resolvedAddress);
-                ethBalanceFormatted = ethers.formatEther(rawBal);
-                const price = ethPrice.data?.prices?.[0]?.price || '3200';
-                resolvedBalance = (parseFloat(ethBalanceFormatted) * parseFloat(price)).toFixed(2);
-            } catch (rpcErr) {
-                console.error('RPC Balance fallback error:', rpcErr.message);
-                resolvedBalance = '0.00';
-            }
-        } else {
-            ethBalanceFormatted = (parseFloat(resolvedBalance) / (parseFloat(ethPrice.data?.prices?.[0]?.price) || 3200)).toFixed(4);
-        }
-
-        const statusData = {
-            success: true,
-            wallet: {
-                authenticated: true, // Always show active connection for MetaMask Agent Wallet
-                signedInAs: authStatus.data?.signedInAs || 'danhale93@gmail.com',
-                address: resolvedAddress,
-                balance: resolvedBalance,
-                ethBalance: ethBalanceFormatted
-            },
-            network: {
-                name: 'Base Mainnet',
-                chainId: 8453,
-                ethPrice: ethPrice.data?.prices?.[0]?.price || '3200'
-            },
-            arbitrage: {
-                running: arbitrageEngine.isRunning
-            },
-            recentTransactions: history.data?.items || history.data?.transactions || [
-                { hash: '0x48a1...9b21', type: 'ARBITRAGE_SWAP', amount: '0.05 ETH', status: 'SUCCESS', timestamp: '2 mins ago' },
-                { hash: '0x12c4...8e90', type: 'FLASHLOAN_EXEC', amount: '1.2 WETH', status: 'SUCCESS', timestamp: '14 mins ago' }
-            ]
-        };
-
-        lastAgentStatus = statusData;
-        res.json(statusData);
-    } catch (error) {
-        // Ultimate fallback response so dashboard never fails
-        res.json({
-            success: true,
-            wallet: {
-                authenticated: true,
-                signedInAs: 'danhale93@gmail.com',
-                address: DEFAULT_WALLET,
-                balance: '164.50',
-                ethBalance: '0.0514'
-            },
-            network: {
-                name: 'Base Mainnet',
-                chainId: 8453,
-                ethPrice: '3200'
-            },
-            arbitrage: {
-                running: arbitrageEngine.isRunning
-            },
-            recentTransactions: [
-                { hash: '0x48a1...9b21', type: 'ARBITRAGE_SWAP', amount: '0.05 ETH', status: 'SUCCESS', timestamp: '2 mins ago' },
-                { hash: '0x12c4...8e90', type: 'FLASHLOAN_EXEC', amount: '1.2 WETH', status: 'SUCCESS', timestamp: '14 mins ago' }
-            ]
-        });
-    } finally {
-        isUpdatingStatus = false;
-    }
+app.get('/api/network/status', (req, res) => {
+    // Instant response from cache
+    res.json(lastAgentStatus);
+    // Trigger update if not already updating
+    updateStatusInBackground();
 });
 
 // 🛠️ ARBITRAGE CONTROL
