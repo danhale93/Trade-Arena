@@ -27,8 +27,8 @@ let lastAgentStatus = {
         authenticated: true,
         signedInAs: 'danhale93@gmail.com',
         address: DEFAULT_WALLET,
-        balance: '0.00',
-        ethBalance: '0.00'
+        balance: '...',
+        ethBalance: '...'
     },
     network: {
         name: 'Base Mainnet',
