@@ -43,7 +43,7 @@ const arbLastGasGwei = new prometheus.Gauge({
 
 // V8 & GC Metrics
 const gcDuration = new prometheus.Histogram({
-    name: 'nodejs_gc_duration_seconds',
+    name: 'nodejs_hft_gc_duration_seconds',
     help: 'Garbage collection duration in seconds',
     labelNames: ['kind'],
     buckets: [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1],
@@ -148,6 +148,10 @@ class MetaMaskAgentArbService {
             quote,
             txHash: receipt?.txHash || 'N/A'
         };
+        const dir = path.dirname(this.logPath);
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
         fs.appendFileSync(this.logPath, JSON.stringify(entry) + '\n');
     }
 
