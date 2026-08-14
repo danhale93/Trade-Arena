@@ -13,7 +13,7 @@ const mmPath = process.env.MM_PATH || 'mm';
 class ArbitrageEngine {
     constructor() {
         this.isRunning = false;
-        this.scanInterval = 60000; // 60 seconds
+        this.scanInterval = 15000; // 15 seconds
         this.minProfitUsd = 0.50; // Minimum profit to trigger trade
         this.tradeSizeUsd = 10;   // Default trade size in USDC
     }
