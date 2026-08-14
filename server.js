@@ -412,13 +412,19 @@ async function initAgentSession() {
     const token = process.env.MM_CLI_TOKEN;
     if (token) {
         try {
-            console.log('[Server] Initializing MetaMask Agent Wallet session...');
+            console.log('[Server] Initializing MetaMask Agent Wallet session (Token length:', token.length, ')...');
             await runMM('logout --yes');
             const res = await runMM(`login --token "${token}"`);
-            console.log('[Server] Agent session initialization result:', res);
+            if (res && res.ok) {
+                console.log('[Server] Agent session initialized successfully.');
+            } else {
+                console.error('[Server] Agent session initialization failed:', JSON.stringify(res.error || res));
+            }
         } catch (e) {
-            console.error('[Server] Failed to initialize agent session:', e.message);
+            console.error('[Server] Failed to initialize agent session exception:', e.message);
         }
+    } else {
+        console.warn('[Server] WARNING: MM_CLI_TOKEN environment variable is not set!');
     }
 }
 setTimeout(initAgentSession, 2000);
