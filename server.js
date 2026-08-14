@@ -548,12 +548,14 @@ app.get('/api/agent/login-url', async (req, res) => {
 // 🔑 AGENT PAIRING: Submit CLI token from UI
 app.post('/api/agent/submit-token', async (req, res) => {
     const { token } = req.body;
+    console.log(`[Server] Received token submission request (Length: ${token?.length || 0})`);
     if (!token) return res.status(400).json({ success: false, error: 'Token is required' });
 
     try {
-        // Logout first to clear any stale session
+        console.log('[Server] Clearing stale session before login...');
         await runMM('logout --yes');
-        // Authenticate the CLI with the provided token
+        
+        console.log('[Server] Authenticating CLI with new token...');
         const result = await runMM(`login --token "${token}"`);
         if (result.ok || result.data) {
             // Update the readiness state for the arbitrage engine
