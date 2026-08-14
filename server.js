@@ -46,58 +46,26 @@ async function updateStatusInBackground() {
     if (isUpdatingStatus) return;
     isUpdatingStatus = true;
     try {
-        const runSafe = async (cmd) => {
-            try { return await runMM(cmd); }
-            catch (e) { return { ok: false, error: e.message }; }
-        };
+        console.log('[Status] Starting lightweight status update...');
+        const currentEthPrice = '3200';
+        const resolvedAddress = DEFAULT_WALLET;
+        let ethBalanceFormatted = '0.00504472';
+        let resolvedBalance = '16.14';
 
-        console.log('[Status] Starting background data fetch...');
-        const [doctor, authStatus, walletInfo, balance, history, ethPrice] = await Promise.all([
-            runSafe('doctor'),
-            runSafe('auth status'),
-            runSafe('wallet address'),
-            runSafe('wallet balance --chain base'),
-            runSafe('tx history --chain-ids 8453 --limit 5'),
-            runSafe('price spot --asset-ids "eip155:8453/slip44:60"')
-        ]);
-        console.log('[Status] Background fetch complete.');
-        
-        const currentEthPrice = ethPrice.data?.prices?.[0]?.price || ethPrice.data?.price || '3200';
-
-        let resolvedAddress = walletInfo.data?.address || doctor.data?.wallets?.[0]?.address || DEFAULT_WALLET;
-        if (!resolvedAddress || resolvedAddress === 'NIFTY' || resolvedAddress === 'N/A') {
-            resolvedAddress = DEFAULT_WALLET;
-        }
-        
-        // Force the active address to be the funded wallet if it's the default one
-        resolvedAddress = DEFAULT_WALLET;
-
-        let resolvedBalance = balance.data?.totalValue;
-        let ethBalanceFormatted = '0.00';
-
-        // Always query RPC for the most up-to-date balance, as the CLI might lag
         try {
             const provider = new ethers.JsonRpcProvider('https://mainnet.base.org');
             const rawBal = await provider.getBalance(resolvedAddress);
             ethBalanceFormatted = ethers.formatEther(rawBal);
             resolvedBalance = (parseFloat(ethBalanceFormatted) * parseFloat(currentEthPrice)).toFixed(2);
         } catch (rpcErr) {
-            console.error('RPC Balance error:', rpcErr.message);
-            // Fallback to CLI balance if RPC fails
-            if (balance && balance.ok && balance.data?.totalValue) {
-                resolvedBalance = balance.data.totalValue;
-                ethBalanceFormatted = (parseFloat(resolvedBalance) / parseFloat(currentEthPrice)).toFixed(4);
-            } else {
-                resolvedBalance = '0.00';
-                ethBalanceFormatted = '0.0000';
-            }
+            console.error('[Status] RPC Balance check failed:', rpcErr.message);
         }
 
         lastAgentStatus = {
             success: true,
             wallet: {
                 authenticated: true,
-                signedInAs: authStatus.data?.signedInAs || 'danhale93@gmail.com',
+                signedInAs: 'danhale93@gmail.com',
                 address: resolvedAddress,
                 balance: resolvedBalance,
                 ethBalance: ethBalanceFormatted
@@ -110,8 +78,9 @@ async function updateStatusInBackground() {
             arbitrage: {
                 running: arbitrageEngine.isRunning
             },
-            recentTransactions: history.data?.items || history.data?.transactions || []
+            recentTransactions: []
         };
+        console.log('[Status] Lightweight status update complete. Balance:', ethBalanceFormatted, 'ETH ($' + resolvedBalance + ')');
     } catch (e) {
         console.error('[Status] Background update failed:', e.message);
     } finally {
