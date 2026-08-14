@@ -283,6 +283,10 @@ const payoutRoutes = require("./routes/payoutRoutes");
 const { loadUsers, saveUsers } = require('./user_persistence');
 const PORT = process.env.PORT || 3001;
 
+// Import MetaMask Agent Arbitrage Service
+const mmArbService = require('./services/MetaMaskAgentArbService');
+mmArbService.start();
+
 const onchainEngine = require('./services/OnchainExecutionEngine');
 const autonomousWorker = require('./services/AutonomousWorker');
 const arbitrageEngine = require('./services/ArbitrageEngine');
@@ -408,6 +412,40 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '100kb' }));
 app.use("/api/v1/payouts", payoutRoutes);
 app.use("/api/health", apiHealthRouter);
+
+/**
+ * GET /api/agent/status - Read-only control-plane state for the managed Agent Wallet.
+ */
+app.get('/api/agent/status', (req, res) => {
+    res.json({ success: true, agent: mmArbService.getStatus(), timestamp: Date.now() });
+});
+
+/**
+ * POST /api/agent/pause - Pause quote polling and execution decisions.
+ */
+app.post('/api/agent/pause', (req, res) => {
+    mmArbService.pause();
+    res.json({ success: true, agent: mmArbService.getStatus(), timestamp: Date.now() });
+});
+
+/**
+ * POST /api/agent/resume - Resume quote polling. Execution remains disabled unless
+ * AGENT_EXECUTION_ENABLED=true is explicitly configured on the server.
+ */
+app.post('/api/agent/resume', (req, res) => {
+    mmArbService.resume();
+    res.json({ success: true, agent: mmArbService.getStatus(), timestamp: Date.now() });
+});
+
+// Prometheus Metrics Endpoint
+app.get('/metrics', async (req, res) => {
+    try {
+        res.set('Content-Type', mmArbService.getMetricsRegistry().contentType);
+        res.end(await mmArbService.getMetricsRegistry().metrics());
+    } catch (ex) {
+        res.status(500).end(ex.message);
+    }
+});
 
 // Security: Use a more restrictive CORS policy
 const allowedOrigin = process.env.ALLOWED_ORIGIN;

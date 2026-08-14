@@ -2,145 +2,328 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TRADE ARENA — MANAGED AGENT CONSOLE</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>TRADE ARENA — AGENT TERMINAL</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Inter:wght@400;500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&amp;family=Inter:wght@400;500&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-high": "#272a2f",
+                        "primary": "#a4c9ff",
+                        "surface-variant": "#32353a",
+                        "tertiary-container": "#c58305",
+                        "secondary-fixed-dim": "#ffb1c4",
+                        "secondary-container": "#b20055",
+                        "on-background": "#e1e2e9",
+                        "on-error": "#690005",
+                        "on-secondary-fixed-variant": "#8f0043",
+                        "tertiary-fixed": "#ffddb4",
+                        "surface-dim": "#101418",
+                        "on-primary": "#00315d",
+                        "on-primary-fixed-variant": "#004883",
+                        "on-surface": "#e1e2e9",
+                        "on-tertiary-fixed-variant": "#633f00",
+                        "on-tertiary-fixed": "#291800",
+                        "surface-container-low": "#191c21",
+                        "secondary": "#ffb1c4",
+                        "outline": "#8b919d",
+                        "on-primary-fixed": "#001c39",
+                        "surface-container-lowest": "#0b0e13",
+                        "inverse-on-surface": "#2e3036",
+                        "surface": "#101418",
+                        "surface-container-highest": "#32353a",
+                        "outline-variant": "#414751",
+                        "on-secondary": "#65002e",
+                        "inverse-surface": "#e1e2e9",
+                        "primary-fixed": "#d4e3ff",
+                        "on-secondary-fixed": "#3f001a",
+                        "primary-container": "#4d93e5",
+                        "primary-fixed-dim": "#a4c9ff",
+                        "background": "#101418",
+                        "on-error-container": "#ffdad6",
+                        "on-surface-variant": "#c1c7d3",
+                        "error-container": "#93000a",
+                        "on-primary-container": "#002a51",
+                        "on-tertiary-container": "#3c2500",
+                        "tertiary": "#ffb953",
+                        "inverse-primary": "#0060ac",
+                        "error": "#ffb4ab",
+                        "tertiary-fixed-dim": "#ffb953",
+                        "surface-bright": "#36393f",
+                        "secondary-fixed": "#ffd9e0",
+                        "surface-container": "#1d2025",
+                        "on-secondary-container": "#ffc0cf",
+                        "surface-tint": "#a4c9ff",
+                        "on-tertiary": "#452b00",
+                        "terminal-green": "#00ff66",
+                        "terminal-red": "#ff3333",
+                        "terminal-blue": "#00f0ff",
+                        "terminal-warn": "#ffb800",
+                        "terminal-purple": "#b200ff"
+                    },
+                    "fontFamily": {
+                        "headline": ["Montserrat", "sans-serif"],
+                        "mono": ["JetBrains Mono", "monospace"]
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        body { background: #0b0e13; color: #e1e2e9; font-family: 'Inter', sans-serif; }
-        .mono { font-family: 'JetBrains Mono', monospace; }
-        .headline { font-family: 'Montserrat', sans-serif; }
+        .glass-panel {
+            background: rgba(29, 32, 37, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(139, 145, 157, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+        .progress-track {
+            height: 4px;
+            background: #191c21;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #00f0ff;
+            transition: width 1s ease-in-out;
+        }
+        .progress-fill.high { background: #00ff66; }
+        .progress-fill.warn { background: #ffb800; }
+        .terminal-container {
+            width: 100%;
+            background: #0b0e13;
+            border: 1px solid #32353a;
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: inset 0 0 40px rgba(0, 240, 255, 0.05);
+            position: relative;
+            overflow-x: auto;
+        }
+        .exchange-grid {
+            display: grid;
+            grid-template-columns: 120px repeat(3, minmax(120px, 1fr));
+            gap: 4px;
+            background: #101418;
+            border-radius: 4px;
+            padding: 4px;
+            position: relative;
+        }
+        .exchange-row-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: #8b919d;
+            height: 48px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            text-transform: uppercase;
+        }
+        .bot-header {
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: #00f0ff;
+            background: #191c21;
+            border-bottom: 1px solid #32353a;
+        }
+        .bot-cell {
+            height: 48px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: #8b919d;
+        }
+        .bot-cell.scanning {
+            background: repeating-linear-gradient(45deg, rgba(0, 240, 255, 0.02), rgba(0, 240, 255, 0.02) 10px, rgba(0, 240, 255, 0.05) 10px, rgba(0, 240, 255, 0.05) 20px);
+            animation: scan-scroll 1s linear infinite;
+        }
+        @keyframes scan-scroll { from { background-position: 0 0; } to { background-position: 28px 0; } }
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.1) 3px, rgba(0,0,0,0.1) 4px);
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.2;
+        }
     </style>
 </head>
-<body class="bg-[#0b0e13] text-[#e1e2e9] min-h-screen flex flex-col">
-    <!-- Top Nav -->
-    <header class="border-b border-[#32353a] bg-[#101418] px-6 py-4 flex items-center justify-between">
-        <div class="flex items-center gap-4">
-            <h1 class="headline text-lg font-bold tracking-wider text-[#55E6FF]">TRADE ARENA <span class="text-xs text-[#8b919d]">/ AGENT CONSOLE</span></h1>
-            <span id="execBadge" class="px-2 py-0.5 text-xs rounded mono font-semibold bg-[#ffb800]/10 text-[#ffb800] border border-[#ffb800]/30">SIMULATION ONLY</span>
+<body class="bg-background text-on-background min-h-screen flex flex-col font-body-lg pb-10">
+    <!-- Header -->
+    <header class="bg-surface-container-lowest border-b border-surface-variant fixed top-0 w-full flex justify-between items-center px-6 md:px-10 h-16 z-50">
+        <div class="flex items-center gap-2 text-terminal-blue font-mono text-lg font-bold tracking-widest">
+            <span class="material-symbols-outlined">terminal</span>
+            <span>TRADE_ARENA / AGENT_TERMINAL</span>
         </div>
-        <div class="flex items-center gap-3">
-            <button onclick="fetchAgentStatus()" class="px-3 py-1.5 bg-[#191c21] border border-[#32353a] hover:border-[#55E6FF] text-xs mono rounded text-[#c1c7d3] transition">🔄 REFRESH</button>
-            <button id="pauseScannerBtn" onclick="toggleScanner()" class="px-3 py-1.5 bg-[#93000a]/20 border border-[#ffb4ab]/40 hover:border-[#ffb4ab] text-xs mono rounded text-[#ffb4ab] font-bold transition">PAUSE SCANNER</button>
+        <div class="flex items-center gap-4">
+            <div id="scannerStatusBadge" class="hidden md:flex items-center gap-2 text-xs font-mono">
+                <span class="w-2 h-2 rounded-full bg-terminal-green animate-pulse"></span>
+                <span class="text-terminal-green">SCANNER.ONLINE</span>
+            </div>
+            <div id="execBadge" class="px-3 py-1 bg-terminal-warn/10 border border-terminal-warn/30 text-terminal-warn text-[10px] font-mono rounded">
+                SIMULATION_ONLY
+            </div>
+            <button onclick="fetchAgentStatus()" class="text-on-surface-variant hover:text-terminal-blue p-2">
+                <span class="material-symbols-outlined">sync</span>
+            </button>
         </div>
     </header>
 
-    <!-- Main Container -->
-    <main class="flex-1 max-w-[1440px] w-full mx-auto p-6 flex flex-col gap-6">
-        <!-- KPI Grid -->
-        <section class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div class="bg-[#101418] border border-[#32353a] rounded-lg p-4">
-                <div class="text-xs mono text-[#8b919d]">MANAGED AGENT WALLET</div>
-                <div id="agentAddr" class="mono text-sm text-[#55E6FF] mt-1 font-bold truncate">Loading...</div>
-                <div id="agentAuthStatus" class="text-xs text-[#00ff66] mt-2 flex items-center gap-1.5">● ACTIVE SESSION</div>
+    <main class="flex-1 mt-20 px-6 md:px-10 max-w-7xl mx-auto w-full flex flex-col gap-6">
+        <!-- Top Row: Wallet & P&L -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Wallet Data -->
+            <div class="glass-panel p-4 rounded-lg flex flex-col justify-between">
+                <h3 class="font-mono text-xs text-outline mb-3">MANAGED_AGENT_WALLET</h3>
+                <div class="space-y-3">
+                    <div>
+                        <p class="font-mono text-[9px] text-outline uppercase">Address</p>
+                        <p id="agentAddr" class="font-mono text-xs text-terminal-blue truncate">0x... (Managed)</p>
+                    </div>
+                    <div class="flex justify-between">
+                        <div>
+                            <p class="font-mono text-[9px] text-outline uppercase">Status</p>
+                            <p id="agentStatus" class="font-mono text-xs text-terminal-green">● AUTHENTICATED</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-mono text-[9px] text-outline uppercase">Gas (Base)</p>
+                            <p id="baseGas" class="font-mono text-xs text-on-surface">0.02 Gwei</p>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="bg-[#101418] border border-[#32353a] rounded-lg p-4">
-                <div class="text-xs mono text-[#8b919d]">SCANNER STATUS</div>
-                <div id="scannerStatusText" class="headline text-lg font-bold text-[#00ff66] mt-1">RUNNING (10s)</div>
-                <div class="text-xs text-[#8b919d] mt-2">Multi-chain Arbitrage Poller</div>
-            </div>
-            <div class="bg-[#101418] border border-[#32353a] rounded-lg p-4">
-                <div class="text-xs mono text-[#8b919d]">DYNAMIC PROFIT THRESHOLD</div>
-                <div id="profitThresholdText" class="headline text-lg font-bold text-[#ffb953] mt-1">$2.00 (Gas-Aware)</div>
-                <div class="text-xs text-[#8b919d] mt-2">Base + Dynamic Congestion Buffer</div>
-            </div>
-            <div class="bg-[#101418] border border-[#32353a] rounded-lg p-4">
-                <div class="text-xs mono text-[#8b919d]">SESSION P&L (SUCCESS / FAILED)</div>
-                <div id="sessionPnlText" class="headline text-lg font-bold text-[#55E6FF] mt-1">+$0.00 (0 / 0)</div>
-                <div class="text-xs text-[#00ff66] mt-2">MEV Protected (0.1% Slippage)</div>
-            </div>
-        </section>
 
-        <!-- Network Peer Cards -->
-        <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <!-- Base -->
-            <div class="bg-[#101418] border border-[#32353a] rounded-lg p-4 flex flex-col justify-between">
-                <div>
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="headline font-bold text-sm text-[#55E6FF]">BASE MAINNET</span>
-                        <span class="text-xs mono px-2 py-0.5 rounded bg-[#00ff66]/10 text-[#00ff66]">HEALTHY</span>
+            <!-- P&L Summary -->
+            <div class="glass-panel p-4 rounded-lg flex flex-col justify-between">
+                <h3 class="font-mono text-xs text-outline mb-3">PROFIT_LOSS_SUMMARY</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <p class="font-mono text-[9px] text-outline uppercase">Realized P&L</p>
+                        <p id="realizedPnl" class="font-mono text-sm text-terminal-green font-bold">+$0.00</p>
                     </div>
-                    <div class="text-xs text-[#8b919d] space-y-1 mono">
-                        <div>Primary DEX: Aerodrome</div>
-                        <div>Last Scan: <span id="baseLastScan">Just now</span></div>
-                        <div>Gas Price: <span id="baseGas">0.02 Gwei</span></div>
+                    <div>
+                        <p class="font-mono text-[9px] text-outline uppercase">Win Rate</p>
+                        <p id="winRate" class="font-mono text-sm text-on-surface">100%</p>
                     </div>
-                </div>
-                <div class="mt-4 pt-3 border-t border-[#32353a] flex justify-between items-center text-xs">
-                    <span class="text-[#8b919d]">Best Net Spread:</span>
-                    <span id="baseSpread" class="mono text-[#00ff66] font-bold">+$3.42 / WETH</span>
+                    <div>
+                        <p class="font-mono text-[9px] text-outline uppercase">Trades (S/F)</p>
+                        <p id="tradeCounts" class="font-mono text-xs text-on-surface">0 / 0</p>
+                    </div>
+                    <div>
+                        <p class="font-mono text-[9px] text-outline uppercase">Last Action</p>
+                        <p id="lastTradeTime" class="font-mono text-[10px] text-outline">N/A</p>
+                    </div>
                 </div>
             </div>
-            <!-- Arbitrum -->
-            <div class="bg-[#101418] border border-[#32353a] rounded-lg p-4 flex flex-col justify-between">
-                <div>
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="headline font-bold text-sm text-[#a4c9ff]">ARBITRUM ONE</span>
-                        <span class="text-xs mono px-2 py-0.5 rounded bg-[#00ff66]/10 text-[#00ff66]">HEALTHY</span>
-                    </div>
-                    <div class="text-xs text-[#8b919d] space-y-1 mono">
-                        <div>Primary DEX: Uniswap V3</div>
-                        <div>Last Scan: <span id="arbLastScan">Just now</span></div>
-                        <div>Gas Price: <span id="arbGas">0.10 Gwei</span></div>
-                    </div>
-                </div>
-                <div class="mt-4 pt-3 border-t border-[#32353a] flex justify-between items-center text-xs">
-                    <span class="text-[#8b919d]">Best Net Spread:</span>
-                    <span id="arbSpread" class="mono text-[#00ff66] font-bold">+$1.85 / WETH</span>
-                </div>
-            </div>
-            <!-- Optimism -->
-            <div class="bg-[#101418] border border-[#32353a] rounded-lg p-4 flex flex-col justify-between">
-                <div>
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="headline font-bold text-sm text-[#ffb1c4]">OPTIMISM</span>
-                        <span class="text-xs mono px-2 py-0.5 rounded bg-[#00ff66]/10 text-[#00ff66]">HEALTHY</span>
-                    </div>
-                    <div class="text-xs text-[#8b919d] space-y-1 mono">
-                        <div>Primary DEX: Velodrome</div>
-                        <div>Last Scan: <span id="optLastScan">Just now</span></div>
-                        <div>Gas Price: <span id="optGas">0.01 Gwei</span></div>
-                    </div>
-                </div>
-                <div class="mt-4 pt-3 border-t border-[#32353a] flex justify-between items-center text-xs">
-                    <span class="text-[#8b919d]">Best Net Spread:</span>
-                    <span id="optSpread" class="mono text-[#00ff66] font-bold">+$2.10 / WETH</span>
-                </div>
-            </div>
-        </section>
 
-        <!-- Bottom Row: Edge Monitor & Event Stream -->
-        <section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div class="lg:col-span-2 bg-[#101418] border border-[#32353a] rounded-lg p-5 flex flex-col gap-4">
-                <div class="flex justify-between items-center">
-                    <h2 class="headline font-bold text-sm text-[#e1e2e9]">EDGE MONITOR & TELEMETRY</h2>
-                    <a href="/metrics" target="_blank" class="text-xs mono text-[#55E6FF] hover:underline">View Prometheus Metrics →</a>
+            <!-- Multi-Chain Health -->
+            <div class="glass-panel p-4 rounded-lg flex flex-col">
+                <h3 class="font-mono text-xs text-outline mb-3">NETWORK_HEALTH_CONSENSUS</h3>
+                <div class="space-y-3 flex-1 flex flex-col justify-center">
+                    <div>
+                        <div class="flex justify-between font-mono text-[9px] mb-1">
+                            <span class="text-on-surface">BASE_MAINNET</span>
+                            <span class="text-terminal-green">HEALTHY</span>
+                        </div>
+                        <div class="progress-track"><div class="progress-fill high" style="width: 100%"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between font-mono text-[9px] mb-1">
+                            <span class="text-on-surface">ARBITRUM_ONE</span>
+                            <span class="text-terminal-blue">HEALTHY</span>
+                        </div>
+                        <div class="progress-track"><div class="progress-fill" style="width: 100%"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between font-mono text-[9px] mb-1">
+                            <span class="text-on-surface">OPTIMISM</span>
+                            <span class="text-terminal-purple">HEALTHY</span>
+                        </div>
+                        <div class="progress-track"><div class="progress-fill" style="width: 100%"></div></div>
+                    </div>
                 </div>
-                <div class="bg-[#0b0e13] border border-[#272a2f] rounded p-4 h-64 flex flex-col justify-center items-center text-center">
-                    <div class="text-xs mono text-[#8b919d] mb-2">LIVE MULTI-CHAIN ARBITRAGE SIMULATION LOOP</div>
-                    <div id="telemetryStatus" class="mono text-sm text-[#00ff66]">Polling quotes every 10s across Base, Arbitrum, Optimism...</div>
-                    <div class="mt-4 flex gap-4 text-xs mono">
-                        <span class="text-[#55E6FF]">Slippage: 0.1%</span>
-                        <span class="text-[#ffb953]">Mutex Lock: Active</span>
-                        <span class="text-[#a78bfa]">RPC Isolation: Healthy</span>
+            </div>
+        </div>
+
+        <!-- Middle Row: Scan Matrix & Event Stream -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- Scan Matrix -->
+            <div class="lg:col-span-8 glass-panel p-4 rounded-lg">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="font-mono text-sm text-terminal-blue">MULTI_CHAIN_SCAN_MATRIX</h2>
+                    <div class="flex items-center gap-4">
+                        <div class="text-[10px] font-mono text-outline">POLL_INTERVAL: <span id="pollInterval" class="text-on-surface">10s</span></div>
+                        <button id="pauseScannerBtn" onclick="toggleScanner()" class="px-3 py-1 bg-terminal-red/10 border border-terminal-red/30 text-terminal-red text-[10px] font-mono rounded hover:bg-terminal-red/20 transition">
+                            PAUSE_SCANNER
+                        </button>
+                    </div>
+                </div>
+                <div class="terminal-container">
+                    <div class="exchange-grid">
+                        <div class="flex flex-col">
+                            <div class="bot-header border-r border-surface-variant text-[8px] justify-start pl-2">NETWORK / DEX</div>
+                            <div class="exchange-row-label">BASE / AERODROME</div>
+                            <div class="exchange-row-label">ARB / UNISWAP_V3</div>
+                            <div class="exchange-row-label">OPT / VELODROME</div>
+                        </div>
+                        <div class="flex flex-col">
+                            <div class="bot-header">SCAN_01</div>
+                            <div id="baseCell" class="bot-cell scanning"><span>...</span></div>
+                            <div id="arbCell" class="bot-cell scanning"><span>...</span></div>
+                            <div id="optCell" class="bot-cell scanning"><span>...</span></div>
+                        </div>
+                        <div class="flex flex-col">
+                            <div class="bot-header">BEST_SPREAD</div>
+                            <div id="baseSpread" class="bot-cell font-bold text-terminal-green"><span>$0.00</span></div>
+                            <div id="arbSpread" class="bot-cell font-bold text-terminal-green"><span>$0.00</span></div>
+                            <div id="optSpread" class="bot-cell font-bold text-terminal-green"><span>$0.00</span></div>
+                        </div>
+                        <div class="flex flex-col">
+                            <div class="bot-header">LAST_SYNC</div>
+                            <div id="baseTime" class="bot-cell text-outline"><span>N/A</span></div>
+                            <div id="arbTime" class="bot-cell text-outline"><span>N/A</span></div>
+                            <div id="optTime" class="bot-cell text-outline"><span>N/A</span></div>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Event Stream -->
-            <div class="bg-[#101418] border border-[#32353a] rounded-lg p-5 flex flex-col gap-4">
-                <h2 class="headline font-bold text-sm text-[#e1e2e9]">EVENT STREAM</h2>
-                <div id="eventStreamList" class="bg-[#0b0e13] border border-[#272a2f] rounded p-3 h-64 overflow-y-auto space-y-2 mono text-xs">
-                    <div class="text-[#808696]">[00:00:00] System initialized. Managed Agent Wallet connected.</div>
-                    <div class="text-[#00ff66]">[00:00:05] Base/Aerodrome quote simulated: +$3.42 net profit.</div>
+            <div class="lg:col-span-4 glass-panel p-4 rounded-lg flex flex-col">
+                <h3 class="font-mono text-xs text-outline mb-3">SYSTEM_EVENT_STREAM</h3>
+                <div id="eventStreamList" class="flex-1 overflow-y-auto space-y-2 font-mono text-[10px] max-h-[300px] pr-2">
+                    <div class="text-outline">[00:00:00] Initializing Terminal...</div>
+                </div>
+                <div class="mt-4 pt-4 border-t border-surface-variant flex justify-between items-center">
+                    <span class="text-[9px] font-mono text-outline uppercase">Telemetry</span>
+                    <a href="/metrics" target="_blank" class="text-[9px] font-mono text-terminal-blue hover:underline">PROMETHEUS_LINK</a>
                 </div>
             </div>
-        </section>
+        </div>
     </main>
 
-    <!-- Footer -->
-    <footer class="border-t border-[#32353a] bg-[#101418] py-4 text-center text-xs mono text-[#8b919d]">
-        NO SECRETS ARE DISPLAYED IN THIS CONSOLE • POWERED BY METAMASK AGENT WALLET & TRADE ARENA
+    <footer class="fixed bottom-0 w-full bg-surface-container-lowest border-t border-surface-variant px-6 h-10 flex items-center justify-between text-[10px] font-mono text-outline z-50">
+        <div>NO_SECRETS_DISPLAYED_IN_TERMINAL</div>
+        <div class="flex gap-4">
+            <span>MUTEX_LOCK: ACTIVE</span>
+            <span>RPC_ISOLATION: HEALTHY</span>
+            <span>POWERED_BY: METAMASK_AGENT</span>
+        </div>
     </footer>
 
     <script>
@@ -152,46 +335,55 @@
                 const data = await res.json();
                 if (data.success && data.agent) {
                     const agent = data.agent;
-                    document.getElementById('agentAddr').innerText = agent.walletAddress || '0x2ca1f801c1e19d16160c982c627e2932e95117be (Managed)';
                     
+                    // 1. Update Wallet & Badges
+                    document.getElementById('agentAddr').innerText = agent.walletAddress || '0x... (Managed)';
                     const execBadge = document.getElementById('execBadge');
                     if (agent.executionEnabled) {
-                        execBadge.innerText = 'EXECUTION ARMED';
-                        execBadge.className = 'px-2 py-0.5 text-xs rounded mono font-semibold bg-[#00ff66]/10 text-[#00ff66] border border-[#00ff66]/30';
+                        execBadge.innerText = 'EXECUTION_ARMED';
+                        execBadge.className = 'px-3 py-1 bg-terminal-green/10 border border-terminal-green/30 text-terminal-green text-[10px] font-mono rounded';
                     } else {
-                        execBadge.innerText = 'SIMULATION ONLY';
-                        execBadge.className = 'px-2 py-0.5 text-xs rounded mono font-semibold bg-[#ffb800]/10 text-[#ffb800] border border-[#ffb800]/30';
+                        execBadge.innerText = 'SIMULATION_ONLY';
+                        execBadge.className = 'px-3 py-1 bg-terminal-warn/10 border border-terminal-warn/30 text-terminal-warn text-[10px] font-mono rounded';
                     }
 
+                    // 2. Update Scanner Controls
                     scannerRunning = agent.scannerEnabled && agent.running;
-                    const scannerStatusText = document.getElementById('scannerStatusText');
-                    const pauseScannerBtn = document.getElementById('pauseScannerBtn');
+                    const badge = document.getElementById('scannerStatusBadge');
+                    const btn = document.getElementById('pauseScannerBtn');
+                    const pollText = document.getElementById('pollInterval');
+                    
                     if (scannerRunning) {
-                        scannerStatusText.innerText = 'RUNNING (' + (agent.pollIntervalMs / 1000) + 's)';
-                        scannerStatusText.className = 'headline text-lg font-bold text-[#00ff66] mt-1';
-                        pauseScannerBtn.innerText = 'PAUSE SCANNER';
-                        pauseScannerBtn.className = 'px-3 py-1.5 bg-[#93000a]/20 border border-[#ffb4ab]/40 hover:border-[#ffb4ab] text-xs mono rounded text-[#ffb4ab] font-bold transition';
+                        badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-terminal-green animate-pulse"></span><span class="text-terminal-green">SCANNER.ONLINE</span>';
+                        btn.innerText = 'PAUSE_SCANNER';
+                        btn.className = 'px-3 py-1 bg-terminal-red/10 border border-terminal-red/30 text-terminal-red text-[10px] font-mono rounded hover:bg-terminal-red/20 transition';
+                        pollText.innerText = (agent.pollIntervalMs / 1000) + 's';
                     } else {
-                        scannerStatusText.innerText = 'PAUSED';
-                        scannerStatusText.className = 'headline text-lg font-bold text-[#ffb800] mt-1';
-                        pauseScannerBtn.innerText = 'RESUME SCANNER';
-                        pauseScannerBtn.className = 'px-3 py-1.5 bg-[#00ff66]/20 border border-[#00ff66]/40 hover:border-[#00ff66] text-xs mono rounded text-[#00ff66] font-bold transition';
+                        badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-terminal-warn"></span><span class="text-terminal-warn">SCANNER.PAUSED</span>';
+                        btn.innerText = 'RESUME_SCANNER';
+                        btn.className = 'px-3 py-1 bg-terminal-green/10 border border-terminal-green/30 text-terminal-green text-[10px] font-mono rounded hover:bg-terminal-green/20 transition';
+                        pollText.innerText = 'OFF';
                     }
 
-                    document.getElementById('profitThresholdText').innerText = '$' + agent.profitThresholdUsd.toFixed(2) + ' (Gas-Aware)';
-                    document.getElementById('sessionPnlText').innerText = `+$0.00 (${agent.tradeCount.success} / ${agent.tradeCount.failed})`;
+                    // 3. Update P&L & Stats
+                    document.getElementById('tradeCounts').innerText = `${agent.tradeCount.success} / ${agent.tradeCount.failed}`;
+                    if (agent.lastTradeAt) {
+                        document.getElementById('lastTradeTime').innerText = new Date(agent.lastTradeAt).toLocaleTimeString();
+                    }
 
+                    // 4. Update Matrix Times
                     if (agent.lastScanAt) {
-                        document.getElementById('baseLastScan').innerText = new Date(agent.lastScanAt).toLocaleTimeString();
-                        document.getElementById('arbLastScan').innerText = new Date(agent.lastScanAt).toLocaleTimeString();
-                        document.getElementById('optLastScan').innerText = new Date(agent.lastScanAt).toLocaleTimeString();
+                        const timeStr = new Date(agent.lastScanAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                        document.getElementById('baseTime').innerText = timeStr;
+                        document.getElementById('arbTime').innerText = timeStr;
+                        document.getElementById('optTime').innerText = timeStr;
                     }
 
-                    addEventStreamLog(`[${new Date().toLocaleTimeString()}] Status refreshed. Scanner: ${scannerRunning ? 'ON' : 'OFF'}`);
+                    addEventStreamLog(`[${new Date().toLocaleTimeString()}] Sync: ${scannerRunning ? 'ACTIVE' : 'PAUSED'}`);
                 }
             } catch (err) {
-                console.error('Failed to fetch agent status:', err);
-                addEventStreamLog(`[${new Date().toLocaleTimeString()}] Failed to sync agent status.`);
+                console.error('Terminal Sync Error:', err);
+                addEventStreamLog(`[${new Date().toLocaleTimeString()}] ERR: Sync Failed`);
             }
         }
 
@@ -204,20 +396,31 @@
                     fetchAgentStatus();
                 }
             } catch (err) {
-                console.error('Failed to toggle scanner:', err);
+                console.error('Toggle Error:', err);
             }
         }
 
         function addEventStreamLog(msg) {
             const list = document.getElementById('eventStreamList');
             const div = document.createElement('div');
+            div.className = msg.includes('ERR') ? 'text-terminal-red' : 'text-outline';
             div.innerText = msg;
             list.insertBefore(div, list.firstChild);
+            if (list.children.length > 50) list.removeChild(list.lastChild);
         }
 
-        // Poll status every 10 seconds
+        // Initialize and Poll
         setInterval(fetchAgentStatus, 10000);
         fetchAgentStatus();
+        
+        // Visual Simulation: Randomly light up matrix cells
+        setInterval(() => {
+            if (!scannerRunning) return;
+            const cells = ['baseCell', 'arbCell', 'optCell'];
+            const randomCell = document.getElementById(cells[Math.floor(Math.random() * cells.length)]);
+            randomCell.classList.add('bg-terminal-blue/5');
+            setTimeout(() => randomCell.classList.remove('bg-terminal-blue/5'), 1000);
+        }, 2000);
     </script>
 </body>
 </html>

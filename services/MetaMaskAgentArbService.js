@@ -43,7 +43,7 @@ const arbLastGasGwei = new prometheus.Gauge({
 
 // V8 & GC Metrics
 const gcDuration = new prometheus.Histogram({
-    name: 'nodejs_hft_gc_duration_seconds',
+    name: 'mm_arb_gc_duration_seconds',
     help: 'Garbage collection duration in seconds',
     labelNames: ['kind'],
     buckets: [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1],
@@ -51,7 +51,7 @@ const gcDuration = new prometheus.Histogram({
 });
 
 const v8HeapStats = new prometheus.Gauge({
-    name: 'nodejs_v8_heap_stats_bytes',
+    name: 'mm_arb_v8_heap_stats_bytes',
     help: 'V8 heap statistics in bytes',
     labelNames: ['stat'],
     registers: [register]
@@ -94,15 +94,33 @@ class MetaMaskAgentArbService {
 
         // Supported networks and their default DEX routers for arbitrage
         this.networksConfig = {
-            base: { dex: 'aerodrome', tokenIn: 'WETH', tokenOut: 'USDC' },
-            arbitrum: { dex: 'uniswap_v3', tokenIn: 'WETH', tokenOut: 'USDC' },
-            optimism: { dex: 'velodrome', tokenIn: 'WETH', tokenOut: 'USDC' }
+            base: { 
+                chainId: '8453', 
+                tokenIn: 'WETH', 
+                tokenOut: 'USDC', 
+                profitThresholdUsd: parseFloat(process.env.BASE_PROFIT_THRESHOLD_USD || process.env.ARB_PROFIT_THRESHOLD_USD || '0.01'),
+                slippage: parseFloat(process.env.BASE_SLIPPAGE || process.env.ARB_SLIPPAGE || '0.1')
+            },
+            arbitrum: { 
+                chainId: '42161', 
+                tokenIn: 'WETH', 
+                tokenOut: 'USDC', 
+                profitThresholdUsd: parseFloat(process.env.ARBITRUM_PROFIT_THRESHOLD_USD || process.env.ARB_PROFIT_THRESHOLD_USD || '0.05'),
+                slippage: parseFloat(process.env.ARBITRUM_SLIPPAGE || process.env.ARB_SLIPPAGE || '0.15')
+            },
+            optimism: { 
+                chainId: '10', 
+                tokenIn: 'WETH', 
+                tokenOut: 'USDC', 
+                profitThresholdUsd: parseFloat(process.env.OPTIMISM_PROFIT_THRESHOLD_USD || process.env.ARB_PROFIT_THRESHOLD_USD || '0.05'),
+                slippage: parseFloat(process.env.OPTIMISM_SLIPPAGE || process.env.ARB_SLIPPAGE || '0.15')
+            }
         };
 
         this.discordWebhookUrl = process.env.DISCORD_WEBHOOK_URL || '';
         this.telegramBotToken = process.env.TELEGRAM_BOT_TOKEN || '';
         this.telegramChatId = process.env.TELEGRAM_CHAT_ID || '';
-        this.walletAddress = process.env.AGENT_WALLET_ADDRESS || null;
+        this.walletAddress = process.env.MANAGED_WALLET_ADDRESS || null;
         this.profitThresholdUsd = parseFloat(process.env.ARB_PROFIT_THRESHOLD_USD || '2.00');
         this.slippage = parseFloat(process.env.ARB_SLIPPAGE || '0.1'); // 0.1% default for MEV protection
         this.executionEnabled = process.env.AGENT_EXECUTION_ENABLED === 'true';
@@ -115,6 +133,7 @@ class MetaMaskAgentArbService {
         this.pollIntervalMs = parseInt(process.env.ARB_POLL_INTERVAL_MS || '10000');
         this.tradeCount = { success: 0, failed: 0 };
         this.logPath = path.join(__dirname, '../logs/trades.log');
+        this.balances = { base: '0.00', arbitrum: '0.00', optimism: '0.00' };
         
         // HFT Aggregation State
         this.alertQueue = [];
@@ -159,9 +178,10 @@ class MetaMaskAgentArbService {
      * Executes a MetaMask Agent CLI command safely using mutex locking.
      */
     async executeCli(command, timeout = 30000) {
+        const mmPath = process.env.MM_PATH || 'mm';
         const release = await this.mmLock.acquire();
         try {
-            const { stdout, stderr } = await execAsync(`mm ${command}`, { timeout });
+            const { stdout, stderr } = await execAsync(`${mmPath} ${command}`, { timeout });
             if (stderr && stderr.includes('Error')) {
                 throw new Error(`MetaMask CLI Error: ${stderr.trim()}`);
             }
@@ -190,7 +210,8 @@ class MetaMaskAgentArbService {
      * Simulates or executes an arbitrage trade via MetaMask Agent CLI on a specific network.
      */
     async simulateOrExecuteSwap(network, tokenIn, tokenOut, amount, dex, execute = false) {
-        let cmd = `swap quote --in ${tokenIn} --out ${tokenOut} --amount ${amount} --slippage ${this.slippage} --dex ${dex} --network ${network} --format json`;
+        const config = this.networksConfig[network];
+        let cmd = `swap quote --from ${tokenIn} --to ${tokenOut} --amount ${amount} --slippage ${config.slippage} --from-chain-id ${config.chainId} --format json`;
         if (execute) {
             cmd += ` --yes`;
         }
@@ -333,6 +354,9 @@ class MetaMaskAgentArbService {
                 return;
             }
 
+            // Update wallet balances across chains
+            await this.updateBalances();
+
             // Iterate over all configured networks
             for (const [network, config] of Object.entries(this.networksConfig)) {
                 try {
@@ -342,10 +366,11 @@ class MetaMaskAgentArbService {
                     if (!quote || !quote.netProfit) continue;
 
                     const netProfit = parseFloat(quote.netProfit);
-                    console.log(`[MetaMaskAgentArb] [${network.toUpperCase()}] Simulated ${config.tokenIn}/${config.tokenOut}: Net Profit = $${netProfit.toFixed(2)} (Threshold: $${this.profitThresholdUsd})`);
+                    const threshold = config.profitThresholdUsd;
+                    console.log(`[MetaMaskAgentArb] [${network.toUpperCase()}] Simulated ${config.tokenIn}/${config.tokenOut}: Net Profit = $${netProfit.toFixed(2)} (Threshold: $${threshold})`);
 
                     // 2. Threshold Check
-                    if (netProfit >= this.profitThresholdUsd) {
+                    if (netProfit >= threshold) {
                         console.log(`🎯 [${network.toUpperCase()}] Profit threshold met! Executing atomic swap with MEV protection...`);
                         
                         // 3. Execute Trade only when explicitly enabled. Otherwise record a dry-run decision.
@@ -403,14 +428,26 @@ class MetaMaskAgentArbService {
         this.start();
     }
 
+    async updateBalances() {
+        if (!this.walletAddress) return;
+        for (const network of Object.keys(this.providers)) {
+            const bal = await this.getRpcBalance(network, this.walletAddress);
+            if (bal !== null) {
+                this.balances[network] = parseFloat(bal).toFixed(4);
+            }
+        }
+    }
+
     getStatus() {
         return {
             walletMode: 'managed-agent',
             walletAddress: this.walletAddress,
+            balances: this.balances,
             executionEnabled: this.executionEnabled,
             scannerEnabled: this.scannerEnabled,
             running: this.isRunning,
             networks: Object.keys(this.networksConfig),
+            networkConfigs: this.networksConfig,
             profitThresholdUsd: this.profitThresholdUsd,
             slippagePercent: this.slippage,
             pollIntervalMs: this.pollIntervalMs,
