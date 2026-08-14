@@ -8,6 +8,8 @@
   },
   "scripts": {
     "start": "node server.js",
+    "start:balanced": "node --max-semi-space-size=64 --max-old-space-size=2048 server.js",
+    "start:hft": "node --max-semi-space-size=256 --max-old-space-size=4096 --nouse-idle-notification --incremental-marking server.js",
     "dev": "node server.js",
     "test": "node tests.js",
     "proxy": "node proxy.js",
