@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>TRADE ARENA - MASTER DASHBOARD</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface": "#111319",
+                      "background": "#0b0e13",
+                      "primary-container": "#00f0ff",
+                      "primary-fixed-dim": "#00dbe9",
+                      "terminal-green": "#00ff66",
+                      "terminal-red": "#ff3333",
+                      "outline-variant": "#3b494b"
+              },
+              "fontFamily": {
+                      "data": ["JetBrains Mono"],
+                      "headline": ["Hanken Grotesk"]
+              }
+            }
+          }
+        }
+    </script>
+    <style>
+        body { background-color: #0b0e13; color: #e1e2ea; font-family: 'Hanken Grotesk', sans-serif; }
+        .glass-panel { background-color: rgba(25, 28, 33, 0.4); backdrop-filter: blur(24px); border: 1px solid #3b494b; }
+        .data-table-row { border-bottom: 1px solid rgba(59, 73, 75, 0.3); }
+        .live-indicator { animation: pulse-cyan 2s infinite; }
+        @keyframes pulse-cyan { 0% { box-shadow: 0 0 0 0 rgba(0, 219, 233, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(0, 219, 233, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 219, 233, 0); } }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col pb-10">
+    <!-- Header -->
+    <header class="bg-[#0b0e13] border-b border-[#3b494b] fixed top-0 w-full flex justify-between items-center px-8 h-16 z-50">
+        <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-[#00dbe9]">dashboard_customize</span>
+            <h1 class="font-headline text-xl font-bold tracking-tight">TRADE_ARENA <span class="text-[#849495] font-normal">/ MASTER_V3.1</span></h1>
+        </div>
+        <div class="flex items-center gap-6">
+            <div class="flex items-center gap-2 text-[10px] font-data">
+                <span class="w-2 h-2 rounded-full bg-terminal-green live-indicator"></span>
+                <span class="text-terminal-green uppercase">Engine.Active</span>
+            </div>
+            <button onclick="window.location.href='agent-console.html'" class="px-4 py-1.5 bg-[#00dbe9]/10 border border-[#00dbe9]/30 text-[#00dbe9] text-[10px] font-data rounded hover:bg-[#00dbe9]/20 transition">
+                SWITCH_TO_AGENT_TERMINAL
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 mt-20 px-8 max-w-7xl mx-auto w-full flex flex-col gap-6">
+        <!-- Stats Bar -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="glass-panel p-4 rounded-xl">
+                <p class="text-[10px] font-data text-[#849495] uppercase mb-1">Total P&L (Session)</p>
+                <p class="text-2xl font-headline font-bold text-terminal-green">+$12,450.80</p>
+            </div>
+            <div class="glass-panel p-4 rounded-xl">
+                <p class="text-[10px] font-data text-[#849495] uppercase mb-1">Win Rate</p>
+                <p class="text-2xl font-headline font-bold">78.4%</p>
+            </div>
+            <div class="glass-panel p-4 rounded-xl">
+                <p class="text-[10px] font-data text-[#849495] uppercase mb-1">Active Bots</p>
+                <p class="text-2xl font-headline font-bold text-[#00dbe9]">14 / 20</p>
+            </div>
+            <div class="glass-panel p-4 rounded-xl">
+                <p class="text-[10px] font-data text-[#849495] uppercase mb-1">Avg Gas (Base)</p>
+                <p class="text-2xl font-headline font-bold">0.02 <span class="text-xs font-normal opacity-50">Gwei</span></p>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- Left: Bot Matrix -->
+            <div class="lg:col-span-8 flex flex-col gap-6">
+                <div class="glass-panel rounded-xl overflow-hidden flex flex-col h-[400px]">
+                    <div class="px-6 py-4 border-b border-[#3b494b] flex justify-between items-center">
+                        <h2 class="font-headline font-bold text-sm">DEX_LIQUIDITY_MATRIX</h2>
+                        <span class="text-[10px] font-data text-[#849495]">SCANNING 12 VENUES</span>
+                    </div>
+                    <div class="flex-1 overflow-auto p-4">
+                        <div class="grid grid-cols-4 gap-2">
+                            <!-- Network Cards -->
+                            <div class="bg-surface/50 p-4 rounded-lg border border-[#3b494b] hover:border-[#00dbe9] transition-colors">
+                                <p class="text-[9px] font-data text-[#849495] mb-2">BASE</p>
+                                <p class="text-xs font-headline font-bold">Aerodrome</p>
+                                <p class="text-[10px] font-data text-terminal-green mt-1">Spread: +1.2%</p>
+                            </div>
+                            <div class="bg-surface/50 p-4 rounded-lg border border-[#3b494b] hover:border-[#00dbe9] transition-colors">
+                                <p class="text-[9px] font-data text-[#849495] mb-2">ARBITRUM</p>
+                                <p class="text-xs font-headline font-bold">Uniswap V3</p>
+                                <p class="text-[10px] font-data text-terminal-green mt-1">Spread: +0.8%</p>
+                            </div>
+                            <div class="bg-surface/50 p-4 rounded-lg border border-[#3b494b] hover:border-[#00dbe9] transition-colors">
+                                <p class="text-[9px] font-data text-[#849495] mb-2">OPTIMISM</p>
+                                <p class="text-xs font-headline font-bold">Velodrome</p>
+                                <p class="text-[10px] font-data text-terminal-green mt-1">Spread: +1.5%</p>
+                            </div>
+                            <div class="bg-surface/50 p-4 rounded-lg border border-[#3b494b] hover:border-[#00dbe9] transition-colors">
+                                <p class="text-[9px] font-data text-[#849495] mb-2">ETHEREUM</p>
+                                <p class="text-xs font-headline font-bold">Curve</p>
+                                <p class="text-[10px] font-data text-[#849495] mt-1">Spread: < 0.1%</p>
+                            </div>
+                        </div>
+                        <!-- Bot List Simulation -->
+                        <div class="mt-6 space-y-2">
+                            <div class="flex items-center justify-between p-3 bg-surface/30 rounded border border-[#3b494b]/50 font-data text-[10px]">
+                                <div class="flex items-center gap-3">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-terminal-green"></span>
+                                    <span>BOT_01 (TRADER)</span>
+                                </div>
+                                <div class="text-[#849495]">STRATEGY: MULTI_CHAIN_ARB</div>
+                                <div class="text-terminal-green">+$42.50</div>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-surface/30 rounded border border-[#3b494b]/50 font-data text-[10px]">
+                                <div class="flex items-center gap-3">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-terminal-green"></span>
+                                    <span>BOT_02 (WORKER)</span>
+                                </div>
+                                <div class="text-[#849495]">STRATEGY: LIQUIDITY_PROV</div>
+                                <div class="text-on-surface">PENDING</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Live Log -->
+            <div class="lg:col-span-4 flex flex-col gap-6">
+                <div class="glass-panel rounded-xl flex-1 flex flex-col max-h-[400px]">
+                    <div class="px-6 py-4 border-b border-[#3b494b] flex justify-between items-center">
+                        <h2 class="font-headline font-bold text-sm">LIVE_TALLY_LOG</h2>
+                        <span class="material-symbols-outlined text-[#849495] text-sm">receipt_long</span>
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-4 space-y-2">
+                        <div class="data-table-row flex justify-between py-2 font-data text-[10px]">
+                            <span class="text-[#00dbe9]">ARB</span>
+                            <span class="font-bold">ETH/USDC</span>
+                            <span class="text-terminal-green">+$45.20</span>
+                        </div>
+                        <div class="data-table-row flex justify-between py-2 font-data text-[10px]">
+                            <span class="text-terminal-red">SHORT</span>
+                            <span class="font-bold">WBTC</span>
+                            <span class="text-[#849495]">PENDING</span>
+                        </div>
+                        <div class="data-table-row flex justify-between py-2 font-data text-[10px]">
+                            <span class="text-[#00dbe9]">LONG</span>
+                            <span class="font-bold">SOL</span>
+                            <span class="text-terminal-green">+$12.80</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="fixed bottom-0 w-full bg-[#0b0e13] border-t border-[#3b494b] px-8 h-10 flex items-center justify-between text-[10px] font-data text-[#849495]">
+        <div>POWERED_BY_STITCH_AI</div>
+        <div class="flex gap-6">
+            <span>NETWORK: BASE_MAINNET</span>
+            <span>UPTIME: 99.9%</span>
+        </div>
+    </footer>
+</body>
+</html>
