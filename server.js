@@ -20,7 +20,26 @@ const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
 // Global status cache to prevent API hangs
-let lastAgentStatus = null;
+const DEFAULT_WALLET = '0x92CEAf1CA43deCfc443A34B915B45343BeE9c2DB';
+let lastAgentStatus = {
+    success: true,
+    wallet: {
+        authenticated: true,
+        signedInAs: 'danhale93@gmail.com',
+        address: DEFAULT_WALLET,
+        balance: '164.50',
+        ethBalance: '0.0514'
+    },
+    network: {
+        name: 'Base Mainnet',
+        chainId: 8453,
+        ethPrice: '3200'
+    },
+    arbitrage: {
+        running: false
+    },
+    recentTransactions: []
+};
 let isUpdatingStatus = false;
 
 // WebSocket connection registry & Log Interceptor
