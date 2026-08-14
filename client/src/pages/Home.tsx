@@ -4,16 +4,33 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Shield, Play, Pause, Terminal, Cpu, Zap, Activity, CheckCircle2, Lock, RefreshCw } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 
 export default function Home() {
   const { user, loading: authLoading, isAuthenticated } = useAuth();
   const utils = trpc.useUtils();
+  const lastSeenTradeIdRef = useRef<number | null>(null);
 
   const { data: statusData, isLoading: statusLoading } = trpc.arbitrage.status.useQuery(undefined, {
     refetchInterval: 5000,
   });
+
+  useEffect(() => {
+    const trades = statusData?.agent?.recentTrades;
+    if (trades && trades.length > 0) {
+      const latest = trades[0];
+      if (latest && latest.id !== lastSeenTradeIdRef.current) {
+        if (lastSeenTradeIdRef.current !== null) {
+          toast.success(`⚡ Arbitrage Executed on ${latest.network.toUpperCase()}!`, {
+            description: `Pair: ${latest.tokenPair} | Profit: +$${latest.netProfitUsd} | Tx: ${latest.txHash.slice(0, 8)}...`,
+            duration: 6000,
+          });
+        }
+        lastSeenTradeIdRef.current = latest.id;
+      }
+    }
+  }, [statusData]);
 
   const toggleScannerMutation = trpc.arbitrage.toggleScanner.useMutation({
     onSuccess: (data) => {
