@@ -51,6 +51,7 @@ async function updateStatusInBackground() {
             catch (e) { return { ok: false, error: e.message }; }
         };
 
+        console.log('[Status] Starting background data fetch...');
         const [doctor, authStatus, walletInfo, balance, history, ethPrice] = await Promise.all([
             runSafe('doctor'),
             runSafe('auth status'),
@@ -59,6 +60,7 @@ async function updateStatusInBackground() {
             runSafe('tx history --chain-ids 8453 --limit 5'),
             runSafe('price spot --asset-ids "eip155:8453/slip44:60"')
         ]);
+        console.log('[Status] Background fetch complete.');
         
         const currentEthPrice = ethPrice.data?.prices?.[0]?.price || ethPrice.data?.price || '3200';
 
@@ -537,8 +539,6 @@ setTimeout(initAgentSession, 2000);
 app.get('/api/network/status', (req, res) => {
     // Instant response from cache
     res.json(lastAgentStatus);
-    // Trigger update if not already updating
-    updateStatusInBackground();
 });
 
 // 🛠️ ARBITRAGE CONTROL

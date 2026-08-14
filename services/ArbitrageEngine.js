@@ -52,7 +52,9 @@ class ArbitrageEngine {
         while (this.isRunning) {
             try {
                 if (this.isAgentReady) {
+                    console.log('[ArbitrageEngine] Starting scan cycle...');
                     await this.findOpportunities();
+                    console.log('[ArbitrageEngine] Scan cycle complete.');
                 } else {
                     console.log('[ArbitrageEngine] Waiting for agent session to initialize...');
                 }
