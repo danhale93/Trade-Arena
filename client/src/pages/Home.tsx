@@ -21,7 +21,7 @@ export default function Home() {
     if (trades && trades.length > 0) {
       const latest = trades[0];
       if (latest && latest.id !== lastSeenTradeIdRef.current) {
-        if (lastSeenTradeIdRef.current !== null) {
+        if (lastSeenTradeIdRef.current !== null && (latest.status === 'success' || !latest.status)) {
           toast.success(`⚡ Arbitrage Executed on ${latest.network.toUpperCase()}!`, {
             description: `Pair: ${latest.tokenPair} | Profit: +$${latest.netProfitUsd} | Tx: ${latest.txHash.slice(0, 8)}...`,
             duration: 6000,
@@ -60,6 +60,20 @@ export default function Home() {
     },
     onError: (err) => {
       toast.error("Token submission failed: " + err.message);
+    }
+  });
+
+  const runArbMutation = trpc.arbitrage.runArbitrageCheck.useMutation({
+    onSuccess: (data) => {
+      if (data.executed) {
+        toast.success(`⚡ Live Trade Executed! Tx: ${data.txHash?.slice(0, 10)}...`);
+      } else {
+        toast.info("Simulation completed: " + JSON.stringify(data.simulation?.netProfit || "No profitable spread found"));
+      }
+      utils.arbitrage.status.invalidate();
+    },
+    onError: (err) => {
+      toast.error("Arb check failed: " + err.message);
     }
   });
 
@@ -229,8 +243,8 @@ export default function Home() {
 
               <div className="space-y-4 flex-1 flex flex-col justify-around">
                 {/* Base */}
-                <div className="p-4 bg-[#050b0e] rounded-lg border border-[#00dbe9]/20">
-                  <div className="flex justify-between items-center mb-2">
+                <div className="p-4 bg-[#050b0e] rounded-lg border border-[#00dbe9]/20 flex flex-col gap-3">
+                  <div className="flex justify-between items-center">
                     <span className="text-white font-bold text-sm uppercase">Base Mainnet</span>
                     <span className="text-[10px] bg-[#00dbe9]/10 text-[#00dbe9] border border-[#00dbe9]/30 px-2 py-0.5 rounded">Chain ID: {networkConfigs.base.chainId}</span>
                   </div>
@@ -238,6 +252,13 @@ export default function Home() {
                     <div>Profit Threshold: <span className="text-emerald-400 font-bold">${networkConfigs.base.profitThresholdUsd.toFixed(2)}</span></div>
                     <div>Max Slippage: <span className="text-[#00dbe9] font-bold">{networkConfigs.base.slippage}%</span></div>
                   </div>
+                  <Button 
+                    onClick={() => runArbMutation.mutate({ network: 'base' })}
+                    disabled={!isAuthenticated || runArbMutation.isPending}
+                    className="w-full bg-[#00dbe9]/10 hover:bg-[#00dbe9]/20 text-[#00dbe9] border border-[#00dbe9]/30 text-xs font-bold py-1.5 h-8"
+                  >
+                    {runArbMutation.isPending ? "RUNNING..." : "RUN ARB CHECK (BASE)"}
+                  </Button>
                 </div>
 
                 {/* Arbitrum */}

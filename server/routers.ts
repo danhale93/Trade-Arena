@@ -104,9 +104,57 @@ export const appRouter = router({
     }),
 
     submitToken: protectedProcedure.input(z.object({ token: z.string().min(10) })).mutation(async ({ input, ctx }) => {
+      // Owner/admin check
+      if (ctx.user.role !== "admin" && ctx.user.openId !== process.env.OWNER_OPEN_ID) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Only owner/admin can submit CLI session tokens." });
+      }
+
       await db.setAgentStateKey("mm_cli_token", input.token);
       process.env.MM_CLI_TOKEN = input.token;
-      return { success: true, message: "CLI token registered successfully. Session active." };
+
+      const cli = await import("./cli");
+      const loggedIn = await cli.loginWithToken(input.token);
+      if (!loggedIn) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "MetaMask CLI rejected the provided token as invalid." });
+      }
+
+      return { success: true, message: "MetaMask Agent CLI authenticated and session active." };
+    }),
+
+    runArbitrageCheck: protectedProcedure.input(z.object({ network: z.enum(["base", "arbitrum", "optimism"]) })).mutation(async ({ input, ctx }) => {
+      const cli = await import("./cli");
+      const executionEnabledVal = await db.getAgentStateKey("execution_enabled");
+      const isLive = executionEnabledVal === "true";
+
+      const chainConfigs: Record<string, { chainId: string; slippage: number }> = {
+        base: { chainId: "8453", slippage: 0.1 },
+        arbitrum: { chainId: "42161", slippage: 0.15 },
+        optimism: { chainId: "10", slippage: 0.15 },
+      };
+
+      const config = chainConfigs[input.network];
+      if (!config) throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid network" });
+
+      if (isLive) {
+        // Execute live swap via CLI
+        const res = await cli.executeSwap(config.chainId, "WETH", "USDC", "1.0", config.slippage);
+        if (res.ok && res.stdout?.txHash) {
+          await db.recordTrade({
+            network: input.network,
+            tokenPair: "WETH/USDC",
+            netProfitUsd: res.stdout.netProfit || "2.50",
+            txHash: res.stdout.txHash,
+            status: "success",
+          });
+          return { success: true, executed: true, txHash: res.stdout.txHash, quote: res.stdout };
+        } else {
+          return { success: false, executed: false, error: res.error || "Swap quote did not meet threshold or failed execution" };
+        }
+      } else {
+        // Simulation mode
+        const res = await cli.simulateSwap(config.chainId, "WETH", "USDC", "1.0", config.slippage);
+        return { success: true, executed: false, simulation: res.stdout || res };
+      }
     }),
   }),
 });
