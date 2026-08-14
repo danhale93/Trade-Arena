@@ -423,8 +423,6 @@ async function initAgentSession() {
 }
 setTimeout(initAgentSession, 2000);
 
-const { ethers } = require('ethers');
-
 app.get('/api/network/status', async (req, res) => {
     const DEFAULT_WALLET = '0x92CEAf1CA43deCfc443A34B915B45343BeE9c2DB';
     try {
