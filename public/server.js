@@ -13,6 +13,10 @@ const WebSocket = require('websocket').w3cwebsocket;
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Import MetaMask Agent Arbitrage Service
+const mmArbService = require('../services/MetaMaskAgentArbService');
+mmArbService.start();
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -353,9 +357,20 @@ function generateId() {
 /**
  * Start Server
  */
+// Prometheus Metrics Endpoint
+app.get('/metrics', async (req, res) => {
+    try {
+        res.set('Content-Type', mmArbService.getMetricsRegistry().contentType);
+        res.end(await mmArbService.getMetricsRegistry().metrics());
+    } catch (ex) {
+        res.status(500).end(ex.message);
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`🤖 Trade Arena Backend running on port ${PORT}`);
     console.log(`📊 Market analysis: http://localhost:${PORT}/api/health`);
+    console.log(`📈 Prometheus metrics: http://localhost:${PORT}/metrics`);
 });
 
 module.exports = app;
