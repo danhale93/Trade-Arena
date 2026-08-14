@@ -12,6 +12,7 @@ const axios = require('axios');
 const prometheus = require('prom-client');
 const fs = require('fs');
 const path = require('path');
+const { PerformanceObserver } = require('perf_hooks');
 
 const execAsync = promisify(exec);
 
@@ -39,6 +40,46 @@ const arbLastGasGwei = new prometheus.Gauge({
     labelNames: ['network'],
     registers: [register]
 });
+
+// V8 & GC Metrics
+const gcDuration = new prometheus.Histogram({
+    name: 'nodejs_gc_duration_seconds',
+    help: 'Garbage collection duration in seconds',
+    labelNames: ['kind'],
+    buckets: [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1],
+    registers: [register]
+});
+
+const v8HeapStats = new prometheus.Gauge({
+    name: 'nodejs_v8_heap_stats_bytes',
+    help: 'V8 heap statistics in bytes',
+    labelNames: ['stat'],
+    registers: [register]
+});
+
+// Observe GC events via perf_hooks
+const obs = new PerformanceObserver((list) => {
+    const entries = list.getEntries();
+    for (const entry of entries) {
+        if (entry.entryType === 'gc') {
+            const kind = entry.kind === 1 ? 'minor' : 'major';
+            gcDuration.observe({ kind }, entry.duration / 1000);
+        }
+    }
+});
+obs.observe({ entryTypes: ['gc'] });
+
+// Periodically update V8 heap stats
+const v8 = require('v8');
+setInterval(() => {
+    const stats = v8.getHeapStatistics();
+    v8HeapStats.set({ stat: 'total_heap_size' }, stats.total_heap_size);
+    v8HeapStats.set({ stat: 'used_heap_size' }, stats.used_heap_size);
+    v8HeapStats.set({ stat: 'heap_size_limit' }, stats.heap_size_limit);
+    v8HeapStats.set({ stat: 'total_available_size' }, stats.total_available_size);
+    v8HeapStats.set({ stat: 'malloced_memory' }, stats.malloced_memory);
+    v8HeapStats.set({ stat: 'peak_malloced_memory' }, stats.peak_malloced_memory);
+}, 5000).unref();
 
 class MetaMaskAgentArbService {
     constructor() {
