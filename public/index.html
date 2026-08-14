@@ -759,7 +759,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 <div class="edge"></div>
 
 <!-- ══ CONNECT ══ -->
-<div style="position:fixed; top:10px; right:10px; background:var(--hot); color:white; padding:5px 10px; font-size:10px; z-index:10000; border-radius:4px; font-family:'Bungee'; box-shadow:0 0 10px var(--hot);">LIVE V4.3.22</div>
+<div style="position:fixed; top:10px; right:10px; background:var(--hot); color:white; padding:5px 10px; font-size:10px; z-index:10000; border-radius:4px; font-family:'Bungee'; box-shadow:0 0 10px var(--hot);">LIVE V4.3.23</div>
 <div id="connectScreen">
   <div class="marquee-wrap">
     <div class="marquee-inner">
@@ -6491,7 +6491,7 @@ document.addEventListener('keydown', function(e) {
 <script src="management-bundle.js?v=4.3.12" defer></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  console.log('🚀 Trade Arena V4.3.22 Initialized');
+  console.log('🚀 Trade Arena V4.3.23 Initialized');
   const savedTheme = localStorage.getItem('ta_theme') || 'default';
   if (typeof applyTheme === 'function') {
     applyTheme(savedTheme, false);
@@ -6501,7 +6501,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   // Auto-connect disabled to prevent broadcast channel crashes on boot
   
-  // Real-time Balance Sync (V4.3.22)
+  // Real-time Balance Sync (V4.3.23)
   setInterval(async () => {
     // 🛡️ UNIFIED SYNC: Prioritize on-chain walletState balance
     if (window.walletState && window.walletState.isConnected && window.walletState.balanceUSD > 0) {

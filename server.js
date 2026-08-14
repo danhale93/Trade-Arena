@@ -142,6 +142,9 @@ const ALLOWED_TASK_IDS = new Set(Object.keys(TASK_REWARDS));
 app.set('trust proxy', 1); // Trust first proxy (Render, Heroku, etc.)
 app.disable('x-powered-by'); // Mitigate information disclosure
 
+// 🏥 HEALTH CHECK: For Render zero-downtime deployment
+app.get('/health', (req, res) => res.status(200).send('OK'));
+
 // Sentinel: Security headers middleware
 app.use((req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -418,6 +421,7 @@ async function initAgentSession() {
             const res = await runMM(`login --token "${token}"`);
             if (res && res.ok) {
                 console.log('[Server] Agent session initialized successfully.');
+                arbitrageEngine.isAgentReady = true;
             } else {
                 console.error('[Server] Agent session initialization failed:', JSON.stringify(res.error || res));
             }

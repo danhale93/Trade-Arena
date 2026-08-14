@@ -23,7 +23,8 @@ class ArbitrageEngine {
             const fullCmd = `${mmPath} ${cmd} --json`;
 
             const { stdout } = await execPromise(fullCmd, { 
-                env: { ...process.env }
+                env: { ...process.env },
+                timeout: 15000 // 15s timeout
             });
             return JSON.parse(stdout);
         } catch (e) {
@@ -50,7 +51,11 @@ class ArbitrageEngine {
     async scanLoop() {
         while (this.isRunning) {
             try {
-                await this.findOpportunities();
+                if (this.isAgentReady) {
+                    await this.findOpportunities();
+                } else {
+                    console.log('[ArbitrageEngine] Waiting for agent session to initialize...');
+                }
             } catch (e) {
                 console.error('[ArbitrageEngine] Scan error:', e.message);
             }
