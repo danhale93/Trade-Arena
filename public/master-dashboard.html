@@ -93,8 +93,13 @@
                         </div>
                         <div class="flex justify-between p-3 bg-surface/50 rounded border border-[#3b494b]">
                             <span class="text-[#849495]">MEV Protection / Slippage:</span>
-                            <span class="text-terminal-green">Enabled (0.1% max slippage)</span>
+                            <span id="slippageText" class="text-terminal-green">Enabled (0.1% max slippage)</span>
                         </div>
+                    </div>
+                    
+                    <h2 class="font-headline font-bold text-sm mt-6 mb-4 text-[#00dbe9]">MULTI-CHAIN CONFIGURATION</h2>
+                    <div id="chainConfigs" class="grid grid-cols-1 md:grid-cols-3 gap-4 font-data text-[10px]">
+                        <!-- Populated by JS -->
                     </div>
 
                     <div class="mt-6 pt-6 border-t border-[#3b494b] flex gap-4">
@@ -105,6 +110,27 @@
                             REFRESH BALANCES
                         </button>
                     </div>
+                </div>
+
+                <!-- NEW: MetaMask Agent CLI Authentication -->
+                <div class="glass-panel rounded-xl overflow-hidden flex flex-col p-6">
+                    <h2 class="font-headline font-bold text-sm mb-4 text-[#00dbe9]">METAMASK AGENT CLI AUTHENTICATION</h2>
+                    <p class="text-[10px] font-data text-[#849495] mb-4 uppercase">Submit your CLI token to enable live on-chain execution</p>
+                    
+                    <div class="flex flex-col gap-3">
+                        <input type="password" id="cliTokenInput" placeholder="Paste your CLI token here..." 
+                               class="bg-surface/50 border border-[#3b494b] rounded p-3 text-xs font-data text-[#00dbe9] focus:outline-none focus:border-[#00dbe9] transition w-full">
+                        
+                        <div class="flex gap-4">
+                            <button onclick="submitCliToken()" id="submitTokenBtn" class="flex-1 py-3 bg-terminal-green/10 border border-terminal-green/30 text-terminal-green font-data text-xs rounded hover:bg-terminal-green/20 transition">
+                                SUBMIT TOKEN
+                            </button>
+                            <a href="/api/agent/login-url" target="_blank" class="px-6 py-3 bg-[#849495]/10 border border-[#849495]/30 text-[#849495] font-data text-xs rounded hover:bg-[#849495]/20 transition flex items-center justify-center">
+                                GET NEW LINK
+                            </a>
+                        </div>
+                    </div>
+                    <div id="tokenStatus" class="mt-3 text-[9px] font-data text-[#849495] hidden italic"></div>
                 </div>
             </div>
 
@@ -172,8 +198,30 @@
                         pauseScannerBtn.className = 'flex-1 py-3 bg-terminal-green/10 border border-terminal-green/30 text-terminal-green font-data text-xs rounded hover:bg-terminal-green/20 transition';
                     }
 
-                    document.getElementById('profitThresholdText').innerText = '$' + agent.profitThresholdUsd.toFixed(2) + ' (Gas-Aware)';
-                    addEventStreamLog(`[${new Date().toLocaleTimeString()}] Balances synced successfully.`);
+                    document.getElementById('profitThresholdText').innerText = '$' + agent.profitThresholdUsd.toFixed(2) + ' (Global)';
+                    
+                    if (agent.networkConfigs) {
+                        const configContainer = document.getElementById('chainConfigs');
+                        configContainer.innerHTML = '';
+                        for (const [network, config] of Object.entries(agent.networkConfigs)) {
+                            const card = document.createElement('div');
+                            card.className = 'p-3 bg-surface/50 rounded border border-[#3b494b]';
+                            card.innerHTML = `
+                                <p class="text-[#00dbe9] font-bold uppercase mb-1">${network}</p>
+                                <div class="flex justify-between text-[#849495]">
+                                    <span>Min Profit:</span>
+                                    <span class="text-terminal-warn">$${config.profitThresholdUsd.toFixed(2)}</span>
+                                </div>
+                                <div class="flex justify-between text-[#849495]">
+                                    <span>Slippage:</span>
+                                    <span class="text-terminal-green">${config.slippage}%</span>
+                                </div>
+                            `;
+                            configContainer.appendChild(card);
+                        }
+                    }
+
+                    addEventStreamLog(`[${new Date().toLocaleTimeString()}] Multi-chain configuration synced.`);
                 }
             } catch (err) {
                 console.error('Failed to sync agent status:', err);
@@ -191,6 +239,50 @@
                 }
             } catch (err) {
                 console.error('Failed to toggle scanner:', err);
+            }
+        }
+
+        async function submitCliToken() {
+            const token = document.getElementById('cliTokenInput').value;
+            const statusDiv = document.getElementById('tokenStatus');
+            const btn = document.getElementById('submitTokenBtn');
+
+            if (!token) {
+                alert('Please paste a valid token first.');
+                return;
+            }
+
+            try {
+                btn.disabled = true;
+                btn.innerText = 'AUTHENTICATING...';
+                statusDiv.innerText = 'Connecting to MetaMask Agent...';
+                statusDiv.classList.remove('hidden');
+
+                const res = await fetch('/api/agent/submit-token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    statusDiv.innerText = 'Success! Session refreshed. Live execution enabled.';
+                    statusDiv.className = 'mt-3 text-[9px] font-data text-terminal-green italic';
+                    document.getElementById('cliTokenInput').value = '';
+                    setTimeout(() => {
+                        statusDiv.classList.add('hidden');
+                        fetchAgentStatus();
+                    }, 3000);
+                } else {
+                    throw new Error(data.error || 'Authentication failed');
+                }
+            } catch (err) {
+                statusDiv.innerText = 'Error: ' + err.message;
+                statusDiv.className = 'mt-3 text-[9px] font-data text-terminal-red italic';
+                console.error('Token Submission Error:', err);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'SUBMIT TOKEN';
             }
         }
 
