@@ -395,7 +395,8 @@ async function runMM(cmd) {
     try {
         const fullCmd = `${mmPath} ${cmd} --json`;
         const { stdout } = await execPromise(fullCmd, { 
-            env: { ...process.env }
+            env: { ...process.env },
+            timeout: 15000 // 15s timeout
         });
         return JSON.parse(stdout);
     } catch (e) {
