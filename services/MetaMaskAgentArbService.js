@@ -10,6 +10,8 @@ const { promisify } = require('util');
 const { ethers } = require('ethers');
 const axios = require('axios');
 const prometheus = require('prom-client');
+const fs = require('fs');
+const path = require('path');
 
 const execAsync = promisify(exec);
 
@@ -57,6 +59,8 @@ class MetaMaskAgentArbService {
         };
 
         this.discordWebhookUrl = process.env.DISCORD_WEBHOOK_URL || '';
+        this.telegramBotToken = process.env.TELEGRAM_BOT_TOKEN || '';
+        this.telegramChatId = process.env.TELEGRAM_CHAT_ID || '';
         this.walletAddress = process.env.AGENT_WALLET_ADDRESS || null;
         this.profitThresholdUsd = parseFloat(process.env.ARB_PROFIT_THRESHOLD_USD || '2.00');
         this.slippage = parseFloat(process.env.ARB_SLIPPAGE || '0.1'); // 0.1% default for MEV protection
@@ -69,6 +73,41 @@ class MetaMaskAgentArbService {
         this.lastError = null;
         this.pollIntervalMs = parseInt(process.env.ARB_POLL_INTERVAL_MS || '10000');
         this.tradeCount = { success: 0, failed: 0 };
+        this.logPath = path.join(__dirname, '../logs/trades.log');
+        
+        // HFT Aggregation State
+        this.alertQueue = [];
+        this.lastAlertSentAt = 0;
+        this.aggregationWindowMs = 60000; // 1 minute aggregation for HFT
+    }
+
+    /**
+     * Retries an async function with exponential backoff.
+     */
+    async retryWithBackoff(fn, retries = 3, delay = 1000) {
+        for (let i = 0; i < retries; i++) {
+            try {
+                return await fn();
+            } catch (err) {
+                if (i === retries - 1) throw err;
+                const backoff = delay * Math.pow(2, i);
+                await new Promise(r => setTimeout(r, backoff));
+            }
+        }
+    }
+
+    /**
+     * Logs trade details locally as a fallback.
+     */
+    logLocal(network, title, quote, receipt) {
+        const entry = {
+            timestamp: new Date().toISOString(),
+            network,
+            title,
+            quote,
+            txHash: receipt?.txHash || 'N/A'
+        };
+        fs.appendFileSync(this.logPath, JSON.stringify(entry) + '\n');
     }
 
     /**
@@ -122,37 +161,113 @@ class MetaMaskAgentArbService {
     }
 
     /**
-     * Sends formatted rich webhook alert to Discord with network details.
+     * Sends unified alerts to Discord and Telegram.
      */
-    async sendDiscordAlert(network, title, quote, receipt, success = true) {
-        if (!this.discordWebhookUrl) return;
+    async sendAlerts(network, title, quote, receipt, success = true) {
+        // Always log locally as the primary source of truth
+        this.logLocal(network, title, quote, receipt);
 
-        try {
-            const embed = {
-                title: success ? `🚀 [${network.toUpperCase()}] Arbitrage Executed` : `⚠️ [${network.toUpperCase()}] Arbitrage Alert: ${title}`,
-                color: success ? 3066993 : 15158332, // Green or Red
-                fields: [
-                    { name: 'Network', value: network.toUpperCase(), inline: true },
-                    { name: 'DEX', value: quote.dex || 'Unknown', inline: true },
-                    { name: 'Net Profit', value: `$${quote.netProfit || '0.00'}`, inline: true },
-                    { name: 'Route', value: `${quote.inAmount || '1.0'} ${quote.in || 'WETH'} ➔ ${quote.outAmount || '0'} ${quote.out || 'USDC'}` }
-                ],
-                timestamp: new Date().toISOString()
-            };
+        const explorerUrl = {
+            base: 'https://basescan.org/tx/',
+            arbitrum: 'https://arbiscan.io/tx/',
+            optimism: 'https://optimistic.etherscan.io/tx/'
+        }[network] || 'https://basescan.org/tx/';
 
-            const explorerUrl = {
-                base: 'https://basescan.org/tx/',
-                arbitrum: 'https://arbiscan.io/tx/',
-                optimism: 'https://optimistic.etherscan.io/tx/'
-            }[network] || 'https://basescan.org/tx/';
+        const now = Date.now();
+        this.alertQueue.push({ network, title, quote, receipt, success, explorerUrl });
 
-            if (receipt && receipt.txHash) {
-                embed.fields.push({ name: 'Explorer', value: `[View Transaction](${explorerUrl}${receipt.txHash})` });
+        // HFT Aggregation: If we are in a burst, wait to aggregate
+        if (now - this.lastAlertSentAt < this.aggregationWindowMs) {
+            console.log(`[MetaMaskAgentArb] High-frequency burst detected. Queuing alert (${this.alertQueue.length} pending).`);
+            return;
+        }
+
+        await this.flushAlertQueue();
+    }
+
+    async flushAlertQueue() {
+        if (this.alertQueue.length === 0) return;
+        
+        const alerts = [...this.alertQueue];
+        this.alertQueue = [];
+        this.lastAlertSentAt = Date.now();
+
+        const isBulk = alerts.length > 1;
+        const mainAlert = alerts[0];
+        
+        // 1. Discord Webhook
+        if (this.discordWebhookUrl) {
+            try {
+                let payload;
+                if (!isBulk) {
+                    payload = {
+                        embeds: [{
+                            title: mainAlert.success ? `🚀 [${mainAlert.network.toUpperCase()}] Arbitrage Executed` : `⚠️ [${mainAlert.network.toUpperCase()}] Arbitrage Alert: ${mainAlert.title}`,
+                            color: mainAlert.success ? 3066993 : 15158332,
+                            fields: [
+                                { name: 'Network', value: mainAlert.network.toUpperCase(), inline: true },
+                                { name: 'DEX', value: mainAlert.quote.dex || 'Unknown', inline: true },
+                                { name: 'Net Profit', value: `$${mainAlert.quote.netProfit || '0.00'}`, inline: true },
+                                { name: 'Route', value: `${mainAlert.quote.inAmount || '1.0'} ${mainAlert.quote.in || 'WETH'} ➔ ${mainAlert.quote.outAmount || '0'} ${mainAlert.quote.out || 'USDC'}` }
+                            ],
+                            timestamp: new Date().toISOString()
+                        }]
+                    };
+                    if (mainAlert.receipt && mainAlert.receipt.txHash) {
+                        payload.embeds[0].fields.push({ name: 'Explorer', value: `[View Transaction](${mainAlert.explorerUrl}${mainAlert.receipt.txHash})` });
+                    }
+                } else {
+                    const totalProfit = alerts.reduce((sum, a) => sum + parseFloat(a.quote.netProfit || 0), 0);
+                    payload = {
+                        embeds: [{
+                            title: `📦 Bulk Arbitrage Report (${alerts.length} trades)`,
+                            color: 3447003,
+                            description: `Processed ${alerts.length} opportunities in the last minute.`,
+                            fields: [
+                                { name: 'Total Net Profit', value: `$${totalProfit.toFixed(2)}`, inline: true },
+                                { name: 'Success/Failed', value: `${alerts.filter(a => a.success).length}/${alerts.filter(a => !a.success).length}`, inline: true }
+                            ],
+                            timestamp: new Date().toISOString()
+                        }]
+                    };
+                }
+
+                await this.retryWithBackoff(() => axios.post(this.discordWebhookUrl, payload));
+            } catch (err) {
+                console.error('[MetaMaskAgentArb] Discord Alert Failed after retries:', err.message);
             }
+        }
 
-            await axios.post(this.discordWebhookUrl, { embeds: [embed] });
-        } catch (err) {
-            console.error('[MetaMaskAgentArb] Failed to send Discord notification:', err.message);
+        // 2. Telegram Bot
+        if (this.telegramBotToken && this.telegramChatId) {
+            try {
+                let message;
+                if (!isBulk) {
+                    const statusEmoji = mainAlert.success ? '🚀' : '⚠️';
+                    message = `${statusEmoji} *[${mainAlert.network.toUpperCase()}] Arbitrage ${mainAlert.success ? 'Executed' : 'Alert'}*\n\n`;
+                    message += `*DEX:* ${mainAlert.quote.dex || 'Unknown'}\n`;
+                    message += `*Net Profit:* $${mainAlert.quote.netProfit || '0.00'}\n`;
+                    message += `*Route:* ${mainAlert.quote.inAmount || '1.0'} ${mainAlert.quote.in || 'WETH'} ➔ ${mainAlert.quote.outAmount || '0'} ${mainAlert.quote.out || 'USDC'}\n`;
+                    if (mainAlert.receipt && mainAlert.receipt.txHash) {
+                        message += `\n[View on Explorer](${mainAlert.explorerUrl}${mainAlert.receipt.txHash})`;
+                    }
+                } else {
+                    const totalProfit = alerts.reduce((sum, a) => sum + parseFloat(a.quote.netProfit || 0), 0);
+                    message = `📦 *Bulk Arbitrage Report*\n\n`;
+                    message += `*Trades:* ${alerts.length}\n`;
+                    message += `*Total Profit:* $${totalProfit.toFixed(2)}\n`;
+                    message += `*Success Rate:* ${((alerts.filter(a => a.success).length / alerts.length) * 100).toFixed(0)}%`;
+                }
+
+                const url = `https://api.telegram.org/bot${this.telegramBotToken}/sendMessage`;
+                await this.retryWithBackoff(() => axios.post(url, {
+                    chat_id: this.telegramChatId,
+                    text: message,
+                    parse_mode: 'Markdown'
+                }));
+            } catch (err) {
+                console.error('[MetaMaskAgentArb] Telegram Alert Failed after retries:', err.message);
+            }
         }
     }
 
@@ -191,7 +306,7 @@ class MetaMaskAgentArbService {
                         // 3. Execute Trade only when explicitly enabled. Otherwise record a dry-run decision.
                         if (!this.executionEnabled) {
                             console.log(`[MetaMaskAgentArb] [${network.toUpperCase()}] Simulation-only mode: execution skipped.`);
-                            await this.sendDiscordAlert(network, 'Arbitrage Opportunity (Simulation Only)', quote, null, true);
+                            await this.sendAlerts(network, 'Arbitrage Opportunity (Simulation Only)', quote, null, true);
                             continue;
                         }
                         const receipt = await this.simulateOrExecuteSwap(network, config.tokenIn, config.tokenOut, '1.0', config.dex, true);
@@ -207,8 +322,8 @@ class MetaMaskAgentArbService {
                                 arbLastGasGwei.set({ network }, parseFloat(receipt.gasPriceGwei));
                             }
 
-                            // Send Discord alert
-                            await this.sendDiscordAlert(network, 'Multi-Chain Arbitrage Success', quote, receipt, true);
+                            // Send Unified Alerts
+                            await this.sendAlerts(network, 'Multi-Chain Arbitrage Success', quote, receipt, true);
                         } else {
                             this.tradeCount.failed += 1;
                             this.lastError = `Trade execution failed on ${network}`;
