@@ -552,6 +552,8 @@ app.post('/api/agent/submit-token', async (req, res) => {
         // Authenticate the CLI with the provided token
         const result = await runMM(`login --token "${token}"`);
         if (result.ok || result.data) {
+            // Update the readiness state for the arbitrage engine
+            arbitrageEngine.isAgentReady = true;
             res.json({ success: true, message: 'Agent authenticated successfully!' });
         } else {
             res.status(400).json({ success: false, error: result.error?.message || 'Authentication failed' });
