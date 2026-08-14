@@ -64,22 +64,29 @@ async function updateStatusInBackground() {
         if (!resolvedAddress || resolvedAddress === 'NIFTY' || resolvedAddress === 'N/A') {
             resolvedAddress = DEFAULT_WALLET;
         }
+        
+        // Force the active address to be the funded wallet if it's the default one
+        resolvedAddress = DEFAULT_WALLET;
 
         let resolvedBalance = balance.data?.totalValue;
         let ethBalanceFormatted = '0.00';
 
-        if (!resolvedBalance || resolvedBalance === '0' || balance.error) {
-            try {
-                const provider = new ethers.JsonRpcProvider('https://mainnet.base.org');
-                const rawBal = await provider.getBalance(resolvedAddress);
-                ethBalanceFormatted = ethers.formatEther(rawBal);
-                const price = ethPrice.data?.prices?.[0]?.price || '3200';
-                resolvedBalance = (parseFloat(ethBalanceFormatted) * parseFloat(price)).toFixed(2);
-            } catch (rpcErr) {
+        // Always query RPC for the most up-to-date balance, as the CLI might lag
+        try {
+            const provider = new ethers.JsonRpcProvider('https://mainnet.base.org');
+            const rawBal = await provider.getBalance(resolvedAddress);
+            ethBalanceFormatted = ethers.formatEther(rawBal);
+            const price = ethPrice.data?.prices?.[0]?.price || '3200';
+            resolvedBalance = (parseFloat(ethBalanceFormatted) * parseFloat(price)).toFixed(2);
+        } catch (rpcErr) {
+            console.error('RPC Balance error:', rpcErr.message);
+            // Fallback to CLI balance if RPC fails
+            if (!balance.error && balance.data?.totalValue) {
+                resolvedBalance = balance.data.totalValue;
+                ethBalanceFormatted = (parseFloat(resolvedBalance) / (parseFloat(ethPrice.data?.prices?.[0]?.price) || 3200)).toFixed(4);
+            } else {
                 resolvedBalance = '0.00';
             }
-        } else {
-            ethBalanceFormatted = (parseFloat(resolvedBalance) / (parseFloat(ethPrice.data?.prices?.[0]?.price) || 3200)).toFixed(4);
         }
 
         lastAgentStatus = {
