@@ -59,6 +59,8 @@ async function updateStatusInBackground() {
             runSafe('tx history --chain-ids 8453 --limit 5'),
             runSafe('price spot --asset-ids "eip155:8453/slip44:60"')
         ]);
+        
+        const currentEthPrice = ethPrice.data?.prices?.[0]?.price || ethPrice.data?.price || '3200';
 
         let resolvedAddress = walletInfo.data?.address || doctor.data?.wallets?.[0]?.address || DEFAULT_WALLET;
         if (!resolvedAddress || resolvedAddress === 'NIFTY' || resolvedAddress === 'N/A') {
@@ -76,16 +78,16 @@ async function updateStatusInBackground() {
             const provider = new ethers.JsonRpcProvider('https://mainnet.base.org');
             const rawBal = await provider.getBalance(resolvedAddress);
             ethBalanceFormatted = ethers.formatEther(rawBal);
-            const price = ethPrice.data?.prices?.[0]?.price || '3200';
-            resolvedBalance = (parseFloat(ethBalanceFormatted) * parseFloat(price)).toFixed(2);
+            resolvedBalance = (parseFloat(ethBalanceFormatted) * parseFloat(currentEthPrice)).toFixed(2);
         } catch (rpcErr) {
             console.error('RPC Balance error:', rpcErr.message);
             // Fallback to CLI balance if RPC fails
-            if (!balance.error && balance.data?.totalValue) {
+            if (balance && balance.ok && balance.data?.totalValue) {
                 resolvedBalance = balance.data.totalValue;
-                ethBalanceFormatted = (parseFloat(resolvedBalance) / (parseFloat(ethPrice.data?.prices?.[0]?.price) || 3200)).toFixed(4);
+                ethBalanceFormatted = (parseFloat(resolvedBalance) / parseFloat(currentEthPrice)).toFixed(4);
             } else {
                 resolvedBalance = '0.00';
+                ethBalanceFormatted = '0.0000';
             }
         }
 
@@ -101,7 +103,7 @@ async function updateStatusInBackground() {
             network: {
                 name: 'Base Mainnet',
                 chainId: 8453,
-                ethPrice: ethPrice.data?.prices?.[0]?.price || '3200'
+                ethPrice: currentEthPrice
             },
             arbitrage: {
                 running: arbitrageEngine.isRunning
