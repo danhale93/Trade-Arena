@@ -6,11 +6,11 @@
 <title>TRADE ARENA — AI TRADING FLOOR</title>
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Bungee+Shade&family=JetBrains+Mono:wght@400;700&family=Oswald:wght@400;700&family=Share+Tech+Mono&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
-<script src="privy-client.js?v=4.3.35"></script>
-<script src="contract-helpers.js?v=4.3.35"></script>
-<script src="real-wallet.js?v=4.3.35"></script>
-<script src="blockchain-execution.js?v=4.3.35"></script>
-<script src="execution-engine.js?v=4.3.35"></script>
+<script src="privy-client.js?v=4.3.36"></script>
+<script src="contract-helpers.js?v=4.3.36"></script>
+<script src="real-wallet.js?v=4.3.36"></script>
+<script src="blockchain-execution.js?v=4.3.36"></script>
+<script src="execution-engine.js?v=4.3.36"></script>
 <style>
 :root{
   --gold:#ffd700;--gold2:#ffaa00;--hot:#ff2d78;--cyan:#00ffe7;
@@ -759,7 +759,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 <div class="edge"></div>
 
 <!-- ══ CONNECT ══ -->
-<div style="position:fixed; top:10px; right:10px; background:var(--hot); color:white; padding:5px 10px; font-size:10px; z-index:10000; border-radius:4px; font-family:'Bungee'; box-shadow:0 0 10px var(--hot);">LIVE V4.3.35</div>
+<div style="position:fixed; top:10px; right:10px; background:var(--hot); color:white; padding:5px 10px; font-size:10px; z-index:10000; border-radius:4px; font-family:'Bungee'; box-shadow:0 0 10px var(--hot);">LIVE V4.3.36</div>
 <div id="connectScreen">
   <div class="marquee-wrap">
     <div class="marquee-inner">
@@ -6479,19 +6479,19 @@ document.addEventListener('keydown', function(e) {
 
 </script>
 <!-- Arena React Bundle -->
-<script src="arena-react-bundle.js?v=4.3.35" defer></script>
-<script src="app.js?v=4.3.35" defer></script>
+<script src="arena-react-bundle.js?v=4.3.36" defer></script>
+<script src="app.js?v=4.3.36" defer></script>
 
 <!-- ACOUSTIC Audio-Visual Engines -->
-<script src="acoustic-bundle.js?v=4.3.35" defer></script>
-<script src="ACOUSTIC_CORE.js?v=4.3.35" defer></script>
-<script src="trading-bundle.js?v=4.3.35" defer></script>
-<script src="task-center.js?v=4.3.35" defer></script>
-<script src="gas-fund.js?v=4.3.35" defer></script>
-<script src="management-bundle.js?v=4.3.35" defer></script>
+<script src="acoustic-bundle.js?v=4.3.36" defer></script>
+<script src="ACOUSTIC_CORE.js?v=4.3.36" defer></script>
+<script src="trading-bundle.js?v=4.3.36" defer></script>
+<script src="task-center.js?v=4.3.36" defer></script>
+<script src="gas-fund.js?v=4.3.36" defer></script>
+<script src="management-bundle.js?v=4.3.36" defer></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  console.log('🚀 Trade Arena V4.3.35 Initialized');
+  console.log('🚀 Trade Arena V4.3.36 Initialized');
   const savedTheme = localStorage.getItem('ta_theme') || 'default';
   if (typeof applyTheme === 'function') {
     applyTheme(savedTheme, false);
@@ -6501,7 +6501,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   // Auto-connect disabled to prevent broadcast channel crashes on boot
   
-  // Real-time Balance Sync (V4.3.35)
+  // Real-time Balance Sync (V4.3.36)
   setInterval(async () => {
     // 🛡️ UNIFIED SYNC: Prioritize on-chain walletState balance
     if (window.walletState && window.walletState.isConnected && window.walletState.balanceUSD > 0) {
@@ -6793,6 +6793,23 @@ function refreshSettingsUI() {
     if (b1) { b1.classList.toggle('active', sfxOn); b1.setAttribute('aria-pressed', sfxOn.toString()); }
     if (b2) { b2.classList.toggle('active', voiceOn); b2.setAttribute('aria-pressed', voiceOn.toString()); }
     if (b3) { b3.classList.toggle('active', audioOn); b3.setAttribute('aria-pressed', audioOn.toString()); }
+
+    // Flashloan Arb Status (V4.3.36)
+    if (window.lastAgentStatus && window.lastAgentStatus.arbitrage) {
+        const arb = window.lastAgentStatus.arbitrage;
+        const elExec = document.getElementById('settingsArbExecution');
+        const elMin = document.getElementById('settingsArbMinProfit');
+        const elMax = document.getElementById('settingsArbMaxGas');
+        const elEng = document.getElementById('settingsArbEngine');
+        
+        if (elExec) {
+            elExec.textContent = arb.executionEnabled ? 'ENABLED' : 'DISABLED';
+            elExec.style.color = arb.executionEnabled ? 'var(--green)' : 'var(--dim)';
+        }
+        if (elMin) elMin.textContent = `$${parseFloat(arb.minProfitUsd).toFixed(2)}`;
+        if (elMax) elMax.textContent = `$${parseFloat(arb.maxGasUsd).toFixed(2)}`;
+        if (elEng) elEng.textContent = arb.engineAddress || 'Not Deployed';
+    }
 }
 function applyTheme(theme, isUserClick = false) {
     const currentTheme = localStorage.getItem('ta_theme') || 'default';
@@ -7038,6 +7055,30 @@ function updateSettingsVolume(val) {
         <div style="margin-top:8px;font-size:9px;color:var(--dim);display:flex;gap:8px;flex-wrap:wrap">
           <span>Circuit Breaker: <span id="settingsBreakerStatus" style="color:var(--green)">OK</span></span>
           <span>Failures: <span id="settingsBreakerFailures">0</span>/3</span>
+        </div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-title">⚡ Flashloan Arbitrage</div>
+        <div style="font-size:10px;color:var(--dim);margin-bottom:8px">
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px">
+            <span>Execution Status:</span>
+            <span id="settingsArbExecution" style="color:var(--dim); font-family:'Bungee'">DISABLED</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px">
+            <span>Min Profit Threshold:</span>
+            <span id="settingsArbMinProfit" style="color:var(--cyan)">$5.00</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px">
+            <span>Max Gas Limit:</span>
+            <span id="settingsArbMaxGas" style="color:var(--cyan)">$2.00</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px">
+            <span>Engine Contract:</span>
+            <span id="settingsArbEngine" style="color:var(--cyan); font-size:8px">Not Deployed</span>
+          </div>
+        </div>
+        <div style="font-size:8px;color:var(--dim);line-height:1.4;margin-top:8px;padding:6px;background:rgba(255,255,255,0.03);border-radius:4px">
+          * These parameters are managed via Render environment variables (ENABLE_LIVE_EXECUTION, ARB_MIN_PROFIT_USD, ARB_MAX_GAS_USD).
         </div>
       </div>
       <div class="settings-section">

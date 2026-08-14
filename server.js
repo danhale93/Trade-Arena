@@ -76,7 +76,11 @@ async function updateStatusInBackground() {
                 ethPrice: currentEthPrice
             },
             arbitrage: {
-                running: arbitrageEngine.isRunning
+                running: arbitrageEngine.isRunning,
+                executionEnabled: process.env.ENABLE_LIVE_EXECUTION === 'true',
+                minProfitUsd: process.env.ARB_MIN_PROFIT_USD || '5',
+                maxGasUsd: process.env.ARB_MAX_GAS_USD || '2',
+                engineAddress: process.env.TRADE_ARENA_ENGINE_ADDRESS || 'Not Deployed'
             },
             recentTransactions: []
         };
