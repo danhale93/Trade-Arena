@@ -89,4 +89,49 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+import { desc } from "drizzle-orm";
+import { tradeHistory, balanceSnapshots, agentState, heartbeatTasks } from "../drizzle/schema";
+
+export async function recordTrade(trade: { network: string; tokenPair: string; netProfitUsd: string; txHash: string; status?: string }) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(tradeHistory).values({
+    network: trade.network,
+    tokenPair: trade.tokenPair,
+    netProfitUsd: trade.netProfitUsd,
+    txHash: trade.txHash,
+    status: trade.status || "success"
+  });
+}
+
+export async function getRecentTrades(limit = 20) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(tradeHistory).orderBy(desc(tradeHistory.timestamp)).limit(limit);
+}
+
+export async function recordBalanceSnapshot(snapshot: { baseBal: string; arbitrumBal: string; optimismBal: string }) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(balanceSnapshots).values(snapshot);
+}
+
+export async function getLatestBalanceSnapshot() {
+  const db = await getDb();
+  if (!db) return null;
+  const res = await db.select().from(balanceSnapshots).orderBy(desc(balanceSnapshots.timestamp)).limit(1);
+  return res[0] || null;
+}
+
+export async function setAgentStateKey(key: string, value: string) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(agentState).values({ key, value }).onDuplicateKeyUpdate({ set: { value } });
+}
+
+export async function getAgentStateKey(key: string): Promise<string | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const res = await db.select().from(agentState).where(eq(agentState.key, key)).limit(1);
+  return res[0]?.value || null;
+}
