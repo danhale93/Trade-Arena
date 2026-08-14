@@ -43,7 +43,7 @@ const arbLastGasGwei = new prometheus.Gauge({
 
 // V8 & GC Metrics
 const gcDuration = new prometheus.Histogram({
-    name: 'nodejs_gc_duration_seconds',
+    name: 'mm_arb_gc_duration_seconds',
     help: 'Garbage collection duration in seconds',
     labelNames: ['kind'],
     buckets: [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1],
@@ -51,7 +51,7 @@ const gcDuration = new prometheus.Histogram({
 });
 
 const v8HeapStats = new prometheus.Gauge({
-    name: 'nodejs_v8_heap_stats_bytes',
+    name: 'mm_arb_v8_heap_stats_bytes',
     help: 'V8 heap statistics in bytes',
     labelNames: ['stat'],
     registers: [register]
@@ -115,6 +115,7 @@ class MetaMaskAgentArbService {
         this.pollIntervalMs = parseInt(process.env.ARB_POLL_INTERVAL_MS || '10000');
         this.tradeCount = { success: 0, failed: 0 };
         this.logPath = path.join(__dirname, '../logs/trades.log');
+        this.balances = { base: '0.00', arbitrum: '0.00', optimism: '0.00' };
         
         // HFT Aggregation State
         this.alertQueue = [];
@@ -329,6 +330,9 @@ class MetaMaskAgentArbService {
                 return;
             }
 
+            // Update wallet balances across chains
+            await this.updateBalances();
+
             // Iterate over all configured networks
             for (const [network, config] of Object.entries(this.networksConfig)) {
                 try {
@@ -399,10 +403,21 @@ class MetaMaskAgentArbService {
         this.start();
     }
 
+    async updateBalances() {
+        if (!this.walletAddress) return;
+        for (const network of Object.keys(this.providers)) {
+            const bal = await this.getRpcBalance(network, this.walletAddress);
+            if (bal !== null) {
+                this.balances[network] = parseFloat(bal).toFixed(4);
+            }
+        }
+    }
+
     getStatus() {
         return {
             walletMode: 'managed-agent',
             walletAddress: this.walletAddress,
+            balances: this.balances,
             executionEnabled: this.executionEnabled,
             scannerEnabled: this.scannerEnabled,
             running: this.isRunning,

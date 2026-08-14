@@ -39,7 +39,7 @@ const DEX_ABI = [
 ];
 
 // Initialize provider
-const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
+const provider = new ethers.JsonRpcProvider(RPC_URL);
 
 /**
  * API Routes
