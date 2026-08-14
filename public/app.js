@@ -824,7 +824,7 @@ function connectWebSocket() {
 
 // Start WebSocket connection on load
 if (typeof window !== 'undefined') {
-    console.log('🚀 TRADE ARENA V4.3.38 INITIALIZED');
+    console.log('🚀 TRADE ARENA V4.3.39 INITIALIZED');
     connectWebSocket();
     
     // Export notify function
@@ -1009,13 +1009,23 @@ async function updateAgentStatus() {
         const response = await fetch('/api/network/status');
         const data = await response.json();
         
+        // Store for global access
+        window.lastAgentStatus = data;
+        
         const pairingUI = document.getElementById('agentPairingUI');
         
         if (data.success) {
             document.getElementById('agentAddr').textContent = data.wallet.address;
-            const balUsd = (parseFloat(data.wallet.balance) || 0).toFixed(2);
-            document.getElementById('agentBalance').textContent = data.wallet.ethBalance ? `${data.wallet.ethBalance} ETH ($${balUsd})` : `$${balUsd}`;
+            const balUsd = parseFloat(data.wallet.balance) || 0;
+            const balUsdFixed = balUsd.toFixed(2);
+            document.getElementById('agentBalance').textContent = data.wallet.ethBalance ? `${data.wallet.ethBalance} ETH ($${balUsdFixed})` : `$${balUsdFixed}`;
             document.getElementById('agentEthPrice').textContent = 'ETH: $' + (parseFloat(data.network.ethPrice) || 0).toFixed(2);
+            
+            // 🛡️ UNIFIED SYNC: Update global dashboard balance with Agent Wallet balance
+            if (typeof balance !== 'undefined') {
+                window.balance = balUsd;
+                if (typeof updateLiveBalance === 'function') updateLiveBalance();
+            }
             
             // Show authenticated email if linked
             const statusLabel = document.querySelector('.cpanel-hd span[style*="var(--dim)"]');
