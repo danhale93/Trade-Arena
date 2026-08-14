@@ -469,12 +469,18 @@ const mmPath = process.env.MM_PATH || 'mm';
 const util = require('util');
 const execPromise = util.promisify(exec);
 
+// 🛡️ CLI LOCK: Prevent concurrent access to MetaMask Agent CLI
+let mmLock = false;
 async function runMM(cmd) {
+    while (mmLock) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    mmLock = true;
     try {
         const fullCmd = `${mmPath} ${cmd} --json`;
         const { stdout } = await execPromise(fullCmd, { 
             env: { ...process.env },
-            timeout: 15000 // 15s timeout
+            timeout: 25000 // Increased timeout
         });
         return JSON.parse(stdout);
     } catch (e) {
@@ -483,6 +489,8 @@ async function runMM(cmd) {
         } catch (parseErr) {
             return { ok: false, error: e.message };
         }
+    } finally {
+        mmLock = false;
     }
 }
 
@@ -552,19 +560,36 @@ app.post('/api/agent/submit-token', async (req, res) => {
     if (!token) return res.status(400).json({ success: false, error: 'Token is required' });
 
     try {
+        // 🛡️ PAUSE ENGINE: Prevent scan loop from interfering during login
+        const wasRunning = arbitrageEngine.isRunning;
+        arbitrageEngine.isRunning = false;
+        arbitrageEngine.isAgentReady = false;
+
         console.log('[Server] Clearing stale session before login...');
         await runMM('logout --yes');
         
         console.log('[Server] Authenticating CLI with new token...');
         const result = await runMM(`login --token "${token}"`);
+        
         if (result.ok || result.data) {
-            // Update the readiness state for the arbitrage engine
-            arbitrageEngine.isAgentReady = true;
-            res.json({ success: true, message: 'Agent authenticated successfully!' });
+            console.log('[Server] Login command successful, verifying with doctor...');
+            const doc = await runMM('doctor');
+            
+            if (doc.ok && doc.data.authenticated) {
+                console.log('[Server] Agent verified and ready.');
+                arbitrageEngine.isAgentReady = true;
+                arbitrageEngine.isRunning = wasRunning; // Resume if it was running
+                res.json({ success: true, message: 'Agent authenticated and verified successfully!' });
+            } else {
+                console.error('[Server] Login succeeded but doctor verification failed:', JSON.stringify(doc));
+                res.status(400).json({ success: false, error: 'Verification failed after login' });
+            }
         } else {
+            console.error('[Server] Login failed:', JSON.stringify(result));
             res.status(400).json({ success: false, error: result.error?.message || 'Authentication failed' });
         }
     } catch (error) {
+        console.error('[Server] Submit token error:', error.message);
         res.status(500).json({ success: false, error: error.message });
     }
 });
