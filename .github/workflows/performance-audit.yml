@@ -1,0 +1,43 @@
+name: Performance Audit
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22.x'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Install Clinic.js
+      run: npm install -g clinic
+
+    - name: Run Performance Audit
+      run: |
+        chmod +x scripts/run-performance-audit.sh
+        ./scripts/run-performance-audit.sh
+      env:
+        # Mocking credentials for CI
+        MM_CLI_TOKEN: "ci_test_token"
+        DISCORD_WEBHOOK_URL: ""
+        TELEGRAM_BOT_TOKEN: ""
+        TELEGRAM_CHAT_ID: ""
+
+    - name: Upload Performance Reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: performance-reports
+        path: reports/performance/
