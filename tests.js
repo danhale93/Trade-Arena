@@ -1507,7 +1507,7 @@ describe("Server Input Validation - Sentinel Hardening", () => {
 
     // Valid tokens
     expect(isValidTokenInput("valid_token_123")).toBe(true);
-    expect(isValidTokenInput("mm-cli-token-abc123XYZ")).toBe(true);
+    expect(isValidTokenInput("sample-token-abc123XYZ")).toBe(true);
 
     // Invalid or command injection payloads
     expect(isValidTokenInput(null)).toBe(false);
