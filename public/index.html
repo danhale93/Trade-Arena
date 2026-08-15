@@ -3919,20 +3919,8 @@ async function spinBot(id){
     if(typeof SFX!=='undefined') SFX.spin();
     if(typeof VOICE!=='undefined') VOICE.tradeOpen(bot.id, decision.token, decision.method);
 
-    // ON-CHAIN EXECUTION TRIGGER
-    if (window.isLiveMode && window.isPrivyConnected && window.isPrivyConnected() && !decision.method.includes('PAPER')) {
-        console.log('[Arena] Routing to On-Chain Execution Engine...');
-        try {
-            await window.executeOnChainTrade({
-                botId: bot.id,
-                token: decision.token,
-                method: decision.method,
-                amountUSD: bot.bet
-            });
-        } catch (execError) {
-            console.error('[Arena] On-chain execution failed, falling back to simulation', execError);
-        }
-    }
+    // Safety boundary: bot spins and strategy signals are simulation-only. The
+    // browser executor accepts only a separately armed, explicit manual swap.
   }catch(e){}
 
   await openPosition(bot,decision,entryPrice,bot.bet,volumeUsd,priceChangePct15m);
@@ -5834,6 +5822,7 @@ document.addEventListener('keydown', function(e) {
 <script src="ACOUSTIC_CORE.js" defer></script>
 <script src="trading-bundle.js" defer></script>
 <script src="management-bundle.js" defer></script>
+<script src="live-execution.js" defer></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   // checkAutoLogin(); // Legacy removed

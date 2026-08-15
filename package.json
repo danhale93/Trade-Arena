@@ -7,6 +7,7 @@
     "start": "node server.js",
     "dev": "node server.js",
     "test": "node tests.js",
+    "test:live-execution": "node live-execution.test.js",
     "proxy": "node proxy.js",
     "serve": "npx serve .",
     "build": "esbuild public/src/main.tsx --bundle --outfile=public/arena-react-bundle.js --minify --sourcemap --loader:.tsx=tsx --loader:.jsx=jsx"

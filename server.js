@@ -763,7 +763,20 @@ app.post('/api/bot/create', async (req, res) => {
 
 app.post('/api/execute/swap', async (req, res) => {
     try {
+        // This legacy endpoint never signs or broadcasts. Keep it protected so
+        // it cannot be mistaken for an unauthenticated execution service.
+        const executionToken = process.env.EXECUTION_API_TOKEN;
+        const suppliedToken = req.get('authorization')?.replace(/^Bearer\s+/i, '');
+        const expectedToken = Buffer.from(executionToken || '');
+        const receivedToken = Buffer.from(suppliedToken || '');
+        if (!executionToken || !suppliedToken || receivedToken.length !== expectedToken.length ||
+            !crypto.timingSafeEqual(receivedToken, expectedToken)) {
+            return res.status(401).json({ success: false, error: 'Execution simulation authorization required' });
+        }
         const { fromToken, toToken, amount, slippage } = req.body;
+        if (!Number.isFinite(amount) || amount <= 0 || !Number.isFinite(slippage || 0) || (slippage || 0) < 0 || (slippage || 0) > 0.05) {
+            return res.status(400).json({ success: false, error: 'Invalid simulation parameters' });
+        }
         const expectedOutput = amount * (1 - (slippage || 0.005));
         const gasUsed = Math.random() * 150000 + 50000;
         const gasCost = gasUsed * 0.001;
@@ -778,7 +791,8 @@ app.post('/api/execute/swap', async (req, res) => {
                 gasCost: gasCost.toFixed(4),
                 timestamp: Date.now()
             },
-            txHash: '0x' + crypto.randomBytes(32).toString('hex')
+            simulated: true,
+            txHash: null
         };
         res.json(result);
     } catch (error) {
