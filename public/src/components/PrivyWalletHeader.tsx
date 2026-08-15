@@ -85,28 +85,13 @@ export const PrivyWalletHeader = () => {
   const arenaWallet = useMemo(() => {
     if (!wallets || !Array.isArray(wallets)) return null;
     
-    // 🛡️ ALIGNMENT: Prioritize external wallets (MetaMask, etc.) over the embedded Privy wallet
-    // This ensures that if a user connects their own wallet (like 0x92CE...), it is used for trading.
-    const externalWallet = wallets.find((w) => w.walletClientType !== 'privy');
+    // Isolate Privy embedded wallet specifically (walletClientType === 'privy')
     const embeddedWallet = wallets.find((w) => w.walletClientType === 'privy');
-    
-    // 🛡️ PREFERRED ADDRESS LOCK: If the embedded wallet is NOT the user's preferred address,
-    // and an external wallet IS available, use the external one.
-    const preferredAddress = '0x2ca1f801c1e19d16160c982c627e2932e95117be';
-    const isPreferredConnected = wallets.some(w => w.address.toLowerCase() === preferredAddress.toLowerCase());
-    
-    let activeWallet = externalWallet || embeddedWallet || null;
-    
-    // If the preferred wallet is connected, force it to be the active one
-    if (isPreferredConnected) {
-        activeWallet = wallets.find(w => w.address.toLowerCase() === preferredAddress.toLowerCase()) || activeWallet;
-    }
+    // Fallback to external wallet or any connected wallet if embedded is not found
+    const activeWallet = embeddedWallet || wallets.find((w) => w.walletClientType !== 'privy') || wallets[0] || null;
     
     if (activeWallet) {
       console.log(`[Privy] Active Wallet Isolated (${activeWallet.walletClientType}):`, activeWallet.address);
-      if (activeWallet.address.toLowerCase() === preferredAddress.toLowerCase()) {
-          console.log('[Privy] ✅ Preferred MetaMask address identified and locked.');
-      }
     }
     return activeWallet;
   }, [wallets, user]);
