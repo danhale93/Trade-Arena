@@ -18,7 +18,7 @@
     "postinstall": "npm run build"
   },
   "dependencies": {
-    "@biconomy/abstractjs": "^1.2.5",
+    "@biconomy/abstractjs": "^2.0.0",
     "@biconomy/account": "^4.5.7",
     "@metamask/agent-wallet": "6.1.0",
     "@privy-io/react-auth": "^3.37.0",
