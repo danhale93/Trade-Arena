@@ -255,17 +255,22 @@ const TRADE_OLYMPICS = {
    * @returns {object} Summary stats
    */
   getSummary() {
-    const totalTrades = Object.values(this.STANDINGS)
-      .reduce((sum, model) => sum + model.totalTrades, 0);
-    
-    const totalPnL = Object.values(this.STANDINGS)
-      .reduce((sum, model) => sum + model.totalPnL, 0);
+    // ⚡ Bolt Optimization: Single-pass manual loop over STANDINGS eliminates multiple Object.values array allocations and reduce calls.
+    let totalTrades = 0;
+    let totalPnL = 0;
+    let totalModels = 0;
+    for (const key in this.STANDINGS) {
+      const model = this.STANDINGS[key];
+      totalTrades += model.totalTrades;
+      totalPnL += model.totalPnL;
+      totalModels++;
+    }
 
     const topModel = this.getLeaderboard('totalPnL')[0];
 
     return {
       totalBrackets: Object.keys(this.BRACKETS).length,
-      totalModels: Object.keys(this.STANDINGS).length,
+      totalModels: totalModels,
       totalTrades: totalTrades,
       totalPnL: totalPnL,
       topModel: topModel?.model,
@@ -314,17 +319,37 @@ const TRADE_OLYMPICS = {
    * @returns {object} Method-specific stats
    */
   getModelMethodStats(modelName, method) {
-    const brackets = this.getModelBrackets(modelName);
-    const methodBrackets = brackets.filter(b => b.method === method);
+    // ⚡ Bolt Optimization: Single-pass manual loop directly reading assigned brackets prevents intermediate array allocations and reduce iterations.
+    const bracketKeys = this.STANDINGS[modelName]?.bracketsAssigned;
+    if (!bracketKeys) {
+      return { model: modelName, method: method, brackets: 0, totalTrades: 0, totalWins: 0, totalPnL: 0, winRate: 0 };
+    }
+
+    let methodBracketsCount = 0;
+    let totalTrades = 0;
+    let totalWins = 0;
+    let totalPnL = 0;
+    let winRateSum = 0;
+
+    for (let i = 0; i < bracketKeys.length; i++) {
+      const b = this.BRACKETS[bracketKeys[i]];
+      if (b && b.method === method) {
+        methodBracketsCount++;
+        totalTrades += b.trades;
+        totalWins += b.wins;
+        totalPnL += b.totalPnL;
+        winRateSum += b.winRate;
+      }
+    }
 
     return {
       model: modelName,
       method: method,
-      brackets: methodBrackets.length,
-      totalTrades: methodBrackets.reduce((sum, b) => sum + b.trades, 0),
-      totalWins: methodBrackets.reduce((sum, b) => sum + b.wins, 0),
-      totalPnL: methodBrackets.reduce((sum, b) => sum + b.totalPnL, 0),
-      winRate: methodBrackets.reduce((sum, b) => sum + b.winRate, 0) / methodBrackets.length
+      brackets: methodBracketsCount,
+      totalTrades: totalTrades,
+      totalWins: totalWins,
+      totalPnL: totalPnL,
+      winRate: methodBracketsCount > 0 ? winRateSum / methodBracketsCount : 0
     };
   },
 
@@ -335,17 +360,37 @@ const TRADE_OLYMPICS = {
    * @returns {object} Token-specific stats
    */
   getModelTokenStats(modelName, token) {
-    const brackets = this.getModelBrackets(modelName);
-    const tokenBrackets = brackets.filter(b => b.token === token);
+    // ⚡ Bolt Optimization: Single-pass manual loop directly reading assigned brackets prevents intermediate array allocations and reduce iterations.
+    const bracketKeys = this.STANDINGS[modelName]?.bracketsAssigned;
+    if (!bracketKeys) {
+      return { model: modelName, token: token, brackets: 0, totalTrades: 0, totalWins: 0, totalPnL: 0, winRate: 0 };
+    }
+
+    let tokenBracketsCount = 0;
+    let totalTrades = 0;
+    let totalWins = 0;
+    let totalPnL = 0;
+    let winRateSum = 0;
+
+    for (let i = 0; i < bracketKeys.length; i++) {
+      const b = this.BRACKETS[bracketKeys[i]];
+      if (b && b.token === token) {
+        tokenBracketsCount++;
+        totalTrades += b.trades;
+        totalWins += b.wins;
+        totalPnL += b.totalPnL;
+        winRateSum += b.winRate;
+      }
+    }
 
     return {
       model: modelName,
       token: token,
-      brackets: tokenBrackets.length,
-      totalTrades: tokenBrackets.reduce((sum, b) => sum + b.trades, 0),
-      totalWins: tokenBrackets.reduce((sum, b) => sum + b.wins, 0),
-      totalPnL: tokenBrackets.reduce((sum, b) => sum + b.totalPnL, 0),
-      winRate: tokenBrackets.reduce((sum, b) => sum + b.winRate, 0) / tokenBrackets.length
+      brackets: tokenBracketsCount,
+      totalTrades: totalTrades,
+      totalWins: totalWins,
+      totalPnL: totalPnL,
+      winRate: tokenBracketsCount > 0 ? winRateSum / tokenBracketsCount : 0
     };
   },
 
@@ -479,12 +524,25 @@ const TRADE_OLYMPICS = {
   },
 
   getGlobalWeights() {
-    const standings = Object.values(this.STANDINGS);
-    const totalElo = standings.reduce((sum, s) => sum + s.elo, 0) || 1;
-    return standings.map(s => ({
-      model: s.model,
-      weight: s.elo / totalElo
-    }));
+    // ⚡ Bolt Optimization: Single-pass loop over STANDINGS calculates totalElo and pre-allocates weights array, eliminating reduce/map allocation chains.
+    let totalElo = 0;
+    const standingsList = [];
+    for (const key in this.STANDINGS) {
+      const s = this.STANDINGS[key];
+      totalElo += s.elo;
+      standingsList.push(s);
+    }
+    if (totalElo === 0) totalElo = 1;
+
+    const weights = new Array(standingsList.length);
+    for (let i = 0; i < standingsList.length; i++) {
+      const s = standingsList[i];
+      weights[i] = {
+        model: s.model,
+        weight: s.elo / totalElo
+      };
+    }
+    return weights;
   },
 
   runEloTournament(options = {}) {
