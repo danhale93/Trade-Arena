@@ -78,6 +78,7 @@ export default function Home() {
   });
 
   const [cliToken, setCliToken] = useState("");
+  const [miniWidgetMode, setMiniWidgetMode] = useState(false);
 
   const agent = statusData?.agent;
   const balances = agent?.balances || { base: "0.0000", arbitrum: "0.0000", optimism: "0.0000" };
@@ -100,24 +101,84 @@ export default function Home() {
             <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             RPC Connected
           </div>
-          {authLoading ? (
-            <span className="text-xs text-[#849495]">Checking Auth...</span>
-          ) : isAuthenticated ? (
-            <div className="flex items-center gap-3 text-xs bg-[#0b181e] px-3 py-1.5 rounded border border-[#00dbe9]/30">
-              <Shield className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="text-white">{user?.name || user?.openId}</span>
-              <span className="text-emerald-400 font-bold uppercase text-[10px] bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">{user?.role}</span>
-            </div>
-          ) : (
-            <Button onClick={() => startLogin()} className="bg-[#00dbe9] text-black hover:bg-[#00dbe9]/80 text-xs font-bold px-4 py-2">
-              <Lock className="w-3 h-3 mr-1.5" /> OWNER LOGIN (OAUTH)
+          <div className="flex items-center gap-3">
+            <Button 
+              onClick={() => setMiniWidgetMode(!miniWidgetMode)}
+              className={`text-xs font-bold px-3 py-1.5 border ${miniWidgetMode ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-[#00dbe9]/10 border-[#00dbe9]/30 text-[#00dbe9]'}`}
+            >
+              {miniWidgetMode ? "FULL DASHBOARD" : "📱 MINI WIDGET MODE"}
             </Button>
-          )}
+            {authLoading ? (
+              <span className="text-xs text-[#849495]">Checking Auth...</span>
+            ) : isAuthenticated ? (
+              <div className="flex items-center gap-3 text-xs bg-[#0b181e] px-3 py-1.5 rounded border border-[#00dbe9]/30">
+                <Shield className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="text-white">{user?.name || user?.openId}</span>
+                <span className="text-emerald-400 font-bold uppercase text-[10px] bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">{user?.role}</span>
+              </div>
+            ) : (
+              <Button onClick={() => startLogin()} className="bg-[#00dbe9] text-black hover:bg-[#00dbe9]/80 text-xs font-bold px-4 py-2">
+                <Lock className="w-3 h-3 mr-1.5" /> OWNER LOGIN (OAUTH)
+              </Button>
+            )}
+          </div>
         </div>
       </header>
 
       {/* Main Container */}
       <main className="flex-1 p-6 max-w-7xl mx-auto w-full flex flex-col gap-6">
+        {miniWidgetMode ? (
+          /* Mini Live Widget Mode for Mobile / Home Screen / Lock Screen Simulation */
+          <div className="bg-[#081217] border-2 border-[#00dbe9] rounded-2xl p-6 shadow-[0_0_30px_rgba(0,219,233,0.15)] flex flex-col gap-6 max-w-md mx-auto w-full my-auto">
+            <div className="flex justify-between items-center border-b border-[#00dbe9]/20 pb-4">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-emerald-400 animate-ping"></span>
+                <h2 className="text-sm font-bold tracking-widest text-[#00dbe9]">TRADE-ARENA WIDGET</h2>
+              </div>
+              <span className="text-[10px] font-mono bg-[#00dbe9]/10 text-[#00dbe9] px-2 py-0.5 rounded border border-[#00dbe9]/30">
+                {agent?.executionEnabled ? "EXECUTION ARMED" : "SIMULATION ONLY"}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 text-center">
+              <div className="bg-[#050b0e] p-3 rounded-xl border border-[#00dbe9]/20">
+                <p className="text-[9px] text-[#849495] uppercase">Base</p>
+                <p className="text-sm font-bold text-[#00dbe9] mt-1">{balances.base}</p>
+                <p className="text-[9px] text-emerald-400 mt-0.5">&gt;$0.01 threshold</p>
+              </div>
+              <div className="bg-[#050b0e] p-3 rounded-xl border border-emerald-500/20">
+                <p className="text-[9px] text-[#849495] uppercase">Arbitrum</p>
+                <p className="text-sm font-bold text-emerald-400 mt-1">{balances.arbitrum}</p>
+                <p className="text-[9px] text-emerald-400 mt-0.5">&gt;$0.05 threshold</p>
+              </div>
+              <div className="bg-[#050b0e] p-3 rounded-xl border border-purple-500/20">
+                <p className="text-[9px] text-[#849495] uppercase">Optimism</p>
+                <p className="text-sm font-bold text-purple-400 mt-1">{balances.optimism}</p>
+                <p className="text-[9px] text-emerald-400 mt-0.5">&gt;$0.05 threshold</p>
+              </div>
+            </div>
+
+            <div className="bg-[#050b0e] p-4 rounded-xl border border-[#00dbe9]/20">
+              <p className="text-[10px] text-[#849495] uppercase tracking-wider mb-2">Latest Trade Execution</p>
+              {agent?.recentTrades && agent.recentTrades.length > 0 ? (
+                <div className="text-xs text-white flex justify-between items-center">
+                  <span className="font-mono text-[#00dbe9]">{agent.recentTrades[0].tokenPair}</span>
+                  <span className="text-emerald-400 font-bold">+${agent.recentTrades[0].netProfitUsd}</span>
+                </div>
+              ) : (
+                <p className="text-xs text-[#849495] italic">Scanning multi-chain liquidity spreads...</p>
+              )}
+            </div>
+
+            <Button 
+              onClick={() => setMiniWidgetMode(false)}
+              className="w-full bg-[#00dbe9] text-black hover:bg-[#00dbe9]/80 text-xs font-bold py-3"
+            >
+              EXPAND FULL TERMINAL
+            </Button>
+          </div>
+        ) : (
+          <>
         {/* Top Balances & Status Bar */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-[#0a161d] border border-[#00dbe9]/30 p-4 rounded-xl relative overflow-hidden shadow-[0_0_15px_rgba(0,219,233,0.05)]">
@@ -352,6 +413,8 @@ export default function Home() {
             </div>
           </div>
         </div>
+        </>
+      )}
       </main>
 
       {/* Footer */}

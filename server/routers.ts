@@ -139,13 +139,25 @@ export const appRouter = router({
         // Execute live swap via CLI
         const res = await cli.executeSwap(config.chainId, "WETH", "USDC", "1.0", config.slippage);
         if (res.ok && res.stdout?.txHash) {
+          const profit = res.stdout.netProfit || "2.50";
           await db.recordTrade({
             network: input.network,
             tokenPair: "WETH/USDC",
-            netProfitUsd: res.stdout.netProfit || "2.50",
+            netProfitUsd: profit,
             txHash: res.stdout.txHash,
             status: "success",
           });
+          
+          try {
+            const { notifyOwner } = await import("./_core/notification");
+            await notifyOwner({
+              title: `⚡ Arbitrage Executed on ${input.network.toUpperCase()}!`,
+              content: `Successfully settled WETH/USDC arbitrage on ${input.network}. Net Profit: +$${profit}. TxHash: ${res.stdout.txHash}`,
+            });
+          } catch (e) {
+            console.warn("[Notification] Failed to dispatch owner alert:", e);
+          }
+
           return { success: true, executed: true, txHash: res.stdout.txHash, quote: res.stdout };
         } else {
           return { success: false, executed: false, error: res.error || "Swap quote did not meet threshold or failed execution" };
