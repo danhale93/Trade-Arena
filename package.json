@@ -25,7 +25,7 @@
     "@stripe/stripe-js": "^9.13.0",
     "aes-js": "^4.0.0-beta.5",
     "async-mutex": "^0.5.0",
-    "axios": "1.18.1",
+    "axios": "1.19.0",
     "ccxt": "^4.5.71",
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",
