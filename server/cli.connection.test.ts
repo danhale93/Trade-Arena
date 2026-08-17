@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { getMetaMaskAgentConnectionStatus } from "./cli";
+import { getMetaMaskAgentConnectionStatus, getMetaMaskCliPath } from "./cli";
 
 describe("MetaMask Agent connection status", () => {
+  it("resolves the CLI path from MM_PATH when configured", () => {
+    const original = process.env.MM_PATH;
+    process.env.MM_PATH = "/opt/metamask-agent/mm";
+    expect(getMetaMaskCliPath()).toBe("/opt/metamask-agent/mm");
+    if (original === undefined) delete process.env.MM_PATH;
+    else process.env.MM_PATH = original;
+  });
+
   it("reports disconnected when no token is configured", () => {
     expect(
       getMetaMaskAgentConnectionStatus({
@@ -26,7 +34,7 @@ describe("MetaMask Agent connection status", () => {
     ).toMatchObject({
       status: "disconnected",
       label: "DISCONNECTED",
-      reason: "The MetaMask Agent CLI binary is unavailable in this runtime.",
+        reason: expect.stringContaining("Install it or set MM_PATH to an executable path."),
     });
   });
 

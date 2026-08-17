@@ -11,6 +11,13 @@ import * as directDex from "./directDex";
 
 const MANAGED_WALLET = "0x2ca1f801c1e19d16160c982c627e2932e95117be";
 
+function getCliConnectionFailureMessage() {
+  if (!cli.isMetaMaskCliAvailable()) {
+    return `MetaMask Agent CLI binary is unavailable at ${cli.getMetaMaskCliPath()}. Install it or set MM_PATH to an executable path.`;
+  }
+  return "MetaMask Agent CLI could not validate the token. Check that the token is current and belongs to the managed wallet.";
+}
+
 const providers = {
   base: new ethers.JsonRpcProvider("https://mainnet.base.org"),
   arbitrum: new ethers.JsonRpcProvider("https://arb1.arbitrum.io/rpc"),
@@ -79,6 +86,7 @@ export const appRouter = router({
           tokenConfigured: Boolean(cliToken),
           cliAvailable: cli.isMetaMaskCliAvailable(),
           sessionValidated: cliSessionValidated,
+          cliPath: cli.getMetaMaskCliPath(),
         }),
         lastValidatedAt: cliLastValidatedAt,
       };
@@ -145,10 +153,14 @@ export const appRouter = router({
       await db.setAgentStateKey("mm_cli_session_validated", "false");
       process.env.MM_CLI_TOKEN = input.token;
 
+      if (!cli.isMetaMaskCliAvailable()) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: `Token saved but not validated. ${getCliConnectionFailureMessage()}` });
+      }
+
       const loggedIn = await cli.loginWithToken(input.token);
       if (!loggedIn) {
         await db.setAgentStateKey("mm_cli_session_validated", "false");
-        throw new TRPCError({ code: "BAD_REQUEST", message: "MetaMask CLI rejected the provided token as invalid." });
+        throw new TRPCError({ code: "BAD_REQUEST", message: getCliConnectionFailureMessage() });
       }
 
       await db.setAgentStateKey("mm_cli_session_validated", "true");
@@ -167,10 +179,14 @@ export const appRouter = router({
       }
 
       await db.setAgentStateKey("mm_cli_session_validated", "false");
+      if (!cli.isMetaMaskCliAvailable()) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: getCliConnectionFailureMessage() });
+      }
+
       const loggedIn = await cli.loginWithToken(token);
       if (!loggedIn) {
         await db.setAgentStateKey("mm_cli_session_validated", "false");
-        throw new TRPCError({ code: "BAD_REQUEST", message: "MetaMask Agent could not reconnect. Check the CLI runtime and token." });
+        throw new TRPCError({ code: "BAD_REQUEST", message: getCliConnectionFailureMessage() });
       }
 
       await db.setAgentStateKey("mm_cli_session_validated", "true");
@@ -183,7 +199,7 @@ export const appRouter = router({
         throw new TRPCError({ code: "FORBIDDEN", message: "Only owner/admin can disconnect the MetaMask Agent." });
       }
 
-      const cliLogoutSucceeded = await cli.logoutSession();
+      const cliLogoutSucceeded = cli.isMetaMaskCliAvailable() ? await cli.logoutSession() : false;
       await db.setAgentStateKey("mm_cli_session_validated", "false");
       return {
         success: true,
@@ -191,7 +207,7 @@ export const appRouter = router({
         cliLogoutSucceeded,
         message: cliLogoutSucceeded
           ? "MetaMask Agent disconnected."
-          : "MetaMask Agent marked disconnected; the CLI runtime could not confirm logout.",
+          : `MetaMask Agent marked disconnected; ${getCliConnectionFailureMessage()}`,
       };
     }),
 

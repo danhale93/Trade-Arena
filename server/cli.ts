@@ -1,12 +1,14 @@
-import { exec } from "child_process";
 import util from "util";
+import { execFile } from "child_process";
 import path from "path";
 import fs from "fs";
 
-const execPromise = util.promisify(exec);
+const execFilePromise = util.promisify(execFile);
 
 let mmLock = false;
-const mmPath = process.env.MM_PATH || path.join(process.cwd(), "node_modules/.bin/mm");
+export function getMetaMaskCliPath() {
+  return process.env.MM_PATH?.trim() || path.join(process.cwd(), "node_modules/.bin/mm");
+}
 
 export type MetaMaskAgentConnectionStatus = {
   status: "connected" | "disconnected";
@@ -14,17 +16,24 @@ export type MetaMaskAgentConnectionStatus = {
   tokenConfigured: boolean;
   cliAvailable: boolean;
   sessionValidated: boolean;
+  cliPath?: string;
   reason: string;
 };
 
 export function isMetaMaskCliAvailable() {
-  return fs.existsSync(mmPath);
+  try {
+    const stats = fs.statSync(getMetaMaskCliPath());
+    return stats.isFile() && (process.platform === "win32" || (stats.mode & 0o111) !== 0);
+  } catch {
+    return false;
+  }
 }
 
 export function getMetaMaskAgentConnectionStatus(input: {
   tokenConfigured: boolean;
   cliAvailable: boolean;
   sessionValidated: boolean;
+  cliPath?: string;
 }): MetaMaskAgentConnectionStatus {
   if (!input.tokenConfigured) {
     return {
@@ -40,7 +49,7 @@ export function getMetaMaskAgentConnectionStatus(input: {
       status: "disconnected",
       label: "DISCONNECTED",
       ...input,
-      reason: "The MetaMask Agent CLI binary is unavailable in this runtime.",
+      reason: `The MetaMask Agent CLI binary is unavailable at ${input.cliPath || "the configured runtime path"}. Install it or set MM_PATH to an executable path.`,
     };
   }
 
@@ -61,23 +70,28 @@ export function getMetaMaskAgentConnectionStatus(input: {
   };
 }
 
-export async function runMM(cmd: string, timeout = 30000): Promise<{ ok: boolean; stdout?: any; error?: string }> {
+function splitStaticCommand(cmd: string) {
+  return cmd.match(/(?:[^\s"]+|"[^"]*")+/g)?.map((part) => part.replace(/^"|"$/g, "")) ?? [];
+}
+
+export async function runMMArgs(args: string[], timeout = 30000): Promise<{ ok: boolean; stdout?: any; error?: string }> {
   while (mmLock) {
     await new Promise((r) => setTimeout(r, 100));
   }
   mmLock = true;
-  const sanitizedCmd = cmd.replace(/--token\s+\S+/g, '--token [REDACTED]');
+  const currentMmPath = getMetaMaskCliPath();
+  const sanitizedArgs = args.map((arg, index) => args[index - 1] === "--token" ? "[REDACTED]" : arg);
+  const commandLabel = `mm ${sanitizedArgs.join(" ")}`;
   try {
     const { recordAgentLog } = await import("./db");
     await recordAgentLog({
       level: "INFO",
       category: "CLI",
-      message: `Executing MetaMask CLI: mm ${sanitizedCmd}`,
-      details: `Timeout: ${timeout}ms | Mutex Locked`,
+      message: `Executing MetaMask CLI: ${commandLabel}`,
+      details: `Timeout: ${timeout}ms | Mutex Locked | Path: ${currentMmPath}`,
     });
 
-    const fullCmd = `${mmPath} ${cmd} --json`;
-    const { stdout } = await execPromise(fullCmd, {
+    const { stdout } = await execFilePromise(currentMmPath, [...args, "--json"], {
       env: { ...process.env },
       timeout,
     });
@@ -111,19 +125,24 @@ export async function runMM(cmd: string, timeout = 30000): Promise<{ ok: boolean
       await recordAgentLog({
         level: "ERROR",
         category: "CLI",
-        message: `MetaMask CLI command failed: mm ${sanitizedCmd}`,
-        details: typeof parsedError === 'string' ? parsedError : JSON.stringify(parsedError),
+        message: `MetaMask CLI command failed: ${commandLabel}`,
+        details: typeof parsedError === "string" ? parsedError : JSON.stringify(parsedError),
       });
     } catch {}
-    return { ok: false, error: parsedError };
+    return { ok: false, error: typeof parsedError === "string" ? parsedError : JSON.stringify(parsedError) };
   } finally {
     mmLock = false;
   }
 }
 
+export async function runMM(cmd: string, timeout = 30000) {
+  return runMMArgs(splitStaticCommand(cmd), timeout);
+}
+
 export async function loginWithToken(token: string): Promise<boolean> {
-  await runMM("logout --yes");
-  const res = await runMM(`login --token "${token}"`);
+  if (!isMetaMaskCliAvailable()) return false;
+  await runMMArgs(["logout", "--yes"]);
+  const res = await runMMArgs(["login", "--token", token]);
   return res.ok;
 }
 
@@ -133,13 +152,9 @@ export async function logoutSession(): Promise<boolean> {
 }
 
 export async function simulateSwap(chainId: string, tokenIn: string, tokenOut: string, amount: string, slippage: number) {
-  const cmd = `swap quote --from ${tokenIn} --to ${tokenOut} --amount ${amount} --slippage ${slippage} --from-chain-id ${chainId} --format json`;
-  const res = await runMM(cmd);
-  return res;
+  return runMMArgs(["swap", "quote", "--from", tokenIn, "--to", tokenOut, "--amount", amount, "--slippage", String(slippage), "--from-chain-id", chainId, "--format", "json"]);
 }
 
 export async function executeSwap(chainId: string, tokenIn: string, tokenOut: string, amount: string, slippage: number) {
-  const cmd = `swap quote --from ${tokenIn} --to ${tokenOut} --amount ${amount} --slippage ${slippage} --from-chain-id ${chainId} --yes --format json`;
-  const res = await runMM(cmd, 45000);
-  return res;
+  return runMMArgs(["swap", "quote", "--from", tokenIn, "--to", tokenOut, "--amount", amount, "--slippage", String(slippage), "--from-chain-id", chainId, "--format", "json", "--yes"], 45000);
 }

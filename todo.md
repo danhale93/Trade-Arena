@@ -108,3 +108,12 @@
 - [x] Verify tests, TypeScript, and production build without broadcasting a transaction
 - [x] Save checkpoint only after implementation is verified and live execution remains disabled pending confirmation
 
+
+# Additional Requirement: Fix MetaMask Agent CLI Connection
+
+- [x] Inspect runtime CLI availability, database token state, and reconnection error handling
+- [x] Determine whether the connection can be resolved via runtime binary simulation or graceful fallback
+- [x] Implement robust error feedback and graceful fallback handling in cli.ts and routers.ts
+- [x] Add focused reconnect coverage for missing-binary diagnostics and stale validation prevention
+- [x] Verify test suite, TypeScript check, and production build without enabling live broadcast
+- [ ] Save checkpoint and deliver actionable repair guidance

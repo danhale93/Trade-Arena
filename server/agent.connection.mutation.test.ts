@@ -8,6 +8,7 @@ vi.mock("./db", () => ({
 
 vi.mock("./cli", () => ({
   isMetaMaskCliAvailable: vi.fn(() => true),
+  getMetaMaskCliPath: vi.fn(() => "/opt/metamask-agent/mm"),
   getMetaMaskAgentConnectionStatus: vi.fn(() => ({
     status: "disconnected",
     label: "DISCONNECTED",
@@ -45,6 +46,8 @@ function createContext(role: "admin" | "user" = "admin"): TrpcContext {
 describe("MetaMask Agent connection mutations", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(cli.isMetaMaskCliAvailable).mockReturnValue(true);
+    vi.mocked(cli.getMetaMaskCliPath).mockReturnValue("/opt/metamask-agent/mm");
     vi.mocked(db.getAgentStateKey).mockImplementation(async (key: string) => (key === "mm_cli_token" ? "test-token" : null));
     vi.mocked(cli.loginWithToken).mockResolvedValue(true);
     vi.mocked(cli.logoutSession).mockResolvedValue(true);
@@ -61,6 +64,18 @@ describe("MetaMask Agent connection mutations", () => {
     expect(db.setAgentStateKey).toHaveBeenNthCalledWith(1, "mm_cli_session_validated", "false");
     expect(db.setAgentStateKey).toHaveBeenNthCalledWith(2, "mm_cli_session_validated", "true");
     expect(db.setAgentStateKey).toHaveBeenNthCalledWith(3, "mm_cli_last_validated_at", expect.stringMatching(/^20\d{2}-\d{2}-\d{2}T/));
+  });
+
+  it("reports the runtime path and keeps validation false when reconnect lacks the CLI binary", async () => {
+    vi.mocked(cli.isMetaMaskCliAvailable).mockReturnValue(false);
+    const caller = appRouter.createCaller(createContext("admin"));
+
+    await expect(caller.arbitrage.reconnectAgent()).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: expect.stringContaining("unavailable at /opt/metamask-agent/mm"),
+    });
+    expect(cli.loginWithToken).not.toHaveBeenCalled();
+    expect(db.setAgentStateKey).toHaveBeenCalledWith("mm_cli_session_validated", "false");
   });
 
   it("marks the session disconnected after logout", async () => {
