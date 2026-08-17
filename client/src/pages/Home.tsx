@@ -3,7 +3,7 @@ import { startLogin } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Shield, Play, Pause, Terminal, Cpu, Zap, Activity, CheckCircle2, Lock, RefreshCw, Bell } from "lucide-react";
+import { Shield, Play, Pause, Terminal, Cpu, Zap, Activity, CheckCircle2, Lock, RefreshCw, Bell, Power } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 
@@ -63,6 +63,32 @@ export default function Home() {
     }
   });
 
+  const reconnectAgentMutation = trpc.arbitrage.reconnectAgent.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
+      utils.arbitrage.status.invalidate();
+    },
+    onError: (err) => {
+      toast.error("Reconnect failed: " + err.message);
+      utils.arbitrage.status.invalidate();
+    },
+  });
+
+  const disconnectAgentMutation = trpc.arbitrage.disconnectAgent.useMutation({
+    onSuccess: (data) => {
+      if (data.cliLogoutSucceeded) {
+        toast.success(data.message);
+      } else {
+        toast.warning(data.message);
+      }
+      utils.arbitrage.status.invalidate();
+    },
+    onError: (err) => {
+      toast.error("Disconnect failed: " + err.message);
+      utils.arbitrage.status.invalidate();
+    },
+  });
+
   const [minProfitInput, setMinProfitInput] = useState("");
   const updateThresholdMutation = trpc.arbitrage.updateMinProfitThreshold.useMutation({
     onSuccess: () => {
@@ -97,6 +123,7 @@ export default function Home() {
   const agent = statusData?.agent;
   const cliConnection = agent?.cliConnection;
   const cliConnected = cliConnection?.status === "connected";
+  const connectionActionPending = reconnectAgentMutation.isPending || disconnectAgentMutation.isPending;
 
   useEffect(() => {
     if (logScrollRef.current) {
@@ -143,6 +170,27 @@ export default function Home() {
                 : `MetaMask Agent token is ${cliConnection.label.toLowerCase()}. ${cliConnection.reason}`}
             </span>
           </div>
+          <Button
+            type="button"
+            onClick={() => {
+              if (cliConnected) {
+                disconnectAgentMutation.mutate();
+              } else {
+                reconnectAgentMutation.mutate();
+              }
+            }}
+            disabled={!isAuthenticated || statusLoading || !cliConnection || connectionActionPending}
+            title={cliConnected ? "Disconnect the MetaMask Agent session" : "Reconnect the MetaMask Agent session"}
+            aria-label={cliConnected ? "Disconnect MetaMask Agent" : "Reconnect MetaMask Agent"}
+            className={`flex items-center gap-1.5 border px-2.5 py-1.5 text-[10px] font-bold tracking-wider transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+              cliConnected
+                ? "border-rose-500/30 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20"
+                : "border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
+            }`}
+          >
+            {connectionActionPending ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Power className="h-3 w-3" />}
+            <span className="hidden md:inline">{connectionActionPending ? "WORKING" : cliConnected ? "DISCONNECT" : "RECONNECT"}</span>
+          </Button>
           <div className="flex items-center gap-2 sm:gap-3">
             <Button 
               onClick={() => setMiniWidgetMode(!miniWidgetMode)}

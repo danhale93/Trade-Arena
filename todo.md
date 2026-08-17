@@ -70,13 +70,22 @@
 
 - [x] Check if `mm` binary or npx metamask-agent exists in sandbox
 - [x] Attempt `mm login` or `mm link` or npx invocation to inspect auth link output
-- [ ] Report outcome and guide user on generating fresh token
+- [x] Report outcome and guide user on generating fresh token
 
 # Additional Requirement: MetaMask Agent Connection Indicator
 
-- [ ] Inspect the existing CLI connection status source and dashboard header structure
-- [ ] Expose a truthful connected/disconnected status to the dashboard if needed
-- [ ] Add an accessible visual status indicator to the dashboard header
-- [ ] Add or update Vitest coverage for connected and disconnected states
-- [ ] Verify responsive visual behavior, production build, and save checkpoint
+- [x] Inspect the existing CLI connection status source and dashboard header structure
+- [x] Expose a truthful connected/disconnected status to the dashboard if needed
+- [x] Add an accessible visual status indicator to the dashboard header
+- [x] Add or update Vitest coverage for connected and disconnected states
+- [x] Verify responsive visual behavior, production build, and save checkpoint
+
+
+# Additional Requirement: Manual MetaMask Agent Connection Controls
+
+- [x] Inspect the existing connection state and token submission flow
+- [x] Add protected reconnect and disconnect procedures with truthful state updates
+- [x] Add accessible header controls with loading, success, and error feedback
+- [x] Add or update Vitest coverage for reconnect and disconnect behavior
+- [x] Verify desktop/mobile behavior, production build, and save checkpoint
 

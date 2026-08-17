@@ -127,6 +127,11 @@ export async function loginWithToken(token: string): Promise<boolean> {
   return res.ok;
 }
 
+export async function logoutSession(): Promise<boolean> {
+  const res = await runMM("logout --yes");
+  return res.ok;
+}
+
 export async function simulateSwap(chainId: string, tokenIn: string, tokenOut: string, amount: string, slippage: number) {
   const cmd = `swap quote --from ${tokenIn} --to ${tokenOut} --amount ${amount} --slippage ${slippage} --from-chain-id ${chainId} --format json`;
   const res = await runMM(cmd);

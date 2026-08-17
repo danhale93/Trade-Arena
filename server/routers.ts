@@ -147,6 +147,44 @@ export const appRouter = router({
       return { success: true, message: "MetaMask Agent CLI authenticated and session active." };
     }),
 
+    reconnectAgent: protectedProcedure.mutation(async ({ ctx }) => {
+      if (ctx.user.role !== "admin" && ctx.user.openId !== process.env.OWNER_OPEN_ID) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Only owner/admin can reconnect the MetaMask Agent." });
+      }
+
+      const token = await db.getAgentStateKey("mm_cli_token") || process.env.MM_CLI_TOKEN || "";
+      if (!token) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "No MetaMask Agent token is configured. Add a token in Secure Vault first." });
+      }
+
+      await db.setAgentStateKey("mm_cli_session_validated", "false");
+      const loggedIn = await cli.loginWithToken(token);
+      if (!loggedIn) {
+        await db.setAgentStateKey("mm_cli_session_validated", "false");
+        throw new TRPCError({ code: "BAD_REQUEST", message: "MetaMask Agent could not reconnect. Check the CLI runtime and token." });
+      }
+
+      await db.setAgentStateKey("mm_cli_session_validated", "true");
+      return { success: true, connected: true, message: "MetaMask Agent reconnected and session validated." };
+    }),
+
+    disconnectAgent: protectedProcedure.mutation(async ({ ctx }) => {
+      if (ctx.user.role !== "admin" && ctx.user.openId !== process.env.OWNER_OPEN_ID) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Only owner/admin can disconnect the MetaMask Agent." });
+      }
+
+      const cliLogoutSucceeded = await cli.logoutSession();
+      await db.setAgentStateKey("mm_cli_session_validated", "false");
+      return {
+        success: true,
+        connected: false,
+        cliLogoutSucceeded,
+        message: cliLogoutSucceeded
+          ? "MetaMask Agent disconnected."
+          : "MetaMask Agent marked disconnected; the CLI runtime could not confirm logout.",
+      };
+    }),
+
     updateMinProfitThreshold: protectedProcedure.input(z.object({ threshold: z.string().refine(val => !isNaN(parseFloat(val)) && parseFloat(val) >= 0, { message: "Threshold must be a valid non-negative number" }) })).mutation(async ({ input, ctx }) => {
       if (ctx.user.role !== "admin" && ctx.user.openId !== process.env.OWNER_OPEN_ID) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Only owner/admin can change notification thresholds." });
