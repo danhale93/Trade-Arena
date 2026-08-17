@@ -103,15 +103,16 @@ export default function Home() {
   }, [agent?.agentLogs]);
   const balances = agent?.balances || { base: "0.0000", arbitrum: "0.0000", optimism: "0.0000" };
   const networkConfigs = agent?.networkConfigs || {
-    base: { chainId: "8453", tokenIn: "WETH", tokenOut: "USDC", profitThresholdUsd: 0.01, slippage: 0.1 },
-    arbitrum: { chainId: "42161", tokenIn: "WETH", tokenOut: "USDC", profitThresholdUsd: 0.05, slippage: 0.15 },
-    optimism: { chainId: "10", tokenIn: "WETH", tokenOut: "USDC", profitThresholdUsd: 0.05, slippage: 0.15 },
+    base: { chainId: "8453", tokenIn: "WETH", tokenOut: "USDC", profitThresholdUsd: 0.002, slippage: 0.3 },
+    arbitrum: { chainId: "42161", tokenIn: "WETH", tokenOut: "USDC", profitThresholdUsd: 0.01, slippage: 0.5 },
+    optimism: { chainId: "10", tokenIn: "WETH", tokenOut: "USDC", profitThresholdUsd: 0.01, slippage: 0.5 },
   };
+  const maxSlippage = Math.max(...Object.values(networkConfigs).map((config) => config.slippage));
 
   return (
-    <div className="min-h-screen bg-[#050b0e] text-[#00dbe9] font-mono selection:bg-[#00dbe9]/30 selection:text-white flex flex-col">
+    <div className="stitch-shell min-h-screen bg-[#050b0e] text-[#00dbe9] font-mono selection:bg-[#00dbe9]/30 selection:text-white flex flex-col">
       {/* Top Header */}
-      <header className="border-b border-[#00dbe9]/20 bg-[#081217]/80 backdrop-blur sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
+      <header className="stitch-header border-b border-[#00dbe9]/20 bg-[#081217]/80 backdrop-blur sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Terminal className="w-6 h-6 text-[#00dbe9]" />
           <h1 className="font-bold tracking-wider text-lg text-white">TRADE ARENA <span className="text-[#00dbe9] font-normal text-xs ml-2 px-2 py-0.5 border border-[#00dbe9]/30 rounded bg-[#00dbe9]/10">CYBER-TERMINAL v4.4</span></h1>
@@ -146,11 +147,11 @@ export default function Home() {
       </header>
 
       {/* Main Container */}
-      <main className="flex-1 p-6 max-w-7xl mx-auto w-full flex flex-col gap-6">
+      <main className="stitch-main flex-1 p-6 max-w-7xl mx-auto w-full flex flex-col gap-6">
         {miniWidgetMode ? (
           /* Mini Live Widget Mode for Mobile / Home Screen / Lock Screen Simulation */
-          <div className="bg-[#081217] border-2 border-[#00dbe9] rounded-2xl p-6 shadow-[0_0_30px_rgba(0,219,233,0.15)] flex flex-col gap-6 max-w-md mx-auto w-full my-auto">
-            <div className="flex justify-between items-center border-b border-[#00dbe9]/20 pb-4">
+          <div className="stitch-widget flex flex-col gap-4 max-w-md mx-auto w-full my-auto">
+            <div className="stitch-widget-header flex justify-between items-center border-b border-[#00dbe9]/20 pb-4">
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 rounded-full bg-emerald-400 animate-ping"></span>
                 <h2 className="text-sm font-bold tracking-widest text-[#00dbe9]">TRADE-ARENA WIDGET</h2>
@@ -160,25 +161,25 @@ export default function Home() {
               </span>
             </div>
 
-            <div className="grid grid-cols-3 gap-3 text-center">
-              <div className="bg-[#050b0e] p-3 rounded-xl border border-[#00dbe9]/20">
+            <div className="stitch-stat-grid grid grid-cols-3 gap-3 text-center">
+              <div className="stitch-stat-card bg-[#050b0e] p-3 rounded-xl border border-[#00dbe9]/20">
                 <p className="text-[9px] text-[#849495] uppercase">Base</p>
                 <p className="text-sm font-bold text-[#00dbe9] mt-1">{balances.base}</p>
-                <p className="text-[9px] text-emerald-400 mt-0.5">&gt;$0.01 threshold</p>
+                <p className="text-[9px] text-emerald-400 mt-0.5">&gt;${networkConfigs.base.profitThresholdUsd.toFixed(3)} threshold</p>
               </div>
-              <div className="bg-[#050b0e] p-3 rounded-xl border border-emerald-500/20">
+              <div className="stitch-stat-card bg-[#050b0e] p-3 rounded-xl border border-emerald-500/20">
                 <p className="text-[9px] text-[#849495] uppercase">Arbitrum</p>
                 <p className="text-sm font-bold text-emerald-400 mt-1">{balances.arbitrum}</p>
-                <p className="text-[9px] text-emerald-400 mt-0.5">&gt;$0.05 threshold</p>
+                <p className="text-[9px] text-emerald-400 mt-0.5">&gt;${networkConfigs.arbitrum.profitThresholdUsd.toFixed(2)} threshold</p>
               </div>
-              <div className="bg-[#050b0e] p-3 rounded-xl border border-purple-500/20">
+              <div className="stitch-stat-card bg-[#050b0e] p-3 rounded-xl border border-purple-500/20">
                 <p className="text-[9px] text-[#849495] uppercase">Optimism</p>
                 <p className="text-sm font-bold text-purple-400 mt-1">{balances.optimism}</p>
-                <p className="text-[9px] text-emerald-400 mt-0.5">&gt;$0.05 threshold</p>
+                <p className="text-[9px] text-emerald-400 mt-0.5">&gt;${networkConfigs.optimism.profitThresholdUsd.toFixed(2)} threshold</p>
               </div>
             </div>
 
-            <div className="bg-[#050b0e] p-4 rounded-xl border border-[#00dbe9]/20">
+            <div className="stitch-history-card bg-[#050b0e] p-4 rounded-xl border border-[#00dbe9]/20">
               <p className="text-[10px] text-[#849495] uppercase tracking-wider mb-2">Latest Trade Execution</p>
               {agent?.recentTrades && agent.recentTrades.length > 0 ? (
                 <div className="text-xs text-white flex justify-between items-center">
@@ -192,7 +193,7 @@ export default function Home() {
 
             <Button 
               onClick={() => setMiniWidgetMode(false)}
-              className="w-full bg-[#00dbe9] text-black hover:bg-[#00dbe9]/80 text-xs font-bold py-3"
+              className="stitch-primary w-full bg-[#00dbe9] text-black hover:bg-[#00dbe9]/80 text-xs font-bold py-3"
             >
               EXPAND FULL TERMINAL
             </Button>
@@ -201,7 +202,7 @@ export default function Home() {
           <>
         {/* Top Balances & Status Bar */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-[#0a161d] border border-[#00dbe9]/30 p-4 rounded-xl relative overflow-hidden shadow-[0_0_15px_rgba(0,219,233,0.05)]">
+                  <div className="stitch-card bg-[#0a161d] border border-[#00dbe9]/30 p-4 rounded-xl relative overflow-hidden shadow-[0_0_15px_rgba(0,219,233,0.05)]">
             <div className="absolute top-0 right-0 p-3 text-[#00dbe9]/20"><Zap className="w-8 h-8" /></div>
             <p className="text-[10px] text-[#849495] uppercase tracking-wider mb-1">Base Mainnet (WETH)</p>
             <p className="text-2xl font-bold text-[#00dbe9]">{balances.base} ETH</p>
@@ -241,7 +242,7 @@ export default function Home() {
           {/* Left: Controls & CLI Token Submission */}
           <div className="lg:col-span-7 flex flex-col gap-6">
             {/* Wallet & Security Info */}
-            <div className="bg-[#081217] border border-[#00dbe9]/30 p-6 rounded-xl">
+            <div className="stitch-panel bg-[#081217] border border-[#00dbe9]/30 p-6 rounded-xl">
               <h2 className="text-sm font-bold tracking-wider text-white mb-4 flex items-center gap-2">
                 <Shield className="w-4 h-4 text-[#00dbe9]" /> METAMASK AGENT WALLET SYNC
               </h2>
@@ -252,7 +253,7 @@ export default function Home() {
                 </div>
                 <div className="flex items-center justify-between p-3 bg-[#050b0e] rounded border border-[#00dbe9]/20">
                   <span className="text-[#849495]">MEV Protection / Slippage:</span>
-                  <span className="text-emerald-400">Enabled (0.1% - 0.15% max slippage)</span>
+                  <span className="text-emerald-400">Enabled ({maxSlippage.toFixed(1)}% max slippage)</span>
                 </div>
               </div>
 
@@ -290,7 +291,7 @@ export default function Home() {
             </div>
 
             {/* CLI Token Submission / Settings Panel */}
-            <div className="bg-[#081217] border border-[#00dbe9]/30 p-6 rounded-xl relative overflow-hidden flex flex-col gap-6">
+            <div className="stitch-panel bg-[#081217] border border-[#00dbe9]/30 p-6 rounded-xl relative overflow-hidden flex flex-col gap-6">
               <div className="absolute top-0 right-0 bg-[#00dbe9]/10 text-[#00dbe9] border-l border-b border-[#00dbe9]/30 px-3 py-1 rounded-bl text-[10px] font-mono tracking-wider">
                 SETTINGS / SECURE VAULT
               </div>
@@ -359,7 +360,7 @@ export default function Home() {
 
           {/* Right: Per-Chain Configuration Panel */}
           <div className="lg:col-span-5 flex flex-col gap-6">
-            <div className="bg-[#081217] border border-[#00dbe9]/30 p-6 rounded-xl h-full flex flex-col">
+            <div className="stitch-panel bg-[#081217] border border-[#00dbe9]/30 p-6 rounded-xl h-full flex flex-col">
               <h2 className="text-sm font-bold tracking-wider text-white mb-4 flex items-center gap-2">
                 <Activity className="w-4 h-4 text-[#00dbe9]" /> MULTI-CHAIN CONFIGURATION
               </h2>
@@ -415,7 +416,7 @@ export default function Home() {
         {/* Bottom Section: Trade History & Suppressed Alerts Log */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Trade History Table */}
-          <div className="lg:col-span-6 bg-[#081217] border border-[#00dbe9]/30 p-6 rounded-xl flex flex-col">
+          <div className="stitch-panel lg:col-span-6 bg-[#081217] border border-[#00dbe9]/30 p-6 rounded-xl flex flex-col">
             <h2 className="text-sm font-bold tracking-wider text-white mb-4 flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-400" /> RECENT ARBITRAGE EXECUTIONS
             </h2>
@@ -454,7 +455,7 @@ export default function Home() {
           </div>
 
           {/* Suppressed Alerts Log Table */}
-          <div className="lg:col-span-6 bg-[#081217] border border-amber-500/30 p-6 rounded-xl flex flex-col">
+          <div className="stitch-panel lg:col-span-6 bg-[#081217] border border-amber-500/30 p-6 rounded-xl flex flex-col">
             <h2 className="text-sm font-bold tracking-wider text-white mb-4 flex items-center gap-2">
               <Bell className="w-4 h-4 text-amber-400" /> SUPPRESSED ALERTS LOG (&lt; ${agent?.minProfitThreshold || "0.00"})
             </h2>
@@ -493,7 +494,7 @@ export default function Home() {
           </div>
 
           {/* Live Event Stream & Verbose Diagnostics */}
-          <div className="lg:col-span-12 bg-[#081217] border border-[#00dbe9]/30 p-6 rounded-xl flex flex-col">
+          <div className="stitch-panel lg:col-span-12 bg-[#081217] border border-[#00dbe9]/30 p-6 rounded-xl flex flex-col">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-4">
               <h2 className="text-sm font-bold tracking-wider text-white flex items-center gap-2">
                 <Activity className="w-4 h-4 text-[#00dbe9]" /> VERBOSE LIVE EVENT STREAM & DIAGNOSTICS
