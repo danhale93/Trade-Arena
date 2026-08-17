@@ -1246,9 +1246,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
         <!-- Export -->
         <div class="export-row">
-          <button class="export-btn export-csv" onclick="exportCSV()">📤 EXPORT CSV</button>
-          <button class="export-btn export-json" onclick="exportJSON()">📋 EXPORT JSON</button>
-          <button class="export-btn" id="pitchReportBtn" onclick="generatePitchReport()" style="background:linear-gradient(90deg,var(--purple),var(--blue));color:#fff;box-shadow:0 0 10px rgba(191,95,255,.2)">📊 PITCH REPORT</button>
+          <button class="export-btn export-csv" onclick="exportCSV()" aria-label="Export trade ledger as CSV file" title="Export trade ledger as CSV">📤 EXPORT CSV</button>
+          <button class="export-btn export-json" onclick="exportJSON()" aria-label="Export trade ledger as JSON file" title="Export trade ledger as JSON">📋 EXPORT JSON</button>
+          <button class="export-btn" id="pitchReportBtn" onclick="generatePitchReport()" aria-label="Generate HTML pitch report from trade history" title="Generate HTML Pitch Report" style="background:linear-gradient(90deg,var(--purple),var(--blue));color:#fff;box-shadow:0 0 10px rgba(191,95,255,.2)">📊 PITCH REPORT</button>
         </div>
       </div>
     </div>
@@ -3091,6 +3091,8 @@ function exportCSV() {
   });
   const csv=[headers.join(','),...rows].join('\n');
   downloadFile(csv,'trade-arena-ledger-'+Date.now()+'.csv','text/csv');
+  if(window.SFX && window.SFX.tick) try{ window.SFX.tick(); } catch(e){}
+  showToast('Trade ledger exported as CSV!', 'success');
 }
 function exportJSON() {
   if(!closedTrades.length){ showToast('No closed trades to export yet.', 'error'); return; }
@@ -3101,6 +3103,8 @@ function exportJSON() {
     trades:closedTrades
   };
   downloadFile(JSON.stringify(data,null,2),'trade-arena-ledger-'+Date.now()+'.json','application/json');
+  if(window.SFX && window.SFX.tick) try{ window.SFX.tick(); } catch(e){}
+  showToast('Trade ledger exported as JSON!', 'success');
 }
 
 function generatePitchReport() {
@@ -3164,6 +3168,8 @@ function generatePitchReport() {
   `;
 
   downloadFile(html, 'trade-arena-pitch-report-'+Date.now()+'.html', 'text/html');
+  if(window.SFX && window.SFX.tick) try{ window.SFX.tick(); } catch(e){}
+  showToast('Pitch Report HTML generated and downloaded!', 'success');
 }
 function downloadFile(content, filename, type) {
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([content],{type}));
