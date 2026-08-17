@@ -51,4 +51,12 @@
 - [x] Inspect Google Stitch preview URL and extract styling cues
 - [x] Refine CSS gradients, borders, backdrop blurs, and typography in Home.tsx and index.css to match Stitch design system
 - [x] Verify test suite and production build
-- [ ] Save new WebDev checkpoint and deliver updated dashboard
+- [x] Save new WebDev checkpoint and deliver updated dashboard
+# Trade Failure Diagnosis
+
+- [x] Inspect server/routers.ts execution handler and server/cli.ts wrapper for error handling, timeout, and CLI output parsing
+- [x] Check agent_logs and suppressed_alerts tables for recent error logs and failed executions
+- [x] Identify root cause of trade failures (CLI token/auth, insufficient gas/funds, negative simulated spread, or RPC timeout)
+- [x] Query suppressed_alerts table and verify error handling
+- [x] Provide truthful error reporting when MetaMask CLI binary is absent in sandbox deployment
+- [x] Run test suite and production build verification
