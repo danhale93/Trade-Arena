@@ -59,6 +59,7 @@ export const appRouter = router({
       const scannerRunning = scannerRunningVal !== "false";
       const executionEnabledVal = await db.getAgentStateKey("execution_enabled");
       const executionEnabled = executionEnabledVal === "true";
+      const minProfitThreshold = await db.getAgentStateKey("min_profit_threshold") || "0.00";
 
       const recentTrades = await db.getRecentTrades(10);
 
@@ -76,6 +77,7 @@ export const appRouter = router({
           executionBadge: executionEnabled ? "EXECUTION_ARMED" : "SIMULATION_ONLY",
           scannerEnabled: scannerRunning,
           running: scannerRunning,
+          minProfitThreshold,
           networks: ["base", "arbitrum", "optimism"],
           networkConfigs: {
             base: { chainId: "8453", tokenIn: "WETH", tokenOut: "USDC", profitThresholdUsd: 0.01, slippage: 0.1 },
@@ -121,6 +123,14 @@ export const appRouter = router({
       return { success: true, message: "MetaMask Agent CLI authenticated and session active." };
     }),
 
+    updateMinProfitThreshold: protectedProcedure.input(z.object({ threshold: z.string().refine(val => !isNaN(parseFloat(val)) && parseFloat(val) >= 0, { message: "Threshold must be a valid non-negative number" }) })).mutation(async ({ input, ctx }) => {
+      if (ctx.user.role !== "admin" && ctx.user.openId !== process.env.OWNER_OPEN_ID) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Only owner/admin can change notification thresholds." });
+      }
+      await db.setAgentStateKey("min_profit_threshold", input.threshold);
+      return { success: true, minProfitThreshold: input.threshold };
+    }),
+
     runArbitrageCheck: protectedProcedure.input(z.object({ network: z.enum(["base", "arbitrum", "optimism"]) })).mutation(async ({ input, ctx }) => {
       const cli = await import("./cli");
       const executionEnabledVal = await db.getAgentStateKey("execution_enabled");
@@ -149,11 +159,19 @@ export const appRouter = router({
           });
           
           try {
-            const { notifyOwner } = await import("./_core/notification");
-            await notifyOwner({
-              title: `⚡ Arbitrage Executed on ${input.network.toUpperCase()}!`,
-              content: `Successfully settled WETH/USDC arbitrage on ${input.network}. Net Profit: +$${profit}. TxHash: ${res.stdout.txHash}`,
-            });
+            const minThresholdStr = await db.getAgentStateKey("min_profit_threshold") || "0.00";
+            const minThreshold = isNaN(parseFloat(minThresholdStr)) ? 0.00 : parseFloat(minThresholdStr);
+            const tradeProfit = parseFloat(profit);
+
+            if (isNaN(tradeProfit) || tradeProfit >= minThreshold) {
+              const { notifyOwner } = await import("./_core/notification");
+              await notifyOwner({
+                title: `⚡ Arbitrage Executed on ${input.network.toUpperCase()}!`,
+                content: `Successfully settled WETH/USDC arbitrage on ${input.network}. Net Profit: +$${profit}. TxHash: ${res.stdout.txHash}`,
+              });
+            } else {
+              console.log(`[Notification] Skipped phone push for trade profit $${profit} because it is below the minimum threshold of $${minThreshold}`);
+            }
           } catch (e) {
             console.warn("[Notification] Failed to dispatch owner alert:", e);
           }

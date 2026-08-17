@@ -3,7 +3,7 @@ import { startLogin } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Shield, Play, Pause, Terminal, Cpu, Zap, Activity, CheckCircle2, Lock, RefreshCw } from "lucide-react";
+import { Shield, Play, Pause, Terminal, Cpu, Zap, Activity, CheckCircle2, Lock, RefreshCw, Bell } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 
@@ -60,6 +60,18 @@ export default function Home() {
     },
     onError: (err) => {
       toast.error("Token submission failed: " + err.message);
+    }
+  });
+
+  const [minProfitInput, setMinProfitInput] = useState("");
+  const updateThresholdMutation = trpc.arbitrage.updateMinProfitThreshold.useMutation({
+    onSuccess: () => {
+      toast.success("Minimum profit notification threshold updated.");
+      setMinProfitInput("");
+      utils.arbitrage.status.invalidate();
+    },
+    onError: (err) => {
+      toast.error("Failed to update threshold: " + err.message);
     }
   });
 
@@ -270,36 +282,69 @@ export default function Home() {
             </div>
 
             {/* CLI Token Submission / Settings Panel */}
-            <div className="bg-[#081217] border border-[#00dbe9]/30 p-6 rounded-xl relative overflow-hidden">
+            <div className="bg-[#081217] border border-[#00dbe9]/30 p-6 rounded-xl relative overflow-hidden flex flex-col gap-6">
               <div className="absolute top-0 right-0 bg-[#00dbe9]/10 text-[#00dbe9] border-l border-b border-[#00dbe9]/30 px-3 py-1 rounded-bl text-[10px] font-mono tracking-wider">
                 SETTINGS / SECURE VAULT
               </div>
-              <h2 className="text-sm font-bold tracking-wider text-white mb-2 flex items-center gap-2">
-                <Terminal className="w-4 h-4 text-[#00dbe9]" /> METAMASK AGENT CLI TOKEN SETTINGS
-              </h2>
-              <p className="text-xs text-[#849495] mb-4">Securely submit and save your MetaMask Agent CLI JWT token. Input is masked for security and authenticated via owner OAuth session.</p>
               
-              <div className="flex flex-col gap-3">
-                <div className="flex gap-3">
-                  <Input 
-                    type="password"
-                    autoComplete="off"
-                    placeholder="Enter encrypted or raw CLI JWT token..." 
-                    value={cliToken}
-                    onChange={(e) => setCliToken(e.target.value)}
-                    className="bg-[#050b0e] border-[#00dbe9]/30 text-white text-xs placeholder:text-[#849495]/40 font-mono"
-                  />
-                  <Button 
-                    onClick={() => submitTokenMutation.mutate({ token: cliToken })}
-                    disabled={!isAuthenticated || !cliToken || submitTokenMutation.isPending}
-                    className="bg-[#00dbe9] text-black hover:bg-[#00dbe9]/80 text-xs font-bold px-6 shrink-0"
-                  >
-                    {submitTokenMutation.isPending ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : "SAVE & RENEW"}
-                  </Button>
+              <div>
+                <h2 className="text-sm font-bold tracking-wider text-white mb-2 flex items-center gap-2">
+                  <Terminal className="w-4 h-4 text-[#00dbe9]" /> METAMASK AGENT CLI TOKEN SETTINGS
+                </h2>
+                <p className="text-xs text-[#849495] mb-4">Securely submit and save your MetaMask Agent CLI JWT token. Input is masked for security and authenticated via owner OAuth session.</p>
+                
+                <div className="flex flex-col gap-3">
+                  <div className="flex gap-3">
+                    <Input 
+                      type="password"
+                      autoComplete="off"
+                      placeholder="Enter encrypted or raw CLI JWT token..." 
+                      value={cliToken}
+                      onChange={(e) => setCliToken(e.target.value)}
+                      className="bg-[#050b0e] border-[#00dbe9]/30 text-white text-xs placeholder:text-[#849495]/40 font-mono"
+                    />
+                    <Button 
+                      onClick={() => submitTokenMutation.mutate({ token: cliToken })}
+                      disabled={!isAuthenticated || !cliToken || submitTokenMutation.isPending}
+                      className="bg-[#00dbe9] text-black hover:bg-[#00dbe9]/80 text-xs font-bold px-6 shrink-0"
+                    >
+                      {submitTokenMutation.isPending ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : "SAVE & RENEW"}
+                    </Button>
+                  </div>
+                  {!isAuthenticated && (
+                    <p className="text-[10px] text-amber-400/80">🔒 Owner authentication required to update CLI session credentials.</p>
+                  )}
                 </div>
-                {!isAuthenticated && (
-                  <p className="text-[10px] text-amber-400/80">🔒 Owner authentication required to update CLI session credentials.</p>
-                )}
+              </div>
+
+              <div className="border-t border-[#00dbe9]/20 pt-4">
+                <h2 className="text-sm font-bold tracking-wider text-white mb-2 flex items-center gap-2">
+                  <Bell className="w-4 h-4 text-emerald-400" /> MIN PROFIT PUSH NOTIFICATION THRESHOLD
+                </h2>
+                <p className="text-xs text-[#849495] mb-4">Set minimum net profit in USD required before triggering phone push notifications. Current filter: <span className="text-emerald-400 font-bold">${agent?.minProfitThreshold || "0.00"}</span></p>
+                
+                <div className="flex flex-col gap-3">
+                  <div className="flex gap-3">
+                    <Input 
+                      type="number"
+                      step="0.01"
+                      placeholder="e.g. 5.00" 
+                      value={minProfitInput}
+                      onChange={(e) => setMinProfitInput(e.target.value)}
+                      className="bg-[#050b0e] border-[#00dbe9]/30 text-white text-xs placeholder:text-[#849495]/40 font-mono"
+                    />
+                    <Button 
+                      onClick={() => updateThresholdMutation.mutate({ threshold: minProfitInput })}
+                      disabled={!isAuthenticated || !minProfitInput || updateThresholdMutation.isPending}
+                      className="bg-emerald-500 text-black hover:bg-emerald-400 text-xs font-bold px-6 shrink-0"
+                    >
+                      {updateThresholdMutation.isPending ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : "SET THRESHOLD"}
+                    </Button>
+                  </div>
+                  {!isAuthenticated && (
+                    <p className="text-[10px] text-amber-400/80">🔒 Owner authentication required to update notification thresholds.</p>
+                  )}
+                </div>
               </div>
             </div>
           </div>

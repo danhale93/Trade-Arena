@@ -17,3 +17,10 @@
 - [x] Connect backend notification helper (`notifyOwner` / Firebase Cloud Messaging Web Push) to alert phone on successful trade settlement
 - [x] Provide clear guide on obtaining Google/Firebase Cloud Messaging (FCM) API keys and web push credentials
 - [x] Verify build, run test suite, and deliver implementation status
+# Additional Requirement: Minimum Profit Notification Threshold
+
+- [x] Add `min_profit_threshold` field or config state in database / agent state
+- [x] Add tRPC procedure to update minimum profit threshold (owner-only)
+- [x] Add minimum profit threshold input to the dashboard Settings / Secure Vault card
+- [x] Apply threshold check in backend notification dispatch before calling `notifyOwner`
+- [x] Verify test suite, production build, and deliver update
