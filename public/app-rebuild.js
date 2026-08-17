@@ -607,6 +607,7 @@ async function toggleLiveMode() {
         btn.style.color = window.isLiveMode ? 'var(--green)' : 'var(--gold2)';
         btn.style.boxShadow = window.isLiveMode ? '0 0 10px rgba(0,255,157,0.3)' : 'none';
         btn.setAttribute('aria-pressed', window.isLiveMode.toString());
+        btn.setAttribute('aria-label', window.isLiveMode ? 'Trading mode: LIVE' : 'Trading mode: DEMO');
     }
 
     const badge = document.getElementById('ghBadge');

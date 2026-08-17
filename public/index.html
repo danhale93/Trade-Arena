@@ -852,7 +852,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
        <button class="gh-bus-btn" id="fleetViewBtn" onclick="toggleFleetView()" title="Toggle Fleet View (Compact Grid)"><span role="img" aria-hidden="true">📊</span> FLEET</button>
         <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots" aria-expanded="false"><span role="img" aria-hidden="true">⚙</span> BUS</button>
         <button class="gh-bus-btn" id="ghSettingsBtn" onclick="toggleSettingsModal()" title="Settings" aria-expanded="false"><span role="img" aria-hidden="true">⚙</span> SETTINGS</button>
-        <button class="gh-auto-btn" id="liveToggleBtn" onclick="toggleLiveMode()" title="Toggle Live/Demo Mode" style="border-color:var(--green);color:var(--green);box-shadow:0 0 10px rgba(0,255,157,0.3)">LIVE</button>
+        <button class="gh-auto-btn" id="liveToggleBtn" onclick="toggleLiveMode()" title="Toggle Live/Demo Mode" aria-pressed="true" aria-label="Trading mode: LIVE" style="border-color:var(--green);color:var(--green);box-shadow:0 0 10px rgba(0,255,157,0.3)">LIVE</button>
        <button class="gh-auto-btn" id="ghAutoBtn" onclick="globalAutoToggle()" title="Toggle auto-trading on all bots" aria-pressed="false">AUTO</button>
        <button class="gh-bot-btn" id="ghRemoveBtn" onclick="removeLastBot()" title="Remove last bot" aria-label="Remove last bot" disabled>−</button>
        <button class="gh-bot-btn" id="ghAddTraderBtn" onclick="addBot('TRADER')" title="Add Trading Bot" aria-label="Add new trading bot">🤖</button><button class="gh-bot-btn" id="ghAddWorkerBtn" onclick="addBot('WORKER')" title="Add Worker Bot" aria-label="Add new worker bot">👷</button>
