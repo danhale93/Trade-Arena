@@ -90,7 +90,7 @@ export async function getUserByOpenId(openId: string) {
 }
 
 import { desc } from "drizzle-orm";
-import { tradeHistory, suppressedAlerts, balanceSnapshots, agentState, heartbeatTasks } from "../drizzle/schema";
+import { tradeHistory, suppressedAlerts, agentLogs, balanceSnapshots, agentState, heartbeatTasks } from "../drizzle/schema";
 
 export async function recordTrade(trade: { network: string; tokenPair: string; netProfitUsd: string; txHash: string; status?: string }) {
   const db = await getDb();
@@ -127,6 +127,23 @@ export async function getSuppressedAlerts(limit = 20) {
   const db = await getDb();
   if (!db) return [];
   return await db.select().from(suppressedAlerts).orderBy(desc(suppressedAlerts.timestamp)).limit(limit);
+}
+
+export async function recordAgentLog(log: { level?: string; category?: string; message: string; details?: string }) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(agentLogs).values({
+    level: log.level || "INFO",
+    category: log.category || "SYSTEM",
+    message: log.message,
+    details: log.details || null,
+  });
+}
+
+export async function getAgentLogs(limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(agentLogs).orderBy(desc(agentLogs.timestamp)).limit(limit);
 }
 
 export async function recordBalanceSnapshot(snapshot: { baseBal: string; arbitrumBal: string; optimismBal: string }) {

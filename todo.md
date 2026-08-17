@@ -32,3 +32,11 @@
 - [x] Add `suppressedAlerts` query in `arbitrage.status` procedure
 - [x] Add Suppressed Alerts panel in `client/src/pages/Home.tsx`
 - [x] Verify test suite, production build, save checkpoint, and deliver update
+# Additional Requirement: Verbose Debugging and Terminal UI
+
+- [x] Add `agent_logs` table in `drizzle/schema.ts` and generate migration
+- [x] Add `recordAgentLog` and `getAgentLogs` helpers in `server/db.ts`
+- [x] Instrument backend routers and CLI execution with structured verbose logging
+- [x] Expose `agentLogs` in `arbitrage.status` tRPC response
+- [x] Upgrade Live Event Stream panel in `client/src/pages/Home.tsx` with live filter tags and auto-scrolling terminal logs
+- [x] Verify test suite, production build, save checkpoint, and deliver update

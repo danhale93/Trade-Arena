@@ -46,6 +46,15 @@ export const suppressedAlerts = mysqlTable("suppressed_alerts", {
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
 
+export const agentLogs = mysqlTable("agent_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  level: varchar("level", { length: 16 }).default("INFO").notNull(),
+  category: varchar("category", { length: 32 }).default("SYSTEM").notNull(),
+  message: text("message").notNull(),
+  details: text("details"),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
 export const balanceSnapshots = mysqlTable("balance_snapshots", {
   id: int("id").autoincrement().primaryKey(),
   baseBal: varchar("baseBal", { length: 32 }).notNull(),

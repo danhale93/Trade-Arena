@@ -91,8 +91,16 @@ export default function Home() {
 
   const [cliToken, setCliToken] = useState("");
   const [miniWidgetMode, setMiniWidgetMode] = useState(false);
+  const [logFilter, setLogFilter] = useState("ALL");
+  const logScrollRef = useRef<HTMLDivElement>(null);
 
   const agent = statusData?.agent;
+
+  useEffect(() => {
+    if (logScrollRef.current) {
+      logScrollRef.current.scrollTop = logScrollRef.current.scrollHeight;
+    }
+  }, [agent?.agentLogs]);
   const balances = agent?.balances || { base: "0.0000", arbitrum: "0.0000", optimism: "0.0000" };
   const networkConfigs = agent?.networkConfigs || {
     base: { chainId: "8453", tokenIn: "WETH", tokenOut: "USDC", profitThresholdUsd: 0.01, slippage: 0.1 },
@@ -484,16 +492,56 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Live Event Stream */}
+          {/* Live Event Stream & Verbose Diagnostics */}
           <div className="lg:col-span-12 bg-[#081217] border border-[#00dbe9]/30 p-6 rounded-xl flex flex-col">
-            <h2 className="text-sm font-bold tracking-wider text-white mb-4 flex items-center gap-2">
-              <Activity className="w-4 h-4 text-[#00dbe9]" /> LIVE EVENT STREAM
-            </h2>
-            <div className="bg-[#050b0e] p-4 rounded-lg border border-[#00dbe9]/20 font-mono text-[11px] h-[220px] overflow-y-auto space-y-2 text-[#849495]">
-              <p className="text-emerald-400">[{new Date().toLocaleTimeString()}] 🚀 Multi-chain worker initialized across Base, Arbitrum, Optimism.</p>
-              <p className="text-[#00dbe9]">[{new Date().toLocaleTimeString()}] 📡 RPC Balance query verified for {agent?.walletAddress || "0x2ca1f801c1e19d16160c982c627e2932e95117be"}.</p>
-              <p className="text-amber-400">[{new Date().toLocaleTimeString()}] ⚡ Scanner status: {agent?.scannerEnabled ? "RUNNING" : "PAUSED"} | Mode: {agent?.executionEnabled ? "ARMED" : "SIMULATION"}.</p>
-              <p className="text-[#849495]">[{new Date().toLocaleTimeString()}] 🔍 Polling DEX routing quotes (10s interval)...</p>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-4">
+              <h2 className="text-sm font-bold tracking-wider text-white flex items-center gap-2">
+                <Activity className="w-4 h-4 text-[#00dbe9]" /> VERBOSE LIVE EVENT STREAM & DIAGNOSTICS
+              </h2>
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1 bg-[#050b0e] p-1 rounded border border-[#00dbe9]/20 text-[10px]">
+                  {["ALL", "CLI", "SCANNER", "EXECUTION", "SETTLEMENT", "NOTIFY", "CLI"].map((cat) => (
+                    <button
+                      key={cat}
+                      onClick={() => setLogFilter(cat)}
+                      className={`px-2 py-1 rounded font-mono font-bold transition-colors ${logFilter === cat ? 'bg-[#00dbe9] text-black' : 'text-[#849495] hover:text-white'}`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+                <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-1 rounded animate-pulse">
+                  LIVE STREAM ACTIVE
+                </span>
+              </div>
+            </div>
+            <div ref={logScrollRef} className="bg-[#050b0e] p-4 rounded-lg border border-[#00dbe9]/20 font-mono text-[11px] h-[260px] overflow-y-auto space-y-2">
+              {agent?.agentLogs && agent.agentLogs.length > 0 ? (
+                agent.agentLogs
+                  .filter((l: any) => logFilter === "ALL" || l.category === logFilter)
+                  .map((l: any) => {
+                    const color = l.level === 'SUCCESS' ? 'text-emerald-400' : l.level === 'WARN' ? 'text-amber-400' : l.level === 'ERROR' ? 'text-rose-400' : 'text-[#00dbe9]';
+                    return (
+                      <div key={l.id} className="border-b border-[#00dbe9]/10 pb-1.5 flex flex-col gap-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[#849495]">[{new Date(l.timestamp).toLocaleTimeString()}]</span>
+                          <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-[#0a161d] border border-[#00dbe9]/30 text-[#00dbe9]">{l.category}</span>
+                          <span className={`font-bold ${color}`}>{l.message}</span>
+                        </div>
+                        {l.details && (
+                          <p className="text-[#849495] pl-16 text-[10px] truncate" title={l.details}>{l.details}</p>
+                        )}
+                      </div>
+                    );
+                  })
+              ) : (
+                <>
+                  <p className="text-emerald-400">[{new Date().toLocaleTimeString()}] 🚀 Multi-chain worker initialized across Base, Arbitrum, Optimism.</p>
+                  <p className="text-[#00dbe9]">[{new Date().toLocaleTimeString()}] 📡 RPC Balance query verified for {agent?.walletAddress || "0x2ca1f801c1e19d16160c982c627e2932e95117be"}.</p>
+                  <p className="text-amber-400">[{new Date().toLocaleTimeString()}] ⚡ Scanner status: {agent?.scannerEnabled ? "RUNNING" : "PAUSED"} | Mode: {agent?.executionEnabled ? "ARMED" : "SIMULATION"}.</p>
+                  <p className="text-[#849495]">[{new Date().toLocaleTimeString()}] 🔍 Polling DEX routing quotes (10s interval)...</p>
+                </>
+              )}
             </div>
           </div>
         </div>

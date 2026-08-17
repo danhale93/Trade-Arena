@@ -12,7 +12,16 @@ export async function runMM(cmd: string, timeout = 30000): Promise<{ ok: boolean
     await new Promise((r) => setTimeout(r, 100));
   }
   mmLock = true;
+  const sanitizedCmd = cmd.replace(/--token\s+\S+/g, '--token [REDACTED]');
   try {
+    const { recordAgentLog } = await import("./db");
+    await recordAgentLog({
+      level: "INFO",
+      category: "CLI",
+      message: `Executing MetaMask CLI: mm ${sanitizedCmd}`,
+      details: `Timeout: ${timeout}ms | Mutex Locked`,
+    });
+
     const fullCmd = `${mmPath} ${cmd} --json`;
     const { stdout } = await execPromise(fullCmd, {
       env: { ...process.env },
@@ -20,8 +29,20 @@ export async function runMM(cmd: string, timeout = 30000): Promise<{ ok: boolean
     });
     try {
       const parsed = JSON.parse(stdout);
+      await recordAgentLog({
+        level: "SUCCESS",
+        category: "CLI",
+        message: `MetaMask CLI command succeeded`,
+        details: JSON.stringify(parsed).slice(0, 200),
+      });
       return { ok: true, stdout: parsed };
     } catch {
+      await recordAgentLog({
+        level: "SUCCESS",
+        category: "CLI",
+        message: `MetaMask CLI command succeeded (raw text)`,
+        details: String(stdout).slice(0, 200),
+      });
       return { ok: true, stdout };
     }
   } catch (e: any) {
@@ -30,6 +51,15 @@ export async function runMM(cmd: string, timeout = 30000): Promise<{ ok: boolean
       if (e.stdout) {
         parsedError = JSON.parse(e.stdout);
       }
+    } catch {}
+    try {
+      const { recordAgentLog } = await import("./db");
+      await recordAgentLog({
+        level: "ERROR",
+        category: "CLI",
+        message: `MetaMask CLI command failed: mm ${sanitizedCmd}`,
+        details: typeof parsedError === 'string' ? parsedError : JSON.stringify(parsedError),
+      });
     } catch {}
     return { ok: false, error: parsedError };
   } finally {

@@ -63,6 +63,7 @@ export const appRouter = router({
 
       const recentTrades = await db.getRecentTrades(10);
       const suppressedAlerts = await db.getSuppressedAlerts(10);
+      const agentLogs = await db.getAgentLogs(50);
 
       return {
         success: true,
@@ -87,6 +88,7 @@ export const appRouter = router({
           },
           recentTrades,
           suppressedAlerts,
+          agentLogs,
         },
         timestamp: Date.now(),
       };
@@ -134,6 +136,13 @@ export const appRouter = router({
     }),
 
     runArbitrageCheck: protectedProcedure.input(z.object({ network: z.enum(["base", "arbitrum", "optimism"]) })).mutation(async ({ input, ctx }) => {
+      await db.recordAgentLog({
+        level: "INFO",
+        category: "SCANNER",
+        message: `Manual arbitrage check triggered on ${input.network.toUpperCase()} (Chain ID: ${input.network === 'base' ? 8453 : input.network === 'arbitrum' ? 42161 : 10})`,
+        details: `Execution mode: ${await db.getAgentStateKey("execution_enabled") === "true" ? "LIVE" : "SIMULATION"}`,
+      });
+
       const cli = await import("./cli");
       const executionEnabledVal = await db.getAgentStateKey("execution_enabled");
       const isLive = executionEnabledVal === "true";
@@ -148,6 +157,13 @@ export const appRouter = router({
       if (!config) throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid network" });
 
       if (isLive) {
+        await db.recordAgentLog({
+          level: "INFO",
+          category: "EXECUTION",
+          message: `Executing live swap via MetaMask Agent CLI on ${input.network} (Max Slippage: ${config.slippage * 100}%)`,
+          details: `Target: WETH -> USDC (1.0 WETH)`,
+        });
+
         // Execute live swap via CLI
         const res = await cli.executeSwap(config.chainId, "WETH", "USDC", "1.0", config.slippage);
         if (res.ok && res.stdout?.txHash) {
@@ -158,6 +174,13 @@ export const appRouter = router({
             netProfitUsd: profit,
             txHash: res.stdout.txHash,
             status: "success",
+          });
+
+          await db.recordAgentLog({
+            level: "SUCCESS",
+            category: "SETTLEMENT",
+            message: `Successfully settled live arbitrage trade on ${input.network} (+${profit} USD)`,
+            details: `TxHash: ${res.stdout.txHash}`,
           });
           
           try {
@@ -171,6 +194,12 @@ export const appRouter = router({
                 title: `⚡ Arbitrage Executed on ${input.network.toUpperCase()}!`,
                 content: `Successfully settled WETH/USDC arbitrage on ${input.network}. Net Profit: +$${profit}. TxHash: ${res.stdout.txHash}`,
               });
+              await db.recordAgentLog({
+                level: "INFO",
+                category: "NOTIFY",
+                message: `Dispatched phone push notification for ${input.network} trade (+$${profit})`,
+                details: `Threshold: $${minThresholdStr}`,
+              });
             } else {
               console.log(`[Notification] Skipped phone push for trade profit $${profit} because it is below the minimum threshold of $${minThreshold}`);
               await db.recordSuppressedAlert({
@@ -181,18 +210,47 @@ export const appRouter = router({
                 txHash: res.stdout.txHash,
                 reason: `Net profit $${profit} is below minimum notification threshold of $${minThresholdStr}`,
               });
+              await db.recordAgentLog({
+                level: "WARN",
+                category: "NOTIFY",
+                message: `Suppressed phone push alert for ${input.network} trade (+$${profit} < $${minThresholdStr})`,
+                details: `Recorded to Suppressed Alerts log`,
+              });
             }
           } catch (e) {
             console.warn("[Notification] Failed to dispatch owner alert:", e);
+            await db.recordAgentLog({
+              level: "ERROR",
+              category: "NOTIFY",
+              message: `Failed to dispatch owner alert: ${String(e)}`,
+            });
           }
 
           return { success: true, executed: true, txHash: res.stdout.txHash, quote: res.stdout };
         } else {
+          await db.recordAgentLog({
+            level: "ERROR",
+            category: "EXECUTION",
+            message: `Live swap execution failed on ${input.network}`,
+            details: res.error || "Swap quote did not meet threshold or failed execution",
+          });
           return { success: false, executed: false, error: res.error || "Swap quote did not meet threshold or failed execution" };
         }
       } else {
         // Simulation mode
+        await db.recordAgentLog({
+          level: "INFO",
+          category: "SIMULATION",
+          message: `Simulating arbitrage route on ${input.network} (Max Slippage: ${config.slippage * 100}%)`,
+          details: `Target: WETH -> USDC`,
+        });
         const res = await cli.simulateSwap(config.chainId, "WETH", "USDC", "1.0", config.slippage);
+        await db.recordAgentLog({
+          level: "SUCCESS",
+          category: "SIMULATION",
+          message: `Simulation completed on ${input.network}`,
+          details: JSON.stringify(res.stdout || res),
+        });
         return { success: true, executed: false, simulation: res.stdout || res };
       }
     }),
