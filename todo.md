@@ -116,4 +116,4 @@
 - [x] Implement robust error feedback and graceful fallback handling in cli.ts and routers.ts
 - [x] Add focused reconnect coverage for missing-binary diagnostics and stale validation prevention
 - [x] Verify test suite, TypeScript check, and production build without enabling live broadcast
-- [ ] Save checkpoint and deliver actionable repair guidance
+- [x] Save checkpoint and deliver actionable repair guidance
