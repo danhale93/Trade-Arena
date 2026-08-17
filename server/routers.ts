@@ -6,6 +6,7 @@ import { z } from "zod";
 import { ethers } from "ethers";
 import * as db from "./db";
 import { TRPCError } from "@trpc/server";
+import * as cli from "./cli";
 
 const MANAGED_WALLET = "0x2ca1f801c1e19d16160c982c627e2932e95117be";
 
@@ -69,6 +70,13 @@ export const appRouter = router({
       const executionEnabledVal = await db.getAgentStateKey("execution_enabled");
       const executionEnabled = executionEnabledVal === "true";
       const minProfitThreshold = await db.getAgentStateKey("min_profit_threshold") || "0.00";
+      const cliToken = await db.getAgentStateKey("mm_cli_token") || process.env.MM_CLI_TOKEN || "";
+      const cliSessionValidated = (await db.getAgentStateKey("mm_cli_session_validated")) === "true";
+      const cliConnection = cli.getMetaMaskAgentConnectionStatus({
+        tokenConfigured: Boolean(cliToken),
+        cliAvailable: cli.isMetaMaskCliAvailable(),
+        sessionValidated: cliSessionValidated,
+      });
 
       const recentTrades = await db.getRecentTrades(10);
       const suppressedAlerts = await db.getSuppressedAlerts(10);
@@ -89,6 +97,7 @@ export const appRouter = router({
           scannerEnabled: scannerRunning,
           running: scannerRunning,
           minProfitThreshold,
+          cliConnection,
           networks: ["base", "arbitrum", "optimism"],
           networkConfigs: {
             base: { chainId: "8453", tokenIn: "WETH", tokenOut: "USDC", profitThresholdUsd: 0.002, slippage: 0.3 },
@@ -125,14 +134,16 @@ export const appRouter = router({
       }
 
       await db.setAgentStateKey("mm_cli_token", input.token);
+      await db.setAgentStateKey("mm_cli_session_validated", "false");
       process.env.MM_CLI_TOKEN = input.token;
 
-      const cli = await import("./cli");
       const loggedIn = await cli.loginWithToken(input.token);
       if (!loggedIn) {
+        await db.setAgentStateKey("mm_cli_session_validated", "false");
         throw new TRPCError({ code: "BAD_REQUEST", message: "MetaMask CLI rejected the provided token as invalid." });
       }
 
+      await db.setAgentStateKey("mm_cli_session_validated", "true");
       return { success: true, message: "MetaMask Agent CLI authenticated and session active." };
     }),
 

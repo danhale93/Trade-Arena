@@ -95,6 +95,8 @@ export default function Home() {
   const logScrollRef = useRef<HTMLDivElement>(null);
 
   const agent = statusData?.agent;
+  const cliConnection = agent?.cliConnection;
+  const cliConnected = cliConnection?.status === "connected";
 
   useEffect(() => {
     if (logScrollRef.current) {
@@ -112,17 +114,36 @@ export default function Home() {
   return (
     <div className="stitch-shell min-h-screen bg-[#050b0e] text-[#00dbe9] font-mono selection:bg-[#00dbe9]/30 selection:text-white flex flex-col">
       {/* Top Header */}
-      <header className="stitch-header border-b border-[#00dbe9]/20 bg-[#081217]/80 backdrop-blur sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
+      <header className="stitch-header border-b border-[#00dbe9]/20 bg-[#081217]/80 backdrop-blur sticky top-0 z-50 px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-y-3">
         <div className="flex items-center gap-3">
           <Terminal className="w-6 h-6 text-[#00dbe9]" />
-          <h1 className="font-bold tracking-wider text-lg text-white">TRADE ARENA <span className="text-[#00dbe9] font-normal text-xs ml-2 px-2 py-0.5 border border-[#00dbe9]/30 rounded bg-[#00dbe9]/10">CYBER-TERMINAL v4.4</span></h1>
+          <h1 className="font-bold tracking-wider text-base sm:text-lg text-white">TRADE ARENA <span className="hidden sm:inline text-[#00dbe9] font-normal text-xs ml-2 px-2 py-0.5 border border-[#00dbe9]/30 rounded bg-[#00dbe9]/10">CYBER-TERMINAL v4.4</span></h1>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="w-full md:w-auto flex flex-wrap items-center justify-end gap-2 sm:gap-4">
           <div className="hidden md:flex items-center gap-2 text-xs text-[#849495]">
             <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             RPC Connected
           </div>
-          <div className="flex items-center gap-3">
+          <div
+            role="status"
+            aria-live="polite"
+            title={cliConnection?.reason || "Checking MetaMask Agent session status."}
+            aria-label={`MetaMask Agent token ${cliConnection?.label?.toLowerCase() || "status checking"}`}
+            className={`flex items-center gap-2 rounded border px-2.5 py-1.5 text-[10px] font-bold tracking-wider transition-colors ${
+              cliConnected
+                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                : "border-rose-500/30 bg-rose-500/10 text-rose-300"
+            }`}
+          >
+            <span className={`inline-block h-2 w-2 rounded-full ${cliConnected ? "bg-emerald-400 animate-pulse" : "bg-rose-400"}`} />
+            <span className="inline whitespace-nowrap">AGENT {statusLoading || !cliConnection ? "CHECKING" : cliConnection.label}</span>
+            <span className="sr-only">
+              {statusLoading || !cliConnection
+                ? "MetaMask Agent token connection is being checked."
+                : `MetaMask Agent token is ${cliConnection.label.toLowerCase()}. ${cliConnection.reason}`}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 sm:gap-3">
             <Button 
               onClick={() => setMiniWidgetMode(!miniWidgetMode)}
               className={`text-xs font-bold px-3 py-1.5 border ${miniWidgetMode ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-[#00dbe9]/10 border-[#00dbe9]/30 text-[#00dbe9]'}`}

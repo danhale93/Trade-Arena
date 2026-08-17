@@ -66,3 +66,17 @@
 - [x] Verify server/cli.ts wrapper path handling and robust error logging
 - [x] Run test suite verifying CLI environment configuration
 - [x] Deliver clear connection status report to the user
+# MetaMask Agent CLI Token Link Flow
+
+- [x] Check if `mm` binary or npx metamask-agent exists in sandbox
+- [x] Attempt `mm login` or `mm link` or npx invocation to inspect auth link output
+- [ ] Report outcome and guide user on generating fresh token
+
+# Additional Requirement: MetaMask Agent Connection Indicator
+
+- [ ] Inspect the existing CLI connection status source and dashboard header structure
+- [ ] Expose a truthful connected/disconnected status to the dashboard if needed
+- [ ] Add an accessible visual status indicator to the dashboard header
+- [ ] Add or update Vitest coverage for connected and disconnected states
+- [ ] Verify responsive visual behavior, production build, and save checkpoint
+

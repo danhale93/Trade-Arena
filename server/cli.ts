@@ -1,11 +1,65 @@
 import { exec } from "child_process";
 import util from "util";
 import path from "path";
+import fs from "fs";
 
 const execPromise = util.promisify(exec);
 
 let mmLock = false;
 const mmPath = process.env.MM_PATH || path.join(process.cwd(), "node_modules/.bin/mm");
+
+export type MetaMaskAgentConnectionStatus = {
+  status: "connected" | "disconnected";
+  label: "CONNECTED" | "DISCONNECTED";
+  tokenConfigured: boolean;
+  cliAvailable: boolean;
+  sessionValidated: boolean;
+  reason: string;
+};
+
+export function isMetaMaskCliAvailable() {
+  return fs.existsSync(mmPath);
+}
+
+export function getMetaMaskAgentConnectionStatus(input: {
+  tokenConfigured: boolean;
+  cliAvailable: boolean;
+  sessionValidated: boolean;
+}): MetaMaskAgentConnectionStatus {
+  if (!input.tokenConfigured) {
+    return {
+      status: "disconnected",
+      label: "DISCONNECTED",
+      ...input,
+      reason: "No MetaMask Agent token is configured.",
+    };
+  }
+
+  if (!input.cliAvailable) {
+    return {
+      status: "disconnected",
+      label: "DISCONNECTED",
+      ...input,
+      reason: "The MetaMask Agent CLI binary is unavailable in this runtime.",
+    };
+  }
+
+  if (!input.sessionValidated) {
+    return {
+      status: "disconnected",
+      label: "DISCONNECTED",
+      ...input,
+      reason: "The token is configured but has not been validated by the MetaMask Agent CLI.",
+    };
+  }
+
+  return {
+    status: "connected",
+    label: "CONNECTED",
+    ...input,
+    reason: "The MetaMask Agent CLI session was successfully validated.",
+  };
+}
 
 export async function runMM(cmd: string, timeout = 30000): Promise<{ ok: boolean; stdout?: any; error?: string }> {
   while (mmLock) {
