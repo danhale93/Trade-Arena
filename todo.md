@@ -89,3 +89,22 @@
 - [x] Add or update Vitest coverage for reconnect and disconnect behavior
 - [x] Verify desktop/mobile behavior, production build, and save checkpoint
 
+
+# Additional Requirement: Last-Validated MetaMask Agent Timestamp
+
+- [x] Inspect the current connection state and header badge implementation
+- [x] Persist and expose the last validation timestamp for reconnect and token submission flows
+- [x] Render the timestamp beside the MetaMask Agent status badge accessibly and responsively
+- [x] Add or update Vitest coverage for timestamp state transitions
+- [x] Verify desktop/mobile behavior, production build, and save checkpoint
+
+
+# Additional Requirement: Direct Ethers.js DEX Router Adapter
+
+- [x] Inspect current CLI execution adapter, chain configuration, secrets, and tests
+- [x] Define explicit per-chain router/token/signer configuration and live-execution safety gates
+- [x] Implement simulation-first Ethers.js quote and guarded execution adapter for Base, Arbitrum, and Optimism
+- [x] Add Vitest coverage for quote construction, signer validation, slippage, and no-broadcast safety paths
+- [x] Verify tests, TypeScript, and production build without broadcasting a transaction
+- [x] Save checkpoint only after implementation is verified and live execution remains disabled pending confirmation
+

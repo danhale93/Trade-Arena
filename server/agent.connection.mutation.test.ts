@@ -60,6 +60,7 @@ describe("MetaMask Agent connection mutations", () => {
     expect(cli.loginWithToken).toHaveBeenCalledWith("test-token");
     expect(db.setAgentStateKey).toHaveBeenNthCalledWith(1, "mm_cli_session_validated", "false");
     expect(db.setAgentStateKey).toHaveBeenNthCalledWith(2, "mm_cli_session_validated", "true");
+    expect(db.setAgentStateKey).toHaveBeenNthCalledWith(3, "mm_cli_last_validated_at", expect.stringMatching(/^20\d{2}-\d{2}-\d{2}T/));
   });
 
   it("marks the session disconnected after logout", async () => {

@@ -7,6 +7,7 @@ import { ethers } from "ethers";
 import * as db from "./db";
 import { TRPCError } from "@trpc/server";
 import * as cli from "./cli";
+import * as directDex from "./directDex";
 
 const MANAGED_WALLET = "0x2ca1f801c1e19d16160c982c627e2932e95117be";
 
@@ -72,11 +73,15 @@ export const appRouter = router({
       const minProfitThreshold = await db.getAgentStateKey("min_profit_threshold") || "0.00";
       const cliToken = await db.getAgentStateKey("mm_cli_token") || process.env.MM_CLI_TOKEN || "";
       const cliSessionValidated = (await db.getAgentStateKey("mm_cli_session_validated")) === "true";
-      const cliConnection = cli.getMetaMaskAgentConnectionStatus({
-        tokenConfigured: Boolean(cliToken),
-        cliAvailable: cli.isMetaMaskCliAvailable(),
-        sessionValidated: cliSessionValidated,
-      });
+      const cliLastValidatedAt = await db.getAgentStateKey("mm_cli_last_validated_at");
+      const cliConnection = {
+        ...cli.getMetaMaskAgentConnectionStatus({
+          tokenConfigured: Boolean(cliToken),
+          cliAvailable: cli.isMetaMaskCliAvailable(),
+          sessionValidated: cliSessionValidated,
+        }),
+        lastValidatedAt: cliLastValidatedAt,
+      };
 
       const recentTrades = await db.getRecentTrades(10);
       const suppressedAlerts = await db.getSuppressedAlerts(10);
@@ -121,6 +126,9 @@ export const appRouter = router({
     }),
 
     toggleExecution: protectedProcedure.mutation(async ({ ctx }) => {
+      if (ctx.user.role !== "admin" && ctx.user.openId !== process.env.OWNER_OPEN_ID) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Only owner/admin can arm live execution." });
+      }
       const current = await db.getAgentStateKey("execution_enabled");
       const nextState = current === "true" ? "false" : "true";
       await db.setAgentStateKey("execution_enabled", nextState);
@@ -144,6 +152,7 @@ export const appRouter = router({
       }
 
       await db.setAgentStateKey("mm_cli_session_validated", "true");
+      await db.setAgentStateKey("mm_cli_last_validated_at", new Date().toISOString());
       return { success: true, message: "MetaMask Agent CLI authenticated and session active." };
     }),
 
@@ -165,6 +174,7 @@ export const appRouter = router({
       }
 
       await db.setAgentStateKey("mm_cli_session_validated", "true");
+      await db.setAgentStateKey("mm_cli_last_validated_at", new Date().toISOString());
       return { success: true, connected: true, message: "MetaMask Agent reconnected and session validated." };
     }),
 
@@ -205,20 +215,64 @@ export const appRouter = router({
       const executionEnabledVal = await db.getAgentStateKey("execution_enabled");
       const isLive = executionEnabledVal === "true";
 
-      const chainConfigs: Record<string, { chainId: string; slippage: number }> = {
-        base: { chainId: "8453", slippage: 0.3 },
-        arbitrum: { chainId: "42161", slippage: 0.5 },
-        optimism: { chainId: "10", slippage: 0.5 },
+      const chainConfigs: Record<string, { chainId: string; slippage: number; poolFee: number }> = {
+        base: { chainId: "8453", slippage: 0.3, poolFee: 3000 },
+        arbitrum: { chainId: "42161", slippage: 0.5, poolFee: 3000 },
+        optimism: { chainId: "10", slippage: 0.5, poolFee: 3000 },
       };
+      const executionAdapter = (process.env.EXECUTION_ADAPTER || "direct").trim().toLowerCase();
 
       const config = chainConfigs[input.network];
       if (!config) throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid network" });
 
-      if (isLive) {
+      if (isLive && executionAdapter === "direct") {
+        const amountIn = process.env.DIRECT_INPUT_AMOUNT?.trim() || "0.01";
         await db.recordAgentLog({
           level: "INFO",
           category: "EXECUTION",
-          message: `Executing live swap via MetaMask Agent CLI on ${input.network} (Max Slippage: ${config.slippage * 100}%)`,
+          message: `Preparing guarded direct Ethers.js swap on ${input.network} (Max Slippage: ${config.slippage}%, Pool Fee: ${config.poolFee})`,
+          details: `Target: WETH -> native USDC | Input: ${amountIn} WETH | No profit claim until a round trip is measured`,
+        });
+
+        try {
+          const execution = await directDex.executeDirectSwap({
+            network: input.network as directDex.DirectDexNetwork,
+            amountIn,
+            slippagePercent: config.slippage,
+            poolFee: config.poolFee,
+          });
+          await db.recordAgentLog({
+            level: "SUCCESS",
+            category: "SETTLEMENT",
+            message: `Direct Ethers.js swap confirmed on ${input.network}`,
+            details: `TxHash: ${execution.txHash} | Minimum output: ${execution.amountOutMinimum} native USDC | Profit: not computed`,
+          });
+          return {
+            success: true,
+            executed: true,
+            adapter: "direct-ethers-uniswap-v3",
+            txHash: execution.txHash,
+            quote: execution,
+            profit: null,
+            notificationSuppressed: true,
+          };
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          await db.recordAgentLog({
+            level: "ERROR",
+            category: "EXECUTION",
+            message: `Direct Ethers.js swap blocked or failed on ${input.network}`,
+            details: message,
+          });
+          return { success: false, executed: false, adapter: "direct-ethers-uniswap-v3", error: message };
+        }
+      }
+
+      if (isLive && executionAdapter === "cli") {
+        await db.recordAgentLog({
+          level: "INFO",
+          category: "EXECUTION",
+          message: `Executing live swap via MetaMask Agent CLI on ${input.network} (Max Slippage: ${config.slippage}%, Pool Fee: ${config.poolFee})`,
           details: `Target: WETH -> USDC (1.0 WETH)`,
         });
 
@@ -294,8 +348,35 @@ export const appRouter = router({
           });
           return { success: false, executed: false, error: res.error || "Swap quote did not meet threshold or failed execution" };
         }
-      } else {
-        // Simulation mode
+      } else if (!isLive && executionAdapter === "direct") {
+        // Direct simulation mode: QuoterV2 uses eth_call and never broadcasts a transaction.
+        const amountIn = process.env.DIRECT_INPUT_AMOUNT?.trim() || "0.01";
+        try {
+          await db.recordAgentLog({
+            level: "INFO",
+            category: "SIMULATION",
+            message: `Simulating direct Ethers.js quote on ${input.network} (Pool Fee: ${config.poolFee})`,
+            details: `Target: WETH -> native USDC | Input: ${amountIn} WETH | No transaction broadcast`,
+          });
+          const quote = await directDex.quoteDirectSwap({
+            network: input.network as directDex.DirectDexNetwork,
+            amountIn,
+            poolFee: config.poolFee,
+          });
+          await db.recordAgentLog({
+            level: "SUCCESS",
+            category: "SIMULATION",
+            message: `Direct QuoterV2 simulation completed on ${input.network}`,
+            details: JSON.stringify(quote),
+          });
+          return { success: true, executed: false, adapter: "direct-ethers-uniswap-v3", simulation: quote };
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          await db.recordAgentLog({ level: "ERROR", category: "SIMULATION", message: `Direct quote failed on ${input.network}`, details: message });
+          return { success: false, executed: false, adapter: "direct-ethers-uniswap-v3", error: message };
+        }
+      } else if (!isLive && executionAdapter === "cli") {
+        // Legacy CLI simulation mode
         await db.recordAgentLog({
           level: "INFO",
           category: "SIMULATION",
@@ -309,7 +390,11 @@ export const appRouter = router({
           message: `Simulation completed on ${input.network}`,
           details: JSON.stringify(res.stdout || res),
         });
-        return { success: true, executed: false, simulation: res.stdout || res };
+        return { success: true, executed: false, adapter: "cli", simulation: res.stdout || res };
+      } else {
+        const message = `Unsupported execution adapter '${executionAdapter}'. Use 'direct' or 'cli'.`;
+        await db.recordAgentLog({ level: "ERROR", category: "EXECUTION", message });
+        return { success: false, executed: false, error: message };
       }
     }),
   }),

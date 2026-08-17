@@ -106,7 +106,10 @@ export default function Home() {
       if (data.executed) {
         toast.success(`⚡ Live Trade Executed! Tx: ${data.txHash?.slice(0, 10)}...`);
       } else {
-        toast.info("Simulation completed: " + JSON.stringify(data.simulation?.netProfit || "No profitable spread found"));
+        const simulation = data.simulation as { amountOut?: string; netProfit?: string } | undefined;
+        toast.info(data.adapter === "direct-ethers-uniswap-v3"
+          ? `Direct quote completed: ${simulation?.amountOut || "No route returned"} native USDC`
+          : `Simulation completed: ${simulation?.netProfit || "No profitable spread found"}`);
       }
       utils.arbitrage.status.invalidate();
     },
@@ -124,6 +127,10 @@ export default function Home() {
   const cliConnection = agent?.cliConnection;
   const cliConnected = cliConnection?.status === "connected";
   const connectionActionPending = reconnectAgentMutation.isPending || disconnectAgentMutation.isPending;
+  const lastValidatedDate = cliConnection?.lastValidatedAt ? new Date(cliConnection.lastValidatedAt) : null;
+  const lastValidatedLabel = lastValidatedDate && !Number.isNaN(lastValidatedDate.getTime())
+    ? lastValidatedDate.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })
+    : "Not validated";
 
   useEffect(() => {
     if (logScrollRef.current) {
@@ -151,6 +158,7 @@ export default function Home() {
             <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             RPC Connected
           </div>
+          <div className="flex items-center gap-2">
           <div
             role="status"
             aria-live="polite"
@@ -169,6 +177,13 @@ export default function Home() {
                 ? "MetaMask Agent token connection is being checked."
                 : `MetaMask Agent token is ${cliConnection.label.toLowerCase()}. ${cliConnection.reason}`}
             </span>
+          </div>
+          <span
+            className="whitespace-nowrap text-[10px] text-[#849495]"
+            title={cliConnection?.lastValidatedAt || "No successful validation has been recorded."}
+          >
+            LAST CHECK: {statusLoading ? "CHECKING" : lastValidatedLabel}
+          </span>
           </div>
           <Button
             type="button"
