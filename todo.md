@@ -24,3 +24,11 @@
 - [x] Add minimum profit threshold input to the dashboard Settings / Secure Vault card
 - [x] Apply threshold check in backend notification dispatch before calling `notifyOwner`
 - [x] Verify test suite, production build, and deliver update
+# Additional Requirement: Suppressed Alerts Log
+
+- [x] Add `suppressedAlerts` table in `drizzle/schema.ts` and generate migration
+- [x] Add query and insert helpers in `server/db.ts` for suppressed alerts
+- [x] Update trade execution router to record suppressed alerts when profit is below `min_profit_threshold`
+- [x] Add `suppressedAlerts` query in `arbitrage.status` procedure
+- [x] Add Suppressed Alerts panel in `client/src/pages/Home.tsx`
+- [x] Verify test suite, production build, save checkpoint, and deliver update

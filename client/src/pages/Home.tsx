@@ -404,10 +404,10 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Bottom Section: Trade History & Live Event Stream */}
+        {/* Bottom Section: Trade History & Suppressed Alerts Log */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Trade History Table */}
-          <div className="lg:col-span-8 bg-[#081217] border border-[#00dbe9]/30 p-6 rounded-xl flex flex-col">
+          <div className="lg:col-span-6 bg-[#081217] border border-[#00dbe9]/30 p-6 rounded-xl flex flex-col">
             <h2 className="text-sm font-bold tracking-wider text-white mb-4 flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-400" /> RECENT ARBITRAGE EXECUTIONS
             </h2>
@@ -419,24 +419,63 @@ export default function Home() {
                     <th className="pb-3">PAIR</th>
                     <th className="pb-3">NET PROFIT</th>
                     <th className="pb-3">TX HASH</th>
-                    <th className="pb-3">TIMESTAMP</th>
+                    <th className="pb-3">TIME</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#00dbe9]/10">
+                <tbody className="divide-y divide-[#00dbe9]/10 text-white">
                   {agent?.recentTrades && agent.recentTrades.length > 0 ? (
                     agent.recentTrades.map((t: any) => (
                       <tr key={t.id} className="hover:bg-[#00dbe9]/5">
-                        <td className="py-3 uppercase text-[#00dbe9]">{t.network}</td>
-                        <td className="py-3 text-white">{t.tokenPair}</td>
+                        <td className="py-3 uppercase text-[#00dbe9] font-bold">{t.network}</td>
+                        <td className="py-3">{t.tokenPair}</td>
                         <td className="py-3 text-emerald-400 font-bold">+${t.netProfitUsd}</td>
-                        <td className="py-3 text-[#849495] truncate max-w-[120px]">{t.txHash}</td>
+                        <td className="py-3 text-[#849495] truncate max-w-[100px]" title={t.txHash}>{t.txHash}</td>
                         <td className="py-3 text-[#849495]">{new Date(t.timestamp).toLocaleTimeString()}</td>
                       </tr>
                     ))
                   ) : (
                     <tr>
                       <td colSpan={5} className="py-8 text-center text-[#849495] italic">
-                        No trade history recorded yet. Scanner is actively monitoring multi-chain quote spreads.
+                        No trade history recorded yet.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Suppressed Alerts Log Table */}
+          <div className="lg:col-span-6 bg-[#081217] border border-amber-500/30 p-6 rounded-xl flex flex-col">
+            <h2 className="text-sm font-bold tracking-wider text-white mb-4 flex items-center gap-2">
+              <Bell className="w-4 h-4 text-amber-400" /> SUPPRESSED ALERTS LOG (&lt; ${agent?.minProfitThreshold || "0.00"})
+            </h2>
+            <div className="overflow-x-auto flex-1">
+              <table className="w-full text-left text-xs font-mono">
+                <thead>
+                  <tr className="border-b border-amber-500/20 text-[#849495]">
+                    <th className="pb-3">NETWORK</th>
+                    <th className="pb-3">PROFIT</th>
+                    <th className="pb-3">THRESHOLD</th>
+                    <th className="pb-3">REASON</th>
+                    <th className="pb-3">TIME</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-amber-500/10 text-white">
+                  {agent?.suppressedAlerts && agent.suppressedAlerts.length > 0 ? (
+                    agent.suppressedAlerts.map((a: any) => (
+                      <tr key={a.id} className="hover:bg-amber-500/5">
+                        <td className="py-3 uppercase text-amber-400 font-bold">{a.network}</td>
+                        <td className="py-3 text-amber-300">+${a.netProfitUsd}</td>
+                        <td className="py-3 text-[#849495]">${a.thresholdUsd}</td>
+                        <td className="py-3 text-[#849495] truncate max-w-[140px]" title={a.reason}>{a.reason}</td>
+                        <td className="py-3 text-[#849495]">{new Date(a.timestamp).toLocaleTimeString()}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={5} className="py-8 text-center text-[#849495] italic">
+                        No suppressed alerts. All trades exceeded threshold or none recorded yet.
                       </td>
                     </tr>
                   )}
@@ -446,7 +485,7 @@ export default function Home() {
           </div>
 
           {/* Live Event Stream */}
-          <div className="lg:col-span-4 bg-[#081217] border border-[#00dbe9]/30 p-6 rounded-xl flex flex-col">
+          <div className="lg:col-span-12 bg-[#081217] border border-[#00dbe9]/30 p-6 rounded-xl flex flex-col">
             <h2 className="text-sm font-bold tracking-wider text-white mb-4 flex items-center gap-2">
               <Activity className="w-4 h-4 text-[#00dbe9]" /> LIVE EVENT STREAM
             </h2>

@@ -62,6 +62,7 @@ export const appRouter = router({
       const minProfitThreshold = await db.getAgentStateKey("min_profit_threshold") || "0.00";
 
       const recentTrades = await db.getRecentTrades(10);
+      const suppressedAlerts = await db.getSuppressedAlerts(10);
 
       return {
         success: true,
@@ -85,6 +86,7 @@ export const appRouter = router({
             optimism: { chainId: "10", tokenIn: "WETH", tokenOut: "USDC", profitThresholdUsd: 0.05, slippage: 0.15 },
           },
           recentTrades,
+          suppressedAlerts,
         },
         timestamp: Date.now(),
       };
@@ -171,6 +173,14 @@ export const appRouter = router({
               });
             } else {
               console.log(`[Notification] Skipped phone push for trade profit $${profit} because it is below the minimum threshold of $${minThreshold}`);
+              await db.recordSuppressedAlert({
+                network: input.network,
+                tokenPair: "WETH/USDC",
+                netProfitUsd: profit,
+                thresholdUsd: minThresholdStr,
+                txHash: res.stdout.txHash,
+                reason: `Net profit $${profit} is below minimum notification threshold of $${minThresholdStr}`,
+              });
             }
           } catch (e) {
             console.warn("[Notification] Failed to dispatch owner alert:", e);

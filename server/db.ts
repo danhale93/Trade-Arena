@@ -90,7 +90,7 @@ export async function getUserByOpenId(openId: string) {
 }
 
 import { desc } from "drizzle-orm";
-import { tradeHistory, balanceSnapshots, agentState, heartbeatTasks } from "../drizzle/schema";
+import { tradeHistory, suppressedAlerts, balanceSnapshots, agentState, heartbeatTasks } from "../drizzle/schema";
 
 export async function recordTrade(trade: { network: string; tokenPair: string; netProfitUsd: string; txHash: string; status?: string }) {
   const db = await getDb();
@@ -108,6 +108,25 @@ export async function getRecentTrades(limit = 20) {
   const db = await getDb();
   if (!db) return [];
   return await db.select().from(tradeHistory).orderBy(desc(tradeHistory.timestamp)).limit(limit);
+}
+
+export async function recordSuppressedAlert(alert: { network: string; tokenPair: string; netProfitUsd: string; thresholdUsd: string; txHash: string; reason: string }) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(suppressedAlerts).values({
+    network: alert.network,
+    tokenPair: alert.tokenPair,
+    netProfitUsd: alert.netProfitUsd,
+    thresholdUsd: alert.thresholdUsd,
+    txHash: alert.txHash,
+    reason: alert.reason,
+  });
+}
+
+export async function getSuppressedAlerts(limit = 20) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(suppressedAlerts).orderBy(desc(suppressedAlerts.timestamp)).limit(limit);
 }
 
 export async function recordBalanceSnapshot(snapshot: { baseBal: string; arbitrumBal: string; optimismBal: string }) {

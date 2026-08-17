@@ -35,6 +35,17 @@ export const tradeHistory = mysqlTable("trade_history", {
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
 
+export const suppressedAlerts = mysqlTable("suppressed_alerts", {
+  id: int("id").autoincrement().primaryKey(),
+  network: varchar("network", { length: 32 }).notNull(),
+  tokenPair: varchar("tokenPair", { length: 64 }).notNull(),
+  netProfitUsd: varchar("netProfitUsd", { length: 32 }).notNull(),
+  thresholdUsd: varchar("thresholdUsd", { length: 32 }).notNull(),
+  txHash: varchar("txHash", { length: 128 }).notNull(),
+  reason: varchar("reason", { length: 255 }).notNull(),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
 export const balanceSnapshots = mysqlTable("balance_snapshots", {
   id: int("id").autoincrement().primaryKey(),
   baseBal: varchar("baseBal", { length: 32 }).notNull(),
