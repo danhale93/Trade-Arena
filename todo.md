@@ -40,3 +40,9 @@
 - [x] Expose `agentLogs` in `arbitrage.status` tRPC response
 - [x] Upgrade Live Event Stream panel in `client/src/pages/Home.tsx` with live filter tags and auto-scrolling terminal logs
 - [x] Verify test suite, production build, save checkpoint, and deliver update
+# Bugfix: Duplicate React Key Warning
+
+- [x] Inspect Home.tsx log filter array for duplicate 'CLI' entry
+- [x] Remove duplicate 'CLI' entry from logFilter map in Home.tsx
+- [x] Run test suite and production build verification
+- [ ] Save new WebDev checkpoint and deliver final fix

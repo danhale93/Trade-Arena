@@ -500,7 +500,7 @@ export default function Home() {
               </h2>
               <div className="flex items-center gap-2 flex-wrap">
                 <div className="flex items-center gap-1 bg-[#050b0e] p-1 rounded border border-[#00dbe9]/20 text-[10px]">
-                  {["ALL", "CLI", "SCANNER", "EXECUTION", "SETTLEMENT", "NOTIFY", "CLI"].map((cat) => (
+                  {["ALL", "CLI", "SCANNER", "EXECUTION", "SETTLEMENT", "NOTIFY"].map((cat) => (
                     <button
                       key={cat}
                       onClick={() => setLogFilter(cat)}
