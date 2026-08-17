@@ -16,6 +16,15 @@ const providers = {
 };
 
 export const appRouter = router({
+    // Hydrate process.env.MM_CLI_TOKEN from agent_state database on startup
+    ...(() => {
+      db.getAgentStateKey("mm_cli_token").then(token => {
+        if (token && !process.env.MM_CLI_TOKEN) {
+          process.env.MM_CLI_TOKEN = token;
+        }
+      }).catch(() => {});
+      return {};
+    })(),
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
   auth: router({

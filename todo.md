@@ -60,3 +60,9 @@
 - [x] Query suppressed_alerts table and verify error handling
 - [x] Provide truthful error reporting when MetaMask CLI binary is absent in sandbox deployment
 - [x] Run test suite and production build verification
+# MetaMask Agent CLI Connection Verification
+
+- [x] Inspect runtime/persisted CLI connection state (MM_CLI_TOKEN, MANAGED_WALLET_ADDRESS, and agent_state)
+- [x] Verify server/cli.ts wrapper path handling and robust error logging
+- [x] Run test suite verifying CLI environment configuration
+- [ ] Deliver clear connection status report to the user
