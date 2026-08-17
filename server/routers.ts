@@ -82,9 +82,9 @@ export const appRouter = router({
           minProfitThreshold,
           networks: ["base", "arbitrum", "optimism"],
           networkConfigs: {
-            base: { chainId: "8453", tokenIn: "WETH", tokenOut: "USDC", profitThresholdUsd: 0.01, slippage: 0.1 },
-            arbitrum: { chainId: "42161", tokenIn: "WETH", tokenOut: "USDC", profitThresholdUsd: 0.05, slippage: 0.15 },
-            optimism: { chainId: "10", tokenIn: "WETH", tokenOut: "USDC", profitThresholdUsd: 0.05, slippage: 0.15 },
+            base: { chainId: "8453", tokenIn: "WETH", tokenOut: "USDC", profitThresholdUsd: 0.002, slippage: 0.3 },
+            arbitrum: { chainId: "42161", tokenIn: "WETH", tokenOut: "USDC", profitThresholdUsd: 0.01, slippage: 0.5 },
+            optimism: { chainId: "10", tokenIn: "WETH", tokenOut: "USDC", profitThresholdUsd: 0.01, slippage: 0.5 },
           },
           recentTrades,
           suppressedAlerts,
@@ -148,9 +148,9 @@ export const appRouter = router({
       const isLive = executionEnabledVal === "true";
 
       const chainConfigs: Record<string, { chainId: string; slippage: number }> = {
-        base: { chainId: "8453", slippage: 0.1 },
-        arbitrum: { chainId: "42161", slippage: 0.15 },
-        optimism: { chainId: "10", slippage: 0.15 },
+        base: { chainId: "8453", slippage: 0.3 },
+        arbitrum: { chainId: "42161", slippage: 0.5 },
+        optimism: { chainId: "10", slippage: 0.5 },
       };
 
       const config = chainConfigs[input.network];
