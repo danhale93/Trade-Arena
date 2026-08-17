@@ -65,4 +65,4 @@
 - [x] Inspect runtime/persisted CLI connection state (MM_CLI_TOKEN, MANAGED_WALLET_ADDRESS, and agent_state)
 - [x] Verify server/cli.ts wrapper path handling and robust error logging
 - [x] Run test suite verifying CLI environment configuration
-- [ ] Deliver clear connection status report to the user
+- [x] Deliver clear connection status report to the user
