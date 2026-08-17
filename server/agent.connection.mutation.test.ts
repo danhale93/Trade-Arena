@@ -4,6 +4,21 @@ import type { TrpcContext } from "./_core/context";
 vi.mock("./db", () => ({
   getAgentStateKey: vi.fn(async (key: string) => (key === "mm_cli_token" ? "test-token" : null)),
   setAgentStateKey: vi.fn(async () => undefined),
+  recordAgentLog: vi.fn(async () => undefined),
+}));
+
+vi.mock("./directDex", () => ({
+  getDirectExecutionPreflight: vi.fn(() => ({
+    ready: false,
+    adapter: "direct",
+    managedWalletConfigured: true,
+    signerConfigured: false,
+    signerMatchesManagedWallet: false,
+    gasCapConfigured: false,
+    maxInputConfigured: false,
+    liveFlagsConfigured: false,
+    reasons: ["DIRECT_EVM_SIGNER_PRIVATE_KEY is not configured."],
+  })),
 }));
 
 vi.mock("./cli", () => ({
@@ -24,6 +39,7 @@ vi.mock("./cli", () => ({
 import { appRouter } from "./routers";
 import * as db from "./db";
 import * as cli from "./cli";
+import * as directDex from "./directDex";
 
 function createContext(role: "admin" | "user" = "admin"): TrpcContext {
   return {
@@ -64,6 +80,43 @@ describe("MetaMask Agent connection mutations", () => {
     expect(db.setAgentStateKey).toHaveBeenNthCalledWith(1, "mm_cli_session_validated", "false");
     expect(db.setAgentStateKey).toHaveBeenNthCalledWith(2, "mm_cli_session_validated", "true");
     expect(db.setAgentStateKey).toHaveBeenNthCalledWith(3, "mm_cli_last_validated_at", expect.stringMatching(/^20\d{2}-\d{2}-\d{2}T/));
+  });
+
+  it("switches an owner to the aggressive strategy profile and persists it", async () => {
+    const caller = appRouter.createCaller(createContext("admin"));
+
+    await expect(caller.arbitrage.setStrategyProfile({ profile: "aggressive" })).resolves.toMatchObject({
+      success: true,
+      strategyProfile: { name: "aggressive", label: "AGGRESSIVE", pollIntervalMs: 3000 },
+    });
+    expect(db.setAgentStateKey).toHaveBeenCalledWith("strategy_profile", "aggressive");
+    expect(db.recordAgentLog).toHaveBeenCalledWith(expect.objectContaining({ category: "STRATEGY" }));
+  });
+
+  it("blocks scanner re-enablement while owner-only live execution is armed", async () => {
+    vi.mocked(db.getAgentStateKey).mockImplementation(async (key: string) => {
+      if (key === "execution_enabled") return "true";
+      if (key === "scanner_running") return "false";
+      return key === "mm_cli_token" ? "test-token" : null;
+    });
+    const caller = appRouter.createCaller(createContext("admin"));
+
+    await expect(caller.arbitrage.toggleScanner()).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+      message: expect.stringContaining("Disable live execution before enabling automated scanning."),
+    });
+    expect(db.setAgentStateKey).not.toHaveBeenCalledWith("scanner_running", "true");
+  });
+
+  it("blocks owner live arming when direct execution preflight is not ready", async () => {
+    const caller = appRouter.createCaller(createContext("admin"));
+
+    await expect(caller.arbitrage.toggleExecution()).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+      message: expect.stringContaining("DIRECT_EVM_SIGNER_PRIVATE_KEY is not configured."),
+    });
+    expect(directDex.getDirectExecutionPreflight).toHaveBeenCalledOnce();
+    expect(db.setAgentStateKey).not.toHaveBeenCalledWith("execution_enabled", "true");
   });
 
   it("reports the runtime path and keeps validation false when reconnect lacks the CLI binary", async () => {

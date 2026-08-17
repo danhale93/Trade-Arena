@@ -99,6 +99,62 @@ export function isDirectExecutionEnabled() {
     && process.env.DIRECT_LIVE_CONFIRMATION === "I_UNDERSTAND_LIVE_TRADES";
 }
 
+export type DirectExecutionPreflight = {
+  ready: boolean;
+  adapter: string;
+  managedWalletConfigured: boolean;
+  signerConfigured: boolean;
+  signerMatchesManagedWallet: boolean;
+  gasCapConfigured: boolean;
+  maxInputConfigured: boolean;
+  liveFlagsConfigured: boolean;
+  reasons: string[];
+};
+
+export function getDirectExecutionPreflight(): DirectExecutionPreflight {
+  const adapter = (process.env.EXECUTION_ADAPTER || "direct").trim().toLowerCase();
+  const managedWallet = process.env.MANAGED_WALLET_ADDRESS?.trim() || "";
+  const managedWalletConfigured = Boolean(managedWallet && ethers.isAddress(managedWallet));
+  const privateKey = process.env.DIRECT_EVM_SIGNER_PRIVATE_KEY?.trim() || "";
+  const signerConfigured = Boolean(privateKey);
+  let signerMatchesManagedWallet = false;
+
+  if (signerConfigured && managedWalletConfigured) {
+    try {
+      signerMatchesManagedWallet = ethers.getAddress(new ethers.Wallet(privateKey).address) === ethers.getAddress(managedWallet);
+    } catch {
+      signerMatchesManagedWallet = false;
+    }
+  }
+
+  const gasCap = process.env.DIRECT_MAX_GAS_GWEI?.trim() || "";
+  const gasCapConfigured = Boolean(gasCap && Number.isFinite(Number(gasCap)) && Number(gasCap) > 0);
+  const maxInput = process.env.DIRECT_MAX_INPUT_AMOUNT?.trim() || "";
+  const maxInputConfigured = Boolean(maxInput && Number.isFinite(Number(maxInput)) && Number(maxInput) > 0);
+  const liveFlagsConfigured = isDirectExecutionEnabled();
+  const reasons: string[] = [];
+
+  if (adapter !== "direct") reasons.push("The direct Ethers.js adapter is not selected.");
+  if (!managedWalletConfigured) reasons.push("MANAGED_WALLET_ADDRESS is missing or invalid.");
+  if (!signerConfigured) reasons.push("DIRECT_EVM_SIGNER_PRIVATE_KEY is not configured.");
+  else if (!signerMatchesManagedWallet) reasons.push("The direct signer does not match MANAGED_WALLET_ADDRESS.");
+  if (!gasCapConfigured) reasons.push("DIRECT_MAX_GAS_GWEI is missing or invalid.");
+  if (!maxInputConfigured) reasons.push("DIRECT_MAX_INPUT_AMOUNT is missing or invalid.");
+  if (!liveFlagsConfigured) reasons.push("Live confirmation flags are not enabled.");
+
+  return {
+    ready: reasons.length === 0,
+    adapter,
+    managedWalletConfigured,
+    signerConfigured,
+    signerMatchesManagedWallet,
+    gasCapConfigured,
+    maxInputConfigured,
+    liveFlagsConfigured,
+    reasons,
+  };
+}
+
 function normalizePoolFee(poolFee = 3000) {
   if (!Number.isInteger(poolFee) || poolFee < 1 || poolFee > 1_000_000) {
     throw new Error("Uniswap V3 pool fee must be an integer between 1 and 1,000,000.");

@@ -4,6 +4,7 @@ import {
   buildExactInputSingleParams,
   calculateAmountOutMinimum,
   executeDirectSwap,
+  getDirectExecutionPreflight,
   isDirectExecutionEnabled,
   validateSignerAddress,
 } from "./directDex";
@@ -63,6 +64,36 @@ describe("direct Ethers.js DEX adapter", () => {
 
     process.env.DIRECT_LIVE_CONFIRMATION = "I_UNDERSTAND_LIVE_TRADES";
     expect(isDirectExecutionEnabled()).toBe(true);
+  });
+
+  it("reports every missing live-execution prerequisite without broadcasting", () => {
+    delete process.env.DIRECT_EVM_SIGNER_PRIVATE_KEY;
+    delete process.env.DIRECT_MAX_GAS_GWEI;
+    delete process.env.DIRECT_MAX_INPUT_AMOUNT;
+    delete process.env.DIRECT_EXECUTION_ENABLED;
+    delete process.env.DIRECT_LIVE_CONFIRMATION;
+    const preflight = getDirectExecutionPreflight();
+
+    expect(preflight.ready).toBe(false);
+    expect(preflight.signerConfigured).toBe(false);
+    expect(preflight.gasCapConfigured).toBe(false);
+    expect(preflight.maxInputConfigured).toBe(false);
+    expect(preflight.reasons.join(" ")).toContain("DIRECT_EVM_SIGNER_PRIVATE_KEY is not configured.");
+  });
+
+  it("rejects a configured signer that does not match the managed wallet", () => {
+    const signer = new Wallet(`0x${"11".repeat(32)}`);
+    process.env.MANAGED_WALLET_ADDRESS = new Wallet(`0x${"22".repeat(32)}`).address;
+    process.env.DIRECT_EVM_SIGNER_PRIVATE_KEY = signer.privateKey;
+    process.env.DIRECT_MAX_GAS_GWEI = "0.1";
+    process.env.DIRECT_MAX_INPUT_AMOUNT = "0.01";
+    process.env.DIRECT_EXECUTION_ENABLED = "true";
+    process.env.DIRECT_LIVE_CONFIRMATION = "I_UNDERSTAND_LIVE_TRADES";
+
+    const preflight = getDirectExecutionPreflight();
+    expect(preflight.ready).toBe(false);
+    expect(preflight.signerMatchesManagedWallet).toBe(false);
+    expect(preflight.reasons.join(" ")).toContain("does not match MANAGED_WALLET_ADDRESS.");
   });
 
   it("does not reach an RPC or broadcast path while live execution is disabled", async () => {

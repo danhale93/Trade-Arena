@@ -8,6 +8,7 @@ import * as db from "./db";
 import { TRPCError } from "@trpc/server";
 import * as cli from "./cli";
 import * as directDex from "./directDex";
+import { getStrategyProfile } from "./strategy";
 
 const MANAGED_WALLET = "0x2ca1f801c1e19d16160c982c627e2932e95117be";
 
@@ -81,6 +82,8 @@ export const appRouter = router({
       const cliToken = await db.getAgentStateKey("mm_cli_token") || process.env.MM_CLI_TOKEN || "";
       const cliSessionValidated = (await db.getAgentStateKey("mm_cli_session_validated")) === "true";
       const cliLastValidatedAt = await db.getAgentStateKey("mm_cli_last_validated_at");
+      const strategy = getStrategyProfile(await db.getAgentStateKey("strategy_profile"));
+      const directExecutionPreflight = directDex.getDirectExecutionPreflight();
       const cliConnection = {
         ...cli.getMetaMaskAgentConnectionStatus({
           tokenConfigured: Boolean(cliToken),
@@ -107,16 +110,14 @@ export const appRouter = router({
           },
           executionEnabled,
           executionBadge: executionEnabled ? "EXECUTION_ARMED" : "SIMULATION_ONLY",
+          executionPreflight: directExecutionPreflight,
+          strategyProfile: strategy,
           scannerEnabled: scannerRunning,
           running: scannerRunning,
           minProfitThreshold,
           cliConnection,
           networks: ["base", "arbitrum", "optimism"],
-          networkConfigs: {
-            base: { chainId: "8453", tokenIn: "WETH", tokenOut: "USDC", profitThresholdUsd: 0.002, slippage: 0.3 },
-            arbitrum: { chainId: "42161", tokenIn: "WETH", tokenOut: "USDC", profitThresholdUsd: 0.01, slippage: 0.5 },
-            optimism: { chainId: "10", tokenIn: "WETH", tokenOut: "USDC", profitThresholdUsd: 0.01, slippage: 0.5 },
-          },
+          networkConfigs: strategy.networks,
           recentTrades,
           suppressedAlerts,
           agentLogs,
@@ -126,11 +127,14 @@ export const appRouter = router({
     }),
 
     toggleScanner: protectedProcedure.mutation(async ({ ctx }) => {
-      // Owner check (optional or admin role check)
       const current = await db.getAgentStateKey("scanner_running");
       const nextState = current === "false" ? "true" : "false";
+      const executionEnabled = await db.getAgentStateKey("execution_enabled") === "true";
+      if (nextState === "true" && executionEnabled) {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Scanner remains paused while owner-only live execution is armed. Disable live execution before enabling automated scanning." });
+      }
       await db.setAgentStateKey("scanner_running", nextState);
-      return { success: true, scannerEnabled: nextState !== "false" };
+      return { success: true, scannerEnabled: nextState !== "false", manualOnly: executionEnabled };
     }),
 
     toggleExecution: protectedProcedure.mutation(async ({ ctx }) => {
@@ -139,8 +143,30 @@ export const appRouter = router({
       }
       const current = await db.getAgentStateKey("execution_enabled");
       const nextState = current === "true" ? "false" : "true";
+      if (nextState === "true") {
+        const preflight = directDex.getDirectExecutionPreflight();
+        if (!preflight.ready) {
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: `Live execution remains disarmed: ${preflight.reasons.join(" ")}` });
+        }
+        await db.setAgentStateKey("scanner_running", "false");
+      }
       await db.setAgentStateKey("execution_enabled", nextState);
-      return { success: true, executionEnabled: nextState === "true" };
+      return { success: true, executionEnabled: nextState === "true", manualOnly: nextState === "true" };
+    }),
+
+    setStrategyProfile: protectedProcedure.input(z.object({ profile: z.enum(["guarded", "aggressive"]) })).mutation(async ({ input, ctx }) => {
+      if (ctx.user.role !== "admin" && ctx.user.openId !== process.env.OWNER_OPEN_ID) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Only owner/admin can change the strategy profile." });
+      }
+      const strategy = getStrategyProfile(input.profile);
+      await db.setAgentStateKey("strategy_profile", strategy.name);
+      await db.recordAgentLog({
+        level: "WARN",
+        category: "STRATEGY",
+        message: `Strategy profile changed to ${strategy.label}`,
+        details: `${strategy.description} Poll: ${strategy.pollIntervalMs}ms | Max input: ${strategy.maxInputWeth} WETH`,
+      });
+      return { success: true, strategyProfile: strategy };
     }),
 
     submitToken: protectedProcedure.input(z.object({ token: z.string().min(10) })).mutation(async ({ input, ctx }) => {
@@ -231,22 +257,27 @@ export const appRouter = router({
       const executionEnabledVal = await db.getAgentStateKey("execution_enabled");
       const isLive = executionEnabledVal === "true";
 
-      const chainConfigs: Record<string, { chainId: string; slippage: number; poolFee: number }> = {
-        base: { chainId: "8453", slippage: 0.3, poolFee: 3000 },
-        arbitrum: { chainId: "42161", slippage: 0.5, poolFee: 3000 },
-        optimism: { chainId: "10", slippage: 0.5, poolFee: 3000 },
-      };
+      const strategy = getStrategyProfile(await db.getAgentStateKey("strategy_profile"));
       const executionAdapter = (process.env.EXECUTION_ADAPTER || "direct").trim().toLowerCase();
-
-      const config = chainConfigs[input.network];
-      if (!config) throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid network" });
+      const directPreflight = directDex.getDirectExecutionPreflight();
+      const config = strategy.networks[input.network];
 
       if (isLive && executionAdapter === "direct") {
-        const amountIn = process.env.DIRECT_INPUT_AMOUNT?.trim() || "0.01";
+        if (!directPreflight.ready) {
+          const message = `Live execution blocked by preflight: ${directPreflight.reasons.join(" ")}`;
+          await db.recordAgentLog({ level: "ERROR", category: "EXECUTION", message });
+          return { success: false, executed: false, adapter: "direct-ethers-uniswap-v3", error: message };
+        }
+        const amountIn = process.env.DIRECT_INPUT_AMOUNT?.trim() || strategy.maxInputWeth;
+        if (!Number.isFinite(Number(amountIn)) || Number(amountIn) <= 0 || Number(amountIn) > Number(strategy.maxInputWeth)) {
+          const message = `Input amount ${amountIn} WETH exceeds the ${strategy.label} strategy cap of ${strategy.maxInputWeth} WETH.`;
+          await db.recordAgentLog({ level: "ERROR", category: "EXECUTION", message });
+          return { success: false, executed: false, adapter: "direct-ethers-uniswap-v3", error: message };
+        }
         await db.recordAgentLog({
           level: "INFO",
           category: "EXECUTION",
-          message: `Preparing guarded direct Ethers.js swap on ${input.network} (Max Slippage: ${config.slippage}%, Pool Fee: ${config.poolFee})`,
+          message: `Preparing ${strategy.label.toLowerCase()} direct Ethers.js swap on ${input.network} (Max Slippage: ${config.slippage}%, Pool Fee: ${config.poolFee})`,
           details: `Target: WETH -> native USDC | Input: ${amountIn} WETH | No profit claim until a round trip is measured`,
         });
 
@@ -285,88 +316,14 @@ export const appRouter = router({
       }
 
       if (isLive && executionAdapter === "cli") {
-        await db.recordAgentLog({
-          level: "INFO",
-          category: "EXECUTION",
-          message: `Executing live swap via MetaMask Agent CLI on ${input.network} (Max Slippage: ${config.slippage}%, Pool Fee: ${config.poolFee})`,
-          details: `Target: WETH -> USDC (1.0 WETH)`,
-        });
+        const message = "CLI live fallback is disabled. Select the guarded direct Ethers.js adapter after preflight passes.";
+        await db.recordAgentLog({ level: "ERROR", category: "EXECUTION", message });
+        return { success: false, executed: false, error: message };
+      }
 
-        // Execute live swap via CLI
-        const res = await cli.executeSwap(config.chainId, "WETH", "USDC", "1.0", config.slippage);
-        if (res.ok && res.stdout?.txHash) {
-          const profit = res.stdout.netProfit || "2.50";
-          await db.recordTrade({
-            network: input.network,
-            tokenPair: "WETH/USDC",
-            netProfitUsd: profit,
-            txHash: res.stdout.txHash,
-            status: "success",
-          });
-
-          await db.recordAgentLog({
-            level: "SUCCESS",
-            category: "SETTLEMENT",
-            message: `Successfully settled live arbitrage trade on ${input.network} (+${profit} USD)`,
-            details: `TxHash: ${res.stdout.txHash}`,
-          });
-          
-          try {
-            const minThresholdStr = await db.getAgentStateKey("min_profit_threshold") || "0.00";
-            const minThreshold = isNaN(parseFloat(minThresholdStr)) ? 0.00 : parseFloat(minThresholdStr);
-            const tradeProfit = parseFloat(profit);
-
-            if (isNaN(tradeProfit) || tradeProfit >= minThreshold) {
-              const { notifyOwner } = await import("./_core/notification");
-              await notifyOwner({
-                title: `⚡ Arbitrage Executed on ${input.network.toUpperCase()}!`,
-                content: `Successfully settled WETH/USDC arbitrage on ${input.network}. Net Profit: +$${profit}. TxHash: ${res.stdout.txHash}`,
-              });
-              await db.recordAgentLog({
-                level: "INFO",
-                category: "NOTIFY",
-                message: `Dispatched phone push notification for ${input.network} trade (+$${profit})`,
-                details: `Threshold: $${minThresholdStr}`,
-              });
-            } else {
-              console.log(`[Notification] Skipped phone push for trade profit $${profit} because it is below the minimum threshold of $${minThreshold}`);
-              await db.recordSuppressedAlert({
-                network: input.network,
-                tokenPair: "WETH/USDC",
-                netProfitUsd: profit,
-                thresholdUsd: minThresholdStr,
-                txHash: res.stdout.txHash,
-                reason: `Net profit $${profit} is below minimum notification threshold of $${minThresholdStr}`,
-              });
-              await db.recordAgentLog({
-                level: "WARN",
-                category: "NOTIFY",
-                message: `Suppressed phone push alert for ${input.network} trade (+$${profit} < $${minThresholdStr})`,
-                details: `Recorded to Suppressed Alerts log`,
-              });
-            }
-          } catch (e) {
-            console.warn("[Notification] Failed to dispatch owner alert:", e);
-            await db.recordAgentLog({
-              level: "ERROR",
-              category: "NOTIFY",
-              message: `Failed to dispatch owner alert: ${String(e)}`,
-            });
-          }
-
-          return { success: true, executed: true, txHash: res.stdout.txHash, quote: res.stdout };
-        } else {
-          await db.recordAgentLog({
-            level: "ERROR",
-            category: "EXECUTION",
-            message: `Live swap execution failed on ${input.network}`,
-            details: res.error || "Swap quote did not meet threshold or failed execution",
-          });
-          return { success: false, executed: false, error: res.error || "Swap quote did not meet threshold or failed execution" };
-        }
-      } else if (!isLive && executionAdapter === "direct") {
+      if (!isLive && executionAdapter === "direct") {
         // Direct simulation mode: QuoterV2 uses eth_call and never broadcasts a transaction.
-        const amountIn = process.env.DIRECT_INPUT_AMOUNT?.trim() || "0.01";
+          const amountIn = process.env.DIRECT_INPUT_AMOUNT?.trim() || strategy.maxInputWeth;
         try {
           await db.recordAgentLog({
             level: "INFO",
@@ -399,7 +356,7 @@ export const appRouter = router({
           message: `Simulating arbitrage route on ${input.network} (Max Slippage: ${config.slippage * 100}%)`,
           details: `Target: WETH -> USDC`,
         });
-        const res = await cli.simulateSwap(config.chainId, "WETH", "USDC", "1.0", config.slippage);
+          const res = await cli.simulateSwap(config.chainId, "WETH", "USDC", strategy.maxInputWeth, config.slippage);
         await db.recordAgentLog({
           level: "SUCCESS",
           category: "SIMULATION",

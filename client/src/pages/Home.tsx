@@ -52,6 +52,16 @@ export default function Home() {
     }
   });
 
+  const setStrategyProfileMutation = trpc.arbitrage.setStrategyProfile.useMutation({
+    onSuccess: (data) => {
+      toast.success(`Strategy profile set to ${data.strategyProfile.label}.`);
+      utils.arbitrage.status.invalidate();
+    },
+    onError: (err) => {
+      toast.error("Strategy profile update failed: " + err.message);
+    },
+  });
+
   const submitTokenMutation = trpc.arbitrage.submitToken.useMutation({
     onSuccess: () => {
       toast.success("MetaMask Agent CLI token submitted and session refreshed.");
@@ -144,6 +154,8 @@ export default function Home() {
     optimism: { chainId: "10", tokenIn: "WETH", tokenOut: "USDC", profitThresholdUsd: 0.01, slippage: 0.5 },
   };
   const maxSlippage = Math.max(...Object.values(networkConfigs).map((config) => config.slippage));
+  const executionPreflight = agent?.executionPreflight;
+  const livePreflightReady = executionPreflight?.ready === true;
 
   return (
     <div className="stitch-shell min-h-screen bg-[#050b0e] text-[#00dbe9] font-mono selection:bg-[#00dbe9]/30 selection:text-white flex flex-col">
@@ -341,6 +353,30 @@ export default function Home() {
                 </div>
               </div>
 
+              {/* Strategy Profile */}
+              <div className="mt-6 rounded-lg border border-purple-500/30 bg-purple-500/5 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-bold tracking-wider text-purple-300">STRATEGY PROFILE</p>
+                    <p className="mt-1 text-xs text-[#849495]">{agent?.strategyProfile?.description || "Loading strategy profile..."}</p>
+                  </div>
+                  <span className="rounded border border-purple-500/30 bg-purple-500/10 px-2 py-1 text-[10px] font-bold tracking-wider text-purple-300">
+                    {agent?.strategyProfile?.label || "CHECKING"}
+                  </span>
+                </div>
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-[10px] text-[#849495]">
+                  <span>Poll: {agent?.strategyProfile ? `${agent.strategyProfile.pollIntervalMs / 1000}s` : "—"} · Max input: {agent?.strategyProfile?.maxInputWeth || "—"} WETH</span>
+                  <Button
+                    type="button"
+                    onClick={() => setStrategyProfileMutation.mutate({ profile: agent?.strategyProfile?.name === "aggressive" ? "guarded" : "aggressive" })}
+                    disabled={!isAuthenticated || !agent?.strategyProfile || setStrategyProfileMutation.isPending}
+                    className="border border-purple-500/30 bg-purple-500/10 px-3 py-1.5 text-[10px] font-bold text-purple-200 hover:bg-purple-500/20"
+                  >
+                    {setStrategyProfileMutation.isPending ? <RefreshCw className="h-3 w-3 animate-spin" /> : `SWITCH TO ${agent?.strategyProfile?.name === "aggressive" ? "GUARDED" : "AGGRESSIVE"}`}
+                  </Button>
+                </div>
+              </div>
+
               {/* Owner Controls */}
               <div className="mt-6 pt-6 border-t border-[#00dbe9]/20 flex flex-wrap gap-4">
                 <Button 
@@ -358,7 +394,8 @@ export default function Home() {
 
                 <Button 
                   onClick={() => toggleExecutionMutation.mutate()} 
-                  disabled={!isAuthenticated || toggleExecutionMutation.isPending}
+                  disabled={!isAuthenticated || toggleExecutionMutation.isPending || (!agent?.executionEnabled && executionPreflight && !livePreflightReady)}
+                  title={!livePreflightReady && !agent?.executionEnabled ? "Live execution is blocked until the direct signer, gas cap, input cap, and confirmation flags pass preflight." : undefined}
                   className={`flex-1 py-3 text-xs font-bold border ${
                     agent?.executionEnabled 
                       ? 'bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20' 
@@ -366,9 +403,16 @@ export default function Home() {
                   }`}
                 >
                   <Zap className="w-3.5 h-3.5 mr-2" />
-                  {agent?.executionEnabled ? "SWITCH TO SIMULATION" : "ARM LIVE EXECUTION"}
+                  {agent?.executionEnabled ? "SWITCH TO SIMULATION" : !livePreflightReady && executionPreflight ? "LIVE PREFLIGHT BLOCKED" : "ARM LIVE EXECUTION"}
                 </Button>
               </div>
+              {executionPreflight && !executionPreflight.ready && (
+                <div className="mt-4 rounded border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-[10px] text-amber-300" role="status">
+                  <p className="font-bold tracking-wider">LIVE PREFLIGHT BLOCKED</p>
+                  <p className="mt-1 text-amber-200/80">{executionPreflight.reasons.join(" ")}</p>
+                  <p className="mt-1 text-[#849495]">Manual dashboard checks remain available; no transaction is broadcast.</p>
+                </div>
+              )}
               {!isAuthenticated && (
                 <p className="text-[10px] text-amber-400/80 mt-2 text-center">🔐 Log in with owner account via Manus OAuth to unlock control buttons.</p>
               )}

@@ -117,3 +117,29 @@
 - [x] Add focused reconnect coverage for missing-binary diagnostics and stale validation prevention
 - [x] Verify test suite, TypeScript check, and production build without enabling live broadcast
 - [x] Save checkpoint and deliver actionable repair guidance
+
+# Additional Requirement: Aggressive Strategy Logic & Profile Switching
+
+- [x] Inspect existing guarded strategy parameters and multi-chain execution logic in routers.ts
+- [x] Define aggressive strategy configuration (lowered profit thresholds, expanded polling/scans, optimized slippage tolerance, and max trade limits)
+- [x] Implement strategy profile switching procedure (Guarded vs. Aggressive) in routers.ts and database state
+- [x] Update the dashboard UI in Home.tsx with a Strategy Profile card and one-click toggle
+- [x] Add Vitest unit coverage for strategy profile switching and aggressive threshold application
+- [x] Verify test suite, TypeScript check, and production build without enabling live broadcast
+- [x] Save checkpoint and deliver aggressive strategy update report
+
+# Additional Requirement: User-Confirmed Manual Live-Arming (Direct Ethers.js)
+
+- [x] Inspect pre-flight environment variables (MANAGED_WALLET_ADDRESS, DIRECT_EVM_SIGNER_PRIVATE_KEY, DIRECT_MAX_GAS_GWEI, DIRECT_MAX_INPUT_AMOUNT, DIRECT_EXECUTION_ENABLED, DIRECT_LIVE_CONFIRMATION)
+- [x] Implement pre-flight health check procedure in routers.ts to ensure all live-execution prerequisites are met before arming
+- [x] Ensure background automated loop remains disabled (manual-only checks via dashboard button)
+- [x] Disable CLI fallback so live execution relies exclusively on the direct Ethers.js adapter
+- [x] Run test suite, TypeScript check, and production build verification
+- [x] Deliver execution arming status report and pre-flight findings
+
+# Safety Follow-up: Enforce Manual-Only Live Mode
+
+- [x] Block scanner re-enablement while owner-only live execution is armed
+- [x] Add Vitest coverage for the manual-only scanner restriction
+- [x] Re-verify execution and scanner state remain disarmed in the current runtime
+- [x] Save the final live-arming safety checkpoint and report the blocked prerequisites
