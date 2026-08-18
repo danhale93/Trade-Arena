@@ -11,6 +11,7 @@ import * as directDex from "./directDex";
 import { getStrategyProfile } from "./strategy";
 import { getCrossDexSpreadSimulation } from "./multiDex";
 import { normalizeSimulationHistoryEntry } from "./simulationHistory";
+import { buildPulseEvent } from "./pulseEventLog";
 
 const MANAGED_WALLET = "0x2ca1f801c1e19d16160c982c627e2932e95117be";
 
@@ -19,6 +20,19 @@ function getCliConnectionFailureMessage() {
     return `MetaMask Agent CLI binary is unavailable at ${cli.getMetaMaskCliPath()}. Install it or set MM_PATH to an executable path.`;
   }
   return "MetaMask Agent CLI could not validate the token. Check that the token is current and belongs to the managed wallet.";
+}
+
+async function recordPulseEventIfHighProfit(input: {
+  network: string;
+  route: string;
+  netProfitUsd: string;
+  profitable: boolean;
+  thresholdUsd: number;
+  source: string;
+}) {
+  const event = buildPulseEvent(input);
+  if (!event) return;
+  await db.recordPulseEvent(event);
 }
 
 const providers = {
@@ -137,6 +151,7 @@ export const appRouter = router({
 
       const recentTrades = await db.getRecentTrades(10);
       const simulationRouteHistory = await db.getSimulationRouteHistory(60);
+      const pulseEvents = await db.getPulseEvents(50);
       const suppressedAlerts = await db.getSuppressedAlerts(10);
       const agentLogs = await db.getAgentLogs(50);
 
@@ -164,6 +179,7 @@ export const appRouter = router({
           networks: ["base", "arbitrum", "optimism"],
           recentTrades,
           simulationRouteHistory,
+          pulseEvents,
           suppressedAlerts,
           agentLogs,
         },
@@ -413,6 +429,14 @@ export const appRouter = router({
               spreadBps: routeSimulation.spreadBps,
               source: "cross-dex-model",
             });
+            await recordPulseEventIfHighProfit({
+              network: input.network,
+              route: routeSimulation.route,
+              netProfitUsd: String(routeSimulation.estimatedProfitUsd),
+              profitable: routeSimulation.profitable,
+              thresholdUsd: config.profitThresholdUsd,
+              source: "cross-dex-model",
+            });
           }
           await db.recordAgentLog({
             level: "SUCCESS",
@@ -449,6 +473,14 @@ export const appRouter = router({
           });
           if (normalizedSimulation) {
             await db.recordSimulationRoute(normalizedSimulation);
+            await recordPulseEventIfHighProfit({
+              network: normalizedSimulation.network,
+              route: normalizedSimulation.route,
+              netProfitUsd: normalizedSimulation.netProfitUsd,
+              profitable: normalizedSimulation.profitable,
+              thresholdUsd: config.profitThresholdUsd,
+              source: normalizedSimulation.source,
+            });
           } else if ("route" in routeSimulation && typeof routeSimulation.route === "string" && "estimatedProfitUsd" in routeSimulation) {
             await db.recordSimulationRoute({
               network: input.network,
@@ -456,6 +488,14 @@ export const appRouter = router({
               netProfitUsd: String(routeSimulation.estimatedProfitUsd),
               profitable: routeSimulation.profitable,
               spreadBps: routeSimulation.spreadBps,
+              source: "cross-dex-model",
+            });
+            await recordPulseEventIfHighProfit({
+              network: input.network,
+              route: routeSimulation.route,
+              netProfitUsd: String(routeSimulation.estimatedProfitUsd),
+              profitable: routeSimulation.profitable,
+              thresholdUsd: config.profitThresholdUsd,
               source: "cross-dex-model",
             });
           }

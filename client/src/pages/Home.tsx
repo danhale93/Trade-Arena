@@ -143,6 +143,7 @@ export default function Home() {
   const logScrollRef = useRef<HTMLDivElement>(null);
 
   const agent = statusData?.agent;
+  const pulseEvents = agent?.pulseEvents || [];
   const cliConnection = agent?.cliConnection;
   const cliConnected = cliConnection?.status === "connected";
   const connectionActionPending = reconnectAgentMutation.isPending || disconnectAgentMutation.isPending;
@@ -780,6 +781,62 @@ export default function Home() {
                 return <span key={network} className="uppercase"><span className="text-[#00dbe9]">●</span> {network} {count}</span>;
               })}
               <span className="ml-auto">PROFIT IS ESTIMATED BY THE SIMULATION ROUTE MODEL · NO LIVE TX</span>
+            </div>
+          )}
+        </section>
+
+        {/* High-Profit Pulse Event Log */}
+        <section className="stitch-panel bg-[#081217] border border-emerald-400/30 p-5 sm:p-6 rounded-xl" aria-labelledby="pulse-event-log-title">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+            <div>
+              <h2 id="pulse-event-log-title" className="text-sm font-bold tracking-wider text-white flex items-center gap-2">
+                <Zap className="w-4 h-4 text-emerald-400" /> HIGH-PROFIT PULSE EVENT LOG
+              </h2>
+              <p className="text-[10px] text-[#849495] mt-1">Every recorded pulse event that cleared 2× the active network threshold.</p>
+            </div>
+            <span className="self-start sm:self-auto rounded border border-emerald-400/30 bg-emerald-400/10 px-2 py-1 text-[10px] font-bold tracking-wider text-emerald-300">
+              {statusLoading ? "SYNCING..." : `${pulseEvents.length} EVENT${pulseEvents.length === 1 ? "" : "S"}`}
+            </span>
+          </div>
+
+          {statusLoading && pulseEvents.length === 0 ? (
+            <div className="flex h-28 items-center justify-center rounded-lg border border-dashed border-emerald-400/20 bg-[#050b0e] text-[10px] text-[#849495]">
+              Loading pulse event history...
+            </div>
+          ) : pulseEvents.length > 0 ? (
+            <div className="max-h-[280px] overflow-y-auto rounded-lg border border-emerald-400/15 bg-[#050b0e]">
+              <table className="w-full min-w-[680px] text-left text-[10px] font-mono">
+                <thead className="sticky top-0 bg-[#0b171c] text-[#849495]">
+                  <tr className="border-b border-emerald-400/15">
+                    <th className="px-3 py-2">TIMESTAMP</th>
+                    <th className="px-3 py-2">NETWORK</th>
+                    <th className="px-3 py-2">NET PROFIT</th>
+                    <th className="px-3 py-2">THRESHOLD</th>
+                    <th className="px-3 py-2">ROUTE</th>
+                    <th className="px-3 py-2">SOURCE</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-emerald-400/10 text-white">
+                  {pulseEvents.map((event: any) => (
+                    <tr key={event.id} className="transition-colors hover:bg-emerald-400/5">
+                      <td className="whitespace-nowrap px-3 py-2 text-[#849495]" title={new Date(event.timestamp).toISOString()}>
+                        {new Date(event.timestamp).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
+                      </td>
+                      <td className="px-3 py-2 font-bold uppercase text-emerald-300">{event.network}</td>
+                      <td className="whitespace-nowrap px-3 py-2 font-bold text-emerald-400">+${event.netProfitUsd}</td>
+                      <td className="whitespace-nowrap px-3 py-2 text-[#849495]">2× ${event.thresholdUsd}</td>
+                      <td className="max-w-[260px] truncate px-3 py-2 text-[#849495]" title={event.route}>{event.route}</td>
+                      <td className="px-3 py-2 uppercase text-[#00dbe9]">{event.source}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="flex h-28 flex-col items-center justify-center rounded-lg border border-dashed border-emerald-400/20 bg-[#050b0e] px-6 text-center">
+              <Zap className="mb-2 h-6 w-6 text-emerald-400/40" aria-hidden="true" />
+              <p className="text-xs font-bold text-white">No high-profit pulse events recorded</p>
+              <p className="mt-1 text-[10px] text-[#849495]">Qualifying simulations will appear here with their exact timestamp and route.</p>
             </div>
           )}
         </section>

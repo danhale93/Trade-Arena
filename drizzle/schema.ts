@@ -46,6 +46,16 @@ export const simulationRouteHistory = mysqlTable("simulation_route_history", {
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
 
+export const pulseEvents = mysqlTable("pulse_events", {
+  id: int("id").autoincrement().primaryKey(),
+  network: varchar("network", { length: 32 }).notNull(),
+  route: varchar("route", { length: 255 }).notNull(),
+  netProfitUsd: varchar("netProfitUsd", { length: 32 }).notNull(),
+  thresholdUsd: varchar("thresholdUsd", { length: 32 }).notNull(),
+  source: varchar("source", { length: 32 }).default("simulation").notNull(),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
 export const suppressedAlerts = mysqlTable("suppressed_alerts", {
   id: int("id").autoincrement().primaryKey(),
   network: varchar("network", { length: 32 }).notNull(),
@@ -93,6 +103,8 @@ export type TradeHistory = typeof tradeHistory.$inferSelect;
 export type InsertTradeHistory = typeof tradeHistory.$inferInsert;
 export type SimulationRouteHistory = typeof simulationRouteHistory.$inferSelect;
 export type InsertSimulationRouteHistory = typeof simulationRouteHistory.$inferInsert;
+export type PulseEvent = typeof pulseEvents.$inferSelect;
+export type InsertPulseEvent = typeof pulseEvents.$inferInsert;
 
 export type BalanceSnapshot = typeof balanceSnapshots.$inferSelect;
 export type InsertBalanceSnapshot = typeof balanceSnapshots.$inferInsert;

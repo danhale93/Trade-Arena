@@ -204,3 +204,11 @@ POSIX
 - [x] Add accessible visual pulse animation and concise high-profit status feedback
 - [x] Add focused tests and verify desktop/mobile rendering plus reduced-motion behavior
 - [x] Save checkpoint and deliver the pulse animation update
+
+# Additional Requirement: High-Profit Pulse Event Log
+
+- [x] Inspect the existing pulse trigger, simulation history persistence, and dashboard log sections
+- [x] Add persistent pulse-event storage and expose recent events through the dashboard status API
+- [x] Build a timestamped high-profit pulse event log section with empty and loading states
+- [x] Add focused tests and verify refresh behavior plus desktop/mobile rendering
+- [x] Save checkpoint and deliver the pulse-event log update

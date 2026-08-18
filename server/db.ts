@@ -90,7 +90,7 @@ export async function getUserByOpenId(openId: string) {
 }
 
 import { desc } from "drizzle-orm";
-import { tradeHistory, simulationRouteHistory, suppressedAlerts, agentLogs, balanceSnapshots, agentState, heartbeatTasks } from "../drizzle/schema";
+import { tradeHistory, simulationRouteHistory, pulseEvents, suppressedAlerts, agentLogs, balanceSnapshots, agentState, heartbeatTasks } from "../drizzle/schema";
 
 export async function recordTrade(trade: { network: string; tokenPair: string; netProfitUsd: string; txHash: string; status?: string }) {
   const db = await getDb();
@@ -134,6 +134,30 @@ export async function getSimulationRouteHistory(limit = 60) {
   const db = await getDb();
   if (!db) return [];
   return await db.select().from(simulationRouteHistory).orderBy(desc(simulationRouteHistory.timestamp)).limit(limit);
+}
+
+export async function recordPulseEvent(event: {
+  network: string;
+  route: string;
+  netProfitUsd: string;
+  thresholdUsd: string;
+  source?: string;
+}) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(pulseEvents).values({
+    network: event.network,
+    route: event.route,
+    netProfitUsd: event.netProfitUsd,
+    thresholdUsd: event.thresholdUsd,
+    source: event.source ?? "simulation",
+  });
+}
+
+export async function getPulseEvents(limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(pulseEvents).orderBy(desc(pulseEvents.timestamp)).limit(limit);
 }
 
 export async function recordSuppressedAlert(alert: { network: string; tokenPair: string; netProfitUsd: string; thresholdUsd: string; txHash: string; reason: string }) {
