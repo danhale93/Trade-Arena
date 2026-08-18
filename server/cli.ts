@@ -1,5 +1,5 @@
 import util from "util";
-import { execFile } from "child_process";
+import { execFile, execSync } from "child_process";
 import path from "path";
 import fs from "fs";
 
@@ -7,7 +7,23 @@ const execFilePromise = util.promisify(execFile);
 
 let mmLock = false;
 export function getMetaMaskCliPath() {
-  return process.env.MM_PATH?.trim() || path.join(process.cwd(), "node_modules/.bin/mm");
+  if (process.env.MM_PATH?.trim()) {
+    return process.env.MM_PATH.trim();
+  }
+  const localBin = path.join(process.cwd(), "node_modules/.bin/mm");
+  try {
+    if (fs.existsSync(localBin)) {
+      return localBin;
+    }
+  } catch {}
+  // Check common PATH locations or rely on 'mm' command if available
+  try {
+    const whichRes = execSync("which mm", { encoding: "utf8" }).trim();
+    if (whichRes && fs.existsSync(whichRes)) {
+      return whichRes;
+    }
+  } catch {}
+  return localBin;
 }
 
 export type MetaMaskAgentConnectionStatus = {
