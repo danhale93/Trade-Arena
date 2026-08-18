@@ -161,3 +161,12 @@
 - [x] Add explicit preflight validation and diagnostic readout for the $16 test allocation
 - [x] Verify test suite, TypeScript check, and production build without enabling live execution
 - [x] Deliver a complete, clear readiness report detailing exact prerequisites for real-money execution
+
+# Additional Requirement: Multi-DEX Execution Engine & Deploy Scaffolding
+
+- [ ] Inspect existing OnchainExecutionEngine.js and DEX registry patterns
+- [ ] Add support for a second DEX (e.g., Aerodrome on Base, SushiSwap on Arbitrum/Optimism) to create genuine cross-DEX spreads
+- [ ] Implement reusable Uniswap/Aerodrome calldata builders in a dedicated service
+- [ ] Create simulation-safe deployment and verification scaffolding without broadcasting live transactions
+- [ ] Verify test suite, TypeScript check, and production build without enabling live execution
+- [ ] Save checkpoint and deliver multi-DEX implementation report

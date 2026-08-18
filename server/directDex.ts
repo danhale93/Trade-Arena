@@ -173,10 +173,12 @@ export async function fetchChainGasTelemetry(network: DirectDexNetwork): Promise
   const provider = new ethers.JsonRpcProvider(rpcUrl, config.chainId, { staticNetwork: true });
 
   try {
-    const [feeData, block] = await Promise.all([
+    const fetchPromise = Promise.all([
       provider.getFeeData(),
       provider.getBlock("latest"),
     ]);
+    const timeoutPromise = new Promise((_, rej) => setTimeout(() => rej(new Error("RPC timeout")), 2500));
+    const [feeData, block] = (await Promise.race([fetchPromise, timeoutPromise])) as any;
 
     const gasPriceWei = feeData.gasPrice ?? block?.baseFeePerGas ?? BigInt(1_000_000_000);
     const baseFeeWei = block?.baseFeePerGas ?? gasPriceWei;

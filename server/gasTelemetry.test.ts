@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { fetchChainGasTelemetry } from "./directDex";
 
 describe("real-time gas telemetry and dynamic thresholds", () => {
-  it("fetches valid gas telemetry or fallback for supported L2 chains", async () => {
+  it("fetches valid gas telemetry or fallback for supported L2 chains", { timeout: 10000 }, async () => {
     const baseTelemetry = await fetchChainGasTelemetry("base");
     expect(baseTelemetry).toMatchObject({
       network: "base",
