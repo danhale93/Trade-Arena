@@ -282,3 +282,10 @@ POSIX
 - [x] Update test assertions in cliWarning.test.ts
 - [x] Verify TypeScript check, test suite, and production build
 - [x] Save checkpoint and deliver updated dashboard
+
+# Additional Requirement: Managed-Wallet CLI Swap Execution & Verification Script
+
+- [x] Add `getCliDoctorStatus`, `getWalletAddress`, `getWalletBalance`, `executeAgentSwapQuote`, and `checkAgentSwapStatus` to `server/cli.ts`
+- [x] Create TypeScript verification script `scripts/verify-agent-wallet.ts` for read-only doctor, address, balance, and dry-run quote checks
+- [x] Verify test suite, TypeScript check, and production build without broadcasting live transactions
+- [x] Save checkpoint and deliver verification script and CLI execution report

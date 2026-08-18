@@ -252,3 +252,28 @@ export async function simulateSwap(chainId: string, tokenIn: string, tokenOut: s
 export async function executeSwap(chainId: string, tokenIn: string, tokenOut: string, amount: string, slippage: number) {
   return runMMArgs(["swap", "quote", "--from", tokenIn, "--to", tokenOut, "--amount", amount, "--slippage", String(slippage), "--from-chain-id", chainId, "--format", "json", "--yes"], 45000);
 }
+
+export async function getCliDoctorStatus() {
+  return runMMArgs(["doctor"]);
+}
+
+export async function getWalletAddress() {
+  return runMMArgs(["wallet", "address"]);
+}
+
+export async function getWalletBalance(chainId: string) {
+  return runMMArgs(["wallet", "balance", "--chain-ids", chainId]);
+}
+
+export async function executeAgentSwapQuote(chainId: string, tokenIn: string, tokenOut: string, amount: string, slippage: number, quoteId?: string) {
+  if (quoteId) {
+    return runMMArgs(["swap", "execute", "--quote-id", quoteId, "--wallet-timeout", "30"], 45000);
+  }
+  return runMMArgs(["swap", "quote", "--from", tokenIn, "--to", tokenOut, "--amount", amount, "--slippage", String(slippage), "--from-chain-id", chainId], 45000);
+}
+
+export async function checkAgentSwapStatus(quoteId: string, txHash?: string) {
+  const args = ["swap", "status", "--quote-id", quoteId];
+  if (txHash) args.push("--tx-hash", txHash);
+  return runMMArgs(args);
+}
