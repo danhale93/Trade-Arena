@@ -61,3 +61,7 @@
 ## 2026-08-10 - [Dynamic ARIA Template Synchronization]
 **Learning:** When adding initial static ARIA states (like `aria-pressed`) to HTML templates, it is critical to confirm that all existing dynamic client-side JS handlers are fully instrumented to synchronize these attributes on active clicks or layout updates. Mismatches between visual active states and screen-reader announced boolean states create severe accessibility regressions.
 **Action:** Always verify that every interactive button with a static ARIA state is backed by an explicit `.setAttribute('aria-pressed', state.toString())` in its associated JavaScript state transition logic.
+
+## 2026-08-17 - [Multi-Sensory Export Feedback & Descriptive Tooltips]
+**Learning:** Data export buttons (such as CSV, JSON, and Pitch Report downloads) often perform asynchronous file generation without immediate visual or auditory feedback, leaving users unsure if their click was registered. Combining explicit `aria-label` and `title` attributes with multi-sensory feedback (a subtle sound tick via `SFX.tick()` and a high-contrast toast notification via `showToast()`) provides clear confirmation and improves overall accessibility for assistive technologies.
+**Action:** Always pair download or export triggers with explicit ARIA accessibility attributes and immediate multi-sensory feedback.
