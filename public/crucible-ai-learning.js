@@ -417,33 +417,46 @@ const CrucibleAITest = {
   // ════════════════════════════════════════════════════════════════
   // GET RUNNING STATISTICS
   // ════════════════════════════════════════════════════════════════
+  // ⚡ Bolt Optimization: Replace 9 functional filter/reduce array traversals and allocations
+  // with a single manual loop accumulating all metrics in O(1) space.
   getRunningStats() {
-    const executedTrades = this.trades.filter(t => !t.skipped);
-    const wins = executedTrades.filter(t => t.isWin).length;
-    const losses = executedTrades.filter(t => !t.isWin).length;
-    const winRate = executedTrades.length > 0 ? (wins / executedTrades.length) * 100 : 0;
+    let totalTrades = 0;
+    let wins = 0;
+    let losses = 0;
+    let totalPnL = 0;
+    let winPnLSum = 0;
+    let lossPnLSum = 0;
 
-    const totalPnL = executedTrades.reduce((sum, t) => sum + t.pnl, 0);
-    const winTrades = executedTrades.filter(t => t.isWin);
-    const lossTrades = executedTrades.filter(t => !t.isWin);
-    
-    const avgWin = winTrades.length > 0 
-      ? (winTrades.reduce((sum, t) => sum + t.pnl, 0) / winTrades.length)
-      : 0;
-    
-    const avgLoss = lossTrades.length > 0
-      ? (lossTrades.reduce((sum, t) => sum + t.pnl, 0) / lossTrades.length)
-      : 0;
+    const len = this.trades.length;
+    for (let i = 0; i < len; i++) {
+      const t = this.trades[i];
+      if (t.skipped) continue;
 
-    const totalWinAmount = Math.abs(winTrades.reduce((sum, t) => sum + t.pnl, 0));
-    const totalLossAmount = Math.abs(lossTrades.reduce((sum, t) => sum + t.pnl, 0));
-    
+      totalTrades++;
+      totalPnL += t.pnl;
+
+      if (t.isWin) {
+        wins++;
+        winPnLSum += t.pnl;
+      } else {
+        losses++;
+        lossPnLSum += t.pnl;
+      }
+    }
+
+    const winRate = totalTrades > 0 ? (wins / totalTrades) * 100 : 0;
+    const avgWin = wins > 0 ? winPnLSum / wins : 0;
+    const avgLoss = losses > 0 ? lossPnLSum / losses : 0;
+
+    const totalWinAmount = Math.abs(winPnLSum);
+    const totalLossAmount = Math.abs(lossPnLSum);
+
     const profitFactor = totalLossAmount !== 0
       ? (totalWinAmount / totalLossAmount)
       : (totalWinAmount > 0 ? 999 : 0);
 
     return {
-      totalTrades: executedTrades.length,
+      totalTrades,
       wins,
       losses,
       winRate,
