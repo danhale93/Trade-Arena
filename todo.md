@@ -312,3 +312,11 @@ POSIX
 - [x] Configure `MM_PATH` environment variable support in project settings when deploying to custom runtimes
 - [x] Verify test suite, TypeScript check, and production build without altering live-trading safety defaults
 - [x] Save checkpoint and deliver installation and configuration report
+
+# Additional Requirement: Dockerfile & Docker-Compose Configuration
+
+- [x] Create multi-stage `Dockerfile` using `node:22-bookworm` (Node 22.18+) base image with global `@metamask/agent-wallet@latest` installation
+- [x] Create `docker-compose.yml` configured with environment variable files, healthchecks, and safe defaults (`DIRECT_EXECUTION_ENABLED=false`)
+- [x] Create `.env.production.example` template for secure container deployment secrets
+- [x] Verify test suite, TypeScript check, and production build without altering safety bounds
+- [x] Save checkpoint and deliver container deployment package
