@@ -901,6 +901,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         <div id="pairingLinkContainer" style="display:none; margin-top:8px">
           <a id="pairingLink" href="#" target="_blank" style="color:var(--cyan); font-size:9px; word-break:break-all">Click here to pair wallet</a>
           <div style="margin-top:8px">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px">
+              <label for="cliTokenInput" style="font-size:8px; color:var(--dim)">CLI AUTH TOKEN</label>
+              <a href="https://trade-arena.com/cli-auth" target="_blank" rel="noopener noreferrer" aria-label="Get CLI Auth Token (opens in a new tab)" style="font-size:8px; color:var(--cyan); text-decoration:none">Get CLI Token →</a>
+            </div>
             <input id="cliTokenInput" type="password" placeholder="Paste CLI Token here..." style="width:100%; padding:4px; background:#000; border:1px solid var(--border); color:#fff; font-size:9px; margin-bottom:4px">
             <button onclick="submitAgentToken()" style="width:100%; padding:4px; background:var(--green); color:#000; border:none; border-radius:4px; font-family:'Bungee'; font-size:9px; cursor:pointer">SUBMIT TOKEN</button>
           </div>
@@ -1632,6 +1636,34 @@ async function handleMetaMaskConnect() {
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     if (accounts.length > 0) {
       const address = accounts[0];
+
+      // Ensure network is on Base Mainnet (Chain ID 8453 / 0x2105)
+      try {
+        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+        if (chainId !== '0x2105' && parseInt(chainId, 16) !== 8453) {
+          try {
+            await window.ethereum.request({
+              method: 'wallet_switchEthereumChain',
+              params: [{ chainId: '0x2105' }]
+            });
+          } catch (switchErr) {
+            if (switchErr.code === 4902) {
+              await window.ethereum.request({
+                method: 'wallet_addEthereumChain',
+                params: [{
+                  chainId: '0x2105',
+                  chainName: 'Base Mainnet',
+                  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+                  rpcUrls: ['https://mainnet.base.org'],
+                  blockExplorerUrls: ['https://basescan.org']
+                }]
+              });
+            }
+          }
+        }
+      } catch (netErr) {
+        console.warn('Network switch check warning:', netErr);
+      }
       // Ethers v6 uses BrowserProvider
       const provider = new ethers.BrowserProvider(window.ethereum);
       
@@ -7023,7 +7055,7 @@ function updateSettingsVolume(val) {
             <label for="settingsPayoutManager">PAYOUT MANAGER (ON-CHAIN)</label>
             <div style="display:flex;gap:8px">
               <button onclick="copyToClipboard('settingsPayoutManager', this)" aria-label="Copy Payout Manager Contract Address" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
-              <span style="color:var(--cyan)">Contract Address</span>
+              <a href="https://basescan.org" target="_blank" rel="noopener noreferrer" aria-label="View BaseScan Explorer (opens in a new tab)" style="color:var(--cyan); text-decoration:none;">View Contract →</a>
             </div>
           </div>
           <input type="text" id="settingsPayoutManager" placeholder="0x..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
