@@ -7,6 +7,7 @@ import { Shield, Play, Pause, Terminal, Cpu, Zap, Activity, CheckCircle2, Lock, 
 import { Area, AreaChart, CartesianGrid, ReferenceLine, Tooltip, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { getProfitPulseMotion, shouldTriggerProfitPulse } from "@/lib/profitPulse";
+import { filterPulseEvents, getPulseEventFilterLabel, type PulseNetworkFilter } from "@/lib/pulseEventFilter";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 
@@ -140,10 +141,12 @@ export default function Home() {
   const [logFilter, setLogFilter] = useState("ALL");
   const [profitTimeRange, setProfitTimeRange] = useState<"1H" | "24H" | "ALL">("ALL");
   const [profitNetworkFilter, setProfitNetworkFilter] = useState<"ALL" | "base" | "arbitrum" | "optimism">("ALL");
+  const [pulseNetworkFilter, setPulseNetworkFilter] = useState<PulseNetworkFilter>("ALL");
   const logScrollRef = useRef<HTMLDivElement>(null);
 
   const agent = statusData?.agent;
   const pulseEvents = agent?.pulseEvents || [];
+  const filteredPulseEvents = filterPulseEvents(pulseEvents, pulseNetworkFilter);
   const cliConnection = agent?.cliConnection;
   const cliConnected = cliConnection?.status === "connected";
   const connectionActionPending = reconnectAgentMutation.isPending || disconnectAgentMutation.isPending;
@@ -795,7 +798,33 @@ export default function Home() {
               <p className="text-[10px] text-[#849495] mt-1">Every recorded pulse event that cleared 2× the active network threshold.</p>
             </div>
             <span className="self-start sm:self-auto rounded border border-emerald-400/30 bg-emerald-400/10 px-2 py-1 text-[10px] font-bold tracking-wider text-emerald-300">
-              {statusLoading ? "SYNCING..." : `${pulseEvents.length} EVENT${pulseEvents.length === 1 ? "" : "S"}`}
+              {statusLoading ? "SYNCING..." : pulseNetworkFilter === "ALL"
+                ? `${pulseEvents.length} EVENT${pulseEvents.length === 1 ? "" : "S"}`
+                : `${filteredPulseEvents.length}/${pulseEvents.length} MATCHING` }
+            </span>
+          </div>
+
+          <div className="mb-4 flex flex-wrap items-center gap-2" role="group" aria-label="Filter pulse events by network">
+            <span className="mr-1 text-[10px] uppercase tracking-wider text-[#849495]">NETWORK</span>
+            {(["ALL", "base", "arbitrum", "optimism"] as const).map((network) => {
+              const active = pulseNetworkFilter === network;
+              const count = network === "ALL" ? pulseEvents.length : pulseEvents.filter((event: any) => event.network === network).length;
+              return (
+                <button
+                  key={network}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => setPulseNetworkFilter(network)}
+                  className={`rounded border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors ${active
+                    ? "border-emerald-300/80 bg-emerald-300/15 text-emerald-200"
+                    : "border-emerald-400/20 bg-[#050b0e] text-[#849495] hover:border-emerald-300/50 hover:text-emerald-200"}`}
+                >
+                  {network} <span className="ml-1 opacity-70">{count}</span>
+                </button>
+              );
+            })}
+            <span className="ml-auto text-[10px] text-[#849495]" aria-live="polite">
+              {getPulseEventFilterLabel(pulseNetworkFilter)}
             </span>
           </div>
 
@@ -803,7 +832,7 @@ export default function Home() {
             <div className="flex h-28 items-center justify-center rounded-lg border border-dashed border-emerald-400/20 bg-[#050b0e] text-[10px] text-[#849495]">
               Loading pulse event history...
             </div>
-          ) : pulseEvents.length > 0 ? (
+          ) : filteredPulseEvents.length > 0 ? (
             <div className="max-h-[280px] overflow-y-auto rounded-lg border border-emerald-400/15 bg-[#050b0e]">
               <table className="w-full min-w-[680px] text-left text-[10px] font-mono">
                 <thead className="sticky top-0 bg-[#0b171c] text-[#849495]">
@@ -817,7 +846,7 @@ export default function Home() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-emerald-400/10 text-white">
-                  {pulseEvents.map((event: any) => (
+                  {filteredPulseEvents.map((event: any) => (
                     <tr key={event.id} className="transition-colors hover:bg-emerald-400/5">
                       <td className="whitespace-nowrap px-3 py-2 text-[#849495]" title={new Date(event.timestamp).toISOString()}>
                         {new Date(event.timestamp).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
@@ -835,8 +864,14 @@ export default function Home() {
           ) : (
             <div className="flex h-28 flex-col items-center justify-center rounded-lg border border-dashed border-emerald-400/20 bg-[#050b0e] px-6 text-center">
               <Zap className="mb-2 h-6 w-6 text-emerald-400/40" aria-hidden="true" />
-              <p className="text-xs font-bold text-white">No high-profit pulse events recorded</p>
-              <p className="mt-1 text-[10px] text-[#849495]">Qualifying simulations will appear here with their exact timestamp and route.</p>
+              <p className="text-xs font-bold text-white">
+                {pulseEvents.length > 0 ? `No ${pulseNetworkFilter.toUpperCase()} pulse events` : "No high-profit pulse events recorded"}
+              </p>
+              <p className="mt-1 text-[10px] text-[#849495]">
+                {pulseEvents.length > 0
+                  ? "Choose ALL or another network to view the remaining qualifying events."
+                  : "Qualifying simulations will appear here with their exact timestamp and route."}
+              </p>
             </div>
           )}
         </section>

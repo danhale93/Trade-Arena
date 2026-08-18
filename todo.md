@@ -212,3 +212,11 @@ POSIX
 - [x] Build a timestamped high-profit pulse event log section with empty and loading states
 - [x] Add focused tests and verify refresh behavior plus desktop/mobile rendering
 - [x] Save checkpoint and deliver the pulse-event log update
+
+# Additional Requirement: Pulse Event Network Filters
+
+- [x] Inspect the pulse-event table data flow and current dashboard controls
+- [x] Implement network filter state, toggle controls, and filtered event data
+- [x] Add filtered counts, empty states, and accessible interaction feedback
+- [x] Add focused tests and verify desktop/mobile rendering
+- [x] Save checkpoint and deliver the network-filter update
