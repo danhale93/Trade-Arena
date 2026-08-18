@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Trade Arena - Modules</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-container": "#006970",
+                        "on-surface-variant": "#b9cacb",
+                        "surface-container-high": "#272a30",
+                        "tertiary-fixed-dim": "#eac324",
+                        "background": "#111319",
+                        "inverse-surface": "#e1e2ea",
+                        "secondary": "#d1bcff",
+                        "inverse-primary": "#006970",
+                        "tertiary-fixed": "#ffe179",
+                        "inverse-on-surface": "#2e3036",
+                        "on-background": "#e1e2ea",
+                        "surface-dim": "#111319",
+                        "error-container": "#93000a",
+                        "on-secondary-fixed": "#23005b",
+                        "on-tertiary-container": "#715d00",
+                        "primary-fixed-dim": "#00dbe9",
+                        "outline-variant": "#3b494b",
+                        "on-tertiary": "#3b2f00",
+                        "surface-bright": "#36393f",
+                        "surface-tint": "#00dbe9",
+                        "surface-variant": "#32353b",
+                        "surface-container": "#1d2025",
+                        "outline": "#849495",
+                        "secondary-fixed-dim": "#d1bcff",
+                        "on-primary-fixed": "#002022",
+                        "on-secondary": "#3c0090",
+                        "error": "#ffb4ab",
+                        "primary-fixed": "#7df4ff",
+                        "primary": "#dbfcff",
+                        "on-surface": "#e1e2ea",
+                        "surface-container-lowest": "#0b0e13",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-low": "#191c21",
+                        "surface-container-highest": "#32353b",
+                        "on-tertiary-fixed": "#231b00",
+                        "on-error": "#690005",
+                        "secondary-container": "#7000ff",
+                        "on-secondary-fixed-variant": "#5700c9",
+                        "primary-container": "#00f0ff",
+                        "on-primary-fixed-variant": "#004f54",
+                        "tertiary": "#fff5de",
+                        "secondary-fixed": "#e9ddff",
+                        "on-secondary-container": "#ddcdff",
+                        "on-primary": "#00363a",
+                        "on-tertiary-fixed-variant": "#554500",
+                        "tertiary-container": "#fed639",
+                        "surface": "#111319"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "input-height": "2.5rem",
+                        "module-gap": "0.75rem",
+                        "container-padding": "1.5rem",
+                        "data-row-height": "2rem",
+                        "unit": "4px"
+                    },
+                    "fontFamily": {
+                        "data-lg": ["JetBrains Mono"],
+                        "body-md": ["Hanken Grotesk"],
+                        "data-sm": ["JetBrains Mono"],
+                        "label-caps": ["JetBrains Mono"],
+                        "display-lg": ["Hanken Grotesk"],
+                        "headline-md": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "data-lg": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "500" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "data-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+                        "label-caps": ["10px", { "lineHeight": "12px", "letterSpacing": "0.08em", "fontWeight": "700" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #0b0e13; color: #e1e2ea; }
+        .glass-panel {
+            background-color: rgba(25, 28, 33, 0.6);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(59, 73, 75, 0.5);
+        }
+        .toggle-checkbox:checked {
+            background-color: #00dbe9;
+            border-color: #00dbe9;
+        }
+        .toggle-checkbox:checked::after { transform: translateX(100%); border-color: white; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body-md text-body-md min-h-screen pb-24 md:pb-0 pt-16">
+<!-- TopAppBar -->
+<header class="bg-surface-container-low/80 backdrop-blur-xl font-headline-md text-headline-md text-primary-fixed-dim fixed top-0 w-full z-50 border-b border-outline-variant/30 shadow-none flex justify-between items-center px-container-padding h-16 w-full">
+<div class="flex items-center gap-2 text-outline hover:bg-surface-container-high transition-colors active:scale-95 duration-75 cursor-pointer rounded-lg p-1">
+<span class="material-symbols-outlined text-primary-fixed-dim" style="font-variation-settings: 'FILL' 1;">hub</span>
+<h1 class="font-display-lg text-display-lg tracking-tighter text-primary-fixed hidden md:block">TRADE ARENA</h1>
+<h1 class="font-headline-md text-headline-md tracking-tighter text-primary-fixed md:hidden">TRADE ARENA</h1>
+</div>
+<button class="bg-error-container text-on-error-container font-label-caps text-label-caps px-4 py-2 rounded uppercase tracking-widest hover:bg-error hover:text-on-error transition-colors active:scale-95 border border-error/50 flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">warning</span>
+            KILL SWITCH
+        </button>
+</header>
+<!-- Main Content -->
+<main class="max-w-[1440px] mx-auto px-container-padding py-6">
+<div class="flex justify-between items-end mb-6">
+<div>
+<h2 class="font-headline-md text-headline-md text-primary-fixed">Module Catalog</h2>
+<p class="font-data-sm text-data-sm text-on-surface-variant uppercase tracking-wider mt-1">Configure and deploy specialized trading strategies</p>
+</div>
+<div class="flex gap-2">
+<button class="bg-surface-container hover:bg-surface-container-high border border-outline-variant text-on-surface font-data-sm text-data-sm px-3 py-1.5 rounded flex items-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-[14px]">filter_list</span> Filter
+                </button>
+<button class="bg-surface-container hover:bg-surface-container-high border border-outline-variant text-on-surface font-data-sm text-data-sm px-3 py-1.5 rounded flex items-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-[14px]">add</span> New Module
+                </button>
+</div>
+</div>
+<!-- Bento Grid / Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-module-gap">
+<!-- MEV Sniper -->
+<article class="glass-panel rounded-lg p-module-gap flex flex-col h-full relative overflow-hidden group">
+<div class="absolute inset-0 bg-primary-fixed-dim/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded bg-primary-container/20 flex items-center justify-center border border-primary-container/30 text-primary-fixed-dim">
+<span class="material-symbols-outlined">radar</span>
+</div>
+<div>
+<h3 class="font-data-lg text-data-lg text-primary-fixed m-0">MEV Sniper</h3>
+<div class="flex items-center gap-2 mt-1">
+<span class="w-2 h-2 rounded-full bg-primary-fixed-dim animate-pulse"></span>
+<span class="font-data-sm text-data-sm text-primary-fixed-dim">Active</span>
+</div>
+</div>
+</div>
+<!-- Toggle -->
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-surface-container-highest rounded-full peer peer-focus:ring-4 peer-focus:ring-primary-container/30 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-fixed-dim border border-outline-variant"></div>
+</label>
+</div>
+<div class="grid grid-cols-3 gap-2 mb-4 bg-surface-container/50 p-2 rounded border border-outline-variant/30">
+<div class="flex flex-col">
+<span class="font-label-caps text-label-caps text-outline">Front-Running</span>
+<span class="font-data-sm text-data-sm text-on-surface mt-1">Enabled</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-caps text-label-caps text-outline">Sandwich</span>
+<span class="font-data-sm text-data-sm text-on-surface mt-1">Strict</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-caps text-label-caps text-outline">Gas Opt</span>
+<span class="font-data-sm text-data-sm text-on-surface mt-1 text-right">Max</span>
+</div>
+</div>
+<div class="flex-grow flex flex-col justify-end">
+<div class="h-12 w-full bg-surface-container-lowest/50 border border-outline-variant/20 rounded relative overflow-hidden mb-4 flex items-end px-1 pb-1 gap-0.5">
+<!-- Mock Sparkline -->
+<div class="w-[5%] bg-primary-fixed-dim/30 h-[20%] hover:bg-primary-fixed-dim transition-colors"></div>
+<div class="w-[5%] bg-primary-fixed-dim/40 h-[35%] hover:bg-primary-fixed-dim transition-colors"></div>
+<div class="w-[5%] bg-primary-fixed-dim/50 h-[25%] hover:bg-primary-fixed-dim transition-colors"></div>
+<div class="w-[5%] bg-primary-fixed-dim/60 h-[50%] hover:bg-primary-fixed-dim transition-colors"></div>
+<div class="w-[5%] bg-primary-fixed-dim/70 h-[80%] hover:bg-primary-fixed-dim transition-colors"></div>
+<div class="w-[5%] bg-primary-fixed-dim/50 h-[40%] hover:bg-primary-fixed-dim transition-colors"></div>
+<div class="w-[5%] bg-primary-fixed-dim/80 h-[90%] hover:bg-primary-fixed-dim transition-colors"></div>
+<div class="w-[5%] bg-primary-fixed-dim/90 h-[100%] bg-primary-fixed-dim"></div>
+<div class="w-[5%] bg-primary-fixed-dim/40 h-[30%] hover:bg-primary-fixed-dim transition-colors"></div>
+<div class="w-[5%] bg-primary-fixed-dim/30 h-[15%] hover:bg-primary-fixed-dim transition-colors"></div>
+</div>
+<button class="w-full bg-surface-container border border-primary-fixed-dim/50 text-primary-fixed-dim hover:bg-primary-fixed-dim hover:text-black font-label-caps text-label-caps py-2 rounded transition-all uppercase tracking-widest flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[14px]">settings</span> Configure
+                    </button>
+</div>
+</article>
+<!-- Triangular Arbitrage -->
+<article class="glass-panel rounded-lg p-module-gap flex flex-col h-full relative overflow-hidden group">
+<div class="absolute inset-0 bg-outline-variant/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded bg-surface-container-high flex items-center justify-center border border-outline-variant text-outline">
+<span class="material-symbols-outlined">change_history</span>
+</div>
+<div>
+<h3 class="font-data-lg text-data-lg text-on-surface m-0">Triangular Arb</h3>
+<div class="flex items-center gap-2 mt-1">
+<span class="w-2 h-2 rounded-full bg-outline"></span>
+<span class="font-data-sm text-data-sm text-outline">Inactive</span>
+</div>
+</div>
+</div>
+<!-- Toggle -->
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-surface-container-highest rounded-full peer peer-focus:ring-4 peer-focus:ring-primary-container/30 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-outline after:border-gray-500 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-fixed-dim border border-outline-variant"></div>
+</label>
+</div>
+<div class="grid grid-cols-2 gap-2 mb-4 bg-surface-container/30 p-2 rounded border border-outline-variant/20">
+<div class="flex flex-col">
+<span class="font-label-caps text-label-caps text-outline">Loop Detection</span>
+<span class="font-data-sm text-data-sm text-on-surface-variant mt-1">Intra-DEX</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-caps text-label-caps text-outline">Exec Speed</span>
+<span class="font-data-sm text-data-sm text-on-surface-variant mt-1 text-right">Aggressive</span>
+</div>
+</div>
+<div class="flex-grow flex flex-col justify-end">
+<div class="h-12 w-full bg-surface-container-lowest/30 border border-outline-variant/10 rounded relative overflow-hidden mb-4 flex items-center justify-center">
+<span class="font-data-sm text-data-sm text-outline">Awaiting Activation</span>
+</div>
+<button class="w-full bg-surface-container border border-outline-variant text-on-surface hover:bg-surface-container-high font-label-caps text-label-caps py-2 rounded transition-all uppercase tracking-widest flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[14px]">settings</span> Configure
+                    </button>
+</div>
+</article>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden bg-surface-container-lowest/90 backdrop-blur-2xl font-label-caps text-label-caps text-primary-fixed fixed bottom-0 w-full z-50 h-20 border-t border-outline-variant/20 shadow-[0_-4px_12px_rgba(0,0,0,0.5)] flex justify-around items-center px-4">
+<a class="flex flex-col items-center justify-center text-outline hover:text-primary transition-all active:scale-90 duration-100 w-16" href="#">
+<span class="material-symbols-outlined mb-1">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary-fixed-dim bg-primary-container/10 rounded-xl px-4 py-1 hover:text-primary transition-all active:scale-90 duration-100" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">extension</span>
+<span>Modules</span>
+</a>
+<a class="flex flex-col items-center justify-center text-outline hover:text-primary transition-all active:scale-90 duration-100 w-16" href="#">
+<span class="material-symbols-outlined mb-1">terminal</span>
+<span>Log</span>
+</a>
+<a class="flex flex-col items-center justify-center text-outline hover:text-primary transition-all active:scale-90 duration-100 w-16" href="#">
+<span class="material-symbols-outlined mb-1">settings</span>
+<span>Settings</span>
+</a>
+</nav>
+</body></html>

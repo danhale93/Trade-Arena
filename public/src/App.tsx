@@ -21,7 +21,7 @@ const App = () => {
       onSuccess={(user) => console.log('Login success:', user)}
       onError={(error) => console.error('Privy Auth Error:', error)}
       config={{
-        loginMethods: ['wallet', 'google', 'apple', 'email'],
+        loginMethods: ['google', 'wallet'],
         appearance: {
           theme: 'dark',
           accentColor: '#00ffe7',

@@ -6,26 +6,27 @@
 const { exec } = require('child_process');
 const util = require('util');
 const execPromise = util.promisify(exec);
+const { ethers } = require('ethers');
 const tokenManager = require('./TokenManager');
+const flashloanService = require('./flashloanExecutionService');
 
 const mmPath = process.env.MM_PATH || 'mm';
 
 class ArbitrageEngine {
     constructor() {
         this.isRunning = false;
-        this.scanInterval = 60000; // 60 seconds
+        this.scanInterval = 15000; // 15 seconds
         this.minProfitUsd = 0.50; // Minimum profit to trigger trade
         this.tradeSizeUsd = 10;   // Default trade size in USDC
     }
 
     async runMM(cmd) {
         try {
-            const mmToken = process.env.MM_CLI_TOKEN;
-            const tokenFlag = mmToken ? `--token "${mmToken}"` : '';
-            const fullCmd = `${mmPath} ${cmd} ${tokenFlag} --json`;
+            const fullCmd = `${mmPath} ${cmd} --json`;
 
             const { stdout } = await execPromise(fullCmd, { 
-                env: { ...process.env }
+                env: { ...process.env },
+                timeout: 15000 // 15s timeout
             });
             return JSON.parse(stdout);
         } catch (e) {
@@ -52,7 +53,13 @@ class ArbitrageEngine {
     async scanLoop() {
         while (this.isRunning) {
             try {
-                await this.findOpportunities();
+                if (this.isAgentReady) {
+                    console.log('[ArbitrageEngine] Starting scan cycle...');
+                    await this.findOpportunities();
+                    console.log('[ArbitrageEngine] Scan cycle complete.');
+                } else {
+                    console.log('[ArbitrageEngine] Waiting for agent session to initialize...');
+                }
             } catch (e) {
                 console.error('[ArbitrageEngine] Scan error:', e.message);
             }
@@ -87,7 +94,30 @@ class ArbitrageEngine {
                     
                     if (profitUsd > this.minProfitUsd && priceImpact > -1) {
                         console.log(`[ArbitrageEngine] FOUND OPPORTUNITY: ${tokenA} -> ${tokenB} | Profit: $${profitUsd.toFixed(2)}`);
-                        await this.executeArbitrage(tokenA, tokenB, 0.01);
+                        
+                        // Construct opportunity object for flashloan service
+                        const opportunity = {
+                            chainId: 8453,
+                            assetIn: tokenManager.resolveToken(tokenA)?.address,
+                            assetOut: tokenManager.resolveToken(tokenB)?.address,
+                            flashAmount: ethers.parseUnits('0.01', tokenManager.resolveToken(tokenA)?.decimals || 18).toString(),
+                            dexRoute: [tokenManager.resolveToken(tokenA)?.address, tokenManager.resolveToken(tokenB)?.address],
+                            expectedProfitUsd: profitUsd,
+                            estimatedGasUsd: 1.5, // Estimated gas for Base
+                        };
+
+                        const auditLog = (event, data) => {
+                            console.log(`[Audit] ${event}:`, JSON.stringify(data));
+                        };
+
+                        try {
+                            const result = await flashloanService.tryExecuteArbitrage(opportunity, { auditLog });
+                            if (result.executed) {
+                                console.log(`[ArbitrageEngine] Flashloan executed: ${result.result.data.transaction.hash}`);
+                            }
+                        } catch (err) {
+                            console.error(`[ArbitrageEngine] Flashloan execution failed: ${err.message}`);
+                        }
                     }
                 }
             }

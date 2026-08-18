@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TRADE ARENA - Command Center</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "outline": "#849495",
+                        "on-secondary": "#3c0090",
+                        "surface-container": "#1d2025",
+                        "surface-dim": "#111319",
+                        "secondary": "#d1bcff",
+                        "on-secondary-fixed-variant": "#5700c9",
+                        "surface-bright": "#36393f",
+                        "on-primary-fixed": "#002022",
+                        "surface-container-highest": "#32353b",
+                        "tertiary-fixed-dim": "#eac324",
+                        "tertiary": "#fff5de",
+                        "tertiary-fixed": "#ffe179",
+                        "inverse-primary": "#006970",
+                        "on-tertiary-fixed": "#231b00",
+                        "on-tertiary-container": "#715d00",
+                        "surface-container-lowest": "#0b0e13",
+                        "primary-container": "#00f0ff",
+                        "on-primary-fixed-variant": "#004f54",
+                        "surface": "#111319",
+                        "secondary-container": "#7000ff",
+                        "on-primary-container": "#006970",
+                        "primary-fixed": "#7df4ff",
+                        "primary-fixed-dim": "#00dbe9",
+                        "on-tertiary-fixed-variant": "#554500",
+                        "on-error": "#690005",
+                        "inverse-surface": "#e1e2ea",
+                        "outline-variant": "#3b494b",
+                        "secondary-fixed-dim": "#d1bcff",
+                        "on-secondary-container": "#ddcdff",
+                        "tertiary-container": "#fed639",
+                        "primary": "#dbfcff",
+                        "on-primary": "#00363a",
+                        "on-secondary-fixed": "#23005b",
+                        "background": "#111319",
+                        "on-surface-variant": "#b9cacb",
+                        "on-background": "#e1e2ea",
+                        "error": "#ffb4ab",
+                        "surface-container-low": "#191c21",
+                        "secondary-fixed": "#e9ddff",
+                        "surface-variant": "#32353b",
+                        "surface-tint": "#00dbe9",
+                        "surface-container-high": "#272a30",
+                        "on-error-container": "#ffdad6",
+                        "on-tertiary": "#3b2f00",
+                        "error-container": "#93000a",
+                        "on-surface": "#e1e2ea",
+                        "inverse-on-surface": "#2e3036"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "input-height": "2.5rem",
+                        "unit": "4px",
+                        "data-row-height": "2rem",
+                        "module-gap": "0.75rem",
+                        "container-padding": "1.5rem"
+                    },
+                    "fontFamily": {
+                        "data-sm": ["JetBrains Mono"],
+                        "body-md": ["Hanken Grotesk"],
+                        "display-lg": ["Hanken Grotesk"],
+                        "data-lg": ["JetBrains Mono"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "label-caps": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "data-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "data-lg": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "500" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "label-caps": ["10px", { "lineHeight": "12px", "letterSpacing": "0.08em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<!-- Google Fonts & Material Symbols -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        /* Custom Styles & Animations for Terminal Aesthetic */
+        body {
+            background-color: #0b0e13; /* surface-container-lowest fallback */
+            background-image: 
+                linear-gradient(rgba(0, 219, 233, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 219, 233, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+            background-position: center center;
+            /* Subtle data-pulse shader simulation */
+            animation: bgPulse 8s infinite alternate;
+        }
+
+        @keyframes bgPulse {
+            0% { opacity: 0.8; }
+            100% { opacity: 1; }
+        }
+
+        /* Hide scrollbar for a cleaner terminal look */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(29, 32, 37, 0.5); /* surface-container */
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3b494b; /* outline-variant */
+            border-radius: 2px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00dbe9; /* primary-fixed-dim */
+        }
+
+        /* Reel Spin Animation */
+        .reel-strip {
+            animation: spinReel linear infinite;
+            /* Animation state controlled via JS for triggers, running constantly for demo */
+        }
+        
+        .reel-strip.fast { animation-duration: 0.5s; }
+        .reel-strip.med { animation-duration: 0.8s; }
+        .reel-strip.slow { animation-duration: 1.2s; }
+
+        @keyframes spinReel {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-50%); } /* Assumes strip is duplicated to loop seamlessly */
+        }
+
+        /* Waveform Animation */
+        .wave-bar {
+            animation: wavePulse ease-in-out infinite alternate;
+            transform-origin: bottom;
+        }
+        
+        @keyframes wavePulse {
+            0% { transform: scaleY(0.2); opacity: 0.5; }
+            100% { transform: scaleY(1); opacity: 1; }
+        }
+
+        /* CRT Scanline overlay */
+        .scanline::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-surface-container-lowest text-on-surface font-body-md h-screen overflow-hidden flex flex-col scanline">
+<!-- TopAppBar (From JSON) -->
+<header class="bg-surface-container-low/80 backdrop-blur-xl border-b border-outline-variant/30 shadow-none flex justify-between items-center px-container-padding h-16 w-full fixed top-0 z-50">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-fixed" data-icon="hub">hub</span>
+<span class="font-headline-md text-headline-md text-primary-fixed-dim font-bold tracking-tight">TRADE ARENA</span>
+</div>
+<!-- Center Nav Space (Simulated) -->
+<div class="hidden md:flex gap-6 items-center">
+<!-- Active State Applied -> Dashboard intent -->
+<button class="font-label-caps text-label-caps text-primary-fixed-dim hover:bg-surface-container-high transition-colors active:scale-95 duration-75 px-3 py-1.5 rounded flex items-center gap-2 bg-primary-container/10">
+<span class="material-symbols-outlined text-base" data-icon="dashboard">dashboard</span>
+                DASHBOARD
+            </button>
+<button class="font-label-caps text-label-caps text-outline hover:bg-surface-container-high transition-colors active:scale-95 duration-75 px-3 py-1.5 rounded flex items-center gap-2">
+<span class="material-symbols-outlined text-base" data-icon="extension">extension</span>
+                MODULES
+            </button>
+</div>
+<button class="font-label-caps text-label-caps bg-error-container text-on-error-container border border-error/50 px-4 py-2 hover:bg-error hover:text-on-error transition-colors active:scale-95 duration-75 rounded flex items-center gap-2 shadow-[0_0_8px_rgba(255,180,171,0.2)]">
+<span class="material-symbols-outlined text-sm" data-icon="warning">warning</span>
+            KILL SWITCH
+        </button>
+</header>
+<!-- Main Workspace Area -->
+<main class="flex-grow pt-[calc(4rem+1rem)] px-container-padding pb-container-padding grid grid-cols-1 md:grid-cols-12 gap-module-gap overflow-hidden relative z-10">
+<!-- Live Tally Ticker (Top Row) -->
+<section class="col-span-1 md:col-span-12 h-12 bg-surface-container/60 backdrop-blur-md border border-outline-variant/30 rounded flex items-center px-4 overflow-hidden shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
+<div class="font-label-caps text-label-caps text-outline mr-4 flex-shrink-0 flex items-center gap-2 border-r border-outline-variant/30 pr-4">
+<span class="material-symbols-outlined text-sm" data-icon="monitoring">monitoring</span>
+                LIVE TALLY
+            </div>
+<div class="flex flex-grow gap-8 overflow-x-auto whitespace-nowrap hide-scrollbar items-center">
+<!-- Data Nodes -->
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container animate-pulse"></span>
+<span class="font-data-sm text-data-sm text-on-surface-variant">SPOT:</span>
+<span class="font-data-sm text-data-sm text-primary-fixed-dim">24,591.04</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary-fixed"></span>
+<span class="font-data-sm text-data-sm text-on-surface-variant">LONG_VOL:</span>
+<span class="font-data-sm text-data-sm text-tertiary-fixed">1.2M</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-error"></span>
+<span class="font-data-sm text-data-sm text-on-surface-variant">SHORT_LIQ:</span>
+<span class="font-data-sm text-data-sm text-error">450K</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-outline"></span>
+<span class="font-data-sm text-data-sm text-on-surface-variant">RSI_1H:</span>
+<span class="font-data-sm text-data-sm text-on-surface">64.2</span>
+</div>
+</div>
+</section>
+<!-- Center Stage: Reel Matrix & Audio Telemetry (Cols 1-8) -->
+<div class="col-span-1 md:col-span-8 lg:col-span-9 flex flex-col gap-module-gap h-full overflow-hidden">
+<!-- Reel Matrix Module -->
+<section class="flex-grow bg-surface-container-low/40 backdrop-blur-xl border border-outline-variant/50 rounded flex flex-col overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+<!-- Module Header -->
+<div class="h-8 border-b border-outline-variant/30 flex justify-between items-center px-3 bg-surface-container-highest/20">
+<span class="font-label-caps text-label-caps text-outline flex items-center gap-2">
+<span class="material-symbols-outlined text-xs" data-icon="casino">casino</span>
+                        QUANTUM REEL MATRIX
+                    </span>
+<div class="flex gap-1">
+<div class="w-2 h-2 rounded-full border border-outline-variant"></div>
+<div class="w-2 h-2 rounded-full border border-outline-variant"></div>
+<div class="w-2 h-2 rounded-full bg-primary-container border border-primary-container shadow-[0_0_4px_#00f0ff]"></div>
+</div>
+</div><div class="flex items-center justify-between px-4 py-2 bg-surface-container-low/60 border-b border-outline-variant/30 font-label-caps text-label-caps">
+<div class="flex items-center gap-4">
+<span class="text-outline">MATRIX_DENSITY</span>
+<div class="flex items-center gap-2 bg-surface-dim border border-outline-variant/50 rounded px-2 py-1">
+<button class="text-primary-fixed-dim hover:text-primary-fixed active:scale-90 transition-all">
+<span class="material-symbols-outlined text-sm">remove</span>
+</button>
+<span class="font-data-sm text-data-sm text-on-surface min-w-[80px] text-center">REELS: 005</span>
+<button class="text-primary-fixed-dim hover:text-primary-fixed active:scale-90 transition-all">
+<span class="material-symbols-outlined text-sm">add</span>
+</button>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-outline">MAX_CAP:</span>
+<span class="text-primary-fixed-dim">100</span>
+</div>
+</div>
+<!-- 5-Column Matrix Canvas -->
+<div class="flex-grow relative bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-surface-dim/80 via-surface-container-lowest to-black p-4 flex justify-center items-center overflow-x-auto">
+<!-- Decorative Reticle -->
+<div class="absolute inset-0 pointer-events-none flex justify-center items-center z-10 opacity-20">
+<div class="w-full h-[2px] bg-primary-fixed-dim absolute"></div>
+<div class="h-full w-[2px] bg-primary-fixed-dim absolute"></div>
+<div class="w-[80%] h-[120%] border border-primary-fixed-dim rounded-[100%] absolute mix-blend-overlay"></div>
+</div>
+<!-- The Reels Grid -->
+<div class="grid gap-2 h-full w-full max-w-4xl relative z-20 mask-image-linear-vertical overflow-x-auto">
+<!-- Mask to fade out top and bottom -->
+<style>
+                            .mask-image-linear-vertical {
+                                -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+                                mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+                            }
+                        </style>
+<!-- Col 1 -->
+<div class="bg-surface-container-low/80 border border-outline-variant/20 rounded-lg overflow-hidden relative shadow-[inset_0_0_15px_rgba(0,0,0,0.8)]">
+<div class="reel-strip fast w-full flex flex-col gap-4 py-4 text-center font-data-lg text-data-lg text-outline">
+<!-- Duplicated for loop -->
+<div class="py-4 text-primary-fixed-dim drop-shadow-[0_0_8px_rgba(0,219,233,0.5)]"><div class="flex items-center justify-center gap-2"><img alt="BTC" class="w-6 h-6" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHd6Zk-tADav8_H6c8fc6_UAAZ949WFlqpSK4USxYmLuWMjwV9_lsFKz6i1-NXTMERJHB0rUilcj4DGapD0AX36fZwacupSK5XBNUUAPvvtK84oaN3c-E5qjWcy0O7A0-UuX65LIOim1Vc9aibuP2U5HwZ15KNTEB0Dkvx8TVqa0hddKHkVC1pU8TgIztfdbm6HLD9wTn30raQQK6F1Kp4SA_Db9ZH_4x2AAyXNJkGIaf6HQU45EBs"/>BTC</div></div>
+<div class="py-4"><div class="flex items-center justify-center gap-2"><img alt="ETH" class="w-6 h-6" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA8iR0vnNiQMdANy1_TmSD1m22M9N1bPH0beUpGkquN78-FAclZ3-8gi6gtvwC2ZbATxNj5fLmf3EkHUMhVX4m8lZyofPSY-Hu5enbkJY5KhdEOoFKD4cKHd1_mlrEzkqAP5Ox-puT9iiEfR0UBcWbxjZNJqrYvg0KCTjDvFRoAfL4dFXlx-YGkcNrWbpPRYX_yO4jCy-2fOFZ-tgoNwtAk3uFRqaOvdH08jaNnhz2d27e1ojOVq7qZ"/>ETH</div></div>
+<div class="py-4">SOL</div>
+<div class="py-4 text-tertiary-fixed">UNI</div>
+<div class="py-4">ARB</div>
+<div class="py-4">OP</div>
+<!-- Duplicate -->
+<div class="py-4 text-primary-fixed-dim drop-shadow-[0_0_8px_rgba(0,219,233,0.5)]"><div class="flex items-center justify-center gap-2"><img alt="BTC" class="w-6 h-6" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAjRqRk-M4Yk7UzxsHz7JOtuMXxjDNlgI3eajjqFKbR9mcppf7s7RK8il9broqss2AmlXs1MML4pXeiKgg1UPaHE8NvFtMUUayvhDhqkurrCNdV8rDpAO6lnxnVGH7GSRGcd4FF4eIm053FTuHYQUJ2oQZpaF9anm89WjttxCXk7qty3YwDCewwzDmaZbcT7Ww8-3p-8iJQ5Pc8dcRmJgEnsIeTheusppTWrXo_1Q-G44w7TRxll3aq"/>BTC</div></div>
+<div class="py-4"><div class="flex items-center justify-center gap-2"><img alt="ETH" class="w-6 h-6" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDbosKajQaAyITytxvxTeiv2p9jWjA3mmft46GZEyOJgiJLDXoevPUnn5ZhJg73dDvN8XYtwLdXJkZcJV7KSbat8QKSwqkvKyTiZ8cfNOdLa4PRqUU1N7NUagfowDCewW01L1WeVSjxwaz43KgiA3Uu6sjIG53yCJdim7-Gv7siH3O8rlnjfT-b-zLsc7FG5UqO-SBGNfUZKG8nLb1HX3bKKstdD4XUTNOPx3QmDsKGs-AG9znVuvPD"/>ETH</div></div>
+<div class="py-4">SOL</div>
+<div class="py-4 text-tertiary-fixed">UNI</div>
+<div class="py-4">ARB</div>
+<div class="py-4">OP</div>
+</div>
+</div>
+<!-- Col 2 -->
+<div class="bg-surface-container-low/80 border border-outline-variant/20 rounded-lg overflow-hidden relative shadow-[inset_0_0_15px_rgba(0,0,0,0.8)]">
+<div class="reel-strip med w-full flex flex-col gap-4 py-4 text-center font-data-lg text-data-lg text-outline" style="animation-delay: -0.2s">
+<div class="py-4 flex justify-center"><span class="material-symbols-outlined text-3xl" data-icon="currency_bitcoin">currency_bitcoin</span></div>
+<div class="py-4 flex justify-center"><span class="material-symbols-outlined text-3xl text-secondary-fixed-dim" data-icon="token">token</span></div>
+<div class="py-4 flex justify-center"><span class="material-symbols-outlined text-3xl" data-icon="diamond">diamond</span></div>
+<div class="py-4 flex justify-center"><span class="material-symbols-outlined text-3xl text-primary-fixed-dim" data-icon="water_drop">water_drop</span></div>
+<div class="py-4 flex justify-center"><span class="material-symbols-outlined text-3xl" data-icon="toll">toll</span></div>
+<!-- Duplicate -->
+<div class="py-4 flex justify-center"><span class="material-symbols-outlined text-3xl" data-icon="currency_bitcoin">currency_bitcoin</span></div>
+<div class="py-4 flex justify-center"><span class="material-symbols-outlined text-3xl text-secondary-fixed-dim" data-icon="token">token</span></div>
+<div class="py-4 flex justify-center"><span class="material-symbols-outlined text-3xl" data-icon="diamond">diamond</span></div>
+<div class="py-4 flex justify-center"><span class="material-symbols-outlined text-3xl text-primary-fixed-dim" data-icon="water_drop">water_drop</span></div>
+<div class="py-4 flex justify-center"><span class="material-symbols-outlined text-3xl" data-icon="toll">toll</span></div>
+</div>
+</div>
+<!-- Col 3 (Center Focus) -->
+<div class="bg-surface-container/60 border border-primary-fixed-dim/40 rounded-lg overflow-hidden relative shadow-[inset_0_0_20px_rgba(0,219,233,0.1)]">
+<div class="reel-strip slow w-full flex flex-col gap-4 py-4 text-center font-data-lg text-data-lg text-outline font-bold text-2xl" style="animation-delay: -0.5s">
+<div class="py-6 text-on-surface"><div class="flex flex-col items-center gap-2"><img alt="LINK" class="w-12 h-12" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCYSu6T4ybkUhJx_dAEtKwSsLdZLeCDUL6Ep6CShQ9FIgQnRpoj5hrbvZ-YrgM2w0fkiXI4emy-BttzBz5I4C_j-fWInAYOXJGydgr16EZLJPB9L7BUy6jNJ4OHd9FGyEsvOJBr0T_fVZ6ojSlOX1awU7XLQqd1ne9NgULlpDVOrjoOnhwoFnoAgoqnlGdBAYn_f0Ky-l5UgAIDLzWecW_2CN-zrweDatK-5qiDVwkpo38ZoavCikvq"/><span>LINK</span></div></div>
+<div class="py-6 text-primary-fixed-dim scale-110 drop-shadow-[0_0_12px_rgba(0,219,233,0.8)]">USDC</div>
+<div class="py-6 text-on-surface">DOGE</div>
+<div class="py-6 text-tertiary-fixed">MATIC</div>
+<div class="py-6 text-on-surface">AVAX</div>
+<!-- Duplicate -->
+<div class="py-6 text-on-surface"><div class="flex flex-col items-center gap-2"><img alt="LINK" class="w-12 h-12" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBqEfvqi5dCtSFgrGIDyDDbn9iOGridW2mheAJaKnaRXLSvIoMverpAf2xNZTjRG7se4q0F5aQ0Mnp9ORiyE-bfPEGkdqhLdx2arHoRiMUHuOtq0YSEaHgbPdUdO6-4_QTCA4291-FhEUqgW_e1HMF7MY_1HnaKPsVshEbvOFyjzq6-JYuEtNB5TuFjaNk-U6cV638oMgWjQtFWfCN1dTb9AoeiIsRz1cZveOrMqerNcjcXilkBE2Fv"/><span>LINK</span></div></div>
+<div class="py-6 text-primary-fixed-dim scale-110 drop-shadow-[0_0_12px_rgba(0,219,233,0.8)]">USDC</div>
+<div class="py-6 text-on-surface">DOGE</div>
+<div class="py-6 text-tertiary-fixed">MATIC</div>
+<div class="py-6 text-on-surface">AVAX</div>
+</div>
+<!-- Selection reticle overlay for center column -->
+<div class="absolute top-1/2 left-0 right-0 h-20 -translate-y-1/2 border-y-2 border-primary-container bg-primary-container/5 pointer-events-none"></div>
+</div>
+<!-- Col 4 -->
+<div class="bg-surface-container-low/80 border border-outline-variant/20 rounded-lg overflow-hidden relative shadow-[inset_0_0_15px_rgba(0,0,0,0.8)]">
+<div class="reel-strip med w-full flex flex-col gap-4 py-4 text-center font-data-lg text-data-lg text-outline" style="animation-delay: -0.8s">
+<div class="py-4 flex justify-center"><span class="material-symbols-outlined text-3xl" data-icon="swap_horiz">swap_horiz</span></div>
+<div class="py-4 flex justify-center"><span class="material-symbols-outlined text-3xl text-primary-fixed-dim" data-icon="trending_up">trending_up</span></div>
+<div class="py-4 flex justify-center"><span class="material-symbols-outlined text-3xl text-error" data-icon="trending_down">trending_down</span></div>
+<div class="py-4 flex justify-center"><span class="material-symbols-outlined text-3xl" data-icon="all_inclusive">all_inclusive</span></div>
+<div class="py-4 flex justify-center"><span class="material-symbols-outlined text-3xl text-tertiary-fixed" data-icon="bolt">bolt</span></div>
+<!-- Duplicate -->
+<div class="py-4 flex justify-center"><span class="material-symbols-outlined text-3xl" data-icon="swap_horiz">swap_horiz</span></div>
+<div class="py-4 flex justify-center"><span class="material-symbols-outlined text-3xl text-primary-fixed-dim" data-icon="trending_up">trending_up</span></div>
+<div class="py-4 flex justify-center"><span class="material-symbols-outlined text-3xl text-error" data-icon="trending_down">trending_down</span></div>
+<div class="py-4 flex justify-center"><span class="material-symbols-outlined text-3xl" data-icon="all_inclusive">all_inclusive</span></div>
+<div class="py-4 flex justify-center"><span class="material-symbols-outlined text-3xl text-tertiary-fixed" data-icon="bolt">bolt</span></div>
+</div>
+</div>
+<!-- Col 5 -->
+<div class="bg-surface-container-low/80 border border-outline-variant/20 rounded-lg overflow-hidden relative shadow-[inset_0_0_15px_rgba(0,0,0,0.8)]">
+<div class="reel-strip fast w-full flex flex-col gap-4 py-4 text-center font-data-lg text-data-lg text-outline" style="animation-delay: -0.1s">
+<div class="py-4"><div class="flex items-center justify-center gap-2"><img alt="BTC" class="w-6 h-6" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDqu_RX23U1elrvo8UOjZ7yX1MmROV2pIs4m6r1s6u0PSSinOH0pxUd4EEQ2fB09BEnLvwGvIDHm8zi-H1OQgQA8GPb30iwuTHdkhkLYKGNyB4zPoSGN8D58wKLw72viYf4r7sEtYmdi8tFWSbH_1uv-9DmV2rTZXmsS3Sbb1LBTjdI7GSBsWqSazXudqjIFPbIxOrct_TjIGtvsYmfYNoBkBtHNoYMpl-bY66ZxPau67zn32PFl7Dw"/>BTC</div></div>
+<div class="py-4 text-tertiary-fixed"><div class="flex items-center justify-center gap-2"><img alt="ETH" class="w-6 h-6" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDG3CVsbLWhYAVkpJsCFT8Qb1wVojaxV8bo1LeHLGeEG6HZGy5qr3NtudwmT_sTOaj-C551cDjo5zbpwnuk0ENsB1GDCe_2tjvko4ERpHBs0q6haZE9AsolRlqKG1x-U2JWKwVgsy0yfxF_XrtP4iJklSFO_nhow23IByqu15xqTEIM_3Lj7GWD9h5NDBifgdVzqUTC07_EeU93c2W5jbKUVUvmtsP5qUud_hYhDImrphRFssNKo7wY"/>ETH</div></div>
+<div class="py-4 text-error">100x</div>
+<div class="py-4 text-primary-fixed-dim drop-shadow-[0_0_8px_rgba(0,219,233,0.5)]">MAX</div>
+<div class="py-4">2x</div>
+<div class="py-4">5x</div>
+<!-- Duplicate -->
+<div class="py-4"><div class="flex items-center justify-center gap-2"><img alt="BTC" class="w-6 h-6" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDHSmeHZH-7ec3TFZ7gBmNJ3ExMj6X4RMznrTlbnfX5lswdf_LUpkG4kWDMoWpe90y8JUS2LlVpNrjN29XXwD6sB0YaHYuuB1cuM-c0G69GS4xjvpDXthgoZkhspypU9gwckX2ti-qvwuGp-3TdbPieWUE1_U3yRNsNdgdPgeWKLQDfB1JH3_EqfpZabxS9pZwJlQB9YdtN0K6qsGXYq9kFXgj22YNcjpFnPk19Fe_u8q1zaxTPUyzn"/>BTC</div></div>
+<div class="py-4 text-tertiary-fixed"><div class="flex items-center justify-center gap-2"><img alt="ETH" class="w-6 h-6" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDS-RRhdC19WYuGpKRhWe8FfteyY0Fl3svP3KoumYbEztESTasK_jGsqTPYSQS5QQcc1pANzaRa3GBAzCuVOdRBiESbgmDfbfquIVdgO8K_gBXF7HB1d_bl79aZJYWDgleXqGJU0abr_nlKPLCgQXLat0tKwAa3zK-zyRteKplSIXccCVqxYXCcoCsb4Uh0Q2WNfw4ySTY-UViROo_oXtqVj2Za45jr6v1vl3NAaf4XtJeSlJT6jgfW"/>ETH</div></div>
+<div class="py-4 text-error">100x</div>
+<div class="py-4 text-primary-fixed-dim drop-shadow-[0_0_8px_rgba(0,219,233,0.5)]">MAX</div>
+<div class="py-4">2x</div>
+<div class="py-4">5x</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Audio Telemetry Dashboard (Bottom of Center) -->
+<section class="h-32 bg-surface-container-low/60 backdrop-blur-md border border-outline-variant/30 rounded flex flex-col p-3 shadow-inner">
+<div class="font-label-caps text-label-caps text-outline mb-2 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="graphic_eq">graphic_eq</span>
+                        AUDIO TELEMETRY
+                    </div>
+<span class="font-data-sm text-data-sm text-primary-fixed-dim">SYNC: TRUE</span>
+</div>
+<div class="flex gap-6 h-full items-end pb-1">
+<!-- Controls -->
+<div class="flex flex-col gap-2 w-48 justify-end">
+<div class="flex items-center gap-2">
+<span class="font-data-sm text-data-sm text-on-surface-variant w-16">M_GAIN</span>
+<div class="flex-grow h-1 bg-surface-variant rounded-full overflow-hidden relative">
+<div class="absolute top-0 left-0 h-full bg-primary-container w-[75%] shadow-[0_0_8px_#00f0ff]"></div>
+</div>
+<span class="font-data-sm text-data-sm text-on-surface">75%</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-data-sm text-data-sm text-on-surface-variant w-16">DRUM_INT</span>
+<div class="flex-grow h-1 bg-surface-variant rounded-full overflow-hidden relative">
+<div class="absolute top-0 left-0 h-full bg-tertiary-fixed w-[40%]"></div>
+</div>
+<span class="font-data-sm text-data-sm text-on-surface">40%</span>
+</div>
+</div>
+<!-- Waveform Visualizer -->
+<div class="flex-grow h-full flex items-end justify-between gap-[2px] opacity-80" id="waveform-container">
+<!-- Bars generated dynamically or pre-populated -->
+<div class="w-1.5 bg-primary-fixed-dim wave-bar h-full" style="animation-delay: 0.1s"></div>
+<div class="w-1.5 bg-primary-fixed-dim wave-bar h-[80%]" style="animation-delay: 0.2s"></div>
+<div class="w-1.5 bg-primary-fixed-dim wave-bar h-[60%]" style="animation-delay: 0.3s"></div>
+<div class="w-1.5 bg-primary-fixed-dim wave-bar h-[90%]" style="animation-delay: 0.4s"></div>
+<div class="w-1.5 bg-secondary-fixed-dim wave-bar h-[40%]" style="animation-delay: 0.5s"></div>
+<div class="w-1.5 bg-primary-fixed-dim wave-bar h-[70%]" style="animation-delay: 0.6s"></div>
+<div class="w-1.5 bg-primary-fixed-dim wave-bar h-[100%]" style="animation-delay: 0.7s"></div>
+<div class="w-1.5 bg-tertiary-fixed-dim wave-bar h-[30%]" style="animation-delay: 0.8s"></div>
+<div class="w-1.5 bg-primary-fixed-dim wave-bar h-[50%]" style="animation-delay: 0.9s"></div>
+<div class="w-1.5 bg-primary-fixed-dim wave-bar h-[80%]" style="animation-delay: 1.0s"></div>
+<div class="w-1.5 bg-primary-fixed-dim wave-bar h-[60%]" style="animation-delay: 1.1s"></div>
+<div class="w-1.5 bg-primary-fixed-dim wave-bar h-[90%]" style="animation-delay: 1.2s"></div>
+<div class="w-1.5 bg-primary-fixed-dim wave-bar h-[40%]" style="animation-delay: 1.3s"></div>
+<div class="w-1.5 bg-secondary-fixed-dim wave-bar h-[70%]" style="animation-delay: 1.4s"></div>
+<div class="w-1.5 bg-primary-fixed-dim wave-bar h-[100%]" style="animation-delay: 1.5s"></div>
+<div class="w-1.5 bg-primary-fixed-dim wave-bar h-[30%]" style="animation-delay: 1.6s"></div>
+<div class="w-1.5 bg-tertiary-fixed-dim wave-bar h-[50%]" style="animation-delay: 1.7s"></div>
+<div class="w-1.5 bg-primary-fixed-dim wave-bar h-[80%]" style="animation-delay: 1.8s"></div>
+</div>
+</div>
+</section>
+</div>
+<!-- Sidebar: Status & Logs (Cols 9-12) -->
+<div class="hidden md:flex col-span-1 md:col-span-4 lg:col-span-3 flex-col gap-module-gap h-full overflow-hidden">
+<!-- System Status -->
+<section class="bg-surface-container/50 border border-outline-variant/30 rounded p-3 flex flex-col gap-3">
+<div class="font-label-caps text-label-caps text-outline flex items-center gap-2 border-b border-outline-variant/20 pb-2 mb-1">
+<span class="material-symbols-outlined text-xs" data-icon="memory">memory</span>
+                    SYSTEM CORE
+                </div>
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-center">
+<span class="font-data-sm text-data-sm text-on-surface-variant">FLASHLOAN NODE</span>
+<div class="flex items-center gap-2">
+<span class="font-data-sm text-data-sm text-primary-fixed-dim">ARMED</span>
+<span class="w-2 h-2 rounded-full bg-primary-fixed-dim shadow-[0_0_6px_#00dbe9] animate-pulse"></span>
+</div>
+</div>
+<div class="flex justify-between items-center">
+<span class="font-data-sm text-data-sm text-on-surface-variant">RPC ENDPOINT</span>
+<div class="flex items-center gap-2">
+<span class="font-data-sm text-data-sm text-on-surface">32ms</span>
+<span class="w-2 h-2 rounded-full bg-tertiary-fixed"></span>
+</div>
+</div>
+<div class="flex justify-between items-center">
+<span class="font-data-sm text-data-sm text-on-surface-variant">MEMPOOL SCAN</span>
+<div class="flex items-center gap-2">
+<span class="font-data-sm text-data-sm text-on-surface">ACTIVE</span>
+<span class="w-2 h-2 rounded-full bg-primary-fixed-dim"></span>
+</div>
+</div>
+</div>
+</section>
+<!-- Trade Logs (Data Table) -->
+<section class="flex-grow bg-surface-container/30 border border-outline-variant/30 rounded flex flex-col overflow-hidden">
+<div class="h-8 border-b border-outline-variant/30 flex justify-between items-center px-3 bg-surface-container-highest/20">
+<span class="font-label-caps text-label-caps text-outline flex items-center gap-2">
+<span class="material-symbols-outlined text-xs" data-icon="receipt_long">receipt_long</span>
+                        EVENT LOG
+                    </span>
+<span class="material-symbols-outlined text-sm text-outline hover:text-primary-fixed cursor-pointer transition-colors" data-icon="filter_list">filter_list</span>
+</div>
+<div class="flex-grow overflow-y-auto p-2 flex flex-col gap-1 hide-scrollbar font-data-sm text-data-sm">
+<!-- Table Header -->
+<div class="grid grid-cols-4 gap-2 text-outline font-bold border-b border-outline-variant/20 pb-1 mb-1">
+<div>TIME</div>
+<div>ACT</div>
+<div class="text-right">AMT</div>
+<div class="text-right">PAIR</div>
+</div>
+<!-- Rows -->
+<div class="grid grid-cols-4 gap-2 text-on-surface hover:bg-surface-variant/30 px-1 py-0.5 rounded cursor-pointer group">
+<div class="text-on-surface-variant">14:02:11</div>
+<div class="text-primary-fixed-dim">EXEC</div>
+<div class="text-right text-primary-fixed">14.5</div>
+<div class="text-right group-hover:text-primary-fixed-dim transition-colors">ETH/USDC</div>
+</div>
+<div class="grid grid-cols-4 gap-2 text-on-surface hover:bg-surface-variant/30 px-1 py-0.5 rounded cursor-pointer group">
+<div class="text-on-surface-variant">14:02:08</div>
+<div class="text-error">LIQ</div>
+<div class="text-right">0.05</div>
+<div class="text-right">BTC/USDT</div>
+</div>
+<div class="grid grid-cols-4 gap-2 text-on-surface hover:bg-surface-variant/30 px-1 py-0.5 rounded cursor-pointer group bg-surface-variant/10">
+<div class="text-on-surface-variant">14:01:55</div>
+<div class="text-tertiary-fixed">SWAP</div>
+<div class="text-right">1000</div>
+<div class="text-right">SOL/USDC</div>
+</div>
+<div class="grid grid-cols-4 gap-2 text-on-surface hover:bg-surface-variant/30 px-1 py-0.5 rounded cursor-pointer group">
+<div class="text-on-surface-variant">14:01:42</div>
+<div class="text-primary-fixed-dim">EXEC</div>
+<div class="text-right text-primary-fixed">2.1</div>
+<div class="text-right">ETH/USDC</div>
+</div>
+<div class="grid grid-cols-4 gap-2 text-on-surface hover:bg-surface-variant/30 px-1 py-0.5 rounded cursor-pointer group">
+<div class="text-on-surface-variant">14:01:30</div>
+<div class="text-outline">PEND</div>
+<div class="text-right text-outline">50.0</div>
+<div class="text-right">LINK/ETH</div>
+</div>
+<div class="grid grid-cols-4 gap-2 text-on-surface hover:bg-surface-variant/30 px-1 py-0.5 rounded cursor-pointer group">
+<div class="text-on-surface-variant">14:01:12</div>
+<div class="text-primary-fixed-dim">EXEC</div>
+<div class="text-right text-primary-fixed">0.8</div>
+<div class="text-right">BTC/USDC</div>
+</div>
+<div class="grid grid-cols-4 gap-2 text-on-surface hover:bg-surface-variant/30 px-1 py-0.5 rounded cursor-pointer group bg-surface-variant/10">
+<div class="text-on-surface-variant">14:01:05</div>
+<div class="text-tertiary-fixed">SWAP</div>
+<div class="text-right">250</div>
+<div class="text-right">UNI/USDT</div>
+</div>
+</div>
+<!-- Command Input Box -->
+<div class="p-2 border-t border-outline-variant/30 bg-surface-container-low">
+<div class="flex items-center gap-2 font-data-sm text-data-sm text-primary-fixed-dim bg-surface-dim border border-outline-variant/50 rounded px-2 py-1">
+<span>&gt;</span>
+<input class="bg-transparent border-none focus:ring-0 text-on-surface w-full p-0 h-4 placeholder-outline-variant" placeholder="Enter override sequence..." type="text"/>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- BottomNavBar (From JSON) - Mobile Only as per rules -->
+<nav class="md:hidden bg-surface-container-lowest/90 backdrop-blur-2xl border-t border-outline-variant/20 shadow-[0_-4px_12px_rgba(0,0,0,0.5)] flex justify-around items-center px-4 fixed bottom-0 w-full z-50 h-20">
+<!-- Active: Dashboard -->
+<button class="flex flex-col items-center justify-center text-primary-fixed-dim bg-primary-container/10 rounded-xl px-4 py-1 active:scale-90 duration-100 hover:text-primary transition-all">
+<span class="material-symbols-outlined mb-1" data-icon="dashboard">dashboard</span>
+<span class="font-label-caps text-label-caps">Dashboard</span>
+</button>
+<!-- Inactive -->
+<button class="flex flex-col items-center justify-center text-outline active:scale-90 duration-100 hover:text-primary transition-all px-4 py-1">
+<span class="material-symbols-outlined mb-1" data-icon="extension">extension</span>
+<span class="font-label-caps text-label-caps">Modules</span>
+</button>
+<!-- Inactive -->
+<button class="flex flex-col items-center justify-center text-outline active:scale-90 duration-100 hover:text-primary transition-all px-4 py-1">
+<span class="material-symbols-outlined mb-1" data-icon="terminal">terminal</span>
+<span class="font-label-caps text-label-caps">Log</span>
+</button>
+<!-- Inactive -->
+<button class="flex flex-col items-center justify-center text-outline active:scale-90 duration-100 hover:text-primary transition-all px-4 py-1">
+<span class="material-symbols-outlined mb-1" data-icon="settings">settings</span>
+<span class="font-label-caps text-label-caps">Settings</span>
+</button>
+</nav>
+<script>
+        // Minor inline JS for visual flair (randomizing waveform heights slightly over time)
+        document.addEventListener('DOMContentLoaded', () => {
+            const waveBars = document.querySelectorAll('.wave-bar');
+            
+            setInterval(() => {
+                waveBars.forEach(bar => {
+                    // Randomize base height slightly for a more organic telemetry feel
+                    const currentHeight = parseInt(bar.style.height || '50');
+                    if(Math.random() > 0.7) {
+                        const newHeight = Math.max(20, Math.min(100, currentHeight + (Math.random() * 20 - 10)));
+                        bar.style.height = `${newHeight}%`;
+                    }
+                });
+            }, 1000);
+        });
+    </script>
+</body></html>

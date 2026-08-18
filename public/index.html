@@ -6,11 +6,11 @@
 <title>TRADE ARENA — AI TRADING FLOOR</title>
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Bungee+Shade&family=JetBrains+Mono:wght@400;700&family=Oswald:wght@400;700&family=Share+Tech+Mono&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
-<script src="privy-client.js?v=4.3.12"></script>
-<script src="contract-helpers.js?v=4.3.12"></script>
-<script src="real-wallet.js?v=4.3.12"></script>
-<script src="blockchain-execution.js?v=4.3.12"></script>
-<script src="execution-engine.js?v=4.3.12"></script>
+<script src="privy-client.js?v=4.3.41"></script>
+<script src="contract-helpers.js?v=4.3.41"></script>
+<script src="real-wallet.js?v=4.3.41"></script>
+<script src="blockchain-execution.js?v=4.3.41"></script>
+<script src="execution-engine.js?v=4.3.41"></script>
 <style>
 :root{
   --gold:#ffd700;--gold2:#ffaa00;--hot:#ff2d78;--cyan:#00ffe7;
@@ -759,7 +759,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 <div class="edge"></div>
 
 <!-- ══ CONNECT ══ -->
-<div style="position:fixed; top:10px; right:10px; background:var(--hot); color:white; padding:5px 10px; font-size:10px; z-index:10000; border-radius:4px; font-family:'Bungee'; box-shadow:0 0 10px var(--hot);">LIVE V4.3.17</div>
+<div style="position:fixed; top:10px; right:10px; background:var(--hot); color:white; padding:5px 10px; font-size:10px; z-index:10000; border-radius:4px; font-family:'Bungee'; box-shadow:0 0 10px var(--hot);">LIVE V4.3.41</div>
 <div id="connectScreen">
   <div class="marquee-wrap">
     <div class="marquee-inner">
@@ -843,13 +843,15 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     </div>
      <!-- bot controls -->
      <div class="gh-controls">
-       <button class="gh-bus-btn" id="ghStaffBtn" onclick="togglePanel('staff')" title="Application Maintenance & Support" aria-expanded="false" aria-label="Staff Panel: Application Maintenance and Support"><span role="img" aria-hidden="true">👷</span> STAFF</button>
-       <button class="gh-bus-btn" id="ghTaskBtn" onclick="togglePanel('task')" title="Earn Trade Credits" aria-expanded="false" aria-label="Earn Panel: Complete Tasks and Earn Trade Credits"><span role="img" aria-hidden="true">💰</span> EARN</button>
-       <button class="gh-bus-btn" id="ghEloBtn" onclick="togglePanel('elo')" title="ELO Arena - Recursive Improvement" aria-expanded="false" aria-label="Arena Panel: ELO Arena and Recursive Improvement"><span role="img" aria-hidden="true">🏆</span> ARENA</button>
-       <button class="gh-bus-btn" id="voiceAgentBtn" onclick="toggleVoiceAgent()" title="AI Floor Manager (Voice Chat)" aria-expanded="false" aria-label="Voice Agent: Toggle AI Floor Manager Voice Chat"><span role="img" aria-hidden="true">🎙️</span> AGENT</button>
-       <button class="gh-bus-btn" id="fleetViewBtn" onclick="toggleFleetView()" title="Toggle Fleet View (Compact Grid)" aria-label="Fleet View: Toggle Fleet View Compact Grid"><span role="img" aria-hidden="true">📊</span> FLEET</button>
-        <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots" aria-expanded="false" aria-label="Bus Panel: Configure Bus settings to apply to all bots"><span role="img" aria-hidden="true">⚙</span> BUS</button>
-        <button class="gh-bus-btn" id="ghSettingsBtn" onclick="toggleSettingsModal()" title="Settings" aria-expanded="false" aria-label="Settings: Open Settings Panel"><span role="img" aria-hidden="true">⚙</span> SETTINGS</button>
+       <button class="gh-bus-btn" id="masterDashboardBtn" onclick="window.location.href='master-dashboard.html'" title="Master Dashboard (Stitch V3.1)" aria-expanded="false" style="border-color:var(--cyan);color:var(--cyan)"><span role="img" aria-hidden="true">💎</span> MASTER</button>
+       <button class="gh-bus-btn" id="agentConsoleBtn" onclick="window.location.href='agent-console.html'" title="Managed Agent Console (Stitch Terminal)" aria-expanded="false" style="border-color:var(--purple);color:var(--purple)"><span role="img" aria-hidden="true">🤖</span> TERMINAL</button>
+       <button class="gh-bus-btn" id="ghStaffBtn" onclick="togglePanel('staff')" title="Application Maintenance & Support" aria-expanded="false"><span role="img" aria-hidden="true">👷</span> STAFF</button>
+       <button class="gh-bus-btn" id="ghTaskBtn" onclick="togglePanel('task')" title="Earn Trade Credits" aria-expanded="false"><span role="img" aria-hidden="true">💰</span> EARN</button>
+       <button class="gh-bus-btn" id="ghEloBtn" onclick="togglePanel('elo')" title="ELO Arena - Recursive Improvement" aria-expanded="false"><span role="img" aria-hidden="true">🏆</span> ARENA</button>
+       <button class="gh-bus-btn" id="voiceAgentBtn" onclick="toggleVoiceAgent()" title="AI Floor Manager (Voice Chat)" aria-expanded="false"><span role="img" aria-hidden="true">🎙️</span> AGENT</button>
+       <button class="gh-bus-btn" id="fleetViewBtn" onclick="toggleFleetView()" title="Toggle Fleet View (Compact Grid)"><span role="img" aria-hidden="true">📊</span> FLEET</button>
+        <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots" aria-expanded="false"><span role="img" aria-hidden="true">⚙</span> BUS</button>
+        <button class="gh-bus-btn" id="ghSettingsBtn" onclick="toggleSettingsModal()" title="Settings" aria-expanded="false"><span role="img" aria-hidden="true">⚙</span> SETTINGS</button>
         <button class="gh-auto-btn" id="liveToggleBtn" onclick="toggleLiveMode()" title="Toggle Live/Demo Mode" style="border-color:var(--green);color:var(--green);box-shadow:0 0 10px rgba(0,255,157,0.3)">LIVE</button>
        <button class="gh-auto-btn" id="ghAutoBtn" onclick="globalAutoToggle()" title="Toggle auto-trading on all bots" aria-pressed="false">AUTO</button>
        <button class="gh-bot-btn" id="ghRemoveBtn" onclick="removeLastBot()" title="Remove last bot" aria-label="Remove last bot" disabled>−</button>
@@ -1674,41 +1676,22 @@ async function handleMetaMaskConnect() {
           mergedUser = { ...userData, ...data.user };
         }
 
-        // Fetch live on-chain balance from MetaMask and sync it
-        if (window.getWalletBalanceUSD) {
-          try {
-            const liveBalance = await window.getWalletBalanceUSD();
-            if (liveBalance !== undefined && liveBalance !== null) {
-              balance = liveBalance;
-            } else {
-              balance = data.success ? data.user.balance || 0 : 0;
-            }
-          } catch (balErr) {
-            console.warn('[MetaMask] Failed to fetch live wallet balance:', balErr);
-            balance = data.success ? data.user.balance || 0 : 0;
-          }
+        // 🛡️ UNIFIED SYNC: Balance is now managed by updateAgentStatus() via /api/network/status
+        // This ensures the dashboard reflects the funded Agent Wallet (0x2ca1...)
+        if (window.lastAgentStatus && window.lastAgentStatus.wallet) {
+            balance = parseFloat(window.lastAgentStatus.wallet.balance) || 0;
         } else {
-          balance = data.success ? data.user.balance || 0 : 0;
+            balance = data.success ? data.user.balance || 0 : 0;
         }
 
         if (typeof setupApp === 'function') setupApp(mergedUser);
       } catch (apiErr) {
         console.warn('API login error, proceeding with fallback:', apiErr);
-        // Fetch live on-chain balance on fallback too
-        if (window.getWalletBalanceUSD) {
-          try {
-            const liveBalance = await window.getWalletBalanceUSD();
-            if (liveBalance !== undefined && liveBalance !== null) {
-              balance = liveBalance;
-            } else {
-              balance = 0;
-            }
-          } catch (balErr) {
-            console.warn('[MetaMask] Failed to fetch live wallet balance on fallback:', balErr);
-            balance = 0;
-          }
+        // 🛡️ UNIFIED SYNC: Prioritize Agent Wallet balance even on fallback
+        if (window.lastAgentStatus && window.lastAgentStatus.wallet) {
+            balance = parseFloat(window.lastAgentStatus.wallet.balance) || 0;
         } else {
-          balance = 0;
+            balance = 0;
         }
         if (typeof setupApp === 'function') setupApp(userData);
       }
@@ -6479,19 +6462,19 @@ document.addEventListener('keydown', function(e) {
 
 </script>
 <!-- Arena React Bundle -->
-<script src="arena-react-bundle.js?v=4.3.12" defer></script>
-<script src="app.js?v=4.3.12" defer></script>
+<script src="arena-react-bundle.js?v=4.3.41" defer></script>
+<script src="app.js?v=4.3.41" defer></script>
 
 <!-- ACOUSTIC Audio-Visual Engines -->
-<script src="acoustic-bundle.js?v=4.3.12" defer></script>
-<script src="ACOUSTIC_CORE.js?v=4.3.12" defer></script>
-<script src="trading-bundle.js?v=4.3.12" defer></script>
-<script src="task-center.js?v=4.3.12" defer></script>
-<script src="gas-fund.js?v=4.3.12" defer></script>
-<script src="management-bundle.js?v=4.3.12" defer></script>
+<script src="acoustic-bundle.js?v=4.3.41" defer></script>
+<script src="ACOUSTIC_CORE.js?v=4.3.41" defer></script>
+<script src="trading-bundle.js?v=4.3.41" defer></script>
+<script src="task-center.js?v=4.3.41" defer></script>
+<script src="gas-fund.js?v=4.3.41" defer></script>
+<script src="management-bundle.js?v=4.3.41" defer></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  console.log('🚀 Trade Arena V4.3.17 Initialized');
+  console.log('🚀 Trade Arena V4.3.41 Initialized');
   const savedTheme = localStorage.getItem('ta_theme') || 'default';
   if (typeof applyTheme === 'function') {
     applyTheme(savedTheme, false);
@@ -6501,7 +6484,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   // Auto-connect disabled to prevent broadcast channel crashes on boot
   
-  // Real-time Balance Sync (V4.3.17)
+  // Real-time Balance Sync (V4.3.41)
   setInterval(async () => {
     // 🛡️ UNIFIED SYNC: Prioritize on-chain walletState balance
     if (window.walletState && window.walletState.isConnected && window.walletState.balanceUSD > 0) {
@@ -6793,6 +6776,23 @@ function refreshSettingsUI() {
     if (b1) { b1.classList.toggle('active', sfxOn); b1.setAttribute('aria-pressed', sfxOn.toString()); }
     if (b2) { b2.classList.toggle('active', voiceOn); b2.setAttribute('aria-pressed', voiceOn.toString()); }
     if (b3) { b3.classList.toggle('active', audioOn); b3.setAttribute('aria-pressed', audioOn.toString()); }
+
+    // Flashloan Arb Status (V4.3.41)
+    if (window.lastAgentStatus && window.lastAgentStatus.arbitrage) {
+        const arb = window.lastAgentStatus.arbitrage;
+        const elExec = document.getElementById('settingsArbExecution');
+        const elMin = document.getElementById('settingsArbMinProfit');
+        const elMax = document.getElementById('settingsArbMaxGas');
+        const elEng = document.getElementById('settingsArbEngine');
+        
+        if (elExec) {
+            elExec.textContent = arb.executionEnabled ? 'ENABLED' : 'DISABLED';
+            elExec.style.color = arb.executionEnabled ? 'var(--green)' : 'var(--dim)';
+        }
+        if (elMin) elMin.textContent = `$${parseFloat(arb.minProfitUsd).toFixed(2)}`;
+        if (elMax) elMax.textContent = `$${parseFloat(arb.maxGasUsd).toFixed(2)}`;
+        if (elEng) elEng.textContent = arb.engineAddress || 'Not Deployed';
+    }
 }
 function applyTheme(theme, isUserClick = false) {
     const currentTheme = localStorage.getItem('ta_theme') || 'default';
@@ -7038,6 +7038,30 @@ function updateSettingsVolume(val) {
         <div style="margin-top:8px;font-size:9px;color:var(--dim);display:flex;gap:8px;flex-wrap:wrap">
           <span>Circuit Breaker: <span id="settingsBreakerStatus" style="color:var(--green)">OK</span></span>
           <span>Failures: <span id="settingsBreakerFailures">0</span>/3</span>
+        </div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-title">⚡ Flashloan Arbitrage</div>
+        <div style="font-size:10px;color:var(--dim);margin-bottom:8px">
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px">
+            <span>Execution Status:</span>
+            <span id="settingsArbExecution" style="color:var(--dim); font-family:'Bungee'">DISABLED</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px">
+            <span>Min Profit Threshold:</span>
+            <span id="settingsArbMinProfit" style="color:var(--cyan)">$5.00</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px">
+            <span>Max Gas Limit:</span>
+            <span id="settingsArbMaxGas" style="color:var(--cyan)">$2.00</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px">
+            <span>Engine Contract:</span>
+            <span id="settingsArbEngine" style="color:var(--cyan); font-size:8px">Not Deployed</span>
+          </div>
+        </div>
+        <div style="font-size:8px;color:var(--dim);line-height:1.4;margin-top:8px;padding:6px;background:rgba(255,255,255,0.03);border-radius:4px">
+          * These parameters are managed via Render environment variables (ENABLE_LIVE_EXECUTION, ARB_MIN_PROFIT_USD, ARB_MAX_GAS_USD).
         </div>
       </div>
       <div class="settings-section">

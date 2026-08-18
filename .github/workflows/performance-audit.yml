@@ -1,0 +1,70 @@
+name: HFT Performance & Reliability Audit
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  performance-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22.x'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: 🚀 Run Baseline HFT Load Test
+      run: |
+        mkdir -p logs
+        node scripts/load-test-notifications.js
+      env:
+        MM_CLI_TOKEN: "ci_test_token"
+        DISCORD_WEBHOOK_URL: ""
+        TELEGRAM_BOT_TOKEN: ""
+        TELEGRAM_CHAT_ID: ""
+
+    - name: 📄 Verify Local Log Integrity
+# Check if logs/trades.log has at least 500 entries (expected from load test)
+      run: |
+        LINE_COUNT=$(wc -l < logs/trades.log)
+        echo "Total trades logged: $LINE_COUNT"
+        if [ "$LINE_COUNT" -lt 500 ]; then
+          echo "❌ Error: Expected at least 500 trades in log, found $LINE_COUNT"
+          exit 1
+        fi
+        echo "✅ Log integrity verified."
+
+    - name: 🩺 Run Clinic.js Performance Audit
+      run: |
+        npm install -g clinic
+        chmod +x scripts/run-performance-audit.sh
+        ./scripts/run-performance-audit.sh
+      env:
+        MM_CLI_TOKEN: "ci_test_token"
+
+    - name: 📦 Upload Performance Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: performance-reports-${{ github.sha }}
+        path: |
+          reports/performance/
+          logs/trades.log
+        retention-days: 7
+
+    - name: 🏁 Final Performance Summary
+      run: |
+        echo "### Performance Audit Results" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Baseline Load Test Passed" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Log Integrity Verified" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Clinic.js Reports Generated" >> $GITHUB_STEP_SUMMARY
+        echo "View the artifacts for deep heap and event loop analysis." >> $GITHUB_STEP_SUMMARY

@@ -824,7 +824,7 @@ function connectWebSocket() {
 
 // Start WebSocket connection on load
 if (typeof window !== 'undefined') {
-    console.log('🚀 TRADE ARENA V4.3.17 INITIALIZED');
+    console.log('🚀 TRADE ARENA V4.3.41 INITIALIZED');
     connectWebSocket();
     
     // Export notify function
@@ -1004,17 +1004,41 @@ window.testSignature = async function() {
 /**
  * METAMASK AGENT WALLET UI INTEGRATION
  */
+let isAutoSyncing = false;
 async function updateAgentStatus() {
     try {
         const response = await fetch('/api/network/status');
         const data = await response.json();
         
+        // Store for global access
+        window.lastAgentStatus = data;
+        
         const pairingUI = document.getElementById('agentPairingUI');
         
         if (data.success) {
+            // 🔄 AUTO-SYNC: If disconnected but we have a saved token, try to re-link automatically
+            if (!data.wallet.authenticated && !isAutoSyncing) {
+                const savedToken = localStorage.getItem('ta_mm_cli_token');
+                if (savedToken) {
+                    console.log('🤖 AUTO-SYNC: Detected disconnected agent, attempting re-link with saved token...');
+                    isAutoSyncing = true;
+                    submitAgentToken(savedToken);
+                    return; // Let submitAgentToken trigger the next update
+                }
+            }
+            isAutoSyncing = false;
+
             document.getElementById('agentAddr').textContent = data.wallet.address;
-            document.getElementById('agentBalance').textContent = '$' + (parseFloat(data.wallet.balance) || 0).toFixed(2);
+            const balUsd = parseFloat(data.wallet.balance) || 0;
+            const balUsdFixed = balUsd.toFixed(2);
+            document.getElementById('agentBalance').textContent = data.wallet.ethBalance ? `${data.wallet.ethBalance} ETH ($${balUsdFixed})` : `$${balUsdFixed}`;
             document.getElementById('agentEthPrice').textContent = 'ETH: $' + (parseFloat(data.network.ethPrice) || 0).toFixed(2);
+            
+            // 🛡️ UNIFIED SYNC: Update global dashboard balance with Agent Wallet balance
+            if (typeof balance !== 'undefined') {
+                window.balance = balUsd;
+                if (typeof updateLiveBalance === 'function') updateLiveBalance();
+            }
             
             // Show authenticated email if linked
             const statusLabel = document.querySelector('.cpanel-hd span[style*="var(--dim)"]');
@@ -1086,9 +1110,11 @@ async function getAgentLoginUrl() {
     }
 }
 
-async function submitAgentToken() {
-    const token = document.getElementById('cliTokenInput').value;
+async function submitAgentToken(passedToken = null) {
+    const token = passedToken || document.getElementById('cliTokenInput').value;
     if (!token) return showToast('Please paste the CLI token', 'error');
+    
+    if (!passedToken) showToast('Connecting Trading Agent...', 'info');
     
     try {
         const response = await fetch('/api/agent/submit-token', {
@@ -1099,14 +1125,26 @@ async function submitAgentToken() {
         const data = await response.json();
         if (data.success) {
             showToast('Agent Connected Successfully!', 'success');
-            document.getElementById('pairingLinkContainer').style.display = 'none';
-            document.getElementById('cliTokenInput').value = '';
+            
+            // 💾 PERSISTENCE: Save token for auto-sync on next visit
+            localStorage.setItem('ta_mm_cli_token', token);
+            
+            const pairingContainer = document.getElementById('pairingLinkContainer');
+            if (pairingContainer) pairingContainer.style.display = 'none';
+            
+            const tokenInput = document.getElementById('cliTokenInput');
+            if (tokenInput) tokenInput.value = '';
+            
             updateAgentStatus();
         } else {
-            showToast('Auth Failed: ' + data.error, 'error');
+            if (!passedToken) showToast('Auth Failed: ' + data.error, 'error');
+            // If auto-sync failed, clear the stale token
+            if (passedToken) localStorage.removeItem('ta_mm_cli_token');
         }
     } catch (e) {
-        showToast('Error submitting token', 'error');
+        if (!passedToken) showToast('Error submitting token', 'error');
+    } finally {
+        isAutoSyncing = false;
     }
 }
 

@@ -13,6 +13,10 @@ const WebSocket = require('websocket').w3cwebsocket;
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Import MetaMask Agent Arbitrage Service
+const mmArbService = require('../services/MetaMaskAgentArbService');
+mmArbService.start();
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -35,7 +39,7 @@ const DEX_ABI = [
 ];
 
 // Initialize provider
-const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
+const provider = new ethers.JsonRpcProvider(RPC_URL);
 
 /**
  * API Routes
@@ -46,6 +50,30 @@ const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
  */
 app.get('/api/health', (req, res) => {
     res.json({ status: 'OK', timestamp: Date.now() });
+});
+
+/**
+ * GET /api/agent/status - Read-only control-plane state for the managed Agent Wallet.
+ */
+app.get('/api/agent/status', (req, res) => {
+    res.json({ success: true, agent: mmArbService.getStatus(), timestamp: Date.now() });
+});
+
+/**
+ * POST /api/agent/pause - Pause quote polling and execution decisions.
+ */
+app.post('/api/agent/pause', (req, res) => {
+    mmArbService.pause();
+    res.json({ success: true, agent: mmArbService.getStatus(), timestamp: Date.now() });
+});
+
+/**
+ * POST /api/agent/resume - Resume quote polling. Execution remains disabled unless
+ * AGENT_EXECUTION_ENABLED=true is explicitly configured on the server.
+ */
+app.post('/api/agent/resume', (req, res) => {
+    mmArbService.resume();
+    res.json({ success: true, agent: mmArbService.getStatus(), timestamp: Date.now() });
 });
 
 /**
@@ -353,9 +381,20 @@ function generateId() {
 /**
  * Start Server
  */
+// Prometheus Metrics Endpoint
+app.get('/metrics', async (req, res) => {
+    try {
+        res.set('Content-Type', mmArbService.getMetricsRegistry().contentType);
+        res.end(await mmArbService.getMetricsRegistry().metrics());
+    } catch (ex) {
+        res.status(500).end(ex.message);
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`🤖 Trade Arena Backend running on port ${PORT}`);
     console.log(`📊 Market analysis: http://localhost:${PORT}/api/health`);
+    console.log(`📈 Prometheus metrics: http://localhost:${PORT}/metrics`);
 });
 
 module.exports = app;
