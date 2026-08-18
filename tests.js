@@ -1533,6 +1533,32 @@ describe("Server Input Validation - Sentinel Hardening", () => {
     expect(isValidBotInput("My Bot", "Arbitrage Detection", "Conservative (2x leverage)", 1000, "a".repeat(101))).toBe(false);
   });
 
+  it("validates agent CLI submit-token input correctly to prevent command injection", () => {
+    const isValidTokenInput = (token) => {
+      if (!token || typeof token !== 'string' || token.length > 500 || !/^[a-zA-Z0-9_\-]+$/.test(token)) {
+        return false;
+      }
+      return true;
+    };
+
+    // Valid tokens
+    expect(isValidTokenInput("valid_token_123")).toBe(true);
+    expect(isValidTokenInput("sample-token-abc123XYZ")).toBe(true);
+
+    // Invalid or command injection payloads
+    expect(isValidTokenInput(null)).toBe(false);
+    expect(isValidTokenInput(undefined)).toBe(false);
+    expect(isValidTokenInput(12345)).toBe(false);
+    expect(isValidTokenInput("")).toBe(false);
+    expect(isValidTokenInput("a".repeat(501))).toBe(false);
+    expect(isValidTokenInput('token"; calc.exe "')).toBe(false);
+    expect(isValidTokenInput("token; rm -rf /")).toBe(false);
+    expect(isValidTokenInput("token && echo hacked")).toBe(false);
+    expect(isValidTokenInput("token$(whoami)")).toBe(false);
+    expect(isValidTokenInput("token`id`")).toBe(false);
+    expect(isValidTokenInput("token|ls")).toBe(false);
+  });
+
   it("validates task claim and payout userAddress with type safety and anchored regex", () => {
     const isValidEarlyAddress = (userAddress) => {
       return !!(userAddress && typeof userAddress === 'string' && userAddress !== 'demo' && /^0x[a-fA-F0-9]{40}$/.test(userAddress));

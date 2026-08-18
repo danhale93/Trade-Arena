@@ -592,10 +592,14 @@ app.get('/api/agent/login-url', async (req, res) => {
 });
 
 // 🔑 AGENT PAIRING: Submit CLI token from UI
-app.post('/api/agent/submit-token', async (req, res) => {
+app.post('/api/agent/submit-token', loginLimiter, async (req, res) => {
     const { token } = req.body;
     console.log(`[Server] Received token submission request (Length: ${token?.length || 0})`);
-    if (!token) return res.status(400).json({ success: false, error: 'Token is required' });
+
+    // Sentinel: Enforce strict type validation, length limits, and character allowlist to prevent command injection
+    if (!token || typeof token !== 'string' || token.length > 500 || !/^[a-zA-Z0-9_\-]+$/.test(token)) {
+        return res.status(400).json({ success: false, error: 'Invalid or missing CLI token' });
+    }
 
     try {
         // 🛡️ PAUSE ENGINE: Prevent scan loop from interfering during login
