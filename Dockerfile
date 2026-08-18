@@ -4,20 +4,15 @@ FROM node:22-bookworm AS builder
 
 WORKDIR /app
 
-# Enable corepack for pinned pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Copy dependency manifests
 COPY package.json pnpm-lock.yaml ./
 COPY patches/ ./patches/
 
-# Install all dependencies (including devDependencies for vite build)
 RUN pnpm install --frozen-lockfile
 
-# Copy source code
 COPY . .
 
-# Build frontend and bundle server
 RUN pnpm run build
 
 # Production runtime stage
@@ -27,10 +22,11 @@ WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Copy package manifests and production dependencies
 COPY package.json pnpm-lock.yaml ./
 COPY patches/ ./patches/
-RUN pnpm install --prod --frozen-lockfile
+
+# Install all dependencies so build-time externalized packages (like vite) are present at runtime
+RUN pnpm install --frozen-lockfile
 
 # Copy built artifacts and necessary server files
 COPY --from=builder /app/dist ./dist

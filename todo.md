@@ -326,3 +326,10 @@ POSIX
 - [x] Create container log viewer helper (`client/src/lib/containerLogViewer.ts`) and tests
 - [x] Verify build, TypeScript, and test suite successfully
 - [x] Save checkpoint and deliver complete container deployment package & logging architecture
+
+# Additional Requirement: Docker Deployment Fix & Safety State Preservation
+
+- [x] Fix production `Dockerfile` stage dependency packaging (`pnpm install --frozen-lockfile` in runtime stage) to prevent `ERR_MODULE_NOT_FOUND` on startup
+- [x] Verify test suite, TypeScript check, and production build successfully
+- [x] Preserve safety boundaries (live trading remains disarmed pending valid session token and authorized preflight)
+- [x] Save checkpoint and deliver deployment repair report
