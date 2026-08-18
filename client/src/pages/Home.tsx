@@ -75,8 +75,12 @@ export default function Home() {
   });
 
   const submitTokenMutation = trpc.arbitrage.submitToken.useMutation({
-    onSuccess: () => {
-      toast.success("MetaMask Agent CLI token submitted and session refreshed.");
+    onSuccess: (data: any) => {
+      if (data?.warning) {
+        toast.warning(data.message || "Token saved in Secure Vault", { description: data.warning });
+      } else {
+        toast.success(data?.message || "MetaMask Agent CLI token submitted and session refreshed.");
+      }
       setCliToken("");
       utils.arbitrage.status.invalidate();
     },
@@ -86,8 +90,12 @@ export default function Home() {
   });
 
   const reconnectAgentMutation = trpc.arbitrage.reconnectAgent.useMutation({
-    onSuccess: (data) => {
-      toast.success(data.message);
+    onSuccess: (data: any) => {
+      if (data?.warning) {
+        toast.warning(data.message || "Reconnect pending binary installation", { description: data.warning });
+      } else {
+        toast.success(data?.message || "MetaMask Agent reconnected successfully.");
+      }
       utils.arbitrage.status.invalidate();
     },
     onError: (err) => {

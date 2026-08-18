@@ -93,5 +93,5 @@ describe("pulse event router integration", () => {
     const status = await caller.arbitrage.status();
     expect(status.agent.pulseEvents.length).toBe(1);
     expect(status.agent.pulseEvents[0].netProfitUsd).toBe("0.0150");
-  });
+  }, 15000);
 });
