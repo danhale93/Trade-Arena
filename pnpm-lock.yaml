@@ -15,8 +15,8 @@ importers:
   .:
     dependencies:
       '@biconomy/abstractjs':
-        specifier: ^1.2.5
-        version: 1.2.5(@metamask/delegation-toolkit@0.11.0(viem@2.55.11(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)))(@noble/curves@2.0.1)(@openzeppelin/merkle-tree@1.0.8)(@rhinestone/module-sdk@0.4.0(viem@2.55.11(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)))(@safe-global/types-kit@3.0.0(typescript@5.9.3)(zod@3.25.76))(typescript@5.9.3)(viem@2.55.11(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))
+        specifier: ^2.0.0
+        version: 2.0.0(@metamask/delegation-toolkit@0.11.0(viem@2.55.11(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)))(@noble/curves@2.0.1)(@openzeppelin/merkle-tree@1.0.8)(@rhinestone/module-sdk@0.4.0(viem@2.55.11(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)))(@safe-global/types-kit@3.0.0(typescript@5.9.3)(zod@3.25.76))(typescript@5.9.3)(viem@2.55.11(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))
       '@biconomy/account':
         specifier: ^4.5.7
         version: 4.5.7(typescript@5.9.3)(viem@2.55.11(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))
@@ -136,8 +136,8 @@ packages:
       '@types/react':
         optional: true
 
-  '@biconomy/abstractjs@1.2.5':
-    resolution: {integrity: sha512-+yw+t4C0tllTWU1fJ46DQ2pqWSQLiD7h/US4wykc9feVUiGn7cz9CzcB3QPr90Ib7MtQSmcWPr0tVEbSmx0YAw==}
+  '@biconomy/abstractjs@2.0.0':
+    resolution: {integrity: sha512-rs1H7xQ6s42tzGuQjjmSgLD/mlswxo9AhGj5aCKBNzW3DkPmxjWzxNe/a1J7IgVhEqwsIreO5ILskbsoJeJWPA==}
     peerDependencies:
       '@metamask/delegation-toolkit': ^0.11.0
       '@noble/curves': 2.0.1
@@ -3671,7 +3671,7 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.2.18
 
-  '@biconomy/abstractjs@1.2.5(@metamask/delegation-toolkit@0.11.0(viem@2.55.11(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)))(@noble/curves@2.0.1)(@openzeppelin/merkle-tree@1.0.8)(@rhinestone/module-sdk@0.4.0(viem@2.55.11(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)))(@safe-global/types-kit@3.0.0(typescript@5.9.3)(zod@3.25.76))(typescript@5.9.3)(viem@2.55.11(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))':
+  '@biconomy/abstractjs@2.0.0(@metamask/delegation-toolkit@0.11.0(viem@2.55.11(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)))(@noble/curves@2.0.1)(@openzeppelin/merkle-tree@1.0.8)(@rhinestone/module-sdk@0.4.0(viem@2.55.11(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)))(@safe-global/types-kit@3.0.0(typescript@5.9.3)(zod@3.25.76))(typescript@5.9.3)(viem@2.55.11(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))':
     dependencies:
       '@metamask/delegation-toolkit': 0.11.0(viem@2.55.11(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))
       '@noble/curves': 2.0.1
