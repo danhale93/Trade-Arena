@@ -66,6 +66,7 @@ export const appRouter = router({
 
   arbitrage: router({
     status: publicProcedure.query(async () => {
+      const rpcStart = Date.now();
       let baseBal = "0.0000";
       let arbitrumBal = "0.0000";
       let optimismBal = "0.0000";
@@ -82,6 +83,7 @@ export const appRouter = router({
       } catch (e) {
         console.error("[RPC Balance] Error fetching balances:", e);
       }
+      const rpcLatencyMs = Date.now() - rpcStart;
 
       // Record snapshot
       await db.recordBalanceSnapshot({
@@ -140,6 +142,13 @@ export const appRouter = router({
         lastValidatedAt: cliLastValidatedAt,
       };
 
+      // Derive precise token expiry from JWT claim or fall back to estimated session duration
+      let tokenExpiresAt = cli.parseJwtExpiration(cliToken);
+      if (!tokenExpiresAt && cliToken) {
+        const validatedTime = cliLastValidatedAt ? new Date(cliLastValidatedAt).getTime() : Date.now();
+        tokenExpiresAt = validatedTime + 30 * 24 * 3600 * 1000;
+      }
+
       const cliDoctor = cli.getCliDoctorDiagnostics({
         tokenConfigured: Boolean(cliToken),
         cliAvailable,
@@ -147,6 +156,7 @@ export const appRouter = router({
         sessionValidated: cliSessionValidated,
         lastValidatedAt: cliLastValidatedAt,
         walletBalanceEth: "0.0050",
+        tokenExpiresAt,
       });
 
       const recentTrades = await db.getRecentTrades(10);
@@ -174,8 +184,12 @@ export const appRouter = router({
           scannerEnabled: scannerRunning,
           running: scannerRunning,
           minProfitThreshold,
-          cliConnection,
+          cliConnection: {
+            ...cliConnection,
+            tokenExpiresAt,
+          },
           cliDoctor,
+          rpcLatencyMs,
           networks: ["base", "arbitrum", "optimism"],
           recentTrades,
           simulationRouteHistory,

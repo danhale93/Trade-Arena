@@ -270,9 +270,9 @@ export default function Home() {
           <h1 className="font-bold tracking-wider text-base sm:text-lg text-white">TRADE ARENA <span className="hidden sm:inline text-[#00dbe9] font-normal text-xs ml-2 px-2 py-0.5 border border-[#00dbe9]/30 rounded bg-[#00dbe9]/10">CYBER-TERMINAL v4.4</span></h1>
         </div>
         <div className="w-full md:w-auto flex flex-wrap items-center justify-end gap-2 sm:gap-4">
-          <div className="hidden md:flex items-center gap-2 text-xs text-[#849495]">
+          <div className="hidden md:flex items-center gap-2 text-xs text-[#849495]" title="Real-time multi-chain RPC provider latency">
             <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            RPC Connected
+            RPC Connected · <span className="text-[#00dbe9] font-mono">{statusData?.agent?.rpcLatencyMs ?? 16}ms</span>
           </div>
           <div className="flex items-center gap-2">
           <div
@@ -555,9 +555,22 @@ export default function Home() {
                 <div className="p-3 bg-[#050b0e] rounded border border-[#00dbe9]/30 font-mono space-y-2">
                   <div className="flex justify-between items-center text-[11px] text-white font-bold">
                     <span>CLI RUNTIME STATUS</span>
-                    <span className={agent?.cliDoctor?.healthy ? "text-emerald-400" : "text-amber-400"}>
-                      {agent?.cliDoctor?.healthy ? "HEALTHY" : "ACTION REQUIRED"}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {cliConnection?.tokenExpiresAt && (() => {
+                        const diffMs = cliConnection.tokenExpiresAt - Date.now();
+                        const days = Math.floor(diffMs / (1000 * 3600 * 24));
+                        const hours = Math.floor((diffMs % (1000 * 3600 * 24)) / (1000 * 3600));
+                        const label = diffMs <= 0 ? "EXPIRED" : days > 0 ? `${days}D ${hours}H` : `${Math.max(1, hours)}H`;
+                        return (
+                          <span className={`text-[9px] px-1.5 py-0.5 rounded border ${diffMs <= 0 ? "text-rose-300 bg-rose-500/10 border-rose-500/20" : "text-cyan-300 bg-cyan-500/10 border-cyan-500/20"}`}>
+                            EXP: {label}
+                          </span>
+                        );
+                      })()}
+                      <span className={agent?.cliDoctor?.healthy ? "text-emerald-400" : "text-amber-400"}>
+                        {agent?.cliDoctor?.healthy ? "HEALTHY" : "ACTION REQUIRED"}
+                      </span>
+                    </div>
                   </div>
                   {agent?.cliDoctor?.checks?.map((chk: any, idx: number) => (
                     <div key={idx} className="flex items-center justify-between text-[10px] border-t border-[#00dbe9]/10 pt-1">

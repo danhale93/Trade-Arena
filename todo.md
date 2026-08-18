@@ -247,11 +247,11 @@ POSIX
 
 # Additional Requirement: RPC Latency and CLI Token Expiry Indicators
 
-- [ ] Inspect current RPC status, gas telemetry, CLI connection metadata, and dashboard header
-- [ ] Define latency and token-expiry display contracts using existing server metadata
-- [ ] Implement real-time latency badge and CLI authorization countdown
-- [ ] Add tests and verify live refresh, expiry states, and responsive layout
-- [ ] Save checkpoint and deliver the latency and expiry indicators
+- [x] Inspect current RPC status, gas telemetry, CLI connection metadata, and dashboard header
+- [x] Define latency and token-expiry display contracts using existing server metadata
+- [x] Implement real-time latency badge and CLI authorization countdown
+- [x] Add tests and verify live refresh, expiry states, and responsive layout
+- [x] Save checkpoint and deliver the latency and expiry indicators
 
 # Additional Requirement: Advanced Reels Screen Animations & Official Token Logos
 

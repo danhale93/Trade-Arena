@@ -36,9 +36,12 @@ export function getCliDoctorDiagnostics(input: {
   sessionValidated: boolean;
   lastValidatedAt?: string | null;
   walletBalanceEth?: string;
+  tokenExpiresAt?: number | null;
 }) {
   const balanceVal = Number(input.walletBalanceEth || "0.005");
   const hasTestFunds = balanceVal >= 0.001; // ~ $3+ equivalent for gas/testing
+  const now = Date.now();
+  const tokenValid = input.tokenExpiresAt ? input.tokenExpiresAt > now : true;
 
   const checks = [
     {
@@ -63,11 +66,41 @@ export function getCliDoctorDiagnostics(input: {
     },
   ];
 
+  if (input.tokenExpiresAt) {
+    const remainingDays = Math.max(0, Math.ceil((input.tokenExpiresAt - now) / (1000 * 3600 * 24)));
+    checks.push({
+      name: "Token Expiry Countdown",
+      passed: tokenValid,
+      detail: tokenValid ? `Token active (~${remainingDays} days remaining)` : "Token expired; refresh via Secure Vault",
+    });
+  }
+
   return {
     healthy: input.cliAvailable && input.tokenConfigured && input.sessionValidated && hasTestFunds,
     resolvedPath: input.resolvedPath,
     checks,
   };
+}
+
+export function parseJwtExpiration(token?: string | null): number | null {
+  if (!token) return null;
+  try {
+    const parts = token.trim().split(".");
+    if (parts.length !== 3) return null;
+    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      Buffer.from(base64, "base64")
+        .toString("utf8")
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    const payload = JSON.parse(jsonPayload);
+    if (payload && typeof payload.exp === "number") {
+      return payload.exp * 1000;
+    }
+  } catch {}
+  return null;
 }
 
 export function getMetaMaskAgentConnectionStatus(input: {
