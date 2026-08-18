@@ -89,6 +89,12 @@ export default function Home() {
               }
             },
           },
+          cancel: {
+            label: "Install Guide",
+            onClick: () => {
+              window.open(warning.installUrl, "_blank");
+            },
+          },
         });
       } else {
         toast.success(data?.message || "MetaMask Agent CLI token submitted and session refreshed.");
@@ -113,6 +119,12 @@ export default function Home() {
               if (!reconnectAgentMutation.isPending) {
                 reconnectAgentMutation.mutate();
               }
+            },
+          },
+          cancel: {
+            label: "Install Guide",
+            onClick: () => {
+              window.open(warning.installUrl, "_blank");
             },
           },
         });

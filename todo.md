@@ -274,3 +274,11 @@ POSIX
 - [x] Add a Retry Connection action that calls the reconnect mutation with pending-safe feedback
 - [x] Verify tests, TypeScript, production build, and responsive dashboard behavior
 - [x] Save checkpoint and deliver the Retry Connection update
+
+# Additional Requirement: Install Guide in Warning Toast
+
+- [x] Add concise install instructions (`npm i -g @metamask/agent-cli`) to warning toast description
+- [x] Add an 'Install Guide' cancel action button pointing to official docs (`CLI_LINKS.docs`)
+- [x] Update test assertions in cliWarning.test.ts
+- [x] Verify TypeScript check, test suite, and production build
+- [x] Save checkpoint and deliver updated dashboard
