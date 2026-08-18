@@ -170,3 +170,18 @@
 - [x] Create simulation-safe deployment and verification scaffolding without broadcasting live transactions
 - [x] Verify test suite, TypeScript check, and production build without enabling live execution
 - [x] Save checkpoint and deliver multi-DEX implementation report
+
+# Additional Requirement: Settings Secure Vault for JWT & Execution Caps
+
+- [ ] Inspect existing token persistence and settings procedures in routers.ts
+- [ ] Implement owner-protected vault procedures to update encrypted JWT token, max gas gwei, and max input WETH caps
+- [ ] Build a dedicated Secure Vault panel in Settings with masked inputs and live validation
+- [ ] Add Vitest test coverage for vault mutation access control and cap validation
+- [ ] Verify test suite, TypeScript check, and production build without enabling live execution
+- [ ] Save checkpoint and deliver Secure Vault report
+
+# Additional Requirement: CLI Auth Helper Script for Passkey / Browser Login
+
+- [x] Create scripts/cli-auth-helper.mjs to automate local mm doctor checks and browser login URL generation
+- [x] Verify test suite, TypeScript check, and production build without enabling live execution
+- [x] Save checkpoint and deliver auth helper instructions

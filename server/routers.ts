@@ -210,6 +210,23 @@ export const appRouter = router({
       return { success: true, strategyProfile: strategy };
     }),
 
+    updateVaultCaps: protectedProcedure
+      .input(z.object({ maxGasGwei: z.number().min(1).max(500), maxInputWeth: z.number().min(0.001).max(10) }))
+      .mutation(async ({ input, ctx }) => {
+        if (ctx.user.role !== "admin" && ctx.user.openId !== process.env.OWNER_OPEN_ID) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Only owner/admin can update Secure Vault execution caps." });
+        }
+        await db.setAgentStateKey("vault_max_gas_gwei", String(input.maxGasGwei));
+        await db.setAgentStateKey("vault_max_input_weth", String(input.maxInputWeth));
+        await db.recordAgentLog({
+          level: "SUCCESS",
+          category: "AUTH",
+          message: "Secure Vault execution caps updated",
+          details: `Max Gas: ${input.maxGasGwei} Gwei | Max Input: ${input.maxInputWeth} WETH`,
+        });
+        return { success: true, maxGasGwei: input.maxGasGwei, maxInputWeth: input.maxInputWeth };
+      }),
+
     submitToken: protectedProcedure.input(z.object({ token: z.string().min(10) })).mutation(async ({ input, ctx }) => {
       // Owner/admin check
       if (ctx.user.role !== "admin" && ctx.user.openId !== process.env.OWNER_OPEN_ID) {
