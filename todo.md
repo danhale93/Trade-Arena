@@ -260,3 +260,17 @@ POSIX
 - [x] Implement advanced reels grid animation and token-logo presentation
 - [x] Add tests and verify animation performance, accessibility, and responsive rendering
 - [x] Save checkpoint and deliver the enhanced reels visualizer
+
+# Additional Requirement: Retry Connection Warning Action
+
+- [ ] Inspect toast action support and existing reconnect mutation wiring
+- [ ] Add a tested warning-toast content contract for secure-save and validation-pending states
+- [ ] Add a Retry Connection action that calls the reconnect mutation with pending-safe feedback
+- [ ] Verify tests, TypeScript, production build, and responsive dashboard behavior
+- [ ] Save checkpoint and deliver the Retry Connection update
+
+- [x] Inspect toast action support and existing reconnect mutation wiring
+- [x] Add a tested warning-toast content contract for secure-save and validation-pending states
+- [x] Add a Retry Connection action that calls the reconnect mutation with pending-safe feedback
+- [x] Verify tests, TypeScript, production build, and responsive dashboard behavior
+- [x] Save checkpoint and deliver the Retry Connection update

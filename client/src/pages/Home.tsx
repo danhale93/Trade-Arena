@@ -9,6 +9,7 @@ import { ChartContainer, ChartTooltipContent, type ChartConfig } from "@/compone
 import { getProfitPulseMotion, shouldTriggerProfitPulse } from "@/lib/profitPulse";
 import { filterPulseEvents, getPulseEventFilterLabel, type PulseNetworkFilter } from "@/lib/pulseEventFilter";
 import { buildFeatureVisualizerModel } from "@/lib/featureVisualizer";
+import { buildCliWarningToast } from "@/lib/cliWarning";
 import { CLI_COMMANDS, CLI_HANDOFF_URL, CLI_LINKS } from "@/lib/cliCommandDeck";
 import { QRCodeSVG } from "qrcode.react";
 import { useState, useEffect, useRef } from "react";
@@ -77,7 +78,18 @@ export default function Home() {
   const submitTokenMutation = trpc.arbitrage.submitToken.useMutation({
     onSuccess: (data: any) => {
       if (data?.warning) {
-        toast.warning(data.message || "Token saved in Secure Vault", { description: data.warning });
+        const warning = buildCliWarningToast(data);
+        toast.warning(warning.title, {
+          description: warning.description,
+          action: {
+            label: reconnectAgentMutation.isPending ? "Retrying…" : warning.actionLabel,
+            onClick: () => {
+              if (!reconnectAgentMutation.isPending) {
+                reconnectAgentMutation.mutate();
+              }
+            },
+          },
+        });
       } else {
         toast.success(data?.message || "MetaMask Agent CLI token submitted and session refreshed.");
       }
@@ -92,7 +104,18 @@ export default function Home() {
   const reconnectAgentMutation = trpc.arbitrage.reconnectAgent.useMutation({
     onSuccess: (data: any) => {
       if (data?.warning) {
-        toast.warning(data.message || "Reconnect pending binary installation", { description: data.warning });
+        const warning = buildCliWarningToast(data);
+        toast.warning(warning.title, {
+          description: warning.description,
+          action: {
+            label: reconnectAgentMutation.isPending ? "Retrying…" : warning.actionLabel,
+            onClick: () => {
+              if (!reconnectAgentMutation.isPending) {
+                reconnectAgentMutation.mutate();
+              }
+            },
+          },
+        });
       } else {
         toast.success(data?.message || "MetaMask Agent reconnected successfully.");
       }
