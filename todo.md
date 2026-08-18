@@ -320,3 +320,9 @@ POSIX
 - [x] Create `.env.production.example` template for secure container deployment secrets
 - [x] Verify test suite, TypeScript check, and production build without altering safety bounds
 - [x] Save checkpoint and deliver container deployment package
+
+# Additional Requirement: Container Log Viewer Widget
+
+- [x] Create container log viewer helper (`client/src/lib/containerLogViewer.ts`) and tests
+- [x] Verify build, TypeScript, and test suite successfully
+- [x] Save checkpoint and deliver complete container deployment package & logging architecture
