@@ -20,9 +20,7 @@ class ArbitrageEngine {
 
     async runMM(cmd) {
         try {
-            const mmToken = process.env.MM_CLI_TOKEN;
-            const tokenFlag = mmToken ? `--token "${mmToken}"` : '';
-            const fullCmd = `${mmPath} ${cmd} ${tokenFlag} --json`;
+            const fullCmd = `${mmPath} ${cmd} --json`;
 
             const { stdout } = await execPromise(fullCmd, { 
                 env: { ...process.env }

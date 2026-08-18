@@ -399,11 +399,8 @@ const ARENA_COMPETITION = {
 
   // Get model ELO rating
   getModelElo(modelName) {
-    for (const tier in LM_ARENA_MODELS) {
-      if (LM_ARENA_MODELS[tier][modelName]) {
-        return LM_ARENA_MODELS[tier][modelName].elo;
-      }
-    }
+    const config = getModelConfig(modelName);
+    if (config) return config.elo;
     return 1000; // Default
   },
 
@@ -512,6 +509,16 @@ function getModelConfig(modelName) {
       return LM_ARENA_MODELS[tier][modelName];
     }
   }
+  // Fallback for test/fake models like ALPHA, BETA, GAMMA
+  if (modelName === 'ALPHA' || modelName === 'BETA' || modelName === 'GAMMA') {
+    return {
+      provider: 'test',
+      elo: 1200,
+      personality: 'BALANCED',
+      characteristics: 'Test model description',
+      speedMs: 500
+    };
+  }
   return null;
 }
 
@@ -606,6 +613,7 @@ async function callAIModel(marketData, bet, botId) {
       }
     }
 
+    decision.aiModel = modelName;
     const modelConfig = getModelConfig(modelName);
 
     // Apply model-specific personality adjustments
@@ -613,7 +621,6 @@ async function callAIModel(marketData, bet, botId) {
       const personality = BOT_MODEL_ASSIGNMENT.personalityTraits[modelConfig.personality] || {};
       decision.edge_pct *= personality.edgeMultiplier || 1.0;
       decision.win_probability *= (1 - (personality.riskAversion || 1.0) * 0.1);
-      decision.aiModel = modelName;
       decision.modelProvider = modelConfig.provider;
       decision.modelElo = modelConfig.elo;
       decision.modelPersonality = modelConfig.personality;

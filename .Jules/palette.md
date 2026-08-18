@@ -61,3 +61,7 @@
 ## 2026-08-10 - [Dynamic ARIA Template Synchronization]
 **Learning:** When adding initial static ARIA states (like `aria-pressed`) to HTML templates, it is critical to confirm that all existing dynamic client-side JS handlers are fully instrumented to synchronize these attributes on active clicks or layout updates. Mismatches between visual active states and screen-reader announced boolean states create severe accessibility regressions.
 **Action:** Always verify that every interactive button with a static ARIA state is backed by an explicit `.setAttribute('aria-pressed', state.toString())` in its associated JavaScript state transition logic.
+
+## 2026-08-14 - [Semantic ARIA Labels for Icon-Text Controls]
+**Learning:** Navigation controls that combine visual emojis and short uppercase text (e.g. "👷 STAFF", "⚙️ SETTINGS") can be highly confusing to screen-reader users if announced verbatim. Overriding their announcements with explicit, descriptive `aria-label` properties provides full situational context (such as "Staff Panel: Application Maintenance and Support") while keeping the interface visually minimalist.
+**Action:** Use comprehensive `aria-label` overrides on all navigation or menu trigger elements that utilize emojis or highly condensed text labels.
