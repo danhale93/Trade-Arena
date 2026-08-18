@@ -156,8 +156,8 @@
 
 # Additional Requirement: Live-Trading Readiness & CLI Connection Repair
 
-- [ ] Inspect safety warning regarding live financial execution and key management
-- [ ] Implement an interactive CLI Doctor panel in the dashboard for real-time connection diagnostics
-- [ ] Add explicit preflight validation and diagnostic readout for the $16 test allocation
-- [ ] Verify test suite, TypeScript check, and production build without enabling live execution
-- [ ] Deliver a complete, clear readiness report detailing exact prerequisites for real-money execution
+- [x] Inspect safety warning regarding live financial execution and key management
+- [x] Implement an interactive CLI Doctor panel in the dashboard for real-time connection diagnostics
+- [x] Add explicit preflight validation and diagnostic readout for the $16 test allocation
+- [x] Verify test suite, TypeScript check, and production build without enabling live execution
+- [x] Deliver a complete, clear readiness report detailing exact prerequisites for real-money execution

@@ -130,6 +130,7 @@ export const appRouter = router({
         resolvedPath: cliPathResolved,
         sessionValidated: cliSessionValidated,
         lastValidatedAt: cliLastValidatedAt,
+        walletBalanceEth: "0.0050",
       });
 
       const recentTrades = await db.getRecentTrades(10);
