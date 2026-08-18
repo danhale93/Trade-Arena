@@ -793,8 +793,14 @@ app.post('/api/gemini', aiProxyLimiter, async (req, res) => {
  * 0x API PROXY
  * Forwards swap quotes with secure API key injection
  */
-app.get('/api/0x/quote', async (req, res) => {
+app.get('/api/0x/quote', aiProxyLimiter, async (req, res) => {
     try {
+        const rawUrl = req.url || '';
+        const queryString = rawUrl.includes('?') ? rawUrl.substring(rawUrl.indexOf('?') + 1) : '';
+        if (queryString.length > 2000) {
+            return res.status(400).json({ error: 'Query parameters too long' });
+        }
+
         const query = new URLSearchParams(req.query).toString();
         const response = await fetch(`https://api.0x.org/swap/v1/quote?${query}`, {
             headers: {
