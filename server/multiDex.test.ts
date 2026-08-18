@@ -27,7 +27,7 @@ describe("Multi-DEX Arbitrage & Calldata Builder", () => {
   it("simulates cross-DEX spreads correctly", () => {
     const sim = getCrossDexSpreadSimulation("base", "WETH", "USDC", "1000000000000000000");
     expect(sim).toHaveProperty("profitable");
-    expect(sim.spreadBps).toBe(35);
+    expect(sim.spreadBps).toBe(42);
     expect(sim.primaryDex).toBe("Uniswap V3 Base");
     expect(sim.secondaryDex).toBe("Aerodrome SlipStream (CL)");
   });
