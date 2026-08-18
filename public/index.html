@@ -903,7 +903,11 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
           <div style="margin-top:8px">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px">
               <label for="cliTokenInput" style="font-size:8px; color:var(--dim)">CLI AUTH TOKEN</label>
-              <a href="https://trade-arena.com/cli-auth" target="_blank" rel="noopener noreferrer" aria-label="Get CLI Auth Token (opens in a new tab)" style="font-size:8px; color:var(--cyan); text-decoration:none">Get CLI Token →</a>
+              <div style="display:flex;gap:8px">
+                <button onclick="toggleVisibility('cliTokenInput', this)" aria-label="Toggle CLI Auth Token visibility" aria-pressed="false" aria-controls="cliTokenInput" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
+                <button onclick="copyToClipboard('cliTokenInput', this)" aria-label="Copy CLI Auth Token" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
+                <a href="https://trade-arena.com/cli-auth" target="_blank" rel="noopener noreferrer" aria-label="Get CLI Auth Token (opens in a new tab)" style="font-size:8px; color:var(--cyan); text-decoration:none">Get CLI Token →</a>
+              </div>
             </div>
             <input id="cliTokenInput" type="password" placeholder="Paste CLI Token here..." style="width:100%; padding:4px; background:#000; border:1px solid var(--border); color:#fff; font-size:9px; margin-bottom:4px">
             <button onclick="submitAgentToken()" style="width:100%; padding:4px; background:var(--green); color:#000; border:none; border-radius:4px; font-family:'Bungee'; font-size:9px; cursor:pointer">SUBMIT TOKEN</button>
