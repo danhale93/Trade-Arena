@@ -263,11 +263,11 @@ POSIX
 
 # Additional Requirement: Retry Connection Warning Action
 
-- [ ] Inspect toast action support and existing reconnect mutation wiring
-- [ ] Add a tested warning-toast content contract for secure-save and validation-pending states
-- [ ] Add a Retry Connection action that calls the reconnect mutation with pending-safe feedback
-- [ ] Verify tests, TypeScript, production build, and responsive dashboard behavior
-- [ ] Save checkpoint and deliver the Retry Connection update
+- [x] Inspect toast action support and existing reconnect mutation wiring
+- [x] Add a tested warning-toast content contract for secure-save and validation-pending states
+- [x] Add a Retry Connection action that calls the reconnect mutation with pending-safe feedback
+- [x] Verify tests, TypeScript, production build, and responsive dashboard behavior
+- [x] Save checkpoint and deliver the Retry Connection update
 
 - [x] Inspect toast action support and existing reconnect mutation wiring
 - [x] Add a tested warning-toast content contract for secure-save and validation-pending states
@@ -304,3 +304,11 @@ POSIX
 - [x] Implement responsive cyberpunk dashboard widget with doctor state, Base balance, auth/init flags, and refresh timestamp
 - [x] Verify focused tests, TypeScript, production build, and desktop/mobile previews
 - [x] Save checkpoint and deliver the widget update
+
+# Additional Requirement: MetaMask Agent Wallet Package Installation & MM_PATH Configuration
+
+- [x] Add `@metamask/agent-wallet@latest` to project dependencies in `package.json`
+- [x] Verify local binary discovery at `node_modules/.bin/mm` and global `which mm` fallback in `server/cli.ts`
+- [x] Configure `MM_PATH` environment variable support in project settings when deploying to custom runtimes
+- [x] Verify test suite, TypeScript check, and production build without altering live-trading safety defaults
+- [x] Save checkpoint and deliver installation and configuration report
