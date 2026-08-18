@@ -273,7 +273,12 @@ export const appRouter = router({
 
       if (!cli.isMetaMaskCliAvailable()) {
         await db.setAgentStateKey("mm_cli_session_validated", "false");
-        throw new TRPCError({ code: "BAD_REQUEST", message: getCliConnectionFailureMessage() });
+        return {
+          success: true,
+          validated: false,
+          warning: getCliConnectionFailureMessage(),
+          message: "Token saved securely in vault. CLI validation pending binary installation.",
+        };
       }
 
       const loggedIn = await cli.loginWithToken(input.token);
@@ -300,7 +305,12 @@ export const appRouter = router({
       await db.setAgentStateKey("mm_cli_session_validated", "false");
       if (!cli.isMetaMaskCliAvailable()) {
         await db.setAgentStateKey("mm_cli_session_validated", "false");
-        throw new TRPCError({ code: "BAD_REQUEST", message: getCliConnectionFailureMessage() });
+        return {
+          success: true,
+          validated: false,
+          warning: getCliConnectionFailureMessage(),
+          message: "Token saved securely in vault. CLI validation pending binary installation.",
+        };
       }
 
       const loggedIn = await cli.loginWithToken(token);

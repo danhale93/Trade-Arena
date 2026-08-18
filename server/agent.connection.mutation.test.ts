@@ -119,13 +119,15 @@ describe("MetaMask Agent connection mutations", () => {
     expect(db.setAgentStateKey).not.toHaveBeenCalledWith("execution_enabled", "true");
   });
 
-  it("reports the runtime path and keeps validation false when reconnect lacks the CLI binary", async () => {
+  it("returns a success response with warning and keeps validation false when reconnect lacks the CLI binary", async () => {
     vi.mocked(cli.isMetaMaskCliAvailable).mockReturnValue(false);
     const caller = appRouter.createCaller(createContext("admin"));
 
-    await expect(caller.arbitrage.reconnectAgent()).rejects.toMatchObject({
-      code: "BAD_REQUEST",
-      message: expect.stringContaining("unavailable at /opt/metamask-agent/mm"),
+    const res = await caller.arbitrage.reconnectAgent();
+    expect(res).toMatchObject({
+      success: true,
+      validated: false,
+      warning: expect.stringContaining("unavailable at /opt/metamask-agent/mm"),
     });
     expect(cli.loginWithToken).not.toHaveBeenCalled();
     expect(db.setAgentStateKey).toHaveBeenCalledWith("mm_cli_session_validated", "false");

@@ -33,7 +33,7 @@ vi.mock("./directDex", async (importOriginal) => {
     ...actual,
     quoteDirectSwap: vi.fn(async () => ({ amountOut: "100.5", netProfit: "0.0557" })),
     getDirectExecutionPreflight: vi.fn(() => ({ ready: false, reasons: [] })),
-    fetchChainGasTelemetry: vi.fn(async () => ({ gasPriceGwei: "1.2", congestion: "LOW", multiplier: 1.0 })),
+    fetchChainGasTelemetry: vi.fn(async () => ({ gasPriceGwei: "1.2", congestion: "LOW", multiplier: 1.0, adjustedThresholdMultiplier: 1.0 })),
   };
 });
 
