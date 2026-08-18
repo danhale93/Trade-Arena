@@ -12,6 +12,7 @@
     "start:hft": "node --max-semi-space-size=256 --max-old-space-size=4096 --nouse-idle-notification --incremental-marking server.js",
     "dev": "node server.js",
     "test": "node tests.js",
+    "test:live-execution": "node live-execution.test.js",
     "proxy": "node proxy.js",
     "serve": "npx serve .",
     "build": "esbuild public/src/main.tsx --bundle --outfile=public/arena-react-bundle.js --minify --sourcemap --loader:.tsx=tsx --loader:.jsx=jsx",

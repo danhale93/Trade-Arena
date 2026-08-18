@@ -1491,6 +1491,16 @@ app.post('/api/bot/create', tradingLimiter, async (req, res) => {
 app.post('/api/execute/swap', tradingLimiter, async (req, res) => {
     console.log('[Swap API] Execution request:', req.body);
     try {
+        // This legacy endpoint never signs or broadcasts. Keep it protected so
+        // it cannot be mistaken for an unauthenticated execution service.
+        const executionToken = process.env.EXECUTION_API_TOKEN;
+        const suppliedToken = req.get('authorization')?.replace(/^Bearer\s+/i, '');
+        const expectedToken = Buffer.from(executionToken || '');
+        const receivedToken = Buffer.from(suppliedToken || '');
+        if (!executionToken || !suppliedToken || receivedToken.length !== expectedToken.length ||
+            !crypto.timingSafeEqual(receivedToken, expectedToken)) {
+            return res.status(401).json({ success: false, error: 'Execution simulation authorization required' });
+        }
         const { fromToken, toToken, amount, slippage } = req.body;
 
         // Sentinel: Enforce strict input validation on swap parameters to prevent Type Confusion, NaN crashes & DoS
