@@ -340,7 +340,7 @@ export default function Home() {
             {/* Wallet & Security Info */}
             <div className="stitch-panel bg-[#081217] border border-[#00dbe9]/30 p-6 rounded-xl">
               <h2 className="text-sm font-bold tracking-wider text-white mb-4 flex items-center gap-2">
-                <Shield className="w-4 h-4 text-[#00dbe9]" /> METAMASK AGENT WALLET SYNC
+                <Shield className="w-4 h-4 text-[#00dbe9]" /> METAMASK AGENT WALLET SYNC & CLI DOCTOR
               </h2>
               <div className="space-y-3 text-xs">
                 <div className="flex items-center justify-between p-3 bg-[#050b0e] rounded border border-[#00dbe9]/20">
@@ -350,6 +350,27 @@ export default function Home() {
                 <div className="flex items-center justify-between p-3 bg-[#050b0e] rounded border border-[#00dbe9]/20">
                   <span className="text-[#849495]">MEV Protection / Slippage:</span>
                   <span className="text-emerald-400">Enabled ({maxSlippage.toFixed(1)}% max slippage)</span>
+                </div>
+
+                {/* CLI Doctor Breakdown */}
+                <div className="p-3 bg-[#050b0e] rounded border border-[#00dbe9]/30 font-mono space-y-2">
+                  <div className="flex justify-between items-center text-[11px] text-white font-bold">
+                    <span>CLI RUNTIME STATUS</span>
+                    <span className={agent?.cliDoctor?.healthy ? "text-emerald-400" : "text-amber-400"}>
+                      {agent?.cliDoctor?.healthy ? "HEALTHY" : "ACTION REQUIRED"}
+                    </span>
+                  </div>
+                  {agent?.cliDoctor?.checks?.map((chk: any, idx: number) => (
+                    <div key={idx} className="flex items-center justify-between text-[10px] border-t border-[#00dbe9]/10 pt-1">
+                      <span className="flex items-center gap-1.5 text-[#849495]">
+                        <span className={`w-1.5 h-1.5 rounded-full ${chk.passed ? "bg-emerald-400" : "bg-rose-400"}`}></span>
+                        {chk.name}
+                      </span>
+                      <span className="text-right text-white/90 max-w-[200px] truncate" title={chk.detail}>
+                        {chk.detail}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
 

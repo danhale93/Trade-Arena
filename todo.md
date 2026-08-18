@@ -153,3 +153,11 @@
 - [x] Add Vitest coverage for gas-aware threshold calculations and congestion classification
 - [x] Verify test suite, TypeScript check, and production build without enabling live execution
 - [x] Save checkpoint and publish the gas-telemetry update
+
+# Additional Requirement: Live-Trading Readiness & CLI Connection Repair
+
+- [ ] Inspect safety warning regarding live financial execution and key management
+- [ ] Implement an interactive CLI Doctor panel in the dashboard for real-time connection diagnostics
+- [ ] Add explicit preflight validation and diagnostic readout for the $16 test allocation
+- [ ] Verify test suite, TypeScript check, and production build without enabling live execution
+- [ ] Deliver a complete, clear readiness report detailing exact prerequisites for real-money execution

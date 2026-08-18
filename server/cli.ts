@@ -29,6 +29,38 @@ export function isMetaMaskCliAvailable() {
   }
 }
 
+export function getCliDoctorDiagnostics(input: {
+  tokenConfigured: boolean;
+  cliAvailable: boolean;
+  resolvedPath: string;
+  sessionValidated: boolean;
+  lastValidatedAt?: string | null;
+}) {
+  const checks = [
+    {
+      name: "CLI Binary Present",
+      passed: input.cliAvailable,
+      detail: input.cliAvailable ? `Found executable at ${input.resolvedPath}` : `No executable found at ${input.resolvedPath}. Install metamask-agent or set MM_PATH.`,
+    },
+    {
+      name: "Session Token Configured",
+      passed: input.tokenConfigured,
+      detail: input.tokenConfigured ? "JWT token stored in database/environment" : "Missing token; submit via Secure Vault",
+    },
+    {
+      name: "Session Validated",
+      passed: input.sessionValidated,
+      detail: input.sessionValidated ? "Session verified by CLI login/reconnect" : "Unvalidated session state",
+    },
+  ];
+
+  return {
+    healthy: input.cliAvailable && input.tokenConfigured && input.sessionValidated,
+    resolvedPath: input.resolvedPath,
+    checks,
+  };
+}
+
 export function getMetaMaskAgentConnectionStatus(input: {
   tokenConfigured: boolean;
   cliAvailable: boolean;

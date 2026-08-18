@@ -112,15 +112,25 @@ export const appRouter = router({
         },
       };
 
+      const cliPathResolved = cli.getMetaMaskCliPath();
+      const cliAvailable = cli.isMetaMaskCliAvailable();
       const cliConnection = {
         ...cli.getMetaMaskAgentConnectionStatus({
           tokenConfigured: Boolean(cliToken),
-          cliAvailable: cli.isMetaMaskCliAvailable(),
+          cliAvailable,
           sessionValidated: cliSessionValidated,
-          cliPath: cli.getMetaMaskCliPath(),
+          cliPath: cliPathResolved,
         }),
         lastValidatedAt: cliLastValidatedAt,
       };
+
+      const cliDoctor = cli.getCliDoctorDiagnostics({
+        tokenConfigured: Boolean(cliToken),
+        cliAvailable,
+        resolvedPath: cliPathResolved,
+        sessionValidated: cliSessionValidated,
+        lastValidatedAt: cliLastValidatedAt,
+      });
 
       const recentTrades = await db.getRecentTrades(10);
       const suppressedAlerts = await db.getSuppressedAlerts(10);
@@ -146,6 +156,7 @@ export const appRouter = router({
           running: scannerRunning,
           minProfitThreshold,
           cliConnection,
+          cliDoctor,
           networks: ["base", "arbitrum", "optimism"],
           recentTrades,
           suppressedAlerts,
