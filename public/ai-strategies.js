@@ -132,20 +132,29 @@ function analyzeMarketConditions(marketData) {
     };
   }
 
-  // Calculate average volatility from top 8 coins
-  const volatilities = marketData.slice(0, 8).map(c => Math.abs(c.price_change_percentage_24h || 0));
-  const avgVolatility = volatilities.reduce((a, b) => a + b, 0) / volatilities.length;
-  
-  // Calculate volume average
-  const volumes = marketData.slice(0, 8).map(c => c.total_volume || 0);
-  const avgVolume = volumes.reduce((a, b) => a + b, 0) / volumes.length;
-  
-  // Determine market direction
-  const positiveCount = marketData.slice(0, 8).filter(c => (c.price_change_percentage_24h || 0) > 0).length;
+  // Single-pass allocation-free accumulation over top 8 coins
+  // Replaces 4 array slice allocations, 2 maps, 3 reduces, and 1 filter
+  const limit = Math.min(8, marketData.length);
+  let volSum = 0;
+  let totalVolumeSum = 0;
+  let positiveCount = 0;
+  let rawChangeSum = 0;
+
+  for (let i = 0; i < limit; i++) {
+    const coin = marketData[i];
+    const change = coin ? (coin.price_change_percentage_24h || 0) : 0;
+    const vol = coin ? (coin.total_volume || 0) : 0;
+
+    volSum += change < 0 ? -change : change;
+    totalVolumeSum += vol;
+    if (change > 0) positiveCount++;
+    rawChangeSum += change;
+  }
+
+  const avgVolatility = volSum / limit;
+  const avgVolume = totalVolumeSum / limit;
   const direction = positiveCount > 4 ? 'BULLISH' : positiveCount < 4 ? 'BEARISH' : 'NEUTRAL';
-  
-  // Momentum: sum of 24h changes
-  const momentum = marketData.slice(0, 8).reduce((sum, c) => sum + (c.price_change_percentage_24h || 0), 0) / 8;
+  const momentum = rawChangeSum / 8;
   
   // Determine condition
   let condition = 'NEUTRAL';
