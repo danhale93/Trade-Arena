@@ -285,3 +285,8 @@ Running security audit across localStorage and active config...
 
 ## 2026-08-14T04:55:38.844Z - [INFO] SENTINEL
 Running security audit across localStorage and active config...
+
+## 2026-08-15 - AbortController Fetch Timeout Hardening on 0x API Proxy
+**Vulnerability:** The `/api/0x/quote` endpoint in `server.js` initiated upstream HTTP requests using native `fetch` without an AbortSignal or timeout mechanism, leaving socket connections open indefinitely if the upstream service experienced high latency or socket stalls, leading to socket exhaustion and Denial of Service (DoS).
+**Learning:** Unbound external API calls inside Express proxy routes can hold Node event loop sockets open and exhaust connection pools during upstream slowdowns or degradation.
+**Prevention:** Always attach an `AbortController` with an explicit timeout (e.g., 30s) and clear the timer in a `finally` block for all server-side `fetch` proxy operations.
