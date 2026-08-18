@@ -1348,6 +1348,42 @@ describe("escapeHTML - XSS Prevention (index.html:1304)", () => {
 });
 
 describe("Server Input Validation - Sentinel Hardening", () => {
+  it("rejects oversized query string on /api/0x/quote endpoint", async () => {
+    const originalPort = process.env.PORT;
+    process.env.PORT = "0";
+
+    const express = require('express');
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
+    let activeServer = null;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
+    };
+
+    delete require.cache[require.resolve("./server.js")];
+    delete require.cache[require.resolve("./routes/payoutRoutes.js")];
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
+    try {
+      const port = activeServer.address().port;
+      const oversizedParam = "a".repeat(2005);
+      const res = await fetch(`http://localhost:${port}/api/0x/quote?buyToken=WETH&sellToken=USDC&extra=${oversizedParam}`);
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.error).toBe('Query parameters too long');
+    } finally {
+      http.Server.prototype.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+    }
+  });
+
   it("validates validationToken timing-safe comparison with multibyte characters safely", () => {
     const taskSecret = "secret-key";
     const timingSafeCompare = (validationToken) => {

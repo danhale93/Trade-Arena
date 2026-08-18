@@ -6,11 +6,11 @@
 <title>TRADE ARENA — AI TRADING FLOOR</title>
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Bungee+Shade&family=JetBrains+Mono:wght@400;700&family=Oswald:wght@400;700&family=Share+Tech+Mono&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
-<script src="privy-client.js?v=4.3.40"></script>
-<script src="contract-helpers.js?v=4.3.40"></script>
-<script src="real-wallet.js?v=4.3.40"></script>
-<script src="blockchain-execution.js?v=4.3.40"></script>
-<script src="execution-engine.js?v=4.3.40"></script>
+<script src="privy-client.js?v=4.3.41"></script>
+<script src="contract-helpers.js?v=4.3.41"></script>
+<script src="real-wallet.js?v=4.3.41"></script>
+<script src="blockchain-execution.js?v=4.3.41"></script>
+<script src="execution-engine.js?v=4.3.41"></script>
 <style>
 :root{
   --gold:#ffd700;--gold2:#ffaa00;--hot:#ff2d78;--cyan:#00ffe7;
@@ -759,7 +759,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 <div class="edge"></div>
 
 <!-- ══ CONNECT ══ -->
-<div style="position:fixed; top:10px; right:10px; background:var(--hot); color:white; padding:5px 10px; font-size:10px; z-index:10000; border-radius:4px; font-family:'Bungee'; box-shadow:0 0 10px var(--hot);">LIVE V4.3.40</div>
+<div style="position:fixed; top:10px; right:10px; background:var(--hot); color:white; padding:5px 10px; font-size:10px; z-index:10000; border-radius:4px; font-family:'Bungee'; box-shadow:0 0 10px var(--hot);">LIVE V4.3.41</div>
 <div id="connectScreen">
   <div class="marquee-wrap">
     <div class="marquee-inner">
@@ -849,7 +849,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
        <button class="gh-bus-btn" id="ghTaskBtn" onclick="togglePanel('task')" title="Earn Trade Credits" aria-expanded="false"><span role="img" aria-hidden="true">💰</span> EARN</button>
        <button class="gh-bus-btn" id="ghEloBtn" onclick="togglePanel('elo')" title="ELO Arena - Recursive Improvement" aria-expanded="false"><span role="img" aria-hidden="true">🏆</span> ARENA</button>
        <button class="gh-bus-btn" id="voiceAgentBtn" onclick="toggleVoiceAgent()" title="AI Floor Manager (Voice Chat)" aria-expanded="false"><span role="img" aria-hidden="true">🎙️</span> AGENT</button>
-       <button class="gh-bus-btn" id="fleetViewBtn" onclick="toggleFleetView()" title="Toggle Fleet View (Compact Grid)"><span role="img" aria-hidden="true">📊</span> FLEET</button>
+       <button class="gh-bus-btn" id="fleetViewBtn" onclick="toggleFleetView()" title="Toggle Fleet View (Compact Grid)" aria-pressed="false"><span role="img" aria-hidden="true">📊</span> FLEET</button>
         <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots" aria-expanded="false"><span role="img" aria-hidden="true">⚙</span> BUS</button>
         <button class="gh-bus-btn" id="ghSettingsBtn" onclick="toggleSettingsModal()" title="Settings" aria-expanded="false"><span role="img" aria-hidden="true">⚙</span> SETTINGS</button>
         <button class="gh-auto-btn" id="liveToggleBtn" onclick="toggleLiveMode()" title="Toggle Live/Demo Mode" style="border-color:var(--green);color:var(--green);box-shadow:0 0 10px rgba(0,255,157,0.3)">LIVE</button>
@@ -901,6 +901,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         <div id="pairingLinkContainer" style="display:none; margin-top:8px">
           <a id="pairingLink" href="#" target="_blank" style="color:var(--cyan); font-size:9px; word-break:break-all">Click here to pair wallet</a>
           <div style="margin-top:8px">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px">
+              <label for="cliTokenInput" style="font-size:8px; color:var(--dim)">CLI AUTH TOKEN</label>
+              <a href="https://trade-arena.com/cli-auth" target="_blank" rel="noopener noreferrer" aria-label="Get CLI Auth Token (opens in a new tab)" style="font-size:8px; color:var(--cyan); text-decoration:none">Get CLI Token →</a>
+            </div>
             <input id="cliTokenInput" type="password" placeholder="Paste CLI Token here..." style="width:100%; padding:4px; background:#000; border:1px solid var(--border); color:#fff; font-size:9px; margin-bottom:4px">
             <button onclick="submitAgentToken()" style="width:100%; padding:4px; background:var(--green); color:#000; border:none; border-radius:4px; font-family:'Bungee'; font-size:9px; cursor:pointer">SUBMIT TOKEN</button>
           </div>
@@ -945,8 +949,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
           <button class="bus-preset" onclick="busSetAmount(100)" aria-pressed="false" title="Set all bots to $100.00">$100</button>
         </div>
         <div class="bus-custom-row">
-          <input type="number" id="busCustomAmt" placeholder="Custom $" min="0.01" step="0.01">
-          <button onclick="busSetCustomAmount()">SET ALL</button>
+          <label for="busCustomAmt" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0">Custom trade amount ($)</label>
+          <input type="number" id="busCustomAmt" aria-label="Custom trade amount in dollars" placeholder="Custom $" min="0.01" step="0.01" onkeydown="if(event.key==='Enter') busSetCustomAmount()">
+          <button onclick="busSetCustomAmount()" aria-label="Set custom trade amount for all bots">SET ALL</button>
         </div>
       </div>
 
@@ -1030,9 +1035,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <!-- Audit settings -->
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
         <div style="font-size:8px;color:var(--dim)">
-          Audit every <input type="number" id="auditInterval" value="10" min="5" max="50" style="width:36px;background:var(--bg);border:1px solid var(--border);color:var(--gold);padding:2px 4px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:9px;text-align:center"> trades ·
-          On notice if WR &lt; <input type="number" id="noticeThreshold" value="40" min="20" max="60" style="width:36px;background:var(--bg);border:1px solid var(--border);color:var(--amber);padding:2px 4px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:9px;text-align:center">% ·
-          Suspend after <input type="number" id="suspendWindow" value="10" min="5" max="30" style="width:36px;background:var(--bg);border:1px solid var(--border);color:var(--hot);padding:2px 4px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:9px;text-align:center"> probation trades
+          Audit every <label for="auditInterval" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0">Audit trade frequency</label><input type="number" id="auditInterval" aria-label="Audit frequency in number of trades" value="10" min="5" max="50" style="width:36px;background:var(--bg);border:1px solid var(--border);color:var(--gold);padding:2px 4px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:9px;text-align:center"> trades ·
+          On notice if WR &lt; <label for="noticeThreshold" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0">Notice win rate threshold percentage</label><input type="number" id="noticeThreshold" aria-label="Notice win rate percentage threshold" value="40" min="20" max="60" style="width:36px;background:var(--bg);border:1px solid var(--border);color:var(--amber);padding:2px 4px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:9px;text-align:center">% ·
+          Suspend after <label for="suspendWindow" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0">Probation trades before suspension</label><input type="number" id="suspendWindow" aria-label="Probation trades before suspension" value="10" min="5" max="30" style="width:36px;background:var(--bg);border:1px solid var(--border);color:var(--hot);padding:2px 4px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:9px;text-align:center"> probation trades
         </div>
         <button onclick="runManualAudit()" style="padding:4px 10px;font-family:'Bungee',display;font-size:9px;background:none;border:1px solid var(--hot);color:var(--hot);border-radius:4px;cursor:pointer;letter-spacing:1px;margin-left:auto">RUN AUDIT NOW</button>
       </div>
@@ -1658,6 +1663,34 @@ async function handleMetaMaskConnect() {
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     if (accounts.length > 0) {
       const address = accounts[0];
+
+      // Ensure network is on Base Mainnet (Chain ID 8453 / 0x2105)
+      try {
+        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+        if (chainId !== '0x2105' && parseInt(chainId, 16) !== 8453) {
+          try {
+            await window.ethereum.request({
+              method: 'wallet_switchEthereumChain',
+              params: [{ chainId: '0x2105' }]
+            });
+          } catch (switchErr) {
+            if (switchErr.code === 4902) {
+              await window.ethereum.request({
+                method: 'wallet_addEthereumChain',
+                params: [{
+                  chainId: '0x2105',
+                  chainName: 'Base Mainnet',
+                  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+                  rpcUrls: ['https://mainnet.base.org'],
+                  blockExplorerUrls: ['https://basescan.org']
+                }]
+              });
+            }
+          }
+        }
+      } catch (netErr) {
+        console.warn('Network switch check warning:', netErr);
+      }
       // Ethers v6 uses BrowserProvider
       const provider = new ethers.BrowserProvider(window.ethereum);
       
@@ -6488,19 +6521,19 @@ document.addEventListener('keydown', function(e) {
 
 </script>
 <!-- Arena React Bundle -->
-<script src="arena-react-bundle.js?v=4.3.40" defer></script>
-<script src="app.js?v=4.3.40" defer></script>
+<script src="arena-react-bundle.js?v=4.3.41" defer></script>
+<script src="app.js?v=4.3.41" defer></script>
 
 <!-- ACOUSTIC Audio-Visual Engines -->
-<script src="acoustic-bundle.js?v=4.3.40" defer></script>
-<script src="ACOUSTIC_CORE.js?v=4.3.40" defer></script>
-<script src="trading-bundle.js?v=4.3.40" defer></script>
-<script src="task-center.js?v=4.3.40" defer></script>
-<script src="gas-fund.js?v=4.3.40" defer></script>
-<script src="management-bundle.js?v=4.3.40" defer></script>
+<script src="acoustic-bundle.js?v=4.3.41" defer></script>
+<script src="ACOUSTIC_CORE.js?v=4.3.41" defer></script>
+<script src="trading-bundle.js?v=4.3.41" defer></script>
+<script src="task-center.js?v=4.3.41" defer></script>
+<script src="gas-fund.js?v=4.3.41" defer></script>
+<script src="management-bundle.js?v=4.3.41" defer></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  console.log('🚀 Trade Arena V4.3.40 Initialized');
+  console.log('🚀 Trade Arena V4.3.41 Initialized');
   const savedTheme = localStorage.getItem('ta_theme') || 'default';
   if (typeof applyTheme === 'function') {
     applyTheme(savedTheme, false);
@@ -6510,7 +6543,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   // Auto-connect disabled to prevent broadcast channel crashes on boot
   
-  // Real-time Balance Sync (V4.3.40)
+  // Real-time Balance Sync (V4.3.41)
   setInterval(async () => {
     // 🛡️ UNIFIED SYNC: Prioritize on-chain walletState balance
     if (window.walletState && window.walletState.isConnected && window.walletState.balanceUSD > 0) {
@@ -6803,7 +6836,7 @@ function refreshSettingsUI() {
     if (b2) { b2.classList.toggle('active', voiceOn); b2.setAttribute('aria-pressed', voiceOn.toString()); }
     if (b3) { b3.classList.toggle('active', audioOn); b3.setAttribute('aria-pressed', audioOn.toString()); }
 
-    // Flashloan Arb Status (V4.3.40)
+    // Flashloan Arb Status (V4.3.41)
     if (window.lastAgentStatus && window.lastAgentStatus.arbitrage) {
         const arb = window.lastAgentStatus.arbitrage;
         const elExec = document.getElementById('settingsArbExecution');
@@ -7049,7 +7082,7 @@ function updateSettingsVolume(val) {
             <label for="settingsPayoutManager">PAYOUT MANAGER (ON-CHAIN)</label>
             <div style="display:flex;gap:8px">
               <button onclick="copyToClipboard('settingsPayoutManager', this)" aria-label="Copy Payout Manager Contract Address" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
-              <span style="color:var(--cyan)">Contract Address</span>
+              <a href="https://basescan.org" target="_blank" rel="noopener noreferrer" aria-label="View BaseScan Explorer (opens in a new tab)" style="color:var(--cyan); text-decoration:none;">View Contract →</a>
             </div>
           </div>
           <input type="text" id="settingsPayoutManager" placeholder="0x..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">

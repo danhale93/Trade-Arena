@@ -149,3 +149,7 @@ Action: Implemented dual-mode trading system with real on-chain execution, batch
 ## 2026-08-12 - Bessel-Corrected Single-Pass Sandbox Metrics
 **Learning:** Financial sandbox metric calculations (like standard deviation / sample variance for Sharpe ratio) can be optimized from two passes to a single pass using the algebraic identity $\sum_{i=1}^n (x_i - \bar{x})^2 = \sum_{i=1}^n x_i^2 - n \bar{x}^2$, which is then divided by $(n - 1)$ for Bessel correction. This eliminates redundant O(N) traversals and array mapping or `.reduce` callback allocations.
 **Action:** When calculating sample variance/Sharpe ratio, accumulate both the values and their squares in a single loop, apply Bessel correction, and guard standard deviation boundaries (e.g., standard deviation === 0 or negative variance under floating-point precision edge cases) to ensure correct, robust, and allocation-free math calculations.
+
+## 2026-08-14 - Allocation-Free Single-Pass ELO Evolution Traversal
+**Learning:** Calling `Object.values().reduce()` and `Object.keys().reduce()` inside high-frequency event callbacks or state evolution checks (such as `checkForEvolution` and `getLeaderAgent` in `elo-tournament-engine.js`) creates unnecessary array allocations and callback heap pressure on every evaluation pass. Replacing these functional iterations with direct `for...in` manual loops eliminates heap allocation overhead completely.
+**Action:** Use manual `for...in` accumulation loops over entity map objects in match/state tracking routines to keep evaluation paths allocation-free.
