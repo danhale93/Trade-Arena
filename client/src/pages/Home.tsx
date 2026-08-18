@@ -497,11 +497,20 @@ export default function Home() {
                 {/* Base */}
                 <div className="p-4 bg-[#050b0e] rounded-lg border border-[#00dbe9]/20 flex flex-col gap-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-white font-bold text-sm uppercase">Base Mainnet</span>
-                    <span className="text-[10px] bg-[#00dbe9]/10 text-[#00dbe9] border border-[#00dbe9]/30 px-2 py-0.5 rounded">Chain ID: {networkConfigs.base.chainId}</span>
+                    <span className="text-white font-bold text-xs uppercase tracking-wider flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400"></span> BASE MAINNET
+                    </span>
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${
+                      (agent?.gasTelemetry?.base?.congestion as string) === "CONGESTED" ? "bg-rose-500/10 border-rose-500/30 text-rose-400" :
+                      (agent?.gasTelemetry?.base?.congestion as string) === "ELEVATED" ? "bg-amber-500/10 border-amber-500/30 text-amber-400" :
+                      (agent?.gasTelemetry?.base?.congestion as string) === "DEGRADED" ? "bg-gray-500/10 border-gray-500/30 text-gray-400" :
+                      "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                    }`}>
+                      {agent?.gasTelemetry?.base?.congestion || "NORMAL"} ({agent?.gasTelemetry?.base?.baseFeeGwei || "0.00"} GWEI)
+                    </span>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-xs text-[#849495]">
-                    <div>Profit Threshold: <span className="text-emerald-400 font-bold">${networkConfigs.base.profitThresholdUsd.toFixed(2)}</span></div>
+                    <div>Dynamic Threshold: <span className="text-emerald-400 font-bold">${networkConfigs.base.profitThresholdUsd.toFixed(4)}</span></div>
                     <div>Max Slippage: <span className="text-[#00dbe9] font-bold">{networkConfigs.base.slippage}%</span></div>
                   </div>
                   <Button 
@@ -514,27 +523,59 @@ export default function Home() {
                 </div>
 
                 {/* Arbitrum */}
-                <div className="p-4 bg-[#050b0e] rounded-lg border border-emerald-500/20">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-white font-bold text-sm uppercase">Arbitrum One</span>
-                    <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded">Chain ID: {networkConfigs.arbitrum.chainId}</span>
+                <div className="p-4 bg-[#050b0e] rounded-lg border border-emerald-500/20 flex flex-col gap-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-white font-bold text-xs uppercase tracking-wider flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-cyan-400"></span> ARBITRUM ONE
+                    </span>
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${
+                      (agent?.gasTelemetry?.arbitrum?.congestion as string) === "CONGESTED" ? "bg-rose-500/10 border-rose-500/30 text-rose-400" :
+                      (agent?.gasTelemetry?.arbitrum?.congestion as string) === "ELEVATED" ? "bg-amber-500/10 border-amber-500/30 text-amber-400" :
+                      (agent?.gasTelemetry?.arbitrum?.congestion as string) === "DEGRADED" ? "bg-gray-500/10 border-gray-500/30 text-gray-400" :
+                      "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                    }`}>
+                      {agent?.gasTelemetry?.arbitrum?.congestion || "NORMAL"} ({agent?.gasTelemetry?.arbitrum?.baseFeeGwei || "0.00"} GWEI)
+                    </span>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-xs text-[#849495]">
-                    <div>Profit Threshold: <span className="text-emerald-400 font-bold">${networkConfigs.arbitrum.profitThresholdUsd.toFixed(2)}</span></div>
+                    <div>Dynamic Threshold: <span className="text-emerald-400 font-bold">${networkConfigs.arbitrum.profitThresholdUsd.toFixed(4)}</span></div>
                     <div>Max Slippage: <span className="text-emerald-400 font-bold">{networkConfigs.arbitrum.slippage}%</span></div>
                   </div>
+                  <Button 
+                    onClick={() => runArbMutation.mutate({ network: 'arbitrum' })}
+                    disabled={!isAuthenticated || runArbMutation.isPending}
+                    className="w-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold py-1.5 h-8"
+                  >
+                    {runArbMutation.isPending ? "RUNNING..." : "RUN ARB CHECK (ARBITRUM)"}
+                  </Button>
                 </div>
 
                 {/* Optimism */}
-                <div className="p-4 bg-[#050b0e] rounded-lg border border-purple-500/20">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-white font-bold text-sm uppercase">Optimism Bedrock</span>
-                    <span className="text-[10px] bg-purple-500/10 text-purple-400 border border-purple-500/30 px-2 py-0.5 rounded">Chain ID: {networkConfigs.optimism.chainId}</span>
+                <div className="p-4 bg-[#050b0e] rounded-lg border border-purple-500/20 flex flex-col gap-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-white font-bold text-xs uppercase tracking-wider flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-rose-400"></span> OPTIMISM BEDROCK
+                    </span>
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${
+                      (agent?.gasTelemetry?.optimism?.congestion as string) === "CONGESTED" ? "bg-rose-500/10 border-rose-500/30 text-rose-400" :
+                      (agent?.gasTelemetry?.optimism?.congestion as string) === "ELEVATED" ? "bg-amber-500/10 border-amber-500/30 text-amber-400" :
+                      (agent?.gasTelemetry?.optimism?.congestion as string) === "DEGRADED" ? "bg-gray-500/10 border-gray-500/30 text-gray-400" :
+                      "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                    }`}>
+                      {agent?.gasTelemetry?.optimism?.congestion || "NORMAL"} ({agent?.gasTelemetry?.optimism?.baseFeeGwei || "0.00"} GWEI)
+                    </span>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-xs text-[#849495]">
-                    <div>Profit Threshold: <span className="text-emerald-400 font-bold">${networkConfigs.optimism.profitThresholdUsd.toFixed(2)}</span></div>
+                    <div>Dynamic Threshold: <span className="text-emerald-400 font-bold">${networkConfigs.optimism.profitThresholdUsd.toFixed(4)}</span></div>
                     <div>Max Slippage: <span className="text-purple-400 font-bold">{networkConfigs.optimism.slippage}%</span></div>
                   </div>
+                  <Button 
+                    onClick={() => runArbMutation.mutate({ network: 'optimism' })}
+                    disabled={!isAuthenticated || runArbMutation.isPending}
+                    className="w-full bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/30 text-xs font-bold py-1.5 h-8"
+                  >
+                    {runArbMutation.isPending ? "RUNNING..." : "RUN ARB CHECK (OPTIMISM)"}
+                  </Button>
                 </div>
               </div>
             </div>

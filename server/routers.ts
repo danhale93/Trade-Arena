@@ -84,6 +84,34 @@ export const appRouter = router({
       const cliLastValidatedAt = await db.getAgentStateKey("mm_cli_last_validated_at");
       const strategy = getStrategyProfile(await db.getAgentStateKey("strategy_profile"));
       const directExecutionPreflight = directDex.getDirectExecutionPreflight();
+
+      const [baseGas, arbitrumGas, optimismGas] = await Promise.all([
+        directDex.fetchChainGasTelemetry("base"),
+        directDex.fetchChainGasTelemetry("arbitrum"),
+        directDex.fetchChainGasTelemetry("optimism"),
+      ]);
+
+      const gasTelemetryRecord = {
+        base: baseGas,
+        arbitrum: arbitrumGas,
+        optimism: optimismGas,
+      };
+
+      const adjustedNetworkConfigs: typeof strategy.networks = {
+        base: {
+          ...strategy.networks.base,
+          profitThresholdUsd: Number((strategy.networks.base.profitThresholdUsd * baseGas.adjustedThresholdMultiplier).toFixed(4)),
+        },
+        arbitrum: {
+          ...strategy.networks.arbitrum,
+          profitThresholdUsd: Number((strategy.networks.arbitrum.profitThresholdUsd * arbitrumGas.adjustedThresholdMultiplier).toFixed(4)),
+        },
+        optimism: {
+          ...strategy.networks.optimism,
+          profitThresholdUsd: Number((strategy.networks.optimism.profitThresholdUsd * optimismGas.adjustedThresholdMultiplier).toFixed(4)),
+        },
+      };
+
       const cliConnection = {
         ...cli.getMetaMaskAgentConnectionStatus({
           tokenConfigured: Boolean(cliToken),
@@ -112,12 +140,13 @@ export const appRouter = router({
           executionBadge: executionEnabled ? "EXECUTION_ARMED" : "SIMULATION_ONLY",
           executionPreflight: directExecutionPreflight,
           strategyProfile: strategy,
+          gasTelemetry: gasTelemetryRecord,
+          networkConfigs: adjustedNetworkConfigs,
           scannerEnabled: scannerRunning,
           running: scannerRunning,
           minProfitThreshold,
           cliConnection,
           networks: ["base", "arbitrum", "optimism"],
-          networkConfigs: strategy.networks,
           recentTrades,
           suppressedAlerts,
           agentLogs,

@@ -99,6 +99,18 @@ export function isDirectExecutionEnabled() {
     && process.env.DIRECT_LIVE_CONFIRMATION === "I_UNDERSTAND_LIVE_TRADES";
 }
 
+export type GasCongestionLevel = "LOW" | "NORMAL" | "ELEVATED" | "CONGESTED";
+
+export type ChainGasTelemetry = {
+  network: DirectDexNetwork;
+  chainId: number;
+  gasPriceGwei: string;
+  baseFeeGwei: string;
+  congestion: GasCongestionLevel;
+  adjustedThresholdMultiplier: number;
+  fetchedAt: string;
+};
+
 export type DirectExecutionPreflight = {
   ready: boolean;
   adapter: string;
@@ -153,6 +165,63 @@ export function getDirectExecutionPreflight(): DirectExecutionPreflight {
     liveFlagsConfigured,
     reasons,
   };
+}
+
+export async function fetchChainGasTelemetry(network: DirectDexNetwork): Promise<ChainGasTelemetry> {
+  const config = DIRECT_DEX_CONFIG[network];
+  const rpcUrl = getRpcUrl(network, config);
+  const provider = new ethers.JsonRpcProvider(rpcUrl, config.chainId, { staticNetwork: true });
+
+  try {
+    const [feeData, block] = await Promise.all([
+      provider.getFeeData(),
+      provider.getBlock("latest"),
+    ]);
+
+    const gasPriceWei = feeData.gasPrice ?? block?.baseFeePerGas ?? BigInt(1_000_000_000);
+    const baseFeeWei = block?.baseFeePerGas ?? gasPriceWei;
+
+    const gasPriceGweiNum = Number(ethers.formatUnits(gasPriceWei, "gwei"));
+    const baseFeeGweiNum = Number(ethers.formatUnits(baseFeeWei, "gwei"));
+
+    let congestion: GasCongestionLevel = "NORMAL";
+    let multiplier = 1.0;
+
+    // L2-specific thresholds (Base, Arbitrum, Optimism typically have low base fees < 0.1 gwei in normal conditions)
+    if (baseFeeGweiNum > 0.5) {
+      congestion = "CONGESTED";
+      multiplier = 2.2;
+    } else if (baseFeeGweiNum > 0.2) {
+      congestion = "ELEVATED";
+      multiplier = 1.5;
+    } else if (baseFeeGweiNum < 0.01) {
+      congestion = "LOW";
+      multiplier = 0.9;
+    } else {
+      congestion = "NORMAL";
+      multiplier = 1.0;
+    }
+
+    return {
+      network,
+      chainId: config.chainId,
+      gasPriceGwei: gasPriceGweiNum.toFixed(4),
+      baseFeeGwei: baseFeeGweiNum.toFixed(4),
+      congestion,
+      adjustedThresholdMultiplier: multiplier,
+      fetchedAt: new Date().toISOString(),
+    };
+  } catch (error) {
+    return {
+      network,
+      chainId: config.chainId,
+      gasPriceGwei: "0.0000",
+      baseFeeGwei: "0.0000",
+      congestion: "DEGRADED" as GasCongestionLevel,
+      adjustedThresholdMultiplier: 1.0,
+      fetchedAt: new Date().toISOString(),
+    };
+  }
 }
 
 function normalizePoolFee(poolFee = 3000) {

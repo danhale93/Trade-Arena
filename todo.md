@@ -143,3 +143,13 @@
 - [x] Add Vitest coverage for the manual-only scanner restriction
 - [x] Re-verify execution and scanner state remain disarmed in the current runtime
 - [x] Save the final live-arming safety checkpoint and report the blocked prerequisites
+
+# Additional Requirement: Real-Time Gas Telemetry & Dynamic Profit Thresholds
+
+- [x] Implement read-only RPC gas fee fetcher for Base, Arbitrum, and Optimism in directDex.ts
+- [x] Define congestion bands (Low, Normal, Elevated, Congested) and dynamic threshold multiplier logic
+- [x] Expose live gas telemetry and adjusted profit thresholds in the tRPC status router
+- [x] Render per-chain congestion badges and dynamic profit thresholds in the dashboard UI
+- [x] Add Vitest coverage for gas-aware threshold calculations and congestion classification
+- [x] Verify test suite, TypeScript check, and production build without enabling live execution
+- [x] Save checkpoint and publish the gas-telemetry update
