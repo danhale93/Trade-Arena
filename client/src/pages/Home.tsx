@@ -9,7 +9,8 @@ import { ChartContainer, ChartTooltipContent, type ChartConfig } from "@/compone
 import { getProfitPulseMotion, shouldTriggerProfitPulse } from "@/lib/profitPulse";
 import { filterPulseEvents, getPulseEventFilterLabel, type PulseNetworkFilter } from "@/lib/pulseEventFilter";
 import { buildFeatureVisualizerModel } from "@/lib/featureVisualizer";
-import { CLI_COMMANDS, CLI_LINKS } from "@/lib/cliCommandDeck";
+import { CLI_COMMANDS, CLI_HANDOFF_URL, CLI_LINKS } from "@/lib/cliCommandDeck";
+import { QRCodeSVG } from "qrcode.react";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 
@@ -141,6 +142,7 @@ export default function Home() {
 
   const [cliToken, setCliToken] = useState("");
   const [copiedCommand, setCopiedCommand] = useState<string | null>(null);
+  const [handoffAttempted, setHandoffAttempted] = useState(false);
   const [miniWidgetMode, setMiniWidgetMode] = useState(false);
   const [logFilter, setLogFilter] = useState("ALL");
   const [profitTimeRange, setProfitTimeRange] = useState<"1H" | "24H" | "ALL">("ALL");
@@ -607,6 +609,27 @@ export default function Home() {
                   <a className="inline-flex items-center gap-1.5 rounded border border-[#00dbe9]/25 bg-[#00dbe9]/5 px-2.5 py-1.5 text-[9px] font-bold tracking-wider text-[#00dbe9] transition-colors hover:bg-[#00dbe9]/15" href={CLI_LINKS.commands} target="_blank" rel="noreferrer">
                     COMMAND REFERENCE <ExternalLink className="h-3 w-3" />
                   </a>
+                </div>
+                <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
+                  <div className="rounded border border-amber-400/25 bg-amber-400/5 p-3">
+                    <p className="flex items-center gap-2 text-[9px] font-bold tracking-wider text-amber-300"><Link2 className="h-3 w-3" /> OPTIONAL LOCAL MM:// HANDOFF</p>
+                    <p className="mt-1 text-[9px] leading-relaxed text-[#849495]">Attempts an optional custom protocol link for local environment handlers. If your operating system has no registered handler, use the official browser authorization page or copy the CLI command above.</p>
+                    <a
+                      href={CLI_HANDOFF_URL}
+                      onClick={() => setHandoffAttempted(true)}
+                      className="mt-2 inline-flex items-center gap-1.5 rounded border border-amber-300/40 bg-amber-300/10 px-2.5 py-1.5 text-[9px] font-bold tracking-wider text-amber-200 transition-colors hover:bg-amber-300/20"
+                      aria-label="Launch the optional local MetaMask mm protocol handoff"
+                    >
+                      {handoffAttempted ? "HANDOFF REQUESTED" : "LAUNCH LOCAL MM://"} <ExternalLink className="h-3 w-3" />
+                    </a>
+                    {handoffAttempted && <p className="mt-2 text-[9px] text-emerald-300" role="status">If nothing opened, continue with the official browser flow or copy GENERATE TOKEN LINK.</p>}
+                  </div>
+
+                  <div className="flex min-w-[150px] flex-col items-center justify-center rounded border border-emerald-400/25 bg-emerald-400/5 p-3">
+                    <QRCodeSVG value={CLI_LINKS.login} size={128} bgColor="#050b0e" fgColor="#8ffcff" level="M" includeMargin title="Official MetaMask Agent authorization URL" />
+                    <p className="mt-2 text-center text-[9px] font-bold tracking-wider text-emerald-300">SCAN OFFICIAL AUTH URL</p>
+                    <p className="mt-1 text-center text-[8px] text-[#849495]">QR contains no CLI token</p>
+                  </div>
                 </div>
                 <p className="mt-3 text-[9px] leading-relaxed text-amber-300/80">Token flow: run GENERATE TOKEN LINK locally → authorize on the official page → copy the returned CLI token → either run APPLY FRESH TOKEN locally or paste it into the masked Secure Vault field below. Never expose the token in a URL, log, or chat.</p>
               </div>

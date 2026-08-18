@@ -236,3 +236,11 @@ POSIX
 - [x] Implement copyable command deck and live browser links
 - [x] Add tests, verify link behavior and responsive layout
 - [x] Save checkpoint and deliver the CLI command deck
+
+# Additional Requirement: Protocol Handoff, Auth QR, and Multi-Chain Balance Commands
+
+- [x] Inspect existing CLI helper, diagnostics UI, and safe official-link sources
+- [x] Define protocol handoff, QR payload, and multi-chain balance command contracts
+- [x] Implement opt-in mm:// handoff, QR display, and chain balance commands
+- [x] Add tests and verify handoff, QR, copy actions, and responsive layout
+- [x] Save checkpoint and deliver the protocol, QR, and balance-command update
