@@ -86,6 +86,17 @@ export function normalizeSimulationHistoryEntry(input: {
   };
 }
 
+export function isHighProfitSimulation(
+  entry: Pick<SimulationHistoryEntry, "netProfitUsd" | "profitable">,
+  thresholdUsd: number,
+  multiplier = 2,
+) {
+  const profit = Number(entry.netProfitUsd);
+  const threshold = Number(thresholdUsd);
+  if (!Number.isFinite(profit) || !Number.isFinite(threshold) || !entry.profitable) return false;
+  return profit >= Math.max(0, threshold) * multiplier;
+}
+
 export function summarizeSimulationHistory(entries: Array<Pick<SimulationHistoryEntry, "netProfitUsd" | "profitable">>) {
   const profits = entries.map((entry) => Number(entry.netProfitUsd)).filter(Number.isFinite);
   const totalProfitUsd = profits.reduce((sum, profit) => sum + profit, 0);

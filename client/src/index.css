@@ -321,3 +321,38 @@
     letter-spacing: 0.045em;
   }
 }
+
+
+@layer components {
+  @keyframes trade-arena-profitability-pulse {
+    0%, 100% {
+      box-shadow: inset 0 1px 0 rgba(190, 204, 235, 0.05), 0 14px 32px rgba(0, 0, 0, 0.14);
+      border-color: rgba(0, 219, 233, 0.3);
+    }
+    22% {
+      box-shadow: inset 0 1px 0 rgba(190, 255, 235, 0.16), 0 0 0 3px rgba(52, 211, 153, 0.18), 0 0 42px rgba(52, 211, 153, 0.34), 0 14px 32px rgba(0, 0, 0, 0.14);
+      border-color: rgba(110, 231, 183, 0.95);
+    }
+    48% {
+      box-shadow: inset 0 1px 0 rgba(190, 255, 235, 0.1), 0 0 0 1px rgba(52, 211, 153, 0.28), 0 0 24px rgba(0, 219, 233, 0.25), 0 14px 32px rgba(0, 0, 0, 0.14);
+      border-color: rgba(0, 219, 233, 0.8);
+    }
+  }
+
+  .profitability-pulse-active {
+    animation: trade-arena-profitability-pulse 1.3s cubic-bezier(0.23, 1, 0.32, 1) 2;
+  }
+
+  .profitability-pulse-banner {
+    animation: trade-arena-profitability-pulse 1.3s cubic-bezier(0.23, 1, 0.32, 1) 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .profitability-pulse-active,
+    .profitability-pulse-banner {
+      animation: none;
+      border-color: rgba(110, 231, 183, 0.8);
+      box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.18), 0 0 24px rgba(52, 211, 153, 0.2);
+    }
+  }
+}

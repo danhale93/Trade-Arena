@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeSimulationHistoryEntry, summarizeSimulationHistory } from "./simulationHistory";
+import { isHighProfitSimulation, normalizeSimulationHistoryEntry, summarizeSimulationHistory } from "./simulationHistory";
 
 describe("simulation history helpers", () => {
   it("normalizes nested CLI JSON output into a history entry", () => {
@@ -27,6 +27,13 @@ describe("simulation history helpers", () => {
       fallbackRoute: "WETH -> USDC -> WETH",
       source: "direct",
     })).toBeUndefined();
+  });
+
+  it("flags only profitable records that clear twice the configured threshold", () => {
+    expect(isHighProfitSimulation({ netProfitUsd: "0.0100", profitable: true }, 0.004)).toBe(true);
+    expect(isHighProfitSimulation({ netProfitUsd: "0.0060", profitable: true }, 0.004)).toBe(false);
+    expect(isHighProfitSimulation({ netProfitUsd: "0.0200", profitable: false }, 0.004)).toBe(false);
+    expect(isHighProfitSimulation({ netProfitUsd: "not-a-number", profitable: true }, 0.004)).toBe(false);
   });
 
   it("summarizes cumulative, average, and profitable route counts", () => {

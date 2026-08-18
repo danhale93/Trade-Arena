@@ -188,11 +188,19 @@
 
 # Additional Requirement: Simulated Route Profitability History Widget
 
-- [ ] Inspect existing simulated route, trade log, schema, and dashboard data flows
-- [ ] Define and implement persisted/queryable profitability history for simulation results
-- [ ] Build responsive cyberpunk profitability history widget with time-range and chain visibility
-- [ ] Add focused Vitest coverage for history aggregation and empty/error states
-- [ ] Verify tests, TypeScript, production build, and responsive dashboard previews
-- [ ] Save checkpoint and deliver the profitability widget update
+- [x] Inspect existing simulated route, trade log, schema, and dashboard data flows
+- [x] Define and implement persisted/queryable profitability history for simulation results
+- [x] Build responsive cyberpunk profitability history widget with time-range and chain visibility
+- [x] Add focused Vitest coverage for history aggregation and empty/error states
+- [x] Verify tests, TypeScript, production build, and responsive dashboard previews
+- [x] Save checkpoint and deliver the profitability widget update
 
 POSIX
+
+# Additional Requirement: High-Profit Simulation Pulse
+
+- [x] Inspect current profitability widget refresh, threshold, and motion styling flows
+- [x] Implement new-record detection for simulations above the high-profit threshold
+- [x] Add accessible visual pulse animation and concise high-profit status feedback
+- [x] Add focused tests and verify desktop/mobile rendering plus reduced-motion behavior
+- [x] Save checkpoint and deliver the pulse animation update

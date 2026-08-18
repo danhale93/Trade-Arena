@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Shield, Play, Pause, Terminal, Cpu, Zap, Activity, CheckCircle2, Lock, RefreshCw, Bell, Power, TrendingUp, Clock3 } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, ReferenceLine, Tooltip, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
+import { getProfitPulseMotion, shouldTriggerProfitPulse } from "@/lib/profitPulse";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 
@@ -13,6 +14,10 @@ export default function Home() {
   const { user, loading: authLoading, isAuthenticated } = useAuth();
   const utils = trpc.useUtils();
   const lastSeenTradeIdRef = useRef<number | null>(null);
+  const lastSeenSimulationIdRef = useRef<number | null>(null);
+  const profitPulseTimerRef = useRef<number | null>(null);
+  const [profitPulseActive, setProfitPulseActive] = useState(false);
+  const [profitPulseSummary, setProfitPulseSummary] = useState<{ network: string; profit: string; route: string } | null>(null);
 
   const { data: statusData, isLoading: statusLoading } = trpc.arbitrage.status.useQuery(undefined, {
     refetchInterval: 5000,
@@ -182,6 +187,42 @@ export default function Home() {
   const simulationChartConfig = {
     profit: { label: "Net simulated profit", color: "#00dbe9" },
   } satisfies ChartConfig;
+
+  useEffect(() => {
+    const latest = statusData?.agent?.simulationRouteHistory?.[0];
+    if (!latest || latest.id === lastSeenSimulationIdRef.current) return;
+
+    const previousSimulationId = lastSeenSimulationIdRef.current;
+    lastSeenSimulationIdRef.current = latest.id;
+    if (previousSimulationId === null) return;
+
+    const threshold = Number(networkConfigs[latest.network as keyof typeof networkConfigs]?.profitThresholdUsd ?? 0);
+    const profit = Number(latest.netProfitUsd);
+    const isHighProfit = shouldTriggerProfitPulse(previousSimulationId, latest, threshold);
+
+    if (!isHighProfit) return;
+
+    setProfitPulseSummary({
+      network: latest.network,
+      profit: Number(profit).toFixed(4),
+      route: latest.route,
+    });
+    setProfitPulseActive(true);
+    if (profitPulseTimerRef.current !== null) window.clearTimeout(profitPulseTimerRef.current);
+    const prefersReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    const pulseMotion = getProfitPulseMotion(prefersReducedMotion);
+    profitPulseTimerRef.current = window.setTimeout(() => {
+      setProfitPulseActive(false);
+    }, pulseMotion.durationMs);
+    toast.success(`HIGH-PROFIT SIMULATION · ${latest.network.toUpperCase()}`, {
+      description: `+$${profit.toFixed(4)} estimated net profit recorded.`,
+      duration: 4500,
+    });
+  }, [statusData, networkConfigs]);
+
+  useEffect(() => () => {
+    if (profitPulseTimerRef.current !== null) window.clearTimeout(profitPulseTimerRef.current);
+  }, []);
 
   return (
     <div className="stitch-shell min-h-screen bg-[#050b0e] text-[#00dbe9] font-mono selection:bg-[#00dbe9]/30 selection:text-white flex flex-col">
@@ -630,7 +671,12 @@ export default function Home() {
         </div>
 
         {/* Simulated Route Profitability History */}
-        <section className="stitch-panel bg-[#081217] border border-[#00dbe9]/30 p-5 sm:p-6 rounded-xl" aria-labelledby="simulation-profitability-title">
+        <section
+          className={`stitch-panel bg-[#081217] border border-[#00dbe9]/30 p-5 sm:p-6 rounded-xl ${profitPulseActive ? "profitability-pulse-active" : ""}`}
+          aria-labelledby="simulation-profitability-title"
+          role="region"
+          data-pulse-active={profitPulseActive ? "true" : "false"}
+        >
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-5">
             <div>
               <h2 id="simulation-profitability-title" className="text-sm font-bold tracking-wider text-white flex items-center gap-2">
@@ -665,6 +711,16 @@ export default function Home() {
               </div>
             </div>
           </div>
+
+          {profitPulseActive && profitPulseSummary && (
+            <div role="status" aria-live="polite" className="profitability-pulse-banner mb-4 flex items-center gap-3 rounded-lg border border-emerald-300/50 bg-emerald-400/10 px-3 py-2 text-[10px] text-emerald-200">
+              <span className="inline-flex h-2 w-2 shrink-0 rounded-full bg-emerald-300 animate-ping" aria-hidden="true" />
+              <div className="min-w-0">
+                <p className="font-bold tracking-wider">HIGH-PROFIT ROUTE RECORDED · +${profitPulseSummary.profit}</p>
+                <p className="truncate text-emerald-200/70">{profitPulseSummary.network.toUpperCase()} · {profitPulseSummary.route}</p>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
             <div className="rounded-lg border border-[#00dbe9]/20 bg-[#050b0e] px-3 py-2">
