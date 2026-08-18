@@ -824,7 +824,7 @@ function connectWebSocket() {
 
 // Start WebSocket connection on load
 if (typeof window !== 'undefined') {
-    console.log('🚀 TRADE ARENA V4.3.40 INITIALIZED');
+    console.log('🚀 TRADE ARENA V4.3.41 INITIALIZED');
     connectWebSocket();
     
     // Export notify function
@@ -1004,6 +1004,7 @@ window.testSignature = async function() {
 /**
  * METAMASK AGENT WALLET UI INTEGRATION
  */
+let isAutoSyncing = false;
 async function updateAgentStatus() {
     try {
         const response = await fetch('/api/network/status');
@@ -1015,6 +1016,18 @@ async function updateAgentStatus() {
         const pairingUI = document.getElementById('agentPairingUI');
         
         if (data.success) {
+            // 🔄 AUTO-SYNC: If disconnected but we have a saved token, try to re-link automatically
+            if (!data.wallet.authenticated && !isAutoSyncing) {
+                const savedToken = localStorage.getItem('ta_mm_cli_token');
+                if (savedToken) {
+                    console.log('🤖 AUTO-SYNC: Detected disconnected agent, attempting re-link with saved token...');
+                    isAutoSyncing = true;
+                    submitAgentToken(savedToken);
+                    return; // Let submitAgentToken trigger the next update
+                }
+            }
+            isAutoSyncing = false;
+
             document.getElementById('agentAddr').textContent = data.wallet.address;
             const balUsd = parseFloat(data.wallet.balance) || 0;
             const balUsdFixed = balUsd.toFixed(2);
@@ -1097,9 +1110,11 @@ async function getAgentLoginUrl() {
     }
 }
 
-async function submitAgentToken() {
-    const token = document.getElementById('cliTokenInput').value;
+async function submitAgentToken(passedToken = null) {
+    const token = passedToken || document.getElementById('cliTokenInput').value;
     if (!token) return showToast('Please paste the CLI token', 'error');
+    
+    if (!passedToken) showToast('Connecting Trading Agent...', 'info');
     
     try {
         const response = await fetch('/api/agent/submit-token', {
@@ -1110,14 +1125,26 @@ async function submitAgentToken() {
         const data = await response.json();
         if (data.success) {
             showToast('Agent Connected Successfully!', 'success');
-            document.getElementById('pairingLinkContainer').style.display = 'none';
-            document.getElementById('cliTokenInput').value = '';
+            
+            // 💾 PERSISTENCE: Save token for auto-sync on next visit
+            localStorage.setItem('ta_mm_cli_token', token);
+            
+            const pairingContainer = document.getElementById('pairingLinkContainer');
+            if (pairingContainer) pairingContainer.style.display = 'none';
+            
+            const tokenInput = document.getElementById('cliTokenInput');
+            if (tokenInput) tokenInput.value = '';
+            
             updateAgentStatus();
         } else {
-            showToast('Auth Failed: ' + data.error, 'error');
+            if (!passedToken) showToast('Auth Failed: ' + data.error, 'error');
+            // If auto-sync failed, clear the stale token
+            if (passedToken) localStorage.removeItem('ta_mm_cli_token');
         }
     } catch (e) {
-        showToast('Error submitting token', 'error');
+        if (!passedToken) showToast('Error submitting token', 'error');
+    } finally {
+        isAutoSyncing = false;
     }
 }
 

@@ -13,7 +13,7 @@ ws.on('message', (data) => {
         message.data.forEach(log => {
             console.log(`[${log.timestamp}] ${log.level}: ${log.message}`);
         });
-        ws.close();
+        // ws.close(); // Stay open
     } else if (message.type === 'SERVER_LOG') {
         console.log(`[${message.data.timestamp}] ${message.data.level}: ${message.data.message}`);
     }

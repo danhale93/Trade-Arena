@@ -1,6 +1,6 @@
 {
   "name": "trade-arena",
-  "version": "4.3.40",
+  "version": "4.3.41",
   "description": "Multi-AI Trading Arena with Ridges Integration",
   "main": "server.js",
   "engines": {
@@ -18,14 +18,14 @@
     "postinstall": "npm run build"
   },
   "dependencies": {
-    "@biconomy/abstractjs": "^1.2.5",
+    "@biconomy/abstractjs": "^2.0.0",
     "@biconomy/account": "^4.5.7",
     "@metamask/agent-wallet": "6.1.0",
     "@privy-io/react-auth": "^3.37.0",
     "@stripe/stripe-js": "^9.13.0",
     "aes-js": "^4.0.0-beta.5",
     "async-mutex": "^0.5.0",
-    "axios": "1.18.1",
+    "axios": "1.19.0",
     "ccxt": "^4.5.71",
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",
