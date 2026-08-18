@@ -228,3 +228,11 @@ POSIX
 - [x] Implement the animated reels feature visualizer alongside audio telemetry modules
 - [x] Add tests, reduced-motion behavior, and verify desktop/mobile rendering
 - [x] Save checkpoint and deliver the Stitch-inspired visualizer update
+
+# Additional Requirement: MetaMask Agent CLI Command & Live Link Deck
+
+- [x] Inspect existing CLI helper, diagnostics UI, and safe official-link sources
+- [x] Define safe command cards and token-link actions
+- [x] Implement copyable command deck and live browser links
+- [x] Add tests, verify link behavior and responsive layout
+- [x] Save checkpoint and deliver the CLI command deck

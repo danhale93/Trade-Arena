@@ -3,14 +3,16 @@ import { startLogin } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Shield, Play, Pause, Terminal, Cpu, Zap, Activity, CheckCircle2, Lock, RefreshCw, Bell, Power, TrendingUp, Clock3 } from "lucide-react";
+import { Shield, Play, Pause, Terminal, Cpu, Zap, Activity, CheckCircle2, Lock, RefreshCw, Bell, Power, TrendingUp, Clock3, Copy, Check, ExternalLink, Link2 } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, ReferenceLine, Tooltip, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { getProfitPulseMotion, shouldTriggerProfitPulse } from "@/lib/profitPulse";
 import { filterPulseEvents, getPulseEventFilterLabel, type PulseNetworkFilter } from "@/lib/pulseEventFilter";
 import { buildFeatureVisualizerModel } from "@/lib/featureVisualizer";
+import { CLI_COMMANDS, CLI_LINKS } from "@/lib/cliCommandDeck";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
+
 
 export default function Home() {
   const { user, loading: authLoading, isAuthenticated } = useAuth();
@@ -138,6 +140,7 @@ export default function Home() {
   });
 
   const [cliToken, setCliToken] = useState("");
+  const [copiedCommand, setCopiedCommand] = useState<string | null>(null);
   const [miniWidgetMode, setMiniWidgetMode] = useState(false);
   const [logFilter, setLogFilter] = useState("ALL");
   const [profitTimeRange, setProfitTimeRange] = useState<"1H" | "24H" | "ALL">("ALL");
@@ -151,6 +154,18 @@ export default function Home() {
   const cliConnection = agent?.cliConnection;
   const cliConnected = cliConnection?.status === "connected";
   const connectionActionPending = reconnectAgentMutation.isPending || disconnectAgentMutation.isPending;
+
+  const copyCommand = async (commandId: string, command: string) => {
+    try {
+      await navigator.clipboard.writeText(command);
+      setCopiedCommand(commandId);
+      toast.success("CLI command copied", { description: "Run it in the local terminal; tokens stay out of the dashboard." });
+      window.setTimeout(() => setCopiedCommand((current) => current === commandId ? null : current), 2200);
+    } catch {
+      toast.error("Copy failed", { description: "Select the command manually and run it in your local terminal." });
+    }
+  };
+
   const lastValidatedDate = cliConnection?.lastValidatedAt ? new Date(cliConnection.lastValidatedAt) : null;
   const lastValidatedLabel = lastValidatedDate && !Number.isNaN(lastValidatedDate.getTime())
     ? lastValidatedDate.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })
@@ -545,6 +560,55 @@ export default function Home() {
                     </div>
                   ))}
                 </div>
+              </div>
+
+              {/* CLI Command & Live Link Deck */}
+              <div className="mt-6 rounded-lg border border-[#00dbe9]/30 bg-[#00dbe9]/5 p-4" data-testid="cli-command-deck">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="flex items-center gap-2 text-[10px] font-bold tracking-wider text-[#00dbe9]"><Link2 className="h-3.5 w-3.5" /> LIVE CLI LINKS / COMMAND DECK</p>
+                    <p className="mt-1 max-w-xl text-[10px] leading-relaxed text-[#849495]">Open the official link or copy the command, then run it in the local terminal. The browser cannot execute a local <code className="text-[#00dbe9]">mm</code> command, and no JWT is embedded here.</p>
+                  </div>
+                  <span className="rounded border border-amber-400/30 bg-amber-400/10 px-2 py-1 text-[9px] font-bold tracking-wider text-amber-300">LOCAL TERMINAL REQUIRED</span>
+                </div>
+
+                <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {CLI_COMMANDS.map((item) => (
+                    <div key={item.id} className="rounded border border-[#00dbe9]/15 bg-[#050b0e]/80 p-2.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="text-[9px] font-bold tracking-wider text-white">{item.label}</p>
+                          <p className="mt-1 text-[9px] text-[#849495]">{item.hint}</p>
+                        </div>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          aria-label={`Copy ${item.label.toLowerCase()} command`}
+                          title="Copy command"
+                          onClick={() => copyCommand(item.id, item.command)}
+                          className="h-7 w-7 shrink-0 text-[#00dbe9] hover:bg-[#00dbe9]/10"
+                        >
+                          {copiedCommand === item.id ? <Check className="h-3.5 w-3.5 text-emerald-300" /> : <Copy className="h-3.5 w-3.5" />}
+                        </Button>
+                      </div>
+                      <code className="mt-2 block overflow-x-auto whitespace-nowrap rounded bg-black/30 px-2 py-1.5 text-[9px] text-[#00dbe9]">{item.command}</code>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <a className="inline-flex items-center gap-1.5 rounded border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1.5 text-[9px] font-bold tracking-wider text-emerald-300 transition-colors hover:bg-emerald-400/20" href={CLI_LINKS.login} target="_blank" rel="noreferrer">
+                    OPEN AUTHORIZATION PAGE <ExternalLink className="h-3 w-3" />
+                  </a>
+                  <a className="inline-flex items-center gap-1.5 rounded border border-[#00dbe9]/25 bg-[#00dbe9]/5 px-2.5 py-1.5 text-[9px] font-bold tracking-wider text-[#00dbe9] transition-colors hover:bg-[#00dbe9]/15" href={CLI_LINKS.docs} target="_blank" rel="noreferrer">
+                    OPEN CLI SETUP DOCS <ExternalLink className="h-3 w-3" />
+                  </a>
+                  <a className="inline-flex items-center gap-1.5 rounded border border-[#00dbe9]/25 bg-[#00dbe9]/5 px-2.5 py-1.5 text-[9px] font-bold tracking-wider text-[#00dbe9] transition-colors hover:bg-[#00dbe9]/15" href={CLI_LINKS.commands} target="_blank" rel="noreferrer">
+                    COMMAND REFERENCE <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+                <p className="mt-3 text-[9px] leading-relaxed text-amber-300/80">Token flow: run GENERATE TOKEN LINK locally → authorize on the official page → copy the returned CLI token → either run APPLY FRESH TOKEN locally or paste it into the masked Secure Vault field below. Never expose the token in a URL, log, or chat.</p>
               </div>
 
               {/* Strategy Profile */}
