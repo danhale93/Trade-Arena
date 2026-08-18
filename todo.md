@@ -289,3 +289,10 @@ POSIX
 - [x] Create TypeScript verification script `scripts/verify-agent-wallet.ts` for read-only doctor, address, balance, and dry-run quote checks
 - [x] Verify test suite, TypeScript check, and production build without broadcasting live transactions
 - [x] Save checkpoint and deliver verification script and CLI execution report
+
+# Additional Requirement: CLI-Backed Preflight & Managed-Wallet Integration
+
+- [x] Update `getDirectExecutionPreflight` in `server/directDex.ts` to require CLI availability and session validation instead of raw Ethers private key
+- [x] Update dashboard status and CLI Doctor diagnostics in `server/routers.ts` to reflect managed-wallet CLI state
+- [x] Verify test suite, TypeScript check, and production build without broadcasting live transactions
+- [x] Save checkpoint and deliver CLI preflight integration report
