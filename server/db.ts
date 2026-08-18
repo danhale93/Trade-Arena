@@ -90,7 +90,7 @@ export async function getUserByOpenId(openId: string) {
 }
 
 import { desc } from "drizzle-orm";
-import { tradeHistory, suppressedAlerts, agentLogs, balanceSnapshots, agentState, heartbeatTasks } from "../drizzle/schema";
+import { tradeHistory, simulationRouteHistory, suppressedAlerts, agentLogs, balanceSnapshots, agentState, heartbeatTasks } from "../drizzle/schema";
 
 export async function recordTrade(trade: { network: string; tokenPair: string; netProfitUsd: string; txHash: string; status?: string }) {
   const db = await getDb();
@@ -108,6 +108,32 @@ export async function getRecentTrades(limit = 20) {
   const db = await getDb();
   if (!db) return [];
   return await db.select().from(tradeHistory).orderBy(desc(tradeHistory.timestamp)).limit(limit);
+}
+
+export async function recordSimulationRoute(simulation: {
+  network: string;
+  route: string;
+  netProfitUsd: string;
+  profitable: boolean;
+  spreadBps?: number;
+  source?: string;
+}) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(simulationRouteHistory).values({
+    network: simulation.network,
+    route: simulation.route,
+    netProfitUsd: simulation.netProfitUsd,
+    profitable: simulation.profitable ? 1 : 0,
+    spreadBps: simulation.spreadBps ?? 0,
+    source: simulation.source ?? "simulation",
+  });
+}
+
+export async function getSimulationRouteHistory(limit = 60) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(simulationRouteHistory).orderBy(desc(simulationRouteHistory.timestamp)).limit(limit);
 }
 
 export async function recordSuppressedAlert(alert: { network: string; tokenPair: string; netProfitUsd: string; thresholdUsd: string; txHash: string; reason: string }) {

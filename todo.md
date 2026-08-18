@@ -185,3 +185,14 @@
 - [x] Create scripts/cli-auth-helper.mjs to automate local mm doctor checks and browser login URL generation
 - [x] Verify test suite, TypeScript check, and production build without enabling live execution
 - [x] Save checkpoint and deliver auth helper instructions
+
+# Additional Requirement: Simulated Route Profitability History Widget
+
+- [ ] Inspect existing simulated route, trade log, schema, and dashboard data flows
+- [ ] Define and implement persisted/queryable profitability history for simulation results
+- [ ] Build responsive cyberpunk profitability history widget with time-range and chain visibility
+- [ ] Add focused Vitest coverage for history aggregation and empty/error states
+- [ ] Verify tests, TypeScript, production build, and responsive dashboard previews
+- [ ] Save checkpoint and deliver the profitability widget update
+
+POSIX

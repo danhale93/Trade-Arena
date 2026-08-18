@@ -3,7 +3,9 @@ import { startLogin } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Shield, Play, Pause, Terminal, Cpu, Zap, Activity, CheckCircle2, Lock, RefreshCw, Bell, Power } from "lucide-react";
+import { Shield, Play, Pause, Terminal, Cpu, Zap, Activity, CheckCircle2, Lock, RefreshCw, Bell, Power, TrendingUp, Clock3 } from "lucide-react";
+import { Area, AreaChart, CartesianGrid, ReferenceLine, Tooltip, XAxis, YAxis } from "recharts";
+import { ChartContainer, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 
@@ -131,6 +133,8 @@ export default function Home() {
   const [cliToken, setCliToken] = useState("");
   const [miniWidgetMode, setMiniWidgetMode] = useState(false);
   const [logFilter, setLogFilter] = useState("ALL");
+  const [profitTimeRange, setProfitTimeRange] = useState<"1H" | "24H" | "ALL">("ALL");
+  const [profitNetworkFilter, setProfitNetworkFilter] = useState<"ALL" | "base" | "arbitrum" | "optimism">("ALL");
   const logScrollRef = useRef<HTMLDivElement>(null);
 
   const agent = statusData?.agent;
@@ -156,6 +160,28 @@ export default function Home() {
   const maxSlippage = Math.max(...Object.values(networkConfigs).map((config) => config.slippage));
   const executionPreflight = agent?.executionPreflight;
   const livePreflightReady = executionPreflight?.ready === true;
+  const simulationHistory = agent?.simulationRouteHistory || [];
+  const nowMs = Date.now();
+  const timeRangeMs = profitTimeRange === "1H" ? 3600 * 1000 : profitTimeRange === "24H" ? 24 * 3600 * 1000 : Infinity;
+
+  const filteredSimulationHistory = simulationHistory.filter((entry: any) => {
+    const entryTime = new Date(entry.timestamp).getTime();
+    const matchesTime = nowMs - entryTime <= timeRangeMs;
+    const matchesNetwork = profitNetworkFilter === "ALL" || entry.network === profitNetworkFilter;
+    return matchesTime && matchesNetwork;
+  });
+
+  const simulationChartData = [...filteredSimulationHistory].reverse().map((entry: any) => ({
+    ...entry,
+    profit: Number(entry.netProfitUsd),
+    time: new Date(entry.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+  }));
+  const simulationProfitTotal = simulationChartData.reduce((total, entry) => total + (Number.isFinite(entry.profit) ? entry.profit : 0), 0);
+  const simulationProfitableCount = simulationChartData.filter((entry) => entry.profitable === 1).length;
+  const simulationAverageProfit = simulationChartData.length ? simulationProfitTotal / simulationChartData.length : 0;
+  const simulationChartConfig = {
+    profit: { label: "Net simulated profit", color: "#00dbe9" },
+  } satisfies ChartConfig;
 
   return (
     <div className="stitch-shell min-h-screen bg-[#050b0e] text-[#00dbe9] font-mono selection:bg-[#00dbe9]/30 selection:text-white flex flex-col">
@@ -602,6 +628,105 @@ export default function Home() {
             </div>
           </div>
         </div>
+
+        {/* Simulated Route Profitability History */}
+        <section className="stitch-panel bg-[#081217] border border-[#00dbe9]/30 p-5 sm:p-6 rounded-xl" aria-labelledby="simulation-profitability-title">
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-5">
+            <div>
+              <h2 id="simulation-profitability-title" className="text-sm font-bold tracking-wider text-white flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-[#00dbe9]" /> SIMULATED ROUTE PROFITABILITY
+              </h2>
+              <p className="text-[10px] text-[#849495] mt-1 max-w-xl">
+                Historical net profitability from recorded, non-broadcast route simulations. Values are persisted only after a simulation check completes.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-1 bg-[#050b0e] p-1 rounded border border-[#00dbe9]/20 text-[10px]">
+                {(["ALL", "base", "arbitrum", "optimism"] as const).map((net) => (
+                  <button
+                    key={net}
+                    onClick={() => setProfitNetworkFilter(net)}
+                    className={`px-2 py-0.5 rounded font-mono font-bold uppercase transition-colors ${profitNetworkFilter === net ? 'bg-[#00dbe9] text-black' : 'text-[#849495] hover:text-white'}`}
+                  >
+                    {net}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-1 bg-[#050b0e] p-1 rounded border border-[#00dbe9]/20 text-[10px]">
+                {(["1H", "24H", "ALL"] as const).map((range) => (
+                  <button
+                    key={range}
+                    onClick={() => setProfitTimeRange(range)}
+                    className={`px-2 py-0.5 rounded font-mono font-bold transition-colors ${profitTimeRange === range ? 'bg-emerald-400 text-black' : 'text-[#849495] hover:text-white'}`}
+                  >
+                    {range}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+            <div className="rounded-lg border border-[#00dbe9]/20 bg-[#050b0e] px-3 py-2">
+              <p className="text-[9px] uppercase text-[#849495]">Cumulative</p>
+              <p className={`mt-1 text-base font-bold ${simulationProfitTotal >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                {simulationProfitTotal >= 0 ? "+" : "-"}${Math.abs(simulationProfitTotal).toFixed(4)}
+              </p>
+            </div>
+            <div className="rounded-lg border border-[#00dbe9]/20 bg-[#050b0e] px-3 py-2">
+              <p className="text-[9px] uppercase text-[#849495]">Average / route</p>
+              <p className={`mt-1 text-base font-bold ${simulationAverageProfit >= 0 ? "text-[#00dbe9]" : "text-rose-400"}`}>
+                {simulationAverageProfit >= 0 ? "+" : "-"}${Math.abs(simulationAverageProfit).toFixed(4)}
+              </p>
+            </div>
+            <div className="rounded-lg border border-emerald-500/20 bg-[#050b0e] px-3 py-2">
+              <p className="text-[9px] uppercase text-[#849495]">Profitable routes</p>
+              <p className="mt-1 text-base font-bold text-emerald-400">{simulationProfitableCount} <span className="text-[10px] text-[#849495]">/ {simulationChartData.length}</span></p>
+            </div>
+            <div className="rounded-lg border border-purple-500/20 bg-[#050b0e] px-3 py-2">
+              <p className="text-[9px] uppercase text-[#849495]">Data status</p>
+              <p className="mt-1 text-[11px] font-bold text-purple-300">{simulationChartData.length ? "HISTORICAL" : "AWAITING CHECKS"}</p>
+            </div>
+          </div>
+
+          {simulationChartData.length > 0 ? (
+            <ChartContainer config={simulationChartConfig} className="h-[280px] w-full aspect-auto">
+              <AreaChart data={simulationChartData} margin={{ top: 8, right: 8, left: 4, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="profitFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--color-profit)" stopOpacity={0.42} />
+                    <stop offset="95%" stopColor="var(--color-profit)" stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid vertical={false} stroke="#00dbe9" strokeOpacity={0.12} />
+                <XAxis dataKey="time" tickLine={false} axisLine={false} tickMargin={8} minTickGap={28} tick={{ fill: "#849495", fontSize: 10 }} />
+                <YAxis tickLine={false} axisLine={false} tickMargin={8} width={56} tick={{ fill: "#849495", fontSize: 10 }} tickFormatter={(value) => `$${Number(value).toFixed(3)}`} />
+                <ReferenceLine y={0} stroke="#849495" strokeOpacity={0.35} strokeDasharray="4 4" />
+                <Tooltip
+                  cursor={{ stroke: "#00dbe9", strokeOpacity: 0.25 }}
+                  content={<ChartTooltipContent labelFormatter={(label) => `CHECK ${label}`} formatter={(value) => [`$${Number(value).toFixed(4)}`, "NET PROFIT"]} />}
+                />
+                <Area type="monotone" dataKey="profit" stroke="var(--color-profit)" strokeWidth={2} fill="url(#profitFill)" dot={{ r: 2, fill: "#00dbe9", strokeWidth: 0 }} activeDot={{ r: 4, fill: "#00dbe9", stroke: "#050b0e", strokeWidth: 2 }} />
+              </AreaChart>
+            </ChartContainer>
+          ) : (
+            <div className="h-[280px] rounded-lg border border-dashed border-[#00dbe9]/20 bg-[#050b0e] flex flex-col items-center justify-center text-center px-6">
+              <TrendingUp className="w-8 h-8 text-[#00dbe9]/40 mb-3" />
+              <p className="text-xs text-white font-bold">No simulated route history yet</p>
+              <p className="text-[10px] text-[#849495] mt-1 max-w-md">Run a Base, Arbitrum, or Optimism arb check while the dashboard is in simulation-only mode to begin building this timeline.</p>
+            </div>
+          )}
+
+          {simulationChartData.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-[10px] text-[#849495]">
+              {["base", "arbitrum", "optimism"].map((network) => {
+                const count = simulationChartData.filter((entry) => entry.network === network).length;
+                return <span key={network} className="uppercase"><span className="text-[#00dbe9]">●</span> {network} {count}</span>;
+              })}
+              <span className="ml-auto">PROFIT IS ESTIMATED BY THE SIMULATION ROUTE MODEL · NO LIVE TX</span>
+            </div>
+          )}
+        </section>
 
         {/* Bottom Section: Trade History & Suppressed Alerts Log */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

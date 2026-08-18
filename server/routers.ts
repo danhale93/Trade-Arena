@@ -9,6 +9,8 @@ import { TRPCError } from "@trpc/server";
 import * as cli from "./cli";
 import * as directDex from "./directDex";
 import { getStrategyProfile } from "./strategy";
+import { getCrossDexSpreadSimulation } from "./multiDex";
+import { normalizeSimulationHistoryEntry } from "./simulationHistory";
 
 const MANAGED_WALLET = "0x2ca1f801c1e19d16160c982c627e2932e95117be";
 
@@ -134,6 +136,7 @@ export const appRouter = router({
       });
 
       const recentTrades = await db.getRecentTrades(10);
+      const simulationRouteHistory = await db.getSimulationRouteHistory(60);
       const suppressedAlerts = await db.getSuppressedAlerts(10);
       const agentLogs = await db.getAgentLogs(50);
 
@@ -160,6 +163,7 @@ export const appRouter = router({
           cliDoctor,
           networks: ["base", "arbitrum", "optimism"],
           recentTrades,
+          simulationRouteHistory,
           suppressedAlerts,
           agentLogs,
         },
@@ -394,13 +398,29 @@ export const appRouter = router({
             amountIn,
             poolFee: config.poolFee,
           });
+          const routeSimulation = getCrossDexSpreadSimulation(
+            input.network,
+            "WETH",
+            "USDC",
+            ethers.parseUnits(amountIn, 18).toString(),
+          );
+          if ("route" in routeSimulation && typeof routeSimulation.route === "string" && "estimatedProfitUsd" in routeSimulation) {
+            await db.recordSimulationRoute({
+              network: input.network,
+              route: routeSimulation.route,
+              netProfitUsd: String(routeSimulation.estimatedProfitUsd),
+              profitable: routeSimulation.profitable,
+              spreadBps: routeSimulation.spreadBps,
+              source: "cross-dex-model",
+            });
+          }
           await db.recordAgentLog({
             level: "SUCCESS",
             category: "SIMULATION",
             message: `Direct QuoterV2 simulation completed on ${input.network}`,
             details: JSON.stringify(quote),
           });
-          return { success: true, executed: false, adapter: "direct-ethers-uniswap-v3", simulation: quote };
+          return { success: true, executed: false, adapter: "direct-ethers-uniswap-v3", simulation: quote, routeSimulation };
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
           await db.recordAgentLog({ level: "ERROR", category: "SIMULATION", message: `Direct quote failed on ${input.network}`, details: message });
@@ -415,13 +435,37 @@ export const appRouter = router({
           details: `Target: WETH -> USDC`,
         });
           const res = await cli.simulateSwap(config.chainId, "WETH", "USDC", strategy.maxInputWeth, config.slippage);
+          const routeSimulation = getCrossDexSpreadSimulation(
+            input.network,
+            "WETH",
+            "USDC",
+            ethers.parseUnits(strategy.maxInputWeth, 18).toString(),
+          );
+          const normalizedSimulation = normalizeSimulationHistoryEntry({
+            network: input.network,
+            payload: res.stdout || res,
+            fallbackRoute: "WETH -> USDC -> WETH",
+            source: "cli",
+          });
+          if (normalizedSimulation) {
+            await db.recordSimulationRoute(normalizedSimulation);
+          } else if ("route" in routeSimulation && typeof routeSimulation.route === "string" && "estimatedProfitUsd" in routeSimulation) {
+            await db.recordSimulationRoute({
+              network: input.network,
+              route: routeSimulation.route,
+              netProfitUsd: String(routeSimulation.estimatedProfitUsd),
+              profitable: routeSimulation.profitable,
+              spreadBps: routeSimulation.spreadBps,
+              source: "cross-dex-model",
+            });
+          }
         await db.recordAgentLog({
           level: "SUCCESS",
           category: "SIMULATION",
           message: `Simulation completed on ${input.network}`,
           details: JSON.stringify(res.stdout || res),
         });
-        return { success: true, executed: false, adapter: "cli", simulation: res.stdout || res };
+        return { success: true, executed: false, adapter: "cli", simulation: res.stdout || res, routeSimulation: normalizedSimulation || routeSimulation };
       } else {
         const message = `Unsupported execution adapter '${executionAdapter}'. Use 'direct' or 'cli'.`;
         await db.recordAgentLog({ level: "ERROR", category: "EXECUTION", message });
