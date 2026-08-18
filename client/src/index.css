@@ -768,3 +768,47 @@
     }
   }
 }
+
+@keyframes stitch-reel-roll {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-50%); }
+}
+
+@keyframes stitch-grid-scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+@keyframes stitch-cyber-glow {
+  0%, 100% { box-shadow: inset 0 0 15px rgba(0, 219, 233, 0.08), 0 0 20px rgba(0, 219, 233, 0.12); }
+  50% { box-shadow: inset 0 0 25px rgba(0, 219, 233, 0.18), 0 0 35px rgba(0, 219, 233, 0.28); }
+}
+
+.stitch-reels-screen {
+  animation: stitch-cyber-glow 4s ease-in-out infinite;
+}
+
+.stitch-reel-strip {
+  animation: stitch-reel-roll 12s linear infinite;
+}
+
+.stitch-reel-column:nth-child(2) .stitch-reel-strip {
+  animation-duration: 9s;
+  animation-direction: reverse;
+}
+
+.stitch-reel-column:nth-child(3) .stitch-reel-strip {
+  animation-duration: 14s;
+}
+
+.stitch-reel-column:nth-child(4) .stitch-reel-strip {
+  animation-duration: 10s;
+  animation-direction: reverse;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stitch-reels-screen,
+  .stitch-reel-strip {
+    animation: none;
+  }
+}

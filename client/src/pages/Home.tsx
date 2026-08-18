@@ -440,10 +440,19 @@ export default function Home() {
         {/* Stitch-inspired Feature Visualizer + Audio Telemetry */}
         <section className="stitch-feature-grid" aria-labelledby="feature-visualizer-title">
           <div className="stitch-reels-console" data-testid="reels-feature-visualizer">
-            <div className="stitch-reels-header">
+            <div className="stitch-reels-header flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="stitch-kicker">STITCH REELS / FEATURE VISUALIZER</p>
-                <h2 id="feature-visualizer-title" className="stitch-feature-title">LIQUIDITY SIGNAL REELS</h2>
+                <h2 id="feature-visualizer-title" className="stitch-feature-title flex items-center gap-2">
+                  LIQUIDITY SIGNAL REELS
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[#00dbe9]/30 bg-[#00dbe9]/10 px-2 py-0.5 text-[9px] text-[#00dbe9]">
+                    <img src={featureModel.tokenIn.logoUrl} alt={featureModel.tokenIn.symbol} className="h-3 w-3 rounded-full object-contain" onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }} />
+                    {featureModel.tokenIn.symbol}
+                    <span className="text-[#849495]">→</span>
+                    <img src={featureModel.tokenOut.logoUrl} alt={featureModel.tokenOut.symbol} className="h-3 w-3 rounded-full object-contain" onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }} />
+                    {featureModel.tokenOut.symbol}
+                  </span>
+                </h2>
               </div>
               <div className="stitch-reels-status">
                 <span className={`stitch-status-dot ${agent?.scannerEnabled ? "is-live" : ""}`} />

@@ -244,3 +244,19 @@ POSIX
 - [x] Implement opt-in mm:// handoff, QR display, and chain balance commands
 - [x] Add tests and verify handoff, QR, copy actions, and responsive layout
 - [x] Save checkpoint and deliver the protocol, QR, and balance-command update
+
+# Additional Requirement: RPC Latency and CLI Token Expiry Indicators
+
+- [ ] Inspect current RPC status, gas telemetry, CLI connection metadata, and dashboard header
+- [ ] Define latency and token-expiry display contracts using existing server metadata
+- [ ] Implement real-time latency badge and CLI authorization countdown
+- [ ] Add tests and verify live refresh, expiry states, and responsive layout
+- [ ] Save checkpoint and deliver the latency and expiry indicators
+
+# Additional Requirement: Advanced Reels Screen Animations & Official Token Logos
+
+- [x] Inspect current reels model, animation styles, and token data sources
+- [x] Source and define official token logo assets with safe fallbacks
+- [x] Implement advanced reels grid animation and token-logo presentation
+- [x] Add tests and verify animation performance, accessibility, and responsive rendering
+- [x] Save checkpoint and deliver the enhanced reels visualizer
