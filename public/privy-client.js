@@ -8,9 +8,9 @@
  * 3. Configure embedded wallet for Base only
  */
 
-const PRIVY_CONFIG = {
+var PRIVY_CONFIG = {
     // Privy App ID from dashboard.privy.com
-    appId: 'cmpl1hc0k00ui0djsr3qo8gg8',
+    appId: 'cmpl1hc0k00ui0djsr3qo8gg8', // Fallback
     // JWKS URL for token verification
     jwksUrl: 'https://auth.privy.io/api/v1/apps/cmpl1hc0k00ui0djsr3qo8gg8/jwks.json',
     // Base mainnet ONLY - NO network dropdown
@@ -25,10 +25,29 @@ const PRIVY_CONFIG = {
     hideBlockchain: true,
 };
 
+// 🛡️ DYNAMIC CONFIG: Load Privy App ID from backend
+(async function() {
+    try {
+        const response = await fetch('/api/config');
+        const config = await response.json();
+        if (config.privyAppId) {
+            PRIVY_CONFIG.appId = config.privyAppId;
+            PRIVY_CONFIG.jwksUrl = `https://auth.privy.io/api/v1/apps/${config.privyAppId}/jwks.json`;
+            console.log('[Config] Privy App ID updated from backend');
+        }
+    } catch (e) {
+        console.warn('[Config] Failed to load dynamic Privy config');
+    }
+})();
+
 // Privy state
-let privyUser = null;
-let privyWalletAddress = null;
-let privyConnected = false;
+if (typeof window.privyUser === 'undefined') window.privyUser = null;
+if (typeof window.privyWalletAddress === 'undefined') window.privyWalletAddress = null;
+if (typeof window.privyConnected === 'undefined') window.privyConnected = false;
+
+var privyUser = window.privyUser;
+var privyWalletAddress = window.privyWalletAddress;
+var privyConnected = window.privyConnected;
 
 /**
  * Initialize Privy embedded wallet
@@ -56,8 +75,22 @@ async function privyInit() {
         // Check for existing session
         const user = window.Privy.getUser();
         if (user) {
+            const walletAddr = user.wallet?.address;
+            const preferredAddress = '0x92CEAf1CA43deCfc443A34B915B45343BeE9c2DB';
+            
+            // 🛡️ PRIORITY LOCK: If MetaMask is already connected or this is the wrong address, 
+            // do not auto-login to the embedded wallet.
+            if (window.walletState && window.walletState.walletType === 'metamask') {
+                console.log('[Privy] Skipping auto-login - MetaMask is already active.');
+                return true;
+            }
+            
+            if (walletAddr && walletAddr.toLowerCase() !== preferredAddress.toLowerCase()) {
+                console.log('[Privy] Embedded wallet detected, but MetaMask is preferred. Standing by.');
+            }
+
             privyUser = user;
-            privyWalletAddress = user.wallet?.address;
+            privyWalletAddress = walletAddr;
             privyConnected = true;
             console.log('[Privy] Restored session:', privyWalletAddress);
             onPrivyLoginSuccess();
@@ -109,7 +142,7 @@ async function privyLoginGoogle() {
             // Base only - no network choice
             chains: [{ 
                 id: PRIVY_CONFIG.chain,
-                rpcUrl: 'https://base-mainnet.g.alchemy.com/v2/3zUWwmlHTQNjmM55sV2X0'
+                rpcUrl: 'https://mainnet.base.org'
             }],
         });
         
@@ -131,22 +164,8 @@ async function privyLoginGoogle() {
  * Fallback: Simple Google OAuth flow (no Privy SDK required)
  */
 async function privyFallbackGoogleLogin() {
-    console.log('[Privy] Using fallback Google login...');
-    
-    // TODO: Replace with your Google OAuth credentials
-    // For now, generate a simulated wallet address
-    const mockAddress = '0x' + generateRandomAddress();
-    
-    privyWalletAddress = mockAddress;
-    privyConnected = true;
-    privyUser = {
-        email: 'user@gmail.com',
-        name: 'Google User',
-        id: 'mock-user-id'
-    };
-    
-    console.log('[Privy] Fallback login:', privyWalletAddress);
-    onPrivyLoginSuccess();
+    console.log('[Privy] Google Login Fallback disabled - please use real MetaMask or Privy connection.');
+    if (window.showToast) window.showToast('Please use real wallet connection.', 'error');
 }
 
 /**
@@ -251,10 +270,16 @@ function onPrivyLoginSuccess() {
  * Update wallet-related UI elements
  */
 function updateWalletUI() {
-    const balanceEl = document.getElementById('walletBalance');
+    const balanceEl = document.getElementById('ghBalance') || document.getElementById('walletBalance');
     if (balanceEl) {
         // Show USD balance instead of ETH
-        if (window.getWalletBalanceUSD) { window.getWalletBalanceUSD().then(bal => { balanceEl.textContent = '$' + bal.toFixed(2); }); } else { balanceEl.textContent = '$0.00'; }
+        if (window.walletState && window.walletState.balanceUSD) {
+            balanceEl.textContent = '$' + window.walletState.balanceUSD.toFixed(2);
+        } else if (window.getWalletBalanceUSD) { 
+            window.getWalletBalanceUSD().then(bal => { balanceEl.textContent = '$' + bal.toFixed(2); }); 
+        } else { 
+            balanceEl.textContent = '$0.00'; 
+        }
     }
     
     const userAddrEl = document.getElementById('userAddr');
@@ -322,6 +347,20 @@ function privyDisconnect() {
     hideMainApp();
 }
 
+function privyLogin() {
+    console.log('[Privy] Login requested');
+    if (window.Privy && typeof window.Privy.login === 'function') {
+        try {
+            window.Privy.login();
+            return;
+        } catch (e) {
+            console.warn('[Privy] Widget login error, falling back:', e);
+        }
+    }
+    privyLoginGoogle();
+}
+window.privyLogin = privyLogin;
+
 // Export functions
 window.privyInit = privyInit;
 window.privyLoginGoogle = privyLoginGoogle;
@@ -330,3 +369,24 @@ window.getPrivyAddress = getPrivyAddress;
 window.isPrivyConnected = isPrivyConnected;
 window.privySignMessage = privySignMessage;
 window.privyDisconnect = privyDisconnect;
+
+async function handlePrivyClick() {
+    console.log('[Privy] Handle click triggered');
+    const status = document.getElementById('loginStatus');
+    if (status) status.textContent = 'Initializing Secure Login...';
+    
+    try {
+        await privyInit();
+        if (window.privyLogin) {
+            window.privyLogin();
+        } else {
+            // Fallback if React bridge hasn't taken over yet
+            privyLoginGoogle();
+        }
+    } catch (e) {
+        console.error('[Privy] Click handler error:', e);
+        if (status) status.textContent = 'Error: ' + e.message;
+        privyLoginGoogle(); // Extreme fallback
+    }
+}
+window.handlePrivyClick = handlePrivyClick;

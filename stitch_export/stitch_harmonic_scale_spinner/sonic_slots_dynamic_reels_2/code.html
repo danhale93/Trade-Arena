@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Sonic Slots</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&amp;family=Inter:wght@400;500&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-high": "#272a2f",
+                        "primary": "#a4c9ff",
+                        "surface-variant": "#32353a",
+                        "tertiary-container": "#c58305",
+                        "secondary-fixed-dim": "#ffb1c4",
+                        "secondary-container": "#b20055",
+                        "on-background": "#e1e2e9",
+                        "on-error": "#690005",
+                        "on-secondary-fixed-variant": "#8f0043",
+                        "tertiary-fixed": "#ffddb4",
+                        "surface-dim": "#101418",
+                        "on-primary": "#00315d",
+                        "on-primary-fixed-variant": "#004883",
+                        "on-surface": "#e1e2e9",
+                        "on-tertiary-fixed-variant": "#633f00",
+                        "on-tertiary-fixed": "#291800",
+                        "surface-container-low": "#191c21",
+                        "secondary": "#ffb1c4",
+                        "outline": "#8b919d",
+                        "on-primary-fixed": "#001c39",
+                        "surface-container-lowest": "#0b0e13",
+                        "inverse-on-surface": "#2e3036",
+                        "surface": "#101418",
+                        "surface-container-highest": "#32353a",
+                        "outline-variant": "#414751",
+                        "on-secondary": "#65002e",
+                        "inverse-surface": "#e1e2e9",
+                        "primary-fixed": "#d4e3ff",
+                        "on-secondary-fixed": "#3f001a",
+                        "primary-container": "#4d93e5",
+                        "primary-fixed-dim": "#a4c9ff",
+                        "background": "#101418",
+                        "on-error-container": "#ffdad6",
+                        "on-surface-variant": "#c1c7d3",
+                        "error-container": "#93000a",
+                        "on-primary-container": "#002a51",
+                        "on-tertiary-container": "#3c2500",
+                        "tertiary": "#ffb953",
+                        "inverse-primary": "#0060ac",
+                        "error": "#ffb4ab",
+                        "tertiary-fixed-dim": "#ffb953",
+                        "surface-bright": "#36393f",
+                        "secondary-fixed": "#ffd9e0",
+                        "surface-container": "#1d2025",
+                        "on-secondary-container": "#ffc0cf",
+                        "surface-tint": "#a4c9ff",
+                        "on-tertiary": "#452b00"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "16px",
+                        "container-max": "1440px",
+                        "margin-mobile": "16px",
+                        "unit": "4px",
+                        "margin-desktop": "32px"
+                    },
+                    "fontFamily": {
+                        "headline-lg-mobile": ["Montserrat"],
+                        "headline-md": ["Montserrat"],
+                        "body-sm": ["Inter"],
+                        "display-lg": ["Montserrat"],
+                        "label-mono": ["JetBrains Mono"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg-mobile": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-mono": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .slot-machine-container {
+            width: 100%;
+            max-width: 100%;
+            background: linear-gradient(180deg, #101418 0%, #191c21 100%);
+            border: 4px solid #32353a;
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 0 40px rgba(164, 201, 255, 0.1), inset 0 0 20px rgba(0,0,0,0.8);
+            position: relative;
+            overflow-x: auto;
+        }
+
+        .reels-grid {
+            display: grid;
+            grid-template-columns: repeat(var(--reel-count, 5), minmax(80px, 1fr));
+            gap: 8px;
+            height: 240px;
+            background: #0b0e13;
+            border-radius: 8px;
+            padding: 8px;
+            border: 2px solid #272a2f;
+            position: relative;
+            min-width: max-content;
+        }
+
+        /* Payline indicator */
+        .reels-grid::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: rgba(164, 201, 255, 0.5);
+            transform: translateY(-50%);
+            z-index: 10;
+            pointer-events: none;
+            box-shadow: 0 0 10px rgba(164, 201, 255, 0.8);
+        }
+
+        .reel-window {
+            height: 100%;
+            overflow: hidden;
+            position: relative;
+            background: #101418;
+            border-radius: 4px;
+            border: 1px solid #32353a;
+        }
+
+        .reel-strip {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            transition: transform 0s linear;
+        }
+
+        .reel-item {
+            height: 74.66px; /* 224px / 3 */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            font-size: 24px;
+            box-sizing: border-box;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .reel-item .material-symbols-outlined {
+            font-size: 28px;
+            margin-bottom: 4px;
+        }
+
+        .blur-effect {
+            filter: blur(4px);
+        }
+
+        .glow {
+            animation: pulse-glow 2s infinite alternate;
+        }
+
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 20px rgba(164, 201, 255, 0.2); }
+            100% { box-shadow: 0 0 40px rgba(164, 201, 255, 0.6); }
+        }
+
+        .glass-panel {
+            background: rgba(39, 42, 47, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(139, 145, 157, 0.2);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col font-body-lg">
+<!-- TopAppBar -->
+<header class="bg-surface/80 backdrop-blur-xl border-b border-outline-variant/30 fixed top-0 w-full flex justify-between items-center px-margin-mobile md:px-margin-desktop h-16 z-50">
+<div class="flex items-center gap-2 cursor-pointer scale-95 active:scale-90 transition-transform duration-200 hover:bg-surface-variant/50 p-2 rounded-lg text-primary dark:text-primary font-headline-md text-headline-md font-bold">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">music_note</span>
+<span>Sonic Slots</span>
+</div>
+<button class="text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-variant/50 transition-colors p-2 rounded-full scale-95 active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</header>
+<main class="flex-1 mt-16 pb-24 flex flex-col items-center justify-center p-gutter md:p-margin-desktop overflow-x-hidden relative">
+<!-- Ambient background glow -->
+<div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/10 via-background to-background -z-10"></div>
+<div class="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-gutter md:gap-margin-desktop">
+<!-- Left Column: Slots & Controls -->
+<div class="lg:col-span-8 flex flex-col items-center gap-8 w-full">
+<!-- Result Display -->
+<div class="glass-panel rounded-xl p-6 w-full max-w-2xl text-center flex flex-col items-center justify-center min-h-[140px] transition-all duration-300" id="resultDisplay">
+<p class="font-label-mono text-label-mono text-on-surface-variant mb-2">CURRENT COMBO</p>
+<div class="flex items-center gap-2 flex-wrap justify-center overflow-x-auto max-w-full" id="comboDisplay">
+<h2 class="font-display-lg text-headline-md text-outline transition-colors duration-300">--</h2>
+</div>
+</div>
+<!-- Reel Controls -->
+<div class="flex items-center gap-4">
+<button class="bg-surface-container-high hover:bg-surface-variant text-on-surface p-3 rounded-full transition-colors active:scale-95 shadow-md border border-outline-variant/30 disabled:opacity-50 disabled:cursor-not-allowed" id="removeReelBtn">
+<span class="material-symbols-outlined">remove</span>
+</button>
+<div class="font-label-mono text-on-surface-variant px-4 py-2 bg-surface-container-low rounded-lg border border-outline-variant/20">
+        Reels: <span class="text-primary font-bold" id="reelCountDisplay">5</span>
+</div>
+<button class="bg-surface-container-high hover:bg-surface-variant text-on-surface p-3 rounded-full transition-colors active:scale-95 shadow-md border border-outline-variant/30 disabled:opacity-50 disabled:cursor-not-allowed" id="addReelBtn">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+<!-- The Slots -->
+<div class="slot-machine-container mt-2 mb-4 w-full">
+<div class="reels-grid" id="slotsGrid">
+<!-- Reels generated by JS -->
+</div>
+</div>
+<!-- Spin Button -->
+<button class="bg-primary hover:bg-primary-container text-on-primary font-headline-md text-headline-md py-4 px-12 rounded-full glow transition-all duration-300 active:scale-95 shadow-lg relative overflow-hidden group w-64" id="spinBtn">
+<span class="relative z-10 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">refresh</span>
+                        SPIN
+                    </span>
+<div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+</button>
+</div>
+<!-- Right Column: History -->
+<div class="lg:col-span-4 flex flex-col gap-4">
+<div class="glass-panel rounded-xl p-6 h-full flex flex-col">
+<div class="flex items-center justify-between mb-6 border-b border-outline-variant/30 pb-4">
+<h3 class="font-headline-md text-headline-md text-on-surface">History</h3>
+<span class="material-symbols-outlined text-on-surface-variant">history</span>
+</div>
+<div class="flex-1 overflow-y-auto space-y-3 pr-2 max-h-[500px]" id="historyList">
+<!-- History items generated by JS -->
+<div class="text-center text-on-surface-variant font-body-sm text-body-sm py-8 italic" id="emptyHistory">
+                            Spin the slots to log combos.
+                        </div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden bg-surface-container-low backdrop-blur-2xl border-t border-outline-variant/20 fixed bottom-0 w-full rounded-t-xl shadow-lg z-50 flex justify-around items-center px-4 py-2">
+<div class="flex flex-col items-center justify-center text-on-surface-variant p-3 hover:text-primary transition-all scale-110 active:scale-95 transition-all duration-300 cursor-pointer">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">home</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full p-3 hover:text-primary transition-all scale-110 active:scale-95 transition-all duration-300 cursor-pointer">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">equalizer</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant p-3 hover:text-primary transition-all scale-110 active:scale-95 transition-all duration-300 cursor-pointer">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">history</span>
+</div>
+</nav>
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const spinBtn = document.getElementById('spinBtn');
+            const comboDisplay = document.getElementById('comboDisplay');
+            const resultDisplay = document.getElementById('resultDisplay');
+            const historyList = document.getElementById('historyList');
+            const emptyHistory = document.getElementById('emptyHistory');
+            const slotsGrid = document.getElementById('slotsGrid');
+            const addReelBtn = document.getElementById('addReelBtn');
+            const removeReelBtn = document.getElementById('removeReelBtn');
+            const reelCountDisplay = document.getElementById('reelCountDisplay');
+
+            const totalNotes = 100;
+            let currentReelCount = 5;
+            const maxReels = 100;
+            const minReels = 1;
+            let reelStrips = [];
+            
+            // C Major Scale Notes and corresponding colors/symbols
+            const scaleNotes = [
+                { name: 'C', color: '#ffb1c4', symbol: 'circle' },
+                { name: 'D', color: '#ffddb4', symbol: 'change_history' },
+                { name: 'E', color: '#ffb953', symbol: 'square' },
+                { name: 'F', color: '#c58305', symbol: 'star' },
+                { name: 'G', color: '#a4c9ff', symbol: 'hexagon' },
+                { name: 'A', color: '#4d93e5', symbol: 'pentagon' },
+                { name: 'B', color: '#b20055', symbol: 'favorite' },
+                { name: 'C#', color: '#e1e2e9', symbol: 'diamond' },
+                { name: 'D#', color: '#8b919d', symbol: 'play_arrow' },
+                { name: 'F#', color: '#32353a', symbol: 'stop' }
+            ];
+
+            const notesData = [];
+            for (let i = 0; i < totalNotes; i++) {
+                const noteIndex = i % scaleNotes.length;
+                const octave = Math.floor(i / scaleNotes.length) % 8 + 1;
+                const note = scaleNotes[noteIndex];
+                
+                notesData.push({
+                    name: `${note.name}${octave}`,
+                    color: note.color,
+                    symbol: note.symbol
+                });
+            }
+
+            const itemHeight = 74.66; // Matches CSS
+
+            function createReel(index) {
+                const reelWindow = document.createElement('div');
+                reelWindow.className = 'reel-window';
+                const reelStrip = document.createElement('div');
+                reelStrip.className = 'reel-strip';
+                reelStrip.id = `reel${index}`;
+                
+                const strip = [];
+                for(let i=0; i < 40; i++) {
+                    const randomNote = notesData[Math.floor(Math.random() * notesData.length)];
+                    strip.push(randomNote);
+                    
+                    const itemEl = document.createElement('div');
+                    itemEl.className = 'reel-item';
+                    itemEl.style.color = randomNote.color;
+                    itemEl.innerHTML = `
+                        <span class="material-symbols-outlined">${randomNote.symbol}</span>
+                        <span class="text-sm">${randomNote.name}</span>
+                    `;
+                    reelStrip.appendChild(itemEl);
+                }
+                
+                reelWindow.appendChild(reelStrip);
+                slotsGrid.appendChild(reelWindow);
+                
+                reelStrip.style.transform = `translateY(-${itemHeight}px)`;
+                return { el: reelStrip, data: strip, position: 0 };
+            }
+
+            function initReels() {
+                slotsGrid.innerHTML = '';
+                reelStrips = [];
+                slotsGrid.style.setProperty('--reel-count', currentReelCount);
+                for (let r = 0; r < currentReelCount; r++) {
+                    reelStrips.push(createReel(r));
+                }
+                updateReelControls();
+            }
+
+            function updateReelControls() {
+                reelCountDisplay.textContent = currentReelCount;
+                addReelBtn.disabled = currentReelCount >= maxReels;
+                removeReelBtn.disabled = currentReelCount <= minReels;
+                
+                // Adjust grid layout based on number of reels
+                if (currentReelCount > 10) {
+                    const rows = Math.ceil(currentReelCount / 10);
+                    slotsGrid.style.gridTemplateColumns = `repeat(10, minmax(60px, 1fr))`;
+                    slotsGrid.style.gridTemplateRows = `repeat(${rows}, 240px)`;
+                    slotsGrid.style.height = 'auto';
+                } else {
+                    slotsGrid.style.gridTemplateColumns = `repeat(${currentReelCount}, minmax(60px, 1fr))`;
+                    slotsGrid.style.gridTemplateRows = '1fr';
+                    slotsGrid.style.height = '240px';
+                }
+            }
+
+            addReelBtn.addEventListener('click', () => {
+                if (currentReelCount < maxReels && !isSpinning) {
+                    currentReelCount++;
+                    initReels();
+                }
+            });
+
+            removeReelBtn.addEventListener('click', () => {
+                if (currentReelCount > minReels && !isSpinning) {
+                    currentReelCount--;
+                    initReels();
+                }
+            });
+
+            initReels();
+
+            let isSpinning = false;
+
+            spinBtn.addEventListener('click', () => {
+                if (isSpinning) return;
+                isSpinning = true;
+                addReelBtn.disabled = true;
+                removeReelBtn.disabled = true;
+                
+                // Reset display
+                comboDisplay.innerHTML = '<h2 class="font-display-lg text-headline-md text-outline transition-colors duration-300">--</h2>';
+                resultDisplay.style.boxShadow = 'none';
+                
+                const finalNotes = [];
+                let completedReels = 0;
+
+                for (let r = 0; r < currentReelCount; r++) {
+                    const reelObj = reelStrips[r];
+                    const reelEl = reelObj.el;
+                    
+                    // Add blur
+                    reelEl.classList.add('blur-effect');
+                    
+                    // Calculate spin duration with stagger
+                    const spinDuration = 1000 + (Math.random() * 2000) + (r % 10 * 100); 
+                    
+                    // Add transition
+                    reelEl.style.transition = `transform ${spinDuration}ms cubic-bezier(0.1, 0.7, 0.1, 1)`;
+                    
+                    // Pick a random landing spot near the bottom of the strip (ensure enough room for top/bottom visible items)
+                    const targetIndex = Math.floor(Math.random() * 20) + 15;
+                    const finalY = (targetIndex - 1) * itemHeight; // -1 to center it (shows index-1, index, index+1)
+                    
+                    finalNotes.push(reelObj.data[targetIndex]);
+
+                    // Animate
+                    requestAnimationFrame(() => {
+                        reelEl.style.transform = `translateY(-${finalY}px)`;
+                    });
+
+                    // Handle completion
+                    setTimeout(() => {
+                        reelEl.classList.remove('blur-effect');
+                        completedReels++;
+                        
+                        if (completedReels === currentReelCount) {
+                            finishSpin(finalNotes);
+                        }
+                    }, spinDuration);
+                }
+            });
+
+            function finishSpin(finalNotes) {
+                isSpinning = false;
+                updateReelControls();
+                
+                // Update Display
+                comboDisplay.innerHTML = '';
+                
+                // If there are many notes, maybe group them or scroll
+                finalNotes.forEach(note => {
+                    const el = document.createElement('div');
+                    el.className = 'flex flex-col items-center mx-1 shrink-0';
+                    el.style.color = note.color;
+                    el.innerHTML = `
+                        <span class="material-symbols-outlined text-xl">${note.symbol}</span>
+                        <span class="font-headline-md text-sm">${note.name}</span>
+                    `;
+                    comboDisplay.appendChild(el);
+                });
+                
+                // Simple highlight color based on first note
+                const primaryColor = finalNotes[0].color;
+                resultDisplay.style.boxShadow = `0 0 30px ${primaryColor}40, inset 0 0 10px ${primaryColor}20`;
+
+                // Add to History
+                addHistoryItem(finalNotes);
+            }
+
+            function addHistoryItem(notes) {
+                if (emptyHistory) emptyHistory.remove();
+
+                const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                
+                let notesHtml = '';
+                // Limit preview in history if too many
+                const displayNotes = notes.slice(0, 10);
+                displayNotes.forEach(note => {
+                    notesHtml += `
+                        <div class="flex flex-col items-center px-1 shrink-0">
+                            <span class="material-symbols-outlined text-[12px]" style="color: ${note.color}">${note.symbol}</span>
+                            <span class="font-label-mono text-[10px]" style="color: ${note.color}">${note.name}</span>
+                        </div>
+                    `;
+                });
+                
+                if (notes.length > 10) {
+                    notesHtml += `<div class="text-xs text-on-surface-variant flex items-center px-2 shrink-0">+${notes.length - 10}</div>`;
+                }
+
+                const item = document.createElement('div');
+                item.className = 'flex flex-col p-3 rounded-lg bg-surface-container-highest border border-outline-variant/20 hover:border-outline-variant/50 transition-colors animate-[fadeIn_0.3s_ease-out] gap-2';
+                item.innerHTML = `
+                    <div class="flex justify-between items-center w-full">
+                        <span class="font-label-mono text-label-mono text-on-surface-variant">${time} (${notes.length} reels)</span>
+                        <span class="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded">Combo</span>
+                    </div>
+                    <div class="flex items-center w-full bg-surface p-2 rounded-md border border-outline-variant/10 overflow-x-auto">
+                        ${notesHtml}
+                    </div>
+                `;
+                
+                historyList.insertBefore(item, historyList.firstChild);
+                
+                if (historyList.children.length > 15) {
+                    historyList.removeChild(historyList.lastChild);
+                }
+            }
+        });
+    </script>
+</body></html>

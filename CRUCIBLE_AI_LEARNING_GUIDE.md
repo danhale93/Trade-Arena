@@ -256,7 +256,7 @@ This shows:
 
 ```javascript
 CrucibleAITest.config = {
-  paperBalance: 10000,           // Starting capital
+  paperBalance: 0,           // Starting capital
   tradeCount: 1000,              // Number of trades
   tradeInterval: 50,             // ms between trades
   verbose: false,                // Logging detail

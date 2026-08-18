@@ -19,7 +19,7 @@
    TradeArenaApp.getSystemStatus()
    
    // Should show:
-   // { master: "ON", balance: 10000, online: true, version: "v4.2" }
+   // { master: "ON", balance: 0, online: true, version: "v4.2" }
    ```
 
 ---
@@ -240,7 +240,7 @@ Open index.html → Wait for startup → See green checkmarks
 ### 2. Check Status
 ```javascript
 TradeArenaApp.getSystemStatus()
-// {master: "ON", balance: 10000, online: true, version: "v4.2"}
+// {master: "ON", balance: 0, online: true, version: "v4.2"}
 ```
 
 ### 3. Start Trading

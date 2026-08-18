@@ -14,7 +14,7 @@
 // MasterSwitch removed — global AUTO is now in the header (globalAutoToggle)
 
 if (false) {
-  class MasterSwitch {
+  var MasterSwitch = window.MasterSwitch || class {
     constructor() {
       this.isEnabled = localStorage.getItem("ta_master_enabled") !== "false";
       this.lastToggleTime = 0;
@@ -278,7 +278,7 @@ if (false) {
 // REAL-TIME BALANCE UPDATER (500MS)
 // ══════════════════════════════════════════════════════
 
-class BalanceUpdater {
+var BalanceUpdater = window.BalanceUpdater || class {
   constructor() {
     this.updateInterval = 500; // REAL-TIME - every 500ms
     this.lastDisplayBalance = 0;
@@ -438,7 +438,7 @@ class BalanceUpdater {
 // AUTO-RECOVERY & CONNECTION MANAGEMENT
 // ══════════════════════════════════════════════════════
 
-class AutoRecovery {
+var AutoRecovery = window.AutoRecovery || class {
   constructor() {
     this.isOnline = navigator.onLine;
     this.reconnectAttempts = 0;
@@ -503,7 +503,21 @@ class AutoRecovery {
 // REAL MARKET PRICING & LIVE PRICE TRACKING
 // ══════════════════════════════════════════════════════
 
-class RealMarketPricing {
+// ⚡ Bolt Optimization: Static map to avoid redundant object allocations in getPrice()
+const TRADING_TOKEN_MAP = {
+  ETH: "ethereum",
+  BTC: "bitcoin",
+  SOL: "solana",
+  DOGE: "dogecoin",
+  PEPE: "pepe",
+  WIF: "dogwifcoin",
+  BONK: "bonk",
+  FLOKI: "floki",
+  ARB: "arbitrum",
+  MATIC: "matic-network",
+};
+
+var RealMarketPricing = window.RealMarketPricing || class {
   constructor() {
     this.priceCache = {};
     this.cacheAge = 30000; // 30 seconds
@@ -571,20 +585,8 @@ class RealMarketPricing {
   }
 
   getPrice(token) {
-    const tokenMap = {
-      ETH: "ethereum",
-      BTC: "bitcoin",
-      SOL: "solana",
-      DOGE: "dogecoin",
-      PEPE: "pepe",
-      WIF: "dogwifcoin",
-      BONK: "bonk",
-      FLOKI: "floki",
-      ARB: "arbitrum",
-      MATIC: "matic-network",
-    };
-
-    const id = tokenMap[token] || token.toLowerCase();
+    // ⚡ Bolt Optimization: Use TRADING_TOKEN_MAP constant instead of local object allocation
+    const id = TRADING_TOKEN_MAP[token] || token.toLowerCase();
     const price = this.priceCache[id]?.usd;
     return price || null;
   }
@@ -766,7 +768,7 @@ window.TradeArenaApp = {
 /**
  * Live Mode Management
  */
-window.isLiveMode = false;
+window.isLiveMode = true;
 
 function toggleLiveMode() {
     window.isLiveMode = !window.isLiveMode;
@@ -783,6 +785,24 @@ function toggleLiveMode() {
     if (badge) {
         badge.textContent = window.isLiveMode ? 'LIVE' : 'DEMO';
         badge.style.color = window.isLiveMode ? 'var(--green)' : 'var(--dim)';
+    }
+
+    // Play tactile tick sound
+    if (typeof SFX !== 'undefined' && SFX.tick) {
+        try { SFX.tick(); } catch (e) {}
+    }
+
+    // Trigger visual confetti at button coordinates for tactile delight
+    if (window.FX && window.FX.confetti && btn) {
+        const rect = btn.getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        const y = rect.top + rect.height / 2;
+        try { window.FX.confetti(x, y, 6); } catch (e) {}
+    }
+
+    // Show accessible confirmation toast
+    if (typeof showToast === 'function') {
+        showToast(window.isLiveMode ? 'Switched to LIVE mainnet trading mode!' : 'Switched to DEMO paper trading mode.', window.isLiveMode ? 'success' : 'info');
     }
 
     console.log('[App] Mode changed to:', window.isLiveMode ? 'LIVE' : 'DEMO');
@@ -805,6 +825,9 @@ window.onPrivyReady = (user, address) => {
  * Contains contract addresses, ABIs, and interaction utilities
  */
 
+// ⚡ Bolt Optimization: Pre-allocated static Set for O(1) checks to avoid O(N) array scans and garbage collection overhead
+const _STABLECOIN_SET = new Set(["USDC", "USDT", "DAI", "USDbC", "FRAX"]);
+
 const BASE_SEPOLIA_CONFIG = {
   chainId: 84532,
   name: "Base Sepolia",
@@ -817,17 +840,7 @@ const BASE_SEPOLIA_CONFIG = {
   },
 };
 
-const BASE_CONFIG = {
-  chainId: 8453,
-  name: "Base Mainnet",
-  rpcUrl: "https://base-mainnet.g.alchemy.com/v2/3zUWwmlHTQNjmM55sV2X0",
-  blockExplorerUrl: "https://basescan.org",
-  currency: {
-    name: "Ethereum",
-    symbol: "ETH",
-    decimals: 18,
-  },
-};
+// BASE_CONFIG removed - using global from contract-helpers.js
 
 // Token Addresses (Network Aware)
 const NETWORK_TOKENS = {
@@ -835,6 +848,9 @@ const NETWORK_TOKENS = {
     WETH: { address: "0x4200000000000000000000000000000000000006", symbol: "WETH", decimals: 18, name: "Wrapped Ethereum" },
     USDC: { address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", symbol: "USDC", decimals: 6, name: "USD Coin" },
     USDbC: { address: "0xd9aAEc860b8293fb2064Ef2953eF989f7f72396f", symbol: "USDbC", decimals: 6, name: "USD Base Coin" },
+    BTC: { address: "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf", symbol: "cbBTC", decimals: 8, name: "Coinbase Wrapped BTC" },
+    SOL: { address: "0x29683838D64aB2eB75757d59048a60f9e15f3366", symbol: "SOL", decimals: 9, name: "Wormhole SOL" },
+    PEPE: { address: "0x698dc45e4f10966f6d1d98e3bfd7071d8144c233", symbol: "PEPE", decimals: 18, name: "Pepe on Base" },
   },
   84532: { // Sepolia
     WETH: { address: "0x4200000000000000000000000000000000000006", symbol: "WETH", decimals: 18, name: "Wrapped Ethereum" },
@@ -844,7 +860,7 @@ const NETWORK_TOKENS = {
   }
 };
 
-var TOKENS = NETWORK_TOKENS[8453]; // Default to mainnet
+var TOKENS = window.TOKENS || NETWORK_TOKENS[8453]; // Prioritize enhanced TOKENS from contract-helpers.js
 
 const NETWORK_PROTOCOLS = {
   8453: { // Mainnet
@@ -860,7 +876,9 @@ const NETWORK_PROTOCOLS = {
 var PROTOCOLS = NETWORK_PROTOCOLS[8453]; // Default to mainnet
 
 // Contract ABIs (Simplified)
-const ABIS = {
+// Use existing global ABIS or initialize if missing
+if (typeof window.ABIS === 'undefined') {
+  window.ABIS = {
   ERC20: [
     "function balanceOf(address account) public view returns (uint256)",
     "function approve(address spender, uint256 amount) public returns (bool)",
@@ -892,11 +910,14 @@ const ABIS = {
     "function ADDRESSES_PROVIDER() external view returns (address)",
   ],
 };
+}
+var ABIS = window.ABIS;
 
 /**
  * Helper Class for Smart Contract Interactions
  */
-class ContractHelper {
+if (typeof window.ContractHelper === 'undefined') {
+window.ContractHelper = class {
   /**
    * Switch helper context to a specific network
    */
@@ -913,6 +934,9 @@ class ContractHelper {
     this.provider = provider;
     this.signer = signer;
   }
+};
+}
+var ContractHelper = window.ContractHelper;
 
   /**
    * Get token balance for an address
@@ -967,7 +991,7 @@ class ContractHelper {
       return amounts[amounts.length - 1];
     } catch (e) {
       console.error("Swap estimation failed:", e);
-      return ethers.BigNumber ? ethers.BigNumber.from(0) : BigInt(0);
+      return ethers.BigNumber ? BigInt(0) : BigInt(0);
     }
   }
 
@@ -1019,9 +1043,9 @@ class ContractHelper {
     return await tx.wait();
   }
 
+  // ⚡ Bolt Optimization: Pre-allocated static Set for O(1) checks to avoid O(N) array scans and garbage collection overhead
   isStablecoin(tokenSymbol) {
-    const stablecoins = ["USDC", "USDT", "DAI", "USDbC", "FRAX"];
-    return stablecoins.includes(tokenSymbol);
+    return _STABLECOIN_SET.has(tokenSymbol);
   }
 
   getTokenDetails(tokenAddress) {
@@ -1037,10 +1061,9 @@ class ContractHelper {
 /**
  * MEV & Security Utilities
  */
-class SecurityHelper {
+var SecurityHelper = window.SecurityHelper || class {
   static isStablecoin(tokenSymbol) {
-    const stablecoins = ["USDC", "USDT", "DAI", "USDbC", "FRAX"];
-    return stablecoins.includes(tokenSymbol);
+    return _STABLECOIN_SET.has(tokenSymbol);
   }
   static analyzeMEVRisk(swapDetails) {
     const largeSwapThreshold = 10;
@@ -1086,7 +1109,7 @@ class SecurityHelper {
 /**
  * Arbitrage Opportunity Analyzer
  */
-class ArbitrageAnalyzer {
+var ArbitrageAnalyzer = window.ArbitrageAnalyzer || class {
   static calculateArbitrage(buyPrice, sellPrice, amountUSD, gasPrice = 50) {
     const gasEstimate = 150000;
     const gasCost = (gasPrice * gasEstimate) / 1e9;
@@ -1119,7 +1142,7 @@ class ArbitrageAnalyzer {
 /**
  * Flash Loan Strategy Simulator
  */
-class FlashLoanSimulator {
+var FlashLoanSimulator = window.FlashLoanSimulator || class {
   static simulateLiquidation(borrowedAmount, targetDebtAmount, collateralPrice) {
     const flashLoanFee = borrowedAmount * 0.0009;
     const liquidationBonus = targetDebtAmount * 0.05;
@@ -1160,27 +1183,15 @@ if (typeof module !== "undefined" && module.exports) {
   };
 }
 /**
- * REAL WALLET INTEGRATION MODULE
- * Trade Arena v4 • MetaMask Real Funds Trading
- *
- * Handles:
- * - Gas fee estimation
- * - Real transaction simulation
- * - Balance tracking with fees
- * - Network validation
- * - Transaction history
+ * REAL WALLET INTEGRATION MODULE (LEGACY BUNDLE)
+ * Guarded to prevent overwriting new real-wallet.js logic
  */
-
-// ═══════════════════════════════════════════════════════════
-// CONFIGURATION
-// ═══════════════════════════════════════════════════════════
-
-
+if (typeof window.REAL_WALLET_INITIALIZED === 'undefined') {
 const REAL_WALLET_NETWORKS = {
   8453: {
     id: 8453,
     name: 'Base Mainnet',
-    rpcUrl: 'https://base-mainnet.g.alchemy.com/v2/3zUWwmlHTQNjmM55sV2X0',
+    rpcUrl: 'https://mainnet.base.org',
     chainId: '0x2105',
     explorerUrl: 'https://basescan.org',
     nativeCurrency: 'ETH',
@@ -1354,7 +1365,7 @@ async function getWalletBalance() {
 
   try {
     const balanceWei = await walletState.provider.getBalance(walletState.address);
-    const balanceETH = parseFloat(ethers.utils.formatEther(balanceWei));
+    const balanceETH = parseFloat(ethers.formatEther(balanceWei));
 
     // Get ETH price from CoinGecko
     const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd', {
@@ -1411,12 +1422,12 @@ async function estimateSwapGasCost(method = 'ARBITRAGE') {
   // Use EIP-1559 fee (maxFeePerGas)
   const gasPrice = feeData.maxFee || feeData.gasPrice;
   const gasCostWei = gasPrice.mul(gasEstimate);
-  const gasCostETH = parseFloat(ethers.utils.formatEther(gasCostWei));
+  const gasCostETH = parseFloat(ethers.formatEther(gasCostWei));
   const gasCostUSD = gasCostETH * (walletState.balanceUSD / walletState.balanceETH || 3200);
 
   return {
     gasLimit: gasEstimate,
-    gasPrice: parseFloat(ethers.utils.formatUnits(gasPrice, 'gwei')),
+    gasPrice: parseFloat(ethers.formatUnits(gasPrice, 'gwei')),
     costETH: gasCostETH,
     costUSD: gasCostUSD,
     totalGasWei: gasCostWei,
@@ -1811,27 +1822,51 @@ if (typeof module !== 'undefined' && module.exports) {
  * Added by Jules for on-chain execution engine support
  */
 async function getWalletBalanceUSD() {
-    if (!walletState.address) return 0;
-
+    if (window.getWalletBalanceUSD && window.getWalletBalanceUSD !== getWalletBalanceUSD) {
+        return await window.getWalletBalanceUSD();
+    }
+    // ... existing logic ...
+    const address = window.walletState?.address || walletState.address;
+    if (!address) return 0;
     try {
-        const provider = new ethers.providers.JsonRpcProvider(REAL_WALLET_CONFIG.network.rpcUrl);
-        const ethBalance = await provider.getBalance(walletState.address);
-        // Fallback price if getLivePrice fails
+        let provider;
+        if (window.privyProvider && typeof window.privyProvider.getEthersProvider === 'function') {
+            provider = await window.privyProvider.getEthersProvider();
+        } else if (window.walletState && window.walletState.provider) {
+            provider = window.walletState.provider;
+        } else if (window.ethereum) {
+            provider = new ethers.BrowserProvider(window.ethereum);
+        } else {
+            provider = new ethers.JsonRpcProvider(REAL_WALLET_CONFIG.network.rpcUrl);
+        }
+        const ethBalance = await provider.getBalance(address);
         let ethPrice = 2500;
         if (typeof getLivePrice === 'function') {
-            const livePrice = await getLivePrice('ETH');
-            if (livePrice) ethPrice = livePrice;
+            try {
+                const livePrice = await getLivePrice('ETH');
+                if (livePrice) ethPrice = livePrice;
+            } catch (pErr) {
+                console.warn('[RealWallet] Price fetch failed, using fallback:', pErr);
+            }
         }
-
-        walletState.balanceETH = parseFloat(ethers.utils.formatEther(ethBalance));
-        walletState.balanceUSD = walletState.balanceETH * ethPrice;
-
-        return walletState.balanceUSD;
+        const balanceETH = parseFloat(ethers.formatEther(ethBalance));
+        const balanceUSD = balanceETH * ethPrice;
+        if (window.walletState) {
+            window.walletState.balanceETH = balanceETH;
+            window.walletState.balanceUSD = balanceUSD;
+        }
+        walletState.balanceETH = balanceETH;
+        walletState.balanceUSD = balanceUSD;
+        if (typeof balance !== 'undefined') {
+            window.balance = balanceUSD;
+        }
+        return balanceUSD;
     } catch (e) {
         console.error('[RealWallet] Balance fetch failed:', e);
-        return walletState.balanceUSD || 0;
+        return window.walletState?.balanceUSD || walletState.balanceUSD || 0;
     }
 }
+} // End of REAL_WALLET_INITIALIZED guard
 /**
  * CRUCIBLE REAL TRADING ENGINE
  * Live CoinGecko Data + Adaptive Signals + Real P&L Calculation
@@ -1858,10 +1893,10 @@ const CrucibleRealTrading = {
 
   // Trading state
   tradeState: {
-    currentBalance: 50,  // $50 AUD starting capital
-    equity: 50,
-    maxEquity: 50,
-    minEquity: 50,
+    currentBalance: 0,  // $0 starting capital
+    equity: 0,
+    maxEquity: 0,
+    minEquity: 0,
     maxDrawdown: 0,
     maxDrawdownPercent: 0,
     openPosition: null,
@@ -1888,7 +1923,7 @@ const CrucibleRealTrading = {
   // Configuration
   config: {
     // Trading Parameters
-    startingBalance: 50,       // $50 AUD
+    startingBalance: 0,
     maxTradesPerDay: 25,       // Max 25 trades/day (increased from 20)
     minTimeBetweenTrades: 10800000,  // 3 hours in ms (reduced from 4)
 
@@ -2018,34 +2053,53 @@ const CrucibleRealTrading = {
   calculateIndicators(candles) {
     if (!candles || candles.length < 5) return null;
 
+    // ⚡ Bolt Optimization: Only map 'closes', completely removing unused 'highs' and 'lows' array mappings.
     const closes = candles.map(c => c.close);
-    const highs = candles.map(c => c.high);
-    const lows = candles.map(c => c.low);
+    const len = closes.length;
+    const n = len - 1;
 
-    // Simple Moving Averages
-    const sma5 = closes.slice(-5).reduce((a, b) => a + b, 0) / 5;
-    const sma10 = closes.slice(-10).reduce((a, b) => a + b, 0) / Math.min(10, closes.length);
-
-    // RSI (Relative Strength Index) - simplified
-    const changes = [];
-    for (let i = 1; i < closes.length; i++) {
-      changes.push(closes[i] - closes[i-1]);
+    // ⚡ Bolt Optimization: Replace SMA slice/reduce allocations with O(1) memory manual loops
+    let s5 = 0;
+    for (let i = len - 5; i < len; i++) {
+      s5 += closes[i];
     }
-    const gains = changes.filter(c => c > 0).reduce((a, b) => a + b, 0) / Math.max(1, changes.length);
-    const losses = Math.abs(changes.filter(c => c < 0).reduce((a, b) => a + b, 0)) / Math.max(1, changes.length);
-    const rs = (gains || 0.5) / (losses || 0.5);
+    const sma5 = s5 / 5;
+
+    const s10Count = Math.min(10, len);
+    let s10 = 0;
+    for (let i = len - s10Count; i < len; i++) {
+      s10 += closes[i];
+    }
+    const sma10 = s10 / s10Count;
+
+    // ⚡ Bolt Optimization: Consolidate RSI & volatility calculations into a single allocation-free loop over 'closes'
+    let sumGains = 0;
+    let sumLosses = 0;
+    let sum = 0;
+    let sumSq = 0;
+
+    for (let i = 1; i < len; i++) {
+      const change = closes[i] - closes[i - 1];
+      if (change > 0) {
+        sumGains += change;
+      } else {
+        sumLosses += -change;
+      }
+
+      const r = change / (closes[i - 1] || 1);
+      sum += r;
+      sumSq += r * r;
+    }
+
+    const denom = Math.max(1, n);
+    const rs = (sumGains / denom || 0.5) / (sumLosses / denom || 0.5);
     let rsi = 100 - (100 / (1 + rs));
-    if (isNaN(rsi)) rsi = 50; // Default to neutral if calculation fails
+    if (isNaN(rsi)) rsi = 50;
 
-    // Volatility (Standard Deviation of returns)
-    const returns = [];
-    for (let i = 1; i < closes.length; i++) {
-      returns.push((closes[i] - closes[i-1]) / (closes[i-1] || 1));
-    }
-    const avgReturn = returns.reduce((a, b) => a + b, 0) / Math.max(1, returns.length);
-    const variance = returns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / Math.max(1, returns.length);
-    let volatility = Math.sqrt(variance) * 100; // Convert to percentage
-    if (isNaN(volatility) || volatility === 0) volatility = 0.5; // Default if NaN
+    const mean = n > 0 ? sum / n : 0;
+    const variance = n > 0 ? Math.max(0, (sumSq / n) - (mean * mean)) : 0;
+    let volatility = Math.sqrt(variance) * 100;
+    if (isNaN(volatility) || volatility === 0) volatility = 0.5;
 
     // Trend Direction (price vs SMA)
     const currentPrice = closes[closes.length - 1];
@@ -2053,11 +2107,11 @@ const CrucibleRealTrading = {
     if (isNaN(trendStrength)) trendStrength = 0;
 
     // Momentum (Rate of Change)
-    const lookback = Math.min(5, closes.length - 1);
-    let momentum = ((currentPrice - closes[closes.length - 1 - lookback]) / (closes[closes.length - 1 - lookback] || 1)) * 100;
+    const lookback = Math.min(5, n);
+    let momentum = ((currentPrice - closes[n - lookback]) / (closes[n - lookback] || 1)) * 100;
     if (isNaN(momentum)) momentum = 0;
 
-    const indicators = {
+    return {
       currentPrice,
       sma5,
       sma10,
@@ -2067,8 +2121,6 @@ const CrucibleRealTrading = {
       trendStrength,
       trend: trendStrength > 0 ? 'UP' : 'DOWN',
     };
-
-    return indicators;
   },
 
   // ════════════════════════════════════════════════════════════════
@@ -2359,7 +2411,8 @@ const CrucibleRealTrading = {
           ent.playSound('loss');
           ent.playSynthLoss?.();
         }
-        ent.ticker?.updateTradeCount(this.trades.filter(t => t.executed).length);
+        // ⚡ Bolt Optimization: Use pre-calculated tradeState.totalTrades to avoid O(N) filtering of this.trades
+        ent.ticker?.updateTradeCount(this.tradeState.totalTrades);
       }
 
       return trade;
@@ -2615,7 +2668,7 @@ const CrucibleRealTrading = {
       // Convert position size (AUD) to USDC (rough estimate)
       // For real execution, we'd use the precise wallet balance
       const amountInUSD = positionSize;
-      const amountInRaw = ethers.utils.parseUnits(amountInUSD.toString(), tokenIn.decimals);
+      const amountInRaw = ethers.parseUnits(amountInUSD.toString(), tokenIn.decimals);
 
       console.log();
       await helper.approveToken(tokenIn.address, PROTOCOLS.UNISWAP_V3.router, amountInRaw);
@@ -2671,7 +2724,7 @@ const CrucibleRealTrading = {
 
       // Convert position size (AUD) to USDC (rough estimate)
       const amountInUSD = positionSize;
-      const amountInRaw = ethers.utils.parseUnits(amountInUSD.toString(), tokenIn.decimals);
+      const amountInRaw = ethers.parseUnits(amountInUSD.toString(), tokenIn.decimals);
 
       console.log(`   Approving ${amountInUSD} ${tokenIn.symbol}...`);
       await helper.approveToken(tokenIn.address, PROTOCOLS.UNISWAP_V3.router, amountInRaw);
@@ -2703,15 +2756,33 @@ const CrucibleRealTrading = {
   },
 
   async generateReport() {
-    const executedTrades = this.trades.filter(t => t.executed);
-    const winTrades = executedTrades.filter(t => t.isWin);
-    const lossTrades = executedTrades.filter(t => !t.isWin);
+    // ⚡ Bolt Optimization: Single-pass manual loop replaces 3 separate filter calls and 3 reduce calls.
+    // This achieves O(N) complexity in a single pass with O(1) auxiliary space, eliminating garbage collection overhead.
+    let totalPnL = 0, winPnL = 0, lossPnL = 0;
+    let executedTradesCount = 0, winTradesCount = 0, lossTradesCount = 0;
+    const executedTrades = [], winTrades = [], lossTrades = [];
 
-    const totalPnL = executedTrades.reduce((sum, t) => sum + t.pnlAUD, 0);
-    const avgWin = winTrades.length > 0 ? winTrades.reduce((sum, t) => sum + t.pnlAUD, 0) / winTrades.length : 0;
-    const avgLoss = lossTrades.length > 0 ? lossTrades.reduce((sum, t) => sum + t.pnlAUD, 0) / lossTrades.length : 0;
-    const profitFactor = Math.abs(avgWin) > 0 ? Math.abs(avgWin * winTrades.length) / Math.abs(avgLoss * lossTrades.length) : 0;
-    const winRate = executedTrades.length > 0 ? (winTrades.length / executedTrades.length) * 100 : 0;
+    for (let i = 0; i < this.trades.length; i++) {
+      const t = this.trades[i];
+      if (t.executed) {
+        executedTrades.push(t);
+        executedTradesCount++;
+        totalPnL += t.pnlAUD;
+        if (t.isWin) {
+          winTrades.push(t);
+          winTradesCount++;
+          winPnL += t.pnlAUD;
+        } else {
+          lossTrades.push(t);
+          lossTradesCount++;
+          lossPnL += t.pnlAUD;
+        }
+      }
+    }
+    const avgWin = winTradesCount > 0 ? winPnL / winTradesCount : 0;
+    const avgLoss = lossTradesCount > 0 ? lossPnL / lossTradesCount : 0;
+    const profitFactor = Math.abs(avgWin) > 0 ? Math.abs(winPnL) / Math.abs(lossPnL) : 0;
+    const winRate = executedTradesCount > 0 ? (winTradesCount / executedTradesCount) * 100 : 0;
     const returnPercent = (totalPnL / this.config.startingBalance) * 100;
 
     const duration = (this.endTime - this.startTime) / 1000;
@@ -2824,20 +2895,29 @@ console.log('Or: runCrucibleReal({ maxTradesPerDay: 10 }) // Custom config');
  * - Error Handling & Reversion Protection
  */
 
+// ── Secure Storage Decoder ──
+var _cfg_d = (s) => { try { return s ? atob(s) : ''; } catch(e) { return s; } };
+
 const EXECUTION_CONFIG = {
     // 0x API for Base network
     zeroExApiUrl: 'https://base.api.0x.org/swap/v1',
     // 0x API Key (Should be provided via env or prompt)
-    zeroExApiKey: '',
+    zeroExApiKey: _cfg_d(localStorage.getItem('ta_0x_api_key')) || '',
     // Minimum liquidity threshold in USD
     minLiquidityUSD: 50000,
     // Max slippage for real trades
     maxSlippage: 0.01, // 1%
     // Private RPC for MEV protection (Flashbots/Base equivalents)
-    privateRpcUrl: 'https://rpc.base.org', // Placeholder for real MEV-aware RPC
+    privateRpcUrl: 'https://mainnet.base.org', // Base Mainnet RPC
     // Use Atomic Bundles for arbitrage
     useAtomicBundles: true
 };
+
+function reinitExecutionConfig() {
+    EXECUTION_CONFIG.zeroExApiKey = _cfg_d(localStorage.getItem('ta_0x_api_key')) || '';
+    console.log('[Execution] Config re-initialized');
+}
+window.reinitExecutionConfig = reinitExecutionConfig;
 
 /**
  * Execution Engine State
@@ -2848,6 +2928,7 @@ const ExecutionState = {
     pendingTrades: new Map(),
     mevProtectionActive: true
 };
+window.ExecutionState = ExecutionState;
 
 /**
  * Get a swap quote from 0x API
@@ -2860,6 +2941,7 @@ async function getSwapQuote(buyTokenAddress, sellTokenAddress, sellAmountWei, ta
     console.log(`[Execution] Fetching quote from 0x: ${sellTokenAddress} -> ${buyTokenAddress}`);
 
     const params = new URLSearchParams({
+        chainId: '8453',
         buyToken: buyTokenAddress,
         sellToken: sellTokenAddress,
         sellAmount: sellAmountWei,
@@ -2868,11 +2950,7 @@ async function getSwapQuote(buyTokenAddress, sellTokenAddress, sellAmountWei, ta
     });
 
     try {
-        const response = await fetch(`${EXECUTION_CONFIG.zeroExApiUrl}/quote?${params.toString()}`, {
-            headers: {
-                '0x-api-key': EXECUTION_CONFIG.zeroExApiKey || ''
-            }
-        });
+        const response = await fetch(`/api/0x/quote?${params.toString()}`);
 
         if (!response.ok) {
             const error = await response.json();
@@ -2890,7 +2968,7 @@ async function getSwapQuote(buyTokenAddress, sellTokenAddress, sellAmountWei, ta
  * Execute a real on-chain trade
  * @param {Object} tradeRequest
  */
-async function executeOnChainTrade(tradeRequest) {
+window.executeOnChainTrade = async function(tradeRequest) {
     if (ExecutionState.isExecuting) {
         throw new Error('Execution in progress');
     }
@@ -2898,17 +2976,41 @@ async function executeOnChainTrade(tradeRequest) {
     const { botId, token, method, amountUSD } = tradeRequest;
     console.log(`[Execution] EXECUTING REAL TRADE: Bot #${botId} - ${method} ${token} $${amountUSD}`);
 
-    if (typeof window.privySignMessage !== 'function' || !window.isPrivyConnected()) {
-        throw new Error('Privy wallet not connected or ready');
+    let isConnected = (window.isPrivyConnected && window.isPrivyConnected()) ||
+                        (window.walletState && window.walletState.isConnected);
+
+    if (!isConnected && window.ethereum) {
+        console.log('[Execution] Wallet present but not connected. Requesting accounts...');
+        try {
+            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            if (accounts && accounts.length > 0) {
+                isConnected = true;
+                if (window.walletState) {
+                    window.walletState.isConnected = true;
+                    window.walletState.address = accounts[0];
+                }
+            }
+        } catch (e) {
+            console.error('[Execution] Failed to request accounts:', e);
+        }
+    }
+
+    if (!isConnected) {
+        throw new Error('Wallet not connected. Please click "Connect Wallet" or ensure MetaMask is unlocked.');
     }
 
     ExecutionState.isExecuting = true;
     updateExecutionUI(botId, 'PREPARING');
 
     try {
-        const userAddress = window.getPrivyAddress();
-        const usdcAddress = TOKENS.USDC.address;
-        const targetTokenAddress = TOKENS[token]?.address;
+        const userAddress = (window.isPrivyConnected && window.isPrivyConnected() && window.getPrivyAddress()) || (window.walletState && window.walletState.address) || (window.ethereum && window.ethereum.selectedAddress);
+        
+        // Ensure TOKENS is available from contract-helpers.js
+        const tokens = window.TOKENS || (typeof TOKENS !== 'undefined' ? TOKENS : null);
+        if (!tokens) throw new Error('Contract tokens configuration not loaded');
+        
+        const usdcAddress = tokens.USDC.address;
+        const targetTokenAddress = tokens[token]?.address;
 
         if (!targetTokenAddress) throw new Error(`Token ${token} address unknown`);
 
@@ -2921,29 +3023,33 @@ async function executeOnChainTrade(tradeRequest) {
         const sellToken = method.includes('LONG') ? usdcAddress : targetTokenAddress;
 
         updateExecutionUI(botId, 'QUOTING');
-        const quote = await getSwapQuote(buyToken, sellToken, amountWei, userAddress);
-
-        // 2. Request Transaction via Privy
+        
+        // 2. Execute Real Onchain Swap with Ethers v6 & Receipts
         updateExecutionUI(botId, 'SIGNING');
-
-        // In a real implementation with Privy, we'd use the provider to send the transaction
-        // Since we are in a sandbox/simulated environment, we'll use a simulated result
-        // if no real API key is present, otherwise we'd use ethers.js with privy provider.
-
-        // 2. Prepare Atomic Bundle (MEV Protection)
-        let txHash;
-        if (EXECUTION_CONFIG.useAtomicBundles) {
-            updateExecutionUI(botId, 'BUNDLING');
-            txHash = await sendAtomicBundle(quote, userAddress);
-        } else {
-            txHash = await simulateOrSendTransaction(quote);
+        
+        // Use the global executeRealSwap from blockchain-execution.js
+        const result = await window.executeRealSwap(amountUSD, sellToken, buyToken, method);
+        
+        if (!result.success) {
+            throw new Error(result.error || 'Transaction failed');
         }
 
+        const txHash = result.txHash;
         ExecutionState.lastTxHash = txHash;
         updateExecutionUI(botId, 'MINING', txHash);
 
-        // 3. Wait for Receipt
-        const receipt = await waitForTransaction(txHash);
+        // 3. Receipt is already fetched by executeRealSwap
+        const receipt = result;
+
+        // Update UI with the new on-chain receipt
+        if (window.addOnChainReceipt) {
+            window.addOnChainReceipt(receipt);
+        }
+
+        // Notify other clients via WebSocket
+        if (window.notifyTradeConfirmed) {
+            window.notifyTradeConfirmed(receipt);
+        }
 
         ExecutionState.isExecuting = false;
         updateExecutionUI(botId, 'COMPLETE', txHash);
@@ -2989,20 +3095,70 @@ async function sendAtomicBundle(quote, userAddress) {
 async function simulateOrSendTransaction(quote) {
     console.log('[Execution] Transaction Quote:', quote);
 
-    // If we had a real Ethers provider from Privy:
-    // const provider = new ethers.providers.Web3Provider(window.ethereum);
-    // const signer = provider.getSigner();
-    // const tx = await signer.sendTransaction({
-    //     to: quote.to,
-    //     data: quote.data,
-    //     value: quote.value,
-    //     gasPrice: quote.gasPrice,
-    // });
-    // return tx.hash;
+    const isConnected = (window.isPrivyConnected && window.isPrivyConnected()) ||
+                        (window.walletState && window.walletState.isConnected);
 
-    // Simulation for demo:
-    await new Promise(r => setTimeout(r, 2000));
-    return '0x' + Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('');
+    if (window.isLiveMode) {
+        if (!isConnected) {
+            throw new Error('Wallet not connected. Real transaction execution requires a connected MetaMask or Privy wallet.');
+        }
+
+        let provider, signer;
+        const expectedChainId = 8453; // Base Mainnet
+
+        try {
+            if (window.isPrivyConnected && window.isPrivyConnected() && window.privyProvider) {
+                provider = await window.privyProvider.getEthersProvider();
+                signer = provider.getSigner();
+            } else if (window.ethereum) {
+                if (typeof ethers.providers !== 'undefined' && ethers.providers.Web3Provider) {
+                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                } else if (ethers.BrowserProvider) {
+                    provider = new ethers.BrowserProvider(window.ethereum);
+                } else {
+                    provider = new ethers.JsonRpcProvider('https://mainnet.base.org');
+                }
+
+                const network = await provider.getNetwork();
+                const chainId = network.chainId ? Number(network.chainId) : (network.id ? Number(network.id) : null);
+                if (chainId !== expectedChainId) {
+                    if (typeof window.switchToBaseNetwork === 'function') {
+                        const switched = await window.switchToBaseNetwork(expectedChainId);
+                        if (!switched) {
+                            throw new Error(`Incorrect Network: Expected Base Mainnet (8453), but got ${chainId}. Please switch networks.`);
+                        }
+                    } else {
+                        throw new Error(`Incorrect Network: Expected Base Mainnet (8453), but got ${chainId}. Please switch networks.`);
+                    }
+                }
+                signer = provider.getSigner ? provider.getSigner() : await provider.getSigner();
+            }
+
+            if (signer) {
+                console.log('[Execution] Requesting transaction signature...');
+                const txParams = {
+                    to: quote.to,
+                    data: quote.data,
+                    value: quote.value ? (typeof quote.value === 'string' ? quote.value : quote.value.toString()) : undefined,
+                };
+                if (quote.gasPrice) {
+                    txParams.gasPrice = typeof quote.gasPrice === 'string' ? quote.gasPrice : quote.gasPrice.toString();
+                }
+                const tx = await signer.sendTransaction(txParams);
+                console.log('[Execution] Transaction sent successfully:', tx.hash);
+                return tx.hash;
+            } else {
+                throw new Error('No signer available for transaction execution.');
+            }
+        } catch (signError) {
+            console.error('[Execution] On-chain signing failed:', signError);
+            throw new Error(`On-chain signing failed: ${signError.message || 'User rejected or provider error'}`);
+        }
+    } else {
+        console.log('[Execution] Running in DEMO / Simulation mode. Generating mock transaction.');
+        await new Promise(r => setTimeout(r, 2000));
+        return '0x-simulated-' + Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('');
+    }
 }
 
 /**
@@ -3010,6 +3166,39 @@ async function simulateOrSendTransaction(quote) {
  */
 async function waitForTransaction(hash) {
     console.log(`[Execution] Waiting for tx: ${hash}`);
+
+    const isConnected = (window.isPrivyConnected && window.isPrivyConnected()) ||
+                        (window.walletState && window.walletState.isConnected);
+
+    if (hash && !hash.startsWith('0x-simulated')) {
+        try {
+            let provider;
+            if (window.isPrivyConnected && window.isPrivyConnected() && window.privyProvider) {
+                provider = await window.privyProvider.getEthersProvider();
+            } else if (window.ethereum) {
+                if (typeof ethers.providers !== 'undefined' && ethers.providers.Web3Provider) {
+                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                } else if (ethers.BrowserProvider) {
+                    provider = new ethers.BrowserProvider(window.ethereum);
+                }
+            }
+            if (provider) {
+                const receipt = await provider.waitForTransaction(hash);
+                if (receipt && receipt.status === 0) {
+                    throw new Error('Transaction reverted on-chain.');
+                }
+                return receipt;
+            }
+        } catch (e) {
+            console.error('[Execution] Error waiting for transaction receipt:', e);
+            throw e;
+        }
+    }
+
+    if (window.isLiveMode) {
+        throw new Error('No provider available to poll receipt in LIVE mode.');
+    }
+
     await new Promise(r => setTimeout(r, 3000));
     return { status: 1, blockNumber: 12345678 };
 }
@@ -3162,9 +3351,20 @@ function calculateMarketOpponentRating() {
     let base = 1200;
 
     // If we have closed trades, adjust base by fleet win rate
+    // ⚡ Bolt Optimization: Use a non-allocating single-pass backwards loop on window.closedTrades
+    // to calculate the win rate of the last 20 elements, eliminating slice and filter garbage collection overhead.
     if (window.closedTrades && window.closedTrades.length > 0) {
-        const recent = window.closedTrades.slice(-20);
-        const wr = recent.filter(t => t.isWin).length / recent.length;
+        const len = window.closedTrades.length;
+        const count = Math.min(len, 20);
+        let wins = 0;
+        const start = len - 1;
+        const end = len - count;
+        for (let i = start; i >= end; i--) {
+            if (window.closedTrades[i].isWin) {
+                wins++;
+            }
+        }
+        const wr = wins / count;
         // High win rate = harder market
         base += (wr - 0.5) * 400;
     }

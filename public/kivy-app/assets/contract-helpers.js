@@ -4,10 +4,10 @@
  */
 
 // Base Network Configuration
-const BASE_CONFIG = {
+var BASE_CONFIG = {
     chainId: 8453,
     name: 'Base Mainnet',
-    rpcUrl: 'https://base-mainnet.g.alchemy.com/v2/3zUWwmlHTQNjmM55sV2X0',
+    rpcUrl: 'https://base-mainnet.g.alchemy.com/v2/3zUWwmlHTQNjmM55sV2X0', // Fallback
     blockExplorerUrl: 'https://basescan.org',
     currency: {
         name: 'Ethereum',
@@ -15,6 +15,17 @@ const BASE_CONFIG = {
         decimals: 18
     }
 };
+
+// 🛡️ DYNAMIC CONFIG: Load RPC from backend
+(async function() {
+    try {
+        const response = await fetch('/api/config');
+        const config = await response.json();
+        if (config.baseRpcUrl) {
+            BASE_CONFIG.rpcUrl = config.baseRpcUrl;
+        }
+    } catch (e) {}
+})();
 
 // Token Addresses on Base
 if (typeof TOKENS === 'undefined') {
@@ -59,7 +70,7 @@ if (typeof TOKENS === 'undefined') {
 }
 
 // DEX & Protocol Addresses on Base
-const PROTOCOLS = {
+var PROTOCOLS = {
     UNISWAP_V3: {
         name: 'Uniswap V3',
         router: '0x68b3465833fb72B5A828cCEA02FFAD6bCFB8ACBA',
@@ -92,7 +103,8 @@ const PROTOCOLS = {
 };
 
 // Contract ABIs (Simplified)
-const ABIS = {
+if (typeof window.ABIS === 'undefined') {
+    window.ABIS = {
     ERC20: [
         'function balanceOf(address account) public view returns (uint256)',
         'function approve(address spender, uint256 amount) public returns (bool)',
@@ -124,15 +136,21 @@ const ABIS = {
         'function ADDRESSES_PROVIDER() external view returns (address)'
     ]
 };
+}
+var ABIS = window.ABIS;
 
 /**
  * Helper Class for Smart Contract Interactions
  */
-class ContractHelper {
+if (typeof window.ContractHelper === 'undefined') {
+window.ContractHelper = class {
     constructor(provider, signer) {
         this.provider = provider;
         this.signer = signer;
     }
+};
+}
+var ContractHelper = window.ContractHelper;
 
     /**
      * Get token balance for an address
@@ -193,7 +211,7 @@ class ContractHelper {
             return amounts[amounts.length - 1]; // Return output amount
         } catch (e) {
             console.error('Swap estimation failed:', e);
-            return ethers.BigNumber.from(0);
+            return BigInt(0);
         }
     }
 

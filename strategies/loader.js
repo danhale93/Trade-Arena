@@ -9,8 +9,8 @@ const path = require('path');
 class StrategyLoader {
   constructor() {
     this.strategies = new Map();
-    this.corePath = path.join(__dirname, 'strategies', 'core');
-    this.customPath = path.join(__dirname, 'strategies', 'custom');
+    this.corePath = path.join(__dirname, 'core');
+    this.customPath = path.join(__dirname, 'custom');
     
     // Ensure directories exist
     this.ensureDirectoryExists(this.corePath);
@@ -93,6 +93,9 @@ class StrategyLoader {
    * @returns {boolean} Is valid
    */
   isValidStrategy(module) {
+    if (!module || typeof module !== 'object') {
+      return false;
+    }
     // Strategy must have an execute function
     if (typeof module.execute !== 'function') {
       return false;
@@ -217,15 +220,15 @@ class StrategyLoader {
     // Require fresh copies
     // Note: In production, you might want to avoid clearing cache
     // For development, we'll bust the require cache
-    const coreFiles = fs.readdirSync(this.corePath);
-    const customFiles = fs.readdirSync(this.customPath);
-    
-    const allFiles = [...coreFiles, ...customFiles]
+    const coreFiles = fs.readdirSync(this.corePath)
       .filter(file => file.endsWith('.js'))
-      .map(file => path.join(
-        file.startsWith('.') ? this.customPath : this.corePath, 
-        file
-      ));
+      .map(file => path.join(this.corePath, file));
+
+    const customFiles = fs.readdirSync(this.customPath)
+      .filter(file => file.endsWith('.js'))
+      .map(file => path.join(this.customPath, file));
+
+    const allFiles = [...coreFiles, ...customFiles];
     
     // Clear require cache for strategy files
     for (const file of allFiles) {
@@ -245,13 +248,21 @@ class StrategyLoader {
    */
   async addCustomStrategy(strategyId, strategyCode) {
     try {
+      if (typeof strategyId !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(strategyId)) {
+        throw new Error('Invalid strategy ID format');
+      }
+
       // Validate strategy code
       if (!this.isValidStrategy(strategyCode)) {
         throw new Error('Invalid strategy format');
       }
       
       // Write to file
-      const filePath = path.join(this.customPath, `${strategyId}.js`);
+      const filePath = path.resolve(this.customPath, `${strategyId}.js`);
+      if (!filePath.startsWith(this.customPath)) {
+        throw new Error('Directory traversal detected');
+      }
+
       fs.writeFileSync(filePath, `
 /**
  * Custom Strategy: ${strategyId}
@@ -262,8 +273,12 @@ ${strategyCode.toString()}
       `);
       
       // Clear require cache for this file if it exists
-      const resolvedPath = require.resolve(filePath);
-      delete require.cache[resolvedPath];
+      try {
+        const resolvedPath = require.resolve(filePath);
+        delete require.cache[resolvedPath];
+      } catch (e) {
+        // file didn't exist in cache yet
+      }
       
       // Load the new strategy
       const strategyModule = require(filePath);
@@ -278,7 +293,7 @@ ${strategyCode.toString()}
       console.log(`[StrategyLoader] Added custom strategy: ${strategyId}`);
       return true;
     } catch (error) {
-      console.error(`[StrategyLoader] Failed to add custom strategy ${strategyId}:`, error);
+      console.error(`[StrategyLoader] Failed to add custom strategy ${strategyId}:`, error.message);
       return false;
     }
   }
@@ -290,6 +305,15 @@ ${strategyCode.toString()}
    */
   async removeCustomStrategy(strategyId) {
     try {
+      if (typeof strategyId !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(strategyId)) {
+        throw new Error('Invalid strategy ID format');
+      }
+
+      const filePath = path.resolve(this.customPath, `${strategyId}.js`);
+      if (!filePath.startsWith(this.customPath)) {
+        throw new Error('Directory traversal detected');
+      }
+
       const strategy = this.getStrategy(strategyId);
       if (!strategy || strategy.type !== 'custom') {
         throw new Error(`Custom strategy not found: ${strategyId}`);
@@ -299,7 +323,6 @@ ${strategyCode.toString()}
       this.strategies.delete(strategyId);
       
       // Delete file
-      const filePath = path.join(this.customPath, `${strategyId}.js`);
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
       }
@@ -312,7 +335,7 @@ ${strategyCode.toString()}
       console.log(`[StrategyLoader] Removed custom strategy: ${strategyId}`);
       return true;
     } catch (error) {
-      console.error(`[StrategyLoader] Failed to remove custom strategy ${strategyId}:`, error);
+      console.error(`[StrategyLoader] Failed to remove custom strategy ${strategyId}:`, error.message);
       return false;
     }
   }

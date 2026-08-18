@@ -186,32 +186,16 @@ Respond ONLY with JSON, no markdown:
   "decision_timestamp": "ISO string"
 }`;
 
-  // Get API key from multiple possible sources
-  let apiKey = window.ANTHROPIC_API_KEY || 
-               globalThis.ANTHROPIC_API_KEY || 
-               (window.parent?.ANTHROPIC_API_KEY) || 
-               (typeof ANTHROPIC_API_KEY !== 'undefined' ? ANTHROPIC_API_KEY : '') ||
-               '';
-  
   // Fast-fail during cooldown to avoid repeated network churn
   if (isArenaApiCoolingDown()) {
     return null;
   }
-
-  // Log if API key is available
-  if (apiKey && apiKey.startsWith('sk-ant')) {
-    // keep this quiet to reduce high-frequency log spam
-  } else {
-    return null;
-  }
   
   try {
-const res = await fetch('/api/claude', {
+    const res = await fetch('/api/claude', {
       method: 'POST',
       headers: { 
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',

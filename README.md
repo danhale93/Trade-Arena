@@ -477,3 +477,20 @@ Test Run 2:  20 trades | 65% Win Rate | +$0.1025 | Profit Factor: 3.34
 
 **Crucible Real Trading Engine v1.0 - March 16, 2026**
 **Repository:** https://github.com/danhale93/Trade-Arena
+
+---
+
+## 🛡️ MAINNET READINESS & LIVE OPERATIONS PLAN
+
+For the full, authoritative project plan to transition Trade Arena safely to live Base Mainnet trading, please refer to the comprehensive [MAINNET_READY_PLAN.md](MAINNET_READY_PLAN.md).
+
+### 🔑 GitHub Secrets Configuration
+
+To run mainnet-fork integration tests inside CI and coordinate deployments, configure the following secrets in **GitHub → Settings → Secrets → Actions**:
+
+1. `ALCHEMY_MAINNET_URL` (or `INFURA_MAINNET_URL`): High-speed JSON-RPC URL used to pin blocks and simulate on-chain actions during Fork testing.
+2. `RENDER_API_KEY`: Authorized credential to trigger service redeployments.
+3. `RENDER_SERVICE_ID`: Production Render application identifier.
+4. `RENDER_SERVICE_ID_STAGING`: Staging Render application identifier.
+
+⚠️ **CRITICAL SECURITY POLICY:** **NEVER** add Gnosis Safe owners, transaction executors, or hot-wallet private keys as GitHub Secrets. All automated actions must be delegated through secure, simulation-verified relayers without keeping private keys on Render or GitHub.

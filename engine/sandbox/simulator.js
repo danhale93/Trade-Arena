@@ -280,12 +280,23 @@ function generateMockMarketData(marketPair, timeframe, limit) {
  * @returns {number} Volatility percentage
  */
 function calculateVolatility(trades) {
-  if (trades.length < 2) return 0;
+  const len = trades.length;
+  if (len < 2) return 0;
   const startingEquity = (typeof window !== 'undefined' && window.balance) ? window.balance : 0;
-  const returns = trades.map(t => t.pnl / startingEquity); // Normalize by starting equity
-  const mean = returns.reduce((sum, r) => sum + r, 0) / returns.length;
-  const variance = returns.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / returns.length;
-  return Math.sqrt(variance) * 100 * Math.sqrt(252); // Annualized
+  const denominator = startingEquity || 1;
+
+  // ⚡ Bolt Optimization: Uses single-pass O(1) space manual loop with algebraic identity Var(X) = E[X^2] - (E[X])^2.
+  // Completely eliminates intermediate returns array allocations, cuts loop iterations by 50%, and avoids Math.pow.
+  let sum = 0;
+  let sumSq = 0;
+  for (let i = 0; i < len; i++) {
+    const r = trades[i].pnl / denominator;
+    sum += r;
+    sumSq += r * r;
+  }
+  const mean = sum / len;
+  const variance = (sumSq / len) - (mean * mean);
+  return Math.sqrt(variance < 0 ? 0 : variance) * 100 * Math.sqrt(252); // Annualized
 }
 
 /**
@@ -294,15 +305,29 @@ function calculateVolatility(trades) {
  * @returns {number} Sharpe ratio
  */
 function calculateSharpeRatio(trades) {
-  if (trades.length < 2) return 0;
+  const len = trades.length;
+  if (len < 2) return 0;
   const startingEquity = (typeof window !== 'undefined' && window.balance) ? window.balance : 0;
-  const returns = trades.map(t => t.pnl / startingEquity); // Normalize by starting equity
-  const mean = returns.reduce((sum, r) => sum + r, 0) / returns.length;
+  const denominator = startingEquity || 1;
+
+  // ⚡ Bolt Optimization: Uses single-pass O(1) space manual loop with algebraic identity Var(X) = E[X^2] - (E[X])^2.
+  // Note: Sample variance denominator is (len - 1), so standard identity is adjusted to correct Bessel correction factor.
+  // We use sum_i (x_i - mean)^2 = sum_i x_i^2 - len * mean^2, then divide by (len - 1).
+  let sum = 0;
+  let sumSq = 0;
+  for (let i = 0; i < len; i++) {
+    const r = trades[i].pnl / denominator;
+    sum += r;
+    sumSq += r * r;
+  }
+  const mean = sum / len;
   if (mean === 0) return 0;
-  
-  const variance = returns.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / (returns.length - 1);
-  const stdDev = Math.sqrt(variance);
-  
+
+  const sumSquaredDiffs = sumSq - len * mean * mean;
+  const variance = sumSquaredDiffs / (len - 1);
+  const stdDev = Math.sqrt(variance < 0 ? 0 : variance);
+  if (stdDev === 0) return 0;
+
   // Assuming risk-free rate of 0% for simplicity
   return (mean / stdDev) * Math.sqrt(252); // Annualized
 }

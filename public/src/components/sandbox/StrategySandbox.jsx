@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const StrategySandbox = () => {
   const [strategyCode, setStrategyCode] = useState('');
@@ -90,8 +90,9 @@ return { action, confidence, size };
         <h3>Strategy Sandbox</h3>
         <div className="sandbox-controls">
           <div className="control-group">
-            <label>Strategy Code:</label>
+            <label htmlFor="strategy-code">Strategy Code:</label>
             <textarea
+              id="strategy-code"
               value={strategyCode}
               onChange={(e) => setStrategyCode(e.target.value)}
               placeholder="Enter your strategy code here..."
@@ -99,8 +100,9 @@ return { action, confidence, size };
             />
           </div>
           <div className="control-group">
-            <label>Market Pair:</label>
+            <label htmlFor="market-pair">Market Pair:</label>
             <select
+              id="market-pair"
               value={marketPair}
               onChange={(e) => setMarketPair(e.target.value)}
             >
@@ -111,8 +113,9 @@ return { action, confidence, size };
             </select>
           </div>
           <div className="control-group">
-            <label>Timeframe:</label>
+            <label htmlFor="timeframe">Timeframe:</label>
             <select
+              id="timeframe"
               value={timeframe}
               onChange={(e) => setTimeframe(e.target.value)}
             >
@@ -126,8 +129,9 @@ return { action, confidence, size };
             </select>
           </div>
           <div className="control-group">
-            <label>Trade Count:</label>
+            <label htmlFor="trade-count">Trade Count:</label>
             <input
+              id="trade-count"
               type="number"
               value={tradeCount}
               onChange={(e) => setTradeCount(parseInt(e.target.value) || 10)}
@@ -226,7 +230,7 @@ return { action, confidence, size };
             <h4>Equity Curve</h4>
             <div className="equity-chart-placeholder">
               {/* In a real implementation, you would render a chart here */}
-              <p>Equity chart would be displayed here (starting at $10,000)</p>
+              <p>Equity chart would be displayed here (starting at $0)</p>
             </div>
           </div>
         </>

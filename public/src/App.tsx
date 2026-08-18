@@ -1,30 +1,27 @@
 import React from 'react';
 import { PrivyProvider } from '@privy-io/react-auth';
+import { base } from 'viem/chains';
 import PrivyWalletHeader from './components/PrivyWalletHeader';
 
-// Define Base Mainnet configuration manually to avoid external dependency issues
-const baseMainnet = {
-  id: 8453,
-  name: 'Base',
-  network: 'base',
-  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-  rpcUrls: {
-    default: { http: ['https://base-mainnet.g.alchemy.com/v2/3zUWwmlHTQNjmM55sV2X0', 'https://mainnet.base.org'] },
-    public: { http: ['https://base-mainnet.g.alchemy.com/v2/3zUWwmlHTQNjmM55sV2X0', 'https://mainnet.base.org'] },
-  },
-  blockExplorers: {
-    default: { name: 'Basescan', url: 'https://basescan.org' },
-  },
-};
-
+/**
+ * Robust Privy Authentication Provider Setup
+ * Customizing to avoid initialization errors, RPC rate-limiting, and lack of error visibility.
+ *
+ * OPERATOR ACTION REQUIRED IN PRIVY DASHBOARD:
+ * Ensure both 'localhost' and 'trade-arena-app.onrender.com' are whitelisted in
+ * the Allowed Domains section of the Privy developer dashboard.
+ */
 const App = () => {
-  const appId = 'cmpl1hc0k00ui0djsr3qo8gg8';
+  // Read Privy App ID from process.env / environment, or fallback to the provided App ID
+  const appId = (typeof process !== 'undefined' && process.env && process.env.PRIVY_APP_ID) || 'cmpl1hc0k00ui0djsr3qo8gg8';
 
   return (
     <PrivyProvider
       appId={appId}
+      onSuccess={(user) => console.log('Login success:', user)}
+      onError={(error) => console.error('Privy Auth Error:', error)}
       config={{
-        loginMethods: ['wallet', 'google', 'apple', 'email'],
+        loginMethods: ['google', 'wallet'],
         appearance: {
           theme: 'dark',
           accentColor: '#00ffe7',
@@ -33,9 +30,9 @@ const App = () => {
         embeddedWallets: {
           createOnLogin: 'users-without-wallets',
         },
-        // Set Base as the default and supported chain
-        supportedChains: [baseMainnet],
-        defaultChain: baseMainnet,
+        // Use standard viem base mainnet chain for robust compatibility and reliable RPCs
+        supportedChains: [base],
+        defaultChain: base,
       }}
     >
       <PrivyWalletHeader />

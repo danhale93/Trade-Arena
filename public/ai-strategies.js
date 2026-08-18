@@ -25,12 +25,12 @@ const AI_STRATEGIES = {
     }
   },
   
-  // Bot strategy profiles (using valid methods: SPOT LONG, SPOT SHORT, YIELD FARM, PERP LONG, PERP SHORT, HOLD)
+  // Bot strategy profiles
   profiles: {
     // SCALPER: Fast, low-hold, minimal risk
     SCALPER: {
-      methods: ['SPOT LONG', 'SPOT SHORT'],
-      methodWeights: [0.6, 0.4],
+      methods: ['ARBITRAGE', 'FLASH LOAN'],
+      methodWeights: [0.7, 0.3],
       baseBetMultiplier: 0.8,
       edgeRange: [1.0, 3.5],
       maxDrawdown: 200, // Stop after $200 loss
@@ -62,7 +62,7 @@ const AI_STRATEGIES = {
     
     // CONSERVATIVE: Low risk, steady
     CONSERVATIVE: {
-      methods: ['SPOT LONG', 'YIELD FARM'],
+      methods: ['ARBITRAGE', 'YIELD FARM'],
       methodWeights: [0.6, 0.4],
       baseBetMultiplier: 0.5,
       edgeRange: [0.8, 2.5],
@@ -73,7 +73,7 @@ const AI_STRATEGIES = {
     
     // BALANCED: Mix everything
     BALANCED: {
-      methods: ['SPOT LONG', 'PERP LONG', 'YIELD FARM', 'SPOT SHORT'],
+      methods: ['ARBITRAGE', 'SPOT LONG', 'YIELD FARM', 'FLASH LOAN'],
       methodWeights: [0.25, 0.25, 0.25, 0.25],
       baseBetMultiplier: 1.0,
       edgeRange: [1.2, 4.0],
@@ -82,9 +82,9 @@ const AI_STRATEGIES = {
       volatilityAdaptation: 'BALANCED'
     },
 
-    // NICHE: Alternative strategies
+    // NICHE: NFT & alternative strategies
     NICHE: {
-      methods: ['PERP SHORT', 'YIELD FARM', 'SPOT LONG'],
+      methods: ['NFT FLIP', 'YIELD FARM', 'SPOT LONG'],
       methodWeights: [0.3, 0.4, 0.3],
       baseBetMultiplier: 1.2,
       edgeRange: [1.5, 5.5],
@@ -132,20 +132,29 @@ function analyzeMarketConditions(marketData) {
     };
   }
 
-  // Calculate average volatility from top 8 coins
-  const volatilities = marketData.slice(0, 8).map(c => Math.abs(c.price_change_percentage_24h || 0));
-  const avgVolatility = volatilities.reduce((a, b) => a + b, 0) / volatilities.length;
-  
-  // Calculate volume average
-  const volumes = marketData.slice(0, 8).map(c => c.total_volume || 0);
-  const avgVolume = volumes.reduce((a, b) => a + b, 0) / volumes.length;
-  
-  // Determine market direction
-  const positiveCount = marketData.slice(0, 8).filter(c => (c.price_change_percentage_24h || 0) > 0).length;
+  // Single-pass allocation-free accumulation over top 8 coins
+  // Replaces 4 array slice allocations, 2 maps, 3 reduces, and 1 filter
+  const limit = Math.min(8, marketData.length);
+  let volSum = 0;
+  let totalVolumeSum = 0;
+  let positiveCount = 0;
+  let rawChangeSum = 0;
+
+  for (let i = 0; i < limit; i++) {
+    const coin = marketData[i];
+    const change = coin ? (coin.price_change_percentage_24h || 0) : 0;
+    const vol = coin ? (coin.total_volume || 0) : 0;
+
+    volSum += change < 0 ? -change : change;
+    totalVolumeSum += vol;
+    if (change > 0) positiveCount++;
+    rawChangeSum += change;
+  }
+
+  const avgVolatility = volSum / limit;
+  const avgVolume = totalVolumeSum / limit;
   const direction = positiveCount > 4 ? 'BULLISH' : positiveCount < 4 ? 'BEARISH' : 'NEUTRAL';
-  
-  // Momentum: sum of 24h changes
-  const momentum = marketData.slice(0, 8).reduce((sum, c) => sum + (c.price_change_percentage_24h || 0), 0) / 8;
+  const momentum = rawChangeSum / 8;
   
   // Determine condition
   let condition = 'NEUTRAL';
@@ -180,8 +189,8 @@ function selectAdaptiveMethod(strategy, marketConditions, botState) {
   
   switch (marketConditions.condition) {
     case 'STABLE':
-      // Favor YIELD FARM in stable markets (low volatility arbitrage equivalent)
-      methodSelection = methods.includes('YIELD FARM') ? 'YIELD FARM' : methods[0];
+      // Favor arbitrage in stable markets
+      methodSelection = methods.includes('ARBITRAGE') ? 'ARBITRAGE' : methods[0];
       break;
       
     case 'EXPLOSIVE_UP':
@@ -194,13 +203,13 @@ function selectAdaptiveMethod(strategy, marketConditions, botState) {
       // Avoid trades or go short
       if (methods.includes('PERP SHORT')) methodSelection = 'PERP SHORT';
       else if (methods.includes('SPOT SHORT')) methodSelection = 'SPOT SHORT';
-      else methodSelection = 'YIELD FARM'; // Safe fallback
+      else methodSelection = 'ARBITRAGE'; // Safe fallback
       break;
       
     case 'VOLATILE':
-      // Favor short positions and spreads in volatility
-      if (methods.includes('SPOT SHORT')) methodSelection = 'SPOT SHORT';
-      else if (methods.includes('YIELD FARM')) methodSelection = 'YIELD FARM';
+      // Favor flash loans and tight spreads in volatility
+      if (methods.includes('FLASH LOAN')) methodSelection = 'FLASH LOAN';
+      else if (methods.includes('ARBITRAGE')) methodSelection = 'ARBITRAGE';
       break;
       
     case 'TRENDING_UP':
@@ -211,12 +220,12 @@ function selectAdaptiveMethod(strategy, marketConditions, botState) {
       
     case 'TRENDING_DOWN':
       // Avoid momentum or go short
-      methodSelection = 'YIELD FARM';
+      methodSelection = 'ARBITRAGE';
       break;
       
     case 'LOW_LIQUIDITY':
       // Avoid all risky methods
-      methodSelection = 'YIELD FARM';
+      methodSelection = 'ARBITRAGE';
       break;
   }
   
@@ -430,7 +439,7 @@ async function getIntelligentAutoTradeRecommendation(marketData, bet, botState, 
   // Enhance with adaptive strategy
   const adaptiveMethod = selectAdaptiveMethod(strategy, marketConditions, botState);
   const adaptiveEdge = calculateAdaptiveEdge(strategy, marketConditions, botState, aiDecision.edge_pct, aiDecision.win_probability);
-  const adaptiveBet = calculateAdaptiveBetSize(strategy, marketConditions, botState, bet, window.balance || 0); // Dynamic balance
+  const adaptiveBet = calculateAdaptiveBetSize(strategy, marketConditions, botState, bet, 0); // Assuming $0 available
   
   // Check if should pause
   const pauseCheck = shouldBotPauseTrading(strategy, marketConditions);

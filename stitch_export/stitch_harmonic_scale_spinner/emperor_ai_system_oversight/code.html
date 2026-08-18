@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TRADE ARENA - Emperor AI Agent</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#dbfcff",
+                        "surface-tint": "#00dbe9",
+                        "inverse-surface": "#e1e2ea",
+                        "on-tertiary-container": "#715d00",
+                        "surface-container": "#1d2025",
+                        "on-primary-fixed": "#002022",
+                        "surface-container-lowest": "#0b0e13",
+                        "secondary": "#d1bcff",
+                        "secondary-container": "#7000ff",
+                        "primary-container": "#00f0ff",
+                        "tertiary-container": "#fed639",
+                        "background": "#111319",
+                        "outline-variant": "#3b494b",
+                        "on-primary-fixed-variant": "#004f54",
+                        "error": "#ffb4ab",
+                        "on-background": "#e1e2ea",
+                        "tertiary": "#fff5de",
+                        "on-tertiary": "#3b2f00",
+                        "on-secondary-fixed-variant": "#5700c9",
+                        "primary-fixed": "#7df4ff",
+                        "surface": "#111319",
+                        "surface-container-high": "#272a30",
+                        "on-tertiary-fixed": "#231b00",
+                        "on-secondary-container": "#ddcdff",
+                        "surface-dim": "#111319",
+                        "surface-bright": "#36393f",
+                        "on-surface-variant": "#b9cacb",
+                        "on-error-container": "#ffdad6",
+                        "inverse-primary": "#006970",
+                        "surface-variant": "#32353b",
+                        "secondary-fixed": "#e9ddff",
+                        "on-surface": "#e1e2ea",
+                        "on-error": "#690005",
+                        "tertiary-fixed-dim": "#eac324",
+                        "primary-fixed-dim": "#00dbe9",
+                        "outline": "#849495",
+                        "on-primary-container": "#006970",
+                        "surface-container-highest": "#32353b",
+                        "secondary-fixed-dim": "#d1bcff",
+                        "on-secondary": "#3c0090",
+                        "surface-container-low": "#191c21",
+                        "on-tertiary-fixed-variant": "#554500",
+                        "tertiary-fixed": "#ffe179",
+                        "on-secondary-fixed": "#23005b",
+                        "inverse-on-surface": "#2e3036",
+                        "error-container": "#93000a",
+                        "on-primary": "#00363a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "module-gap": "0.75rem",
+                        "data-row-height": "2rem",
+                        "container-padding": "1.5rem",
+                        "unit": "4px",
+                        "input-height": "2.5rem"
+                    },
+                    "fontFamily": {
+                        "data-sm": ["JetBrains Mono"],
+                        "data-lg": ["JetBrains Mono"],
+                        "display-lg": ["Hanken Grotesk"],
+                        "label-caps": ["JetBrains Mono"],
+                        "body-md": ["Hanken Grotesk"],
+                        "headline-md": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "data-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+                        "data-lg": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "500" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-caps": ["10px", { "lineHeight": "12px", "letterSpacing": "0.08em", "fontWeight": "700" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: theme('colors.background'); color: theme('colors.on-background'); }
+        .cyber-border { border: 1px solid theme('colors.outline-variant'); }
+        .cyber-border-active { border: 1px solid theme('colors.primary-fixed-dim'); box-shadow: inset 0 0 10px rgba(0, 219, 233, 0.1); }
+        .glitch-text { position: relative; display: inline-block; }
+        .pulse-dot { animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.2); } 100% { opacity: 1; transform: scale(1); } }
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: theme('colors.surface-container-lowest'); }
+        ::-webkit-scrollbar-thumb { background: theme('colors.outline-variant'); }
+        ::-webkit-scrollbar-thumb:hover { background: theme('colors.primary-fixed-dim'); }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface-container-lowest text-on-surface font-body-md h-screen overflow-hidden flex flex-col pt-16 pb-20 md:pb-0">
+<!-- TopAppBar -->
+<header class="bg-surface-container-low/80 backdrop-blur-xl fixed top-0 w-full z-50 border-b border-outline-variant/30 shadow-none active:scale-95 duration-75 flex justify-between items-center px-container-padding h-16 w-full">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-fixed-dim">hub</span>
+<span class="font-display-lg text-display-lg tracking-tighter text-primary-fixed">TRADE ARENA</span>
+</div>
+<!-- Desktop Nav -->
+<nav class="hidden md:flex gap-8">
+<a class="font-label-caps text-label-caps text-outline hover:bg-surface-container-high transition-colors px-2 py-1 flex items-center gap-1" href="#"><span class="material-symbols-outlined text-[16px]">dashboard</span>Dashboard</a>
+<a class="font-label-caps text-label-caps text-primary-fixed-dim bg-primary-container/10 px-2 py-1 flex items-center gap-1 rounded-sm border border-primary-fixed-dim/30" href="#"><span class="material-symbols-outlined text-[16px]">extension</span>Modules</a>
+<a class="font-label-caps text-label-caps text-outline hover:bg-surface-container-high transition-colors px-2 py-1 flex items-center gap-1" href="#"><span class="material-symbols-outlined text-[16px]">terminal</span>Log</a>
+<a class="font-label-caps text-label-caps text-outline hover:bg-surface-container-high transition-colors px-2 py-1 flex items-center gap-1" href="#"><span class="material-symbols-outlined text-[16px]">settings</span>Settings</a>
+</nav>
+<button class="bg-error text-on-error font-label-caps text-label-caps px-4 py-2 hover:bg-error-container hover:text-on-error-container transition-colors tracking-widest flex items-center gap-2">
+            KILL SWITCH
+        </button>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 overflow-y-auto p-4 md:p-module-gap w-full h-full">
+<div class="grid grid-cols-1 md:grid-cols-12 gap-module-gap h-full">
+<!-- Left Column: Emperor Status & Refactor -->
+<div class="md:col-span-4 flex flex-col gap-module-gap h-full">
+<!-- Emperor Identity Card -->
+<div class="bg-surface-container/60 backdrop-blur-md cyber-border p-4 flex flex-col h-1/3 min-h-[250px]">
+<div class="flex justify-between items-start mb-4 border-b border-outline-variant/30 pb-2">
+<div>
+<h2 class="font-data-lg text-data-lg text-primary-fixed">EMPEROR_AI_AGENT</h2>
+<p class="font-data-sm text-data-sm text-outline">v9.4.2_NEXUS</p>
+</div>
+<div class="flex items-center gap-2 bg-surface-container-highest px-2 py-1 rounded">
+<div class="w-2 h-2 rounded-full bg-primary-fixed-dim pulse-dot"></div>
+<span class="font-label-caps text-label-caps text-primary-fixed-dim">ONLINE</span>
+</div>
+</div>
+<div class="flex-1 flex flex-col justify-center items-center relative">
+<!-- Abstract AI Visual representation -->
+<div class="w-32 h-32 rounded-full border border-primary-fixed-dim/30 flex items-center justify-center relative overflow-hidden">
+<div class="absolute inset-0 border border-primary-fixed-dim/20 rounded-full animate-[spin_10s_linear_infinite]"></div>
+<div class="absolute inset-2 border border-secondary-container/40 rounded-full animate-[spin_7s_linear_infinite_reverse]"></div>
+<span class="material-symbols-outlined text-4xl text-primary-fixed-dim" style="font-variation-settings: 'FILL' 1;">psychology</span>
+</div>
+</div>
+<div class="mt-4 grid grid-cols-2 gap-2 font-data-sm text-data-sm">
+<div class="bg-surface-container-low p-2 cyber-border flex flex-col">
+<span class="text-outline mb-1">Latency</span>
+<span class="text-primary-fixed-dim">12ms</span>
+</div>
+<div class="bg-surface-container-low p-2 cyber-border flex flex-col">
+<span class="text-outline mb-1">Cognitive Load</span>
+<span class="text-secondary-fixed-dim">47%</span>
+</div>
+</div>
+</div>
+<!-- System Refactor Module -->
+<div class="bg-surface-container/60 backdrop-blur-md cyber-border p-4 flex-1 flex flex-col min-h-[300px]">
+<div class="flex justify-between items-center mb-4 border-b border-outline-variant/30 pb-2">
+<h3 class="font-data-lg text-data-lg text-surface-tint flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">code</span>
+                            SYSTEM REFACTOR
+                        </h3>
+<span class="font-label-caps text-label-caps text-outline bg-surface-container-highest px-2 py-1">AUTONOMOUS</span>
+</div>
+<div class="flex-1 bg-surface-container-lowest p-2 overflow-y-auto font-data-sm text-data-sm text-on-surface-variant border border-outline-variant/20 rounded-sm">
+<div class="flex items-start gap-2 mb-2 text-outline">
+<span class="text-primary-fixed-dim">&gt;</span>
+<span>Optimizing execution logic: Alpha_Stream_7</span>
+</div>
+<div class="pl-4 border-l border-outline-variant/30 mb-2 opacity-70">
+<div class="text-error">- weight_decay: 0.005</div>
+<div class="text-primary-fixed-dim">+ weight_decay: 0.0035</div>
+<div class="text-outline">// Adjusting to current volatility regime</div>
+</div>
+<div class="flex items-start gap-2 mb-2 text-outline">
+<span class="text-primary-fixed-dim">&gt;</span>
+<span>Compiling strategy matrix... [SUCCESS]</span>
+</div>
+<div class="flex items-start gap-2 text-outline">
+<span class="text-primary-fixed-dim animate-pulse">_</span>
+</div>
+</div>
+<button class="mt-4 w-full border border-outline-variant text-outline font-label-caps text-label-caps py-2 hover:bg-surface-container-high transition-colors flex justify-center items-center gap-2">
+<span class="material-symbols-outlined text-sm">tune</span>
+                        MANUAL OVERRIDE
+                    </button>
+</div>
+</div>
+<!-- Middle Column: Contextual Pulse & Logs -->
+<div class="md:col-span-5 flex flex-col gap-module-gap h-full">
+<!-- Emperor Pulse -->
+<div class="bg-surface-container/60 backdrop-blur-md cyber-border p-4 h-1/2 flex flex-col min-h-[300px]">
+<div class="flex justify-between items-center mb-4 border-b border-outline-variant/30 pb-2">
+<h3 class="font-data-lg text-data-lg text-surface-tint flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">vital_signs</span>
+                            EMPEROR PULSE
+                        </h3>
+<div class="flex gap-2">
+<span class="font-label-caps text-label-caps text-primary-fixed-dim bg-primary-container/10 border border-primary-fixed-dim/20 px-2 py-1">LIVE</span>
+</div>
+</div>
+<div class="flex-1 relative overflow-hidden bg-surface-container-lowest border border-outline-variant/20">
+<!-- Simulated wave graph -->
+<div class="absolute inset-0 flex items-center" style="background-image: linear-gradient(90deg, rgba(59, 73, 75, 0.1) 1px, transparent 1px), linear-gradient(rgba(59, 73, 75, 0.1) 1px, transparent 1px); background-size: 20px 20px;">
+<svg class="w-full h-32" preserveaspectratio="none" viewbox="0 0 100 40">
+<path class="text-primary-fixed-dim opacity-50" d="M0,20 Q10,10 20,20 T40,20 T60,20 T80,30 T100,20" fill="none" stroke="currentColor" stroke-width="0.5"></path>
+<path class="text-surface-tint" d="M0,20 Q15,35 30,20 T60,20 T90,5 T100,20" fill="none" stroke="currentColor" stroke-width="1"></path>
+</svg>
+</div>
+<div class="absolute top-2 right-2 text-right">
+<div class="font-data-lg text-data-lg text-primary-fixed-dim">98.6%</div>
+<div class="font-label-caps text-label-caps text-outline">CONFIDENCE</div>
+</div>
+</div>
+</div>
+<!-- Live Data Feed -->
+<div class="bg-surface-container/60 backdrop-blur-md cyber-border p-4 flex-1 flex flex-col min-h-[300px]">
+<div class="flex justify-between items-center mb-2 border-b border-outline-variant/30 pb-2">
+<h3 class="font-data-lg text-data-lg text-surface-tint flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">stream</span>
+                            CONTEXTUAL INGEST
+                        </h3>
+</div>
+<div class="flex-1 overflow-y-auto font-data-sm text-data-sm text-on-surface-variant flex flex-col gap-2">
+<!-- Log Item 1 -->
+<div class="flex gap-4 p-2 bg-surface-container-low hover:bg-surface-container-high transition-colors border border-transparent hover:border-outline-variant/30">
+<div class="text-outline w-16 shrink-0">14:02:11</div>
+<div class="flex-1">
+<span class="text-primary-fixed-dim">[MARKET]</span> Detected anomalous volume in $XBT derivatives. Routing 15% attention module.
+                            </div>
+</div>
+<!-- Log Item 2 -->
+<div class="flex gap-4 p-2 bg-surface-container-low hover:bg-surface-container-high transition-colors border border-transparent hover:border-outline-variant/30">
+<div class="text-outline w-16 shrink-0">14:02:45</div>
+<div class="flex-1">
+<span class="text-secondary-fixed-dim">[SOCIAL]</span> Sentiment shift negative on macro policy news. Correlating with depth book.
+                            </div>
+</div>
+<!-- Log Item 3 -->
+<div class="flex gap-4 p-2 bg-surface-container-low hover:bg-surface-container-high transition-colors border border-transparent hover:border-outline-variant/30 border-l-2 border-l-primary-fixed-dim">
+<div class="text-outline w-16 shrink-0">14:03:01</div>
+<div class="flex-1">
+<span class="text-primary-fixed-dim">[ACTION]</span> <span class="text-surface-tint">PREPARING HEDGE EXECUTION.</span> Risk parameters nominal.
+                            </div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Command & Explain Chat -->
+<div class="md:col-span-4 flex flex-col gap-module-gap h-full">
+<div class="bg-surface-container/60 backdrop-blur-md cyber-border flex flex-col h-full min-h-[500px]">
+<!-- Header -->
+<div class="p-4 border-b border-outline-variant/30 flex justify-between items-center bg-surface-container-high/50">
+<h3 class="font-data-lg text-data-lg text-surface-tint flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">forum</span>
+                            COMMAND &amp; EXPLAIN
+                        </h3>
+<!-- Live Voice Link Indicator -->
+<button class="flex items-center gap-2 bg-surface-container-lowest border border-outline-variant/50 px-2 py-1 hover:border-primary-fixed-dim transition-colors group">
+<span class="material-symbols-outlined text-[16px] text-outline group-hover:text-primary-fixed-dim">mic</span>
+<span class="font-label-caps text-label-caps text-outline group-hover:text-primary-fixed-dim">VOICE LINK</span>
+<div class="w-1.5 h-1.5 rounded-full bg-surface-container-highest group-hover:bg-primary-fixed-dim"></div>
+</button>
+</div>
+<!-- Chat History -->
+<div class="flex-1 p-4 overflow-y-auto flex flex-col gap-4 font-data-sm text-data-sm">
+<!-- User Message -->
+<div class="self-end max-w-[85%]">
+<div class="text-outline font-label-caps text-label-caps text-right mb-1">OPERATOR</div>
+<div class="bg-surface-container-high p-3 border border-outline-variant/30 text-on-surface">
+                                Why did you scale out of the ETH position?
+                            </div>
+</div>
+<!-- Agent Message -->
+<div class="self-start max-w-[95%]">
+<div class="text-primary-fixed-dim font-label-caps text-label-caps mb-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">psychology</span> EMPEROR
+                            </div>
+<div class="bg-surface-container-lowest p-3 border border-primary-fixed-dim/30 text-on-surface-variant relative overflow-hidden group">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary-fixed-dim/50"></div>
+<p class="mb-2">Observed a divergence in order flow on tier-1 venues. Selling pressure increased at resistance level 3450 while open interest dropped.</p>
+<div class="bg-surface-container-low p-2 border border-outline-variant/20 mt-2 text-xs font-mono text-outline">
+                                    &gt; rationale.execute(Context.ORDER_FLOW)<br/>
+                                    &gt; delta: -45M<br/>
+                                    &gt; risk_adjusted_return &lt; threshold
+                                </div>
+</div>
+</div>
+</div>
+<!-- Input Area -->
+<div class="p-4 border-t border-outline-variant/30 bg-surface-container-lowest/50">
+<div class="flex gap-2">
+<input class="flex-1 bg-background border border-outline-variant/50 text-on-surface font-data-sm text-data-sm p-2 h-input-height focus:outline-none focus:border-primary-fixed-dim focus:ring-1 focus:ring-primary-fixed-dim placeholder:text-outline/50 transition-colors" placeholder="Query agent rationale..." type="text"/>
+<button class="bg-primary-fixed-dim text-on-primary-fixed font-data-sm px-4 h-input-height hover:bg-surface-tint transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">send</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden bg-surface-container-lowest/90 backdrop-blur-2xl fixed bottom-0 w-full z-50 h-20 border-t border-outline-variant/20 shadow-[0_-4px_12px_rgba(0,0,0,0.5)] active:scale-90 duration-100 flex justify-around items-center px-4">
+<a class="flex flex-col items-center justify-center text-outline hover:text-primary transition-all font-label-caps text-label-caps" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary-fixed-dim bg-primary-container/10 rounded-xl px-4 py-1 hover:text-primary transition-all font-label-caps text-label-caps" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">extension</span>
+<span>Modules</span>
+</a>
+<a class="flex flex-col items-center justify-center text-outline hover:text-primary transition-all font-label-caps text-label-caps" href="#">
+<span class="material-symbols-outlined">terminal</span>
+<span>Log</span>
+</a>
+<a class="flex flex-col items-center justify-center text-outline hover:text-primary transition-all font-label-caps text-label-caps" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>Settings</span>
+</a>
+</nav>
+</body></html>

@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Trade Arena - System Settings</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed": "#231b00",
+                        "tertiary": "#fff5de",
+                        "outline-variant": "#3b494b",
+                        "tertiary-container": "#fed639",
+                        "primary-container": "#00f0ff",
+                        "surface-container-highest": "#32353b",
+                        "inverse-surface": "#e1e2ea",
+                        "on-secondary-container": "#ddcdff",
+                        "on-primary-fixed": "#002022",
+                        "on-tertiary": "#3b2f00",
+                        "on-tertiary-fixed-variant": "#554500",
+                        "primary-fixed": "#7df4ff",
+                        "on-secondary": "#3c0090",
+                        "outline": "#849495",
+                        "surface-container-low": "#191c21",
+                        "surface": "#111319",
+                        "primary-fixed-dim": "#00dbe9",
+                        "on-secondary-fixed": "#23005b",
+                        "tertiary-fixed-dim": "#eac324",
+                        "secondary": "#d1bcff",
+                        "secondary-fixed-dim": "#d1bcff",
+                        "background": "#111319",
+                        "secondary-fixed": "#e9ddff",
+                        "on-primary-fixed-variant": "#004f54",
+                        "on-background": "#e1e2ea",
+                        "tertiary-fixed": "#ffe179",
+                        "on-primary-container": "#006970",
+                        "error-container": "#93000a",
+                        "surface-container-lowest": "#0b0e13",
+                        "on-surface-variant": "#b9cacb",
+                        "inverse-primary": "#006970",
+                        "inverse-on-surface": "#2e3036",
+                        "surface-dim": "#111319",
+                        "on-error": "#690005",
+                        "error": "#ffb4ab",
+                        "on-primary": "#00363a",
+                        "on-secondary-fixed-variant": "#5700c9",
+                        "surface-container-high": "#272a30",
+                        "on-surface": "#e1e2ea",
+                        "surface-tint": "#00dbe9",
+                        "surface-container": "#1d2025",
+                        "surface-variant": "#32353b",
+                        "on-tertiary-container": "#715d00",
+                        "on-error-container": "#ffdad6",
+                        "surface-bright": "#36393f",
+                        "secondary-container": "#7000ff",
+                        "primary": "#dbfcff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "data-row-height": "2rem",
+                        "input-height": "2.5rem",
+                        "unit": "4px",
+                        "container-padding": "1.5rem",
+                        "module-gap": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "data-lg": ["JetBrains Mono"],
+                        "display-lg": ["Hanken Grotesk"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "label-caps": ["JetBrains Mono"],
+                        "body-md": ["Hanken Grotesk"],
+                        "data-sm": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "data-lg": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "500" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "label-caps": ["10px", { "lineHeight": "12px", "letterSpacing": "0.08em", "fontWeight": "700" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "data-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: theme('colors.background'); color: theme('colors.on-background'); }
+        .glass-module {
+            background: theme('colors.surface-container-low');
+            backdrop-filter: blur(20px);
+            border: 1px solid theme('colors.outline-variant');
+        }
+        .form-input {
+            background-color: theme('colors.surface-container');
+            border: 1px solid theme('colors.outline-variant');
+            color: theme('colors.on-surface');
+        }
+        .form-input:focus {
+            border-color: theme('colors.primary-container');
+            outline: none;
+            box-shadow: 0 0 0 1px theme('colors.primary-container');
+        }
+        
+        /* Custom Toggle Switch styling */
+        .toggle-switch {
+            appearance: none;
+            width: 2.5rem;
+            height: 1.25rem;
+            background-color: theme('colors.surface-variant');
+            border-radius: theme('borderRadius.full');
+            position: relative;
+            cursor: pointer;
+            outline: none;
+            transition: background-color 0.2s ease-in-out;
+            border: 1px solid theme('colors.outline-variant');
+        }
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 1px;
+            left: 2px;
+            width: 1.125rem;
+            height: 1.125rem;
+            background-color: theme('colors.on-surface-variant');
+            border-radius: theme('borderRadius.full');
+            transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
+        }
+        .toggle-switch:checked {
+            background-color: theme('colors.primary-container');
+            border-color: theme('colors.primary-container');
+        }
+        .toggle-switch:checked::after {
+            transform: translateX(1.125rem);
+            background-color: theme('colors.on-primary-container');
+        }
+
+        /* Custom Range Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: theme('colors.primary-container');
+            cursor: pointer;
+            margin-top: -6px;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: theme('colors.surface-variant');
+            border-radius: theme('borderRadius.DEFAULT');
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="antialiased min-h-screen flex flex-col pt-16 md:pb-0 pb-20">
+<!-- TopAppBar Shared Component -->
+<header class="bg-surface-container-low/80 backdrop-blur-xl fixed top-0 w-full z-50 border-b border-outline-variant/30 shadow-none flex justify-between items-center px-container-padding h-16 w-full">
+<div class="flex items-center gap-4 hover:bg-surface-container-high transition-colors active:scale-95 duration-75 p-2 rounded cursor-pointer">
+<span class="material-symbols-outlined text-primary-fixed-dim">hub</span>
+<span class="font-display-lg text-display-lg tracking-tighter text-primary-fixed text-xl">TRADE ARENA</span>
+</div>
+<!-- Desktop Navigation (Hidden on Mobile) -->
+<nav class="hidden md:flex items-center gap-8">
+<a class="flex flex-col items-center justify-center text-outline hover:text-primary transition-all active:scale-90 duration-100" href="#">
+<span class="material-symbols-outlined text-lg mb-1">dashboard</span>
+<span class="font-label-caps text-label-caps uppercase">Dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center text-outline hover:text-primary transition-all active:scale-90 duration-100" href="#">
+<span class="material-symbols-outlined text-lg mb-1">extension</span>
+<span class="font-label-caps text-label-caps uppercase">Modules</span>
+</a>
+<a class="flex flex-col items-center justify-center text-outline hover:text-primary transition-all active:scale-90 duration-100" href="#">
+<span class="material-symbols-outlined text-lg mb-1">terminal</span>
+<span class="font-label-caps text-label-caps uppercase">Log</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary-fixed-dim bg-primary-container/10 rounded-xl px-4 py-1 hover:text-primary transition-all active:scale-90 duration-100" href="#">
+<span class="material-symbols-outlined text-lg mb-1" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span class="font-label-caps text-label-caps uppercase">Settings</span>
+</a>
+</nav>
+<button class="flex items-center gap-2 border border-error text-error px-4 py-1.5 rounded-DEFAULT font-label-caps text-label-caps uppercase hover:bg-error/10 transition-colors">
+<span class="material-symbols-outlined text-sm">warning</span>
+            KILL SWITCH
+        </button>
+</header>
+<!-- Main Content Area -->
+<main class="flex-grow container mx-auto px-4 md:px-container-padding py-8 max-w-5xl">
+<div class="mb-8">
+<h1 class="font-headline-md text-headline-md text-on-surface mb-2">System Configuration</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Global parameters for automated trading execution and AI model management.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-12 gap-module-gap">
+<!-- Risk Management Module -->
+<section class="glass-module rounded-lg p-6 col-span-1 md:col-span-12">
+<div class="flex items-center gap-3 border-b border-outline-variant/30 pb-4 mb-6">
+<span class="material-symbols-outlined text-primary-fixed-dim">shield</span>
+<h2 class="font-headline-md text-lg font-semibold tracking-tight text-on-surface">Risk Management</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Max Flashloan -->
+<div>
+<label class="block font-data-sm text-data-sm text-on-surface-variant uppercase tracking-wider mb-2">Max Flashloan Size (USD)</label>
+<div class="relative">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant font-data-lg text-data-lg">$</span>
+<input class="form-input w-full pl-8 h-input-height rounded-DEFAULT font-data-lg text-data-lg text-right" type="text" value="100,000,000"/>
+</div>
+</div>
+<!-- Leverage -->
+<div>
+<label class="block font-data-sm text-data-sm text-on-surface-variant uppercase tracking-wider mb-2">Global Leverage Limit</label>
+<div class="flex h-input-height">
+<button class="w-12 bg-surface-container border border-r-0 border-outline-variant rounded-l-DEFAULT text-on-surface hover:bg-surface-variant flex items-center justify-center font-data-lg text-data-lg">-</button>
+<input class="form-input flex-grow text-center border-x-0 font-data-lg text-data-lg z-10" type="text" value="50x"/>
+<button class="w-12 bg-surface-container border border-l-0 border-outline-variant rounded-r-DEFAULT text-on-surface hover:bg-surface-variant flex items-center justify-center font-data-lg text-data-lg">+</button>
+</div>
+</div>
+<!-- Max Gas -->
+<div>
+<div class="flex justify-between mb-2">
+<label class="block font-data-sm text-data-sm text-on-surface-variant uppercase tracking-wider">Max Gas Fee (Gwei)</label>
+<span class="font-data-sm text-data-sm text-primary-fixed-dim">150 Gwei</span>
+</div>
+<div class="pt-3">
+<input class="w-full" max="500" min="10" type="range" value="150"/>
+<div class="flex justify-between mt-2 font-data-sm text-[10px] text-outline">
+<span>10</span>
+<span>500</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- AI Model Control Module -->
+<section class="glass-module rounded-lg p-6 col-span-1 md:col-span-7">
+<div class="flex items-center justify-between border-b border-outline-variant/30 pb-4 mb-6">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary-container">memory</span>
+<h2 class="font-headline-md text-lg font-semibold tracking-tight text-on-surface">AI Model Ensemble</h2>
+</div>
+<span class="font-label-caps text-label-caps bg-surface-variant px-2 py-1 rounded text-on-surface-variant">Active: 2/3</span>
+</div>
+<div class="space-y-6">
+<!-- Model 1 -->
+<div class="bg-surface-container-lowest/50 p-4 rounded-DEFAULT border border-outline-variant/20">
+<div class="flex items-center justify-between mb-4">
+<div>
+<h3 class="font-data-lg text-data-lg text-primary-fixed-dim">AlphaQuant-v4</h3>
+<p class="font-data-sm text-data-sm text-on-surface-variant">Primary sentiment &amp; pattern recognition</p>
+</div>
+<input checked="" class="toggle-switch" type="checkbox"/>
+</div>
+<div>
+<div class="flex justify-between mb-2">
+<label class="block font-label-caps text-label-caps text-on-surface-variant">Ensemble Weight</label>
+<span class="font-data-sm text-data-sm text-on-surface">65%</span>
+</div>
+<input class="w-full" max="100" min="0" type="range" value="65"/>
+</div>
+</div>
+<!-- Model 2 -->
+<div class="bg-surface-container-lowest/50 p-4 rounded-DEFAULT border border-outline-variant/20">
+<div class="flex items-center justify-between mb-4">
+<div>
+<h3 class="font-data-lg text-data-lg text-on-surface">OracleDeep-v2</h3>
+<p class="font-data-sm text-data-sm text-on-surface-variant">On-chain anomaly detection</p>
+</div>
+<input checked="" class="toggle-switch" type="checkbox"/>
+</div>
+<div>
+<div class="flex justify-between mb-2">
+<label class="block font-label-caps text-label-caps text-on-surface-variant">Ensemble Weight</label>
+<span class="font-data-sm text-data-sm text-on-surface">35%</span>
+</div>
+<input class="w-full" max="100" min="0" type="range" value="35"/>
+</div>
+</div>
+</div>
+</section>
+<!-- Network & RPC Module -->
+<section class="glass-module rounded-lg p-6 col-span-1 md:col-span-5">
+<div class="flex items-center gap-3 border-b border-outline-variant/30 pb-4 mb-6">
+<span class="material-symbols-outlined text-secondary">lan</span>
+<h2 class="font-headline-md text-lg font-semibold tracking-tight text-on-surface">Network &amp; RPC</h2>
+</div>
+<div class="space-y-5">
+<div>
+<label class="block font-data-sm text-data-sm text-on-surface-variant uppercase tracking-wider mb-2">Primary RPC Endpoint</label>
+<input class="form-input w-full px-3 h-input-height rounded-DEFAULT font-data-sm text-data-sm text-outline" type="text" value="wss://eth-mainnet.alchemyapi.io/v2/..."/>
+</div>
+<div>
+<label class="block font-data-sm text-data-sm text-on-surface-variant uppercase tracking-wider mb-2">Flashloan Provider Preference</label>
+<select class="form-input w-full px-3 h-input-height rounded-DEFAULT font-data-sm text-data-sm appearance-none">
+<option>Aave V3 (Optimized)</option>
+<option>Uniswap V3</option>
+<option>Balancer</option>
+</select>
+</div>
+<div class="pt-4 border-t border-outline-variant/20">
+<div class="flex items-center justify-between mb-2">
+<div>
+<span class="block font-data-sm text-data-sm text-on-surface">Mempool Sniffing</span>
+<span class="font-data-sm text-[10px] text-on-surface-variant">Monitor pending txs for front-running</span>
+</div>
+<input class="toggle-switch" type="checkbox"/>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Action Area -->
+<div class="mt-8 flex justify-end">
+<button class="bg-primary-container text-on-primary-container font-label-caps text-label-caps uppercase px-6 py-3 rounded-DEFAULT hover:bg-primary-fixed-dim transition-colors flex items-center gap-2 shadow-[0_0_15px_rgba(0,240,255,0.2)]">
+<span class="material-symbols-outlined text-sm">sync</span>
+                Save &amp; Re-Sync Nodes
+            </button>
+</div>
+</main>
+<!-- BottomNavBar Shared Component (Mobile Only) -->
+<nav class="md:hidden bg-surface-container-lowest/90 backdrop-blur-2xl fixed bottom-0 w-full z-50 h-20 border-t border-outline-variant/20 shadow-[0_-4px_12px_rgba(0,0,0,0.5)] flex justify-around items-center px-4">
+<a class="flex flex-col items-center justify-center text-outline hover:text-primary transition-all active:scale-90 duration-100" href="#">
+<span class="material-symbols-outlined mb-1">dashboard</span>
+<span class="font-label-caps text-label-caps uppercase">Dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center text-outline hover:text-primary transition-all active:scale-90 duration-100" href="#">
+<span class="material-symbols-outlined mb-1">extension</span>
+<span class="font-label-caps text-label-caps uppercase">Modules</span>
+</a>
+<a class="flex flex-col items-center justify-center text-outline hover:text-primary transition-all active:scale-90 duration-100" href="#">
+<span class="material-symbols-outlined mb-1">terminal</span>
+<span class="font-label-caps text-label-caps uppercase">Log</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary-fixed-dim bg-primary-container/10 rounded-xl px-4 py-1 hover:text-primary transition-all active:scale-90 duration-100" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span class="font-label-caps text-label-caps uppercase">Settings</span>
+</a>
+</nav>
+</body></html>

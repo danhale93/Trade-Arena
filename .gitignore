@@ -1,12 +1,22 @@
 node_modules/
 dist/
 build/
+public/arena-react-bundle.js
+public/arena-react-bundle.js.map
+.jules/
+.continue/
+.vscode/
+.idea/
 .env
 .env.local
 *.log
 .DS_Store
 Thumbs.db
-node_modules
-.env
-public/arena-react-bundle.js
-public/arena-react-bundle.js.map
+
+# Foundry build folders
+contracts/out/
+contracts/cache/
+contracts/foundry.lock
+
+# Local foundry binaries and config
+.foundry/

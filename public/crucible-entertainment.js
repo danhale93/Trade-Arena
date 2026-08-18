@@ -117,7 +117,6 @@ const CrucibleEntertainment = {
     this.createUIContainer();
     this.loadSounds();
     this.setupAnimationFramework();
-    // Synth moved to ACOUSTIC CORE
     console.log('%c🎬 ENTERTAINMENT SYSTEM LOADED - GET READY FOR FIREWORKS! 🎆', 
       'color: #ff00ff; font-size: 20px; font-weight: bold; text-shadow: 0 0 10px #ff00ff;');
   },
@@ -751,47 +750,34 @@ const CrucibleEntertainment = {
     const muteBtn = document.getElementById('mute-btn');
     
     if (this.isMuted) {
+      // Mute all sounds
       muteBtn.textContent = '🔇 UNMUTE';
       muteBtn.classList.add('muted');
       
+      // Mute all audio elements
       Object.keys(this.sounds).forEach(key => {
         const audio = this.sounds[key + '_audio'];
         if (audio) audio.volume = 0;
       });
       if (this.bgMusic) this.bgMusic.volume = 0;
-      if (this.synthCtx) this.synthCtx.state = 'suspended';
       
       this.showCommentary('🔇 SOUND MUTED! Vibe: SILENT MODE ACTIVATED! 🤐', 'neutral');
     } else {
+      // Unmute all sounds
       muteBtn.textContent = '🔊 MUTE';
       muteBtn.classList.remove('muted');
       
+      // Restore sound volumes
       Object.keys(this.sounds).forEach(key => {
         const audio = this.sounds[key + '_audio'];
         if (audio) audio.volume = 0.3;
       });
       if (this.bgMusic) this.bgMusic.volume = 0.1;
-      if (this.synthCtx) this.synthCtx.resume();
       
       this.playSound('bell');
       this.showCommentary('🔊 SOUND RESTORED! Welcome BACK! 🎉', 'win');
     }
-  },
-
-  // ─── Web Audio API Synthesizer ──────────────────────────
-
-
-
-
-
-
-
-
-
-
-
-
-
+  }
 };
 
 // Initialize on page load

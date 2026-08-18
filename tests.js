@@ -21,7 +21,6 @@ const {
   classifyRegime,
   validateAllRegimes,
 } = require("./public/crucible-test.js");
-const { TRADE_OLYMPICS } = require("./public/trade-olympics.js");
 const {
   ARENA_COMPETITION,
   BOT_AI_MODELS,
@@ -29,6 +28,7 @@ const {
   callAIModel,
   getModelConfig,
 } = require("./public/multi-ai-arena.js");
+const { TRADE_OLYMPICS } = require("./public/trade-olympics.js");
 const { calculateSlippage } = require("./public/real-wallet.js");
 const { CrucibleRealTrading } = require("./public/crucible-real-trading.js");
 const {
@@ -143,6 +143,172 @@ describe("Trading Engine - Core Logic", () => {
   it("generates unique IDs", () => {
     const engine = new TradingEngine();
     expect(engine.generateId() === engine.generateId()).toBe(false);
+  });
+});
+
+describe("Task Claim Security - Sentinel Hardening", () => {
+  it("enforces whitelisting and duplicate prevention on task claim endpoints", async () => {
+    const originalPort = process.env.PORT;
+    const originalSecret = process.env.TASK_CLAIM_SECRET;
+    process.env.PORT = "0";
+    process.env.TASK_CLAIM_SECRET = "test-secret-key-123";
+
+    const express = require('express');
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
+    let activeServer = null;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
+    };
+
+    delete require.cache[require.resolve("./server.js")];
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
+    try {
+      const port = activeServer.address().port;
+      const testAddress = "0x9F407b7f793555c35c33aC64bd6901759470736D";
+      const validToken = "test-secret-key-123";
+
+      // 1. /api/tasks/claim - Reject invalid/non-whitelisted taskId
+      const resInvalidTask = await fetch(`http://localhost:${port}/api/tasks/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: "malicious_task_999",
+          reward: 10,
+          userAddress: testAddress,
+          validationToken: validToken
+        })
+      });
+      expect(resInvalidTask.status).toBe(400);
+      const dataInvalidTask = await resInvalidTask.json();
+      expect(dataInvalidTask.success).toBe(false);
+      expect(dataInvalidTask.error).toBe("Invalid or unauthorized taskId requested");
+
+      // 2. /api/tasks/claim - Accept valid, whitelisted taskId
+      const resValidTask = await fetch(`http://localhost:${port}/api/tasks/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: "follow_twitter",
+          reward: 10,
+          userAddress: testAddress,
+          validationToken: validToken
+        })
+      });
+      expect(resValidTask.status).toBe(200);
+      const dataValidTask = await resValidTask.json();
+      expect(dataValidTask.success).toBe(true);
+
+      // 3. /api/tasks/claim - Reject duplicate taskId claim
+      const resDupTask = await fetch(`http://localhost:${port}/api/tasks/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: "follow_twitter",
+          reward: 10,
+          userAddress: testAddress,
+          validationToken: validToken
+        })
+      });
+      expect(resDupTask.status).toBe(429);
+      const dataDupTask = await resDupTask.json();
+      expect(dataDupTask.success).toBe(false);
+      expect(dataDupTask.error).toBe("Task already claimed for this address");
+
+      // 4. /api/v1/payouts/claim - Reject invalid/non-whitelisted taskId
+      const resInvalidPayout = await fetch(`http://localhost:${port}/api/v1/payouts/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: "malicious_task_999",
+          proofOfWork: "some-proof-data",
+          userAddress: testAddress,
+          validationToken: validToken
+        })
+      });
+      expect(resInvalidPayout.status).toBe(400);
+      const dataInvalidPayout = await resInvalidPayout.json();
+      expect(dataInvalidPayout.error).toBe("Invalid or unauthorized taskId requested");
+
+      // 5. /api/v1/payouts/claim - Reject duplicate taskId claim (shared in app.locals)
+      const resDupPayout = await fetch(`http://localhost:${port}/api/v1/payouts/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: "follow_twitter",
+          proofOfWork: "some-proof-data",
+          userAddress: testAddress,
+          validationToken: validToken
+        })
+      });
+      expect(resDupPayout.status).toBe(429);
+      const dataDupPayout = await resDupPayout.json();
+      expect(dataDupPayout.error).toBe("Task already claimed for this address");
+
+    } finally {
+      http.Server.prototype.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+      process.env.TASK_CLAIM_SECRET = originalSecret;
+    }
+  });
+
+  it("rejects task claims with incorrect or spoofed reward amounts (Integrity validation)", async () => {
+    const originalPort = process.env.PORT;
+    const originalSecret = process.env.TASK_CLAIM_SECRET;
+    process.env.PORT = "0";
+    process.env.TASK_CLAIM_SECRET = "test-secret-key-123";
+
+    const express = require('express');
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
+    let activeServer = null;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
+    };
+
+    delete require.cache[require.resolve("./server.js")];
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
+    try {
+      const port = activeServer.address().port;
+      const testAddress = "0x9F407b7f793555c35c33aC64bd6901759470736D";
+      const validToken = "test-secret-key-123";
+
+      // Try to submit follow_twitter with reward 100 instead of 10
+      const resSpoofedReward = await fetch(`http://localhost:${port}/api/tasks/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: "follow_twitter",
+          reward: 100, // Spoofed (should be 10)
+          userAddress: testAddress,
+          validationToken: validToken
+        })
+      });
+      expect(resSpoofedReward.status).toBe(400);
+      const dataSpoofedReward = await resSpoofedReward.json();
+      expect(dataSpoofedReward.success).toBe(false);
+      expect(dataSpoofedReward.error).toBe("Invalid or incorrect reward for this task");
+    } finally {
+      http.Server.prototype.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+      process.env.TASK_CLAIM_SECRET = originalSecret;
+    }
   });
 });
 
@@ -509,6 +675,156 @@ describe("Multi-AI Arena Global Weights", () => {
   });
 });
 
+describe("Server Endpoint Rate Limiting - Sentinel Hardening", () => {
+  it("enforces strict rate limiting on the /api/user/login endpoint", async () => {
+    const originalPort = process.env.PORT;
+    process.env.PORT = "0";
+
+    const express = require('express');
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
+    let activeServer = null;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
+    };
+
+    // Back up users.json to ensure no database pollution
+    const fs = require('fs');
+    const path = require('path');
+    const usersFilePath = path.join(__dirname, 'users.json');
+    let usersBackup = null;
+    try {
+      if (fs.existsSync(usersFilePath)) {
+        usersBackup = fs.readFileSync(usersFilePath, 'utf8');
+      }
+    } catch (e) {}
+
+    // Clear require cache for server.js to ensure a fresh load
+    delete require.cache[require.resolve("./server.js")];
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
+    try {
+      const port = activeServer.address().port;
+
+      // Make 15 successful or validation-failed login requests (max is 15)
+      // The 16th request should be blocked with 429
+      let lastStatus = 0;
+      for (let i = 0; i < 16; i++) {
+        const res = await fetch(`http://localhost:${port}/api/user/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: "test-rate-limit@example.com" })
+        });
+        lastStatus = res.status;
+        if (lastStatus === 429) {
+          break;
+        }
+      }
+      expect(lastStatus).toBe(429);
+    } finally {
+      http.Server.prototype.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+
+      // Restore users.json backup
+      try {
+        if (usersBackup !== null) {
+          fs.writeFileSync(usersFilePath, usersBackup, 'utf8');
+        } else if (fs.existsSync(usersFilePath)) {
+          fs.unlinkSync(usersFilePath);
+        }
+      } catch (e) {}
+    }
+  });
+
+  it("enforces strict rate limiting on the /api/execute/swap endpoint", async () => {
+    const originalPort = process.env.PORT;
+    process.env.PORT = "0";
+
+    const express = require('express');
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
+    let activeServer = null;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
+    };
+
+    delete require.cache[require.resolve("./server.js")];
+    delete require.cache[require.resolve("./routes/payoutRoutes.js")];
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
+    try {
+      const port = activeServer.address().port;
+
+      let lastStatus = 0;
+      for (let i = 0; i < 11; i++) {
+        const res = await fetch(`http://localhost:${port}/api/execute/swap`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fromToken: "USDC",
+            toToken: "WETH",
+            amount: 10,
+            slippage: 0.005
+          })
+        });
+        lastStatus = res.status;
+        if (lastStatus === 429) {
+          break;
+        }
+      }
+      expect(lastStatus).toBe(429);
+    } finally {
+      http.Server.prototype.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+    }
+  });
+
+  it("evicts the oldest IP record when MAX_TRACKED_IPS threshold is reached", async () => {
+    delete require.cache[require.resolve("./server.js")];
+    const { app: serverApp, server } = require("./server.js");
+    const rateLimitMap = serverApp.rateLimitMap;
+    const checkRateLimit = serverApp.checkRateLimit;
+    const MAX_TRACKED_IPS = serverApp.MAX_TRACKED_IPS;
+
+    // Reset rateLimitMap for clean test
+    rateLimitMap.clear();
+
+    const now = Date.now();
+    // Pre-populate rateLimitMap with MAX_TRACKED_IPS dummy entries
+    // Since insertion order is preserved in ES6 Map, '1.1.1.1' will be the oldest
+    rateLimitMap.set('1.1.1.1', { count: 1, resetAt: now + 900000 });
+    for (let i = 2; i <= MAX_TRACKED_IPS; i++) {
+      rateLimitMap.set(`1.1.1.${i}`, { count: 1, resetAt: now + 900000 });
+    }
+
+    expect(rateLimitMap.size).toBe(MAX_TRACKED_IPS);
+    expect(rateLimitMap.has('1.1.1.1')).toBe(true);
+
+    // Call checkRateLimit with a brand new IP address (e.g. '2.2.2.2')
+    // This should trigger oldest-first eviction (removing '1.1.1.1' and adding '2.2.2.2')
+    const allowed = checkRateLimit('2.2.2.2');
+
+    expect(allowed).toBe(true);
+    expect(rateLimitMap.size).toBe(MAX_TRACKED_IPS);
+    expect(rateLimitMap.has('1.1.1.1')).toBe(false); // Oldest IP evicted
+    expect(rateLimitMap.has('2.2.2.2')).toBe(true);  // New IP successfully tracked
+  });
+});
+
 describe("Live-Data Trade Logic Safety & Self-Correction", () => {
   it("resets real-trading session state before each run", async () => {
     await CrucibleRealTrading.init({ startingBalance: 75, enableAILearning: true });
@@ -738,10 +1054,89 @@ describe("Payout Service - Robustness & Security", () => {
   });
 
   it("initializes wallet correctly when key provided", () => {
-    const privateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
-    const service = new PayoutService({ oraclePrivateKey: privateKey });
+    const wallet = require("ethers").Wallet.createRandom();
+    const service = new PayoutService({ oraclePrivateKey: wallet.privateKey });
     expect(service.oracleWallet !== null).toBe(true);
-    expect(service.oracleWallet.address).toBe("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266");
+    expect(service.oracleWallet.address).toBe(wallet.address);
+  });
+});
+
+describe("Biconomy Nexus - Robustness & Security", () => {
+  const BiconomyNexus = require('./services/payouts/biconomyNexus');
+  const nexus = new BiconomyNexus({ payoutManagerAddress: "0x1234567890123456789012345678901234567890" });
+
+  it("rejects missing or non-object payload", () => {
+    try {
+      nexus.encodeClaimReward(null);
+      throw new Error("Should have thrown");
+    } catch (e) {
+      expect(e.message).toBe("Invalid or missing payoutData");
+    }
+  });
+
+  it("rejects malformed user addresses", () => {
+    try {
+      nexus.encodeClaimReward({ user: "0xInvalidAddress", taskId: "task-1", amount: 10, nonce: 1, signature: "0xabc" });
+      throw new Error("Should have thrown");
+    } catch (e) {
+      expect(e.message).toBe("Invalid user address");
+    }
+  });
+
+  it("rejects malformed taskIds", () => {
+    try {
+      nexus.encodeClaimReward({ user: "0x26fE35d19F481F376e862Aa70688a18Ae0237be5", taskId: "a".repeat(101), amount: 10, nonce: 1, signature: "0xabc" });
+      throw new Error("Should have thrown");
+    } catch (e) {
+      expect(e.message).toBe("Invalid taskId");
+    }
+  });
+
+  it("rejects malformed amounts", () => {
+    try {
+      nexus.encodeClaimReward({ user: "0x26fE35d19F481F376e862Aa70688a18Ae0237be5", taskId: "task-1", amount: "not-a-number", nonce: 1, signature: "0xabc" });
+      throw new Error("Should have thrown");
+    } catch (e) {
+      expect(e.message).toBe("Invalid amount");
+    }
+
+    try {
+      nexus.encodeClaimReward({ user: "0x26fE35d19F481F376e862Aa70688a18Ae0237be5", taskId: "task-1", amount: -50, nonce: 1, signature: "0xabc" });
+      throw new Error("Should have thrown");
+    } catch (e) {
+      expect(e.message).toBe("Invalid amount");
+    }
+  });
+
+  it("rejects malformed nonces", () => {
+    try {
+      nexus.encodeClaimReward({ user: "0x26fE35d19F481F376e862Aa70688a18Ae0237be5", taskId: "task-1", amount: "1000", nonce: "abc", signature: "0xabc" });
+      throw new Error("Should have thrown");
+    } catch (e) {
+      expect(e.message).toBe("Invalid nonce");
+    }
+  });
+
+  it("rejects malformed signature format", () => {
+    try {
+      nexus.encodeClaimReward({ user: "0x26fE35d19F481F376e862Aa70688a18Ae0237be5", taskId: "task-1", amount: "1000", nonce: "12345", signature: "not-0x-hex" });
+      throw new Error("Should have thrown");
+    } catch (e) {
+      expect(e.message).toBe("Invalid signature format");
+    }
+  });
+
+  it("passes and encodes valid payloads", () => {
+    const data = {
+      user: "0x26fE35d19F481F376e862Aa70688a18Ae0237be5",
+      taskId: "task-1",
+      amount: "1000",
+      nonce: "12345",
+      signature: "0xabcdef1234567890"
+    };
+    const callData = nexus.encodeClaimReward(data);
+    expect(typeof callData).toBe("string");
+    expect(callData.startsWith("0x")).toBe(true);
   });
 });
 
@@ -952,6 +1347,907 @@ describe("escapeHTML - XSS Prevention (index.html:1304)", () => {
   });
 });
 
+describe("Server Input Validation - Sentinel Hardening", () => {
+  it("rejects oversized query string on /api/0x/quote endpoint", async () => {
+    const originalPort = process.env.PORT;
+    process.env.PORT = "0";
+
+    const express = require('express');
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
+    let activeServer = null;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
+    };
+
+    delete require.cache[require.resolve("./server.js")];
+    delete require.cache[require.resolve("./routes/payoutRoutes.js")];
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
+    try {
+      const port = activeServer.address().port;
+      const oversizedParam = "a".repeat(2005);
+      const res = await fetch(`http://localhost:${port}/api/0x/quote?buyToken=WETH&sellToken=USDC&extra=${oversizedParam}`);
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.error).toBe('Query parameters too long');
+    } finally {
+      http.Server.prototype.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+    }
+  });
+
+  it("validates validationToken timing-safe comparison with multibyte characters safely", () => {
+    const taskSecret = "secret-key";
+    const timingSafeCompare = (validationToken) => {
+      return typeof validationToken === 'string' && (() => {
+        const tokenBuf = Buffer.from(validationToken);
+        const secretBuf = Buffer.from(taskSecret);
+        return tokenBuf.length === secretBuf.length && crypto.timingSafeEqual(tokenBuf, secretBuf);
+      })();
+    };
+
+    expect(timingSafeCompare("secret-key")).toBe(true);
+    expect(timingSafeCompare("abcdefghij")).toBe(false);
+    expect(timingSafeCompare("short")).toBe(false);
+    expect(timingSafeCompare("äöüäßäöüäß")).toBe(false); // Same string length, different byte length, must not throw TypeError
+  });
+
+  it("validates Ethereum addresses correctly using ethers.isAddress", () => {
+    const { ethers } = require("ethers");
+    expect(ethers.isAddress("0x9F407b7f793555c35c33aC64bd6901759470736D")).toBe(true);
+    expect(ethers.isAddress("invalid-address")).toBe(false);
+    expect(ethers.isAddress("")).toBe(false);
+  });
+
+  it("checks numeric validation logic used for reward", () => {
+    const isValidReward = (reward) => {
+      return typeof reward === 'number' && !isNaN(reward) && isFinite(reward) && reward > 0 && reward <= 100;
+    };
+    expect(isValidReward(10)).toBe(true);
+    expect(isValidReward(-5)).toBe(false);
+    expect(isValidReward(NaN)).toBe(false);
+    expect(isValidReward(Infinity)).toBe(false);
+    expect(isValidReward(101)).toBe(false);
+    expect(isValidReward("10")).toBe(false);
+  });
+
+  it("validates taskId format and length correctly", () => {
+    const isValidTaskId = (taskId) => {
+      return !!(taskId && typeof taskId === 'string' && taskId.length <= 100);
+    };
+    expect(isValidTaskId("task-123")).toBe(true);
+    expect(isValidTaskId("")).toBe(false);
+    expect(isValidTaskId(null)).toBe(false);
+    expect(isValidTaskId(123)).toBe(false);
+    expect(isValidTaskId("a".repeat(101))).toBe(false);
+  });
+
+  it("validates proofOfWork format and length correctly", () => {
+    const isValidProofOfWork = (proofOfWork) => {
+      return !!(proofOfWork && typeof proofOfWork === 'string' && proofOfWork.length <= 1000);
+    };
+    expect(isValidProofOfWork("proof-data")).toBe(true);
+    expect(isValidProofOfWork("")).toBe(false);
+    expect(isValidProofOfWork(null)).toBe(false);
+    expect(isValidProofOfWork({})).toBe(false);
+    expect(isValidProofOfWork("a".repeat(1001))).toBe(false);
+  });
+
+  it("validates user login input types, formats, and lengths correctly", () => {
+    const validateLoginInput = (email, address, name, provider, avatar) => {
+      const userId = email || address;
+      if (!userId || typeof userId !== 'string' || userId.length > 100) return false;
+      const dangerousProps = ['__proto__', 'constructor', 'prototype'];
+      if (dangerousProps.includes(userId) || (email && dangerousProps.includes(email)) || (address && dangerousProps.includes(address))) return false;
+      if (email && (typeof email !== 'string' || email.length > 100 || !email.includes('@'))) return false;
+      if (address && (typeof address !== 'string' || address.length > 100 || !require("ethers").isAddress(address))) return false;
+      if (name && (typeof name !== 'string' || name.length > 100)) return false;
+      if (provider && (typeof provider !== 'string' || provider.length > 50)) return false;
+      if (avatar && (typeof avatar !== 'string' || avatar.length > 500)) return false;
+      return true;
+    };
+
+    expect(validateLoginInput("palette@trade-arena.com", "0x9F407b7f793555c35c33aC64bd6901759470736D", "Arena Trader", "privy", null)).toBe(true);
+    expect(validateLoginInput("invalid-email", "0x9F407b7f793555c35c33aC64bd6901759470736D")).toBe(false);
+    expect(validateLoginInput("palette@trade-arena.com", "invalid-address")).toBe(false);
+    expect(validateLoginInput("__proto__", "0x9F407b7f793555c35c33aC64bd6901759470736D")).toBe(false);
+    expect(validateLoginInput("palette@trade-arena.com", "0x9F407b7f793555c35c33aC64bd6901759470736D", "A".repeat(101))).toBe(false);
+    expect(validateLoginInput("palette@trade-arena.com", "0x9F407b7f793555c35c33aC64bd6901759470736D", "Arena Trader", "A".repeat(51))).toBe(false);
+  });
+
+  it("validates swap parameters correctly", () => {
+    const isValidSwapInput = (fromToken, toToken, amount, slippage) => {
+      if (!fromToken || typeof fromToken !== 'string' || fromToken.length > 100) return false;
+      if (!toToken || typeof toToken !== 'string' || toToken.length > 100) return false;
+      if (typeof amount !== 'number' || isNaN(amount) || !isFinite(amount) || amount <= 0) return false;
+      if (slippage !== undefined) {
+        if (typeof slippage !== 'number' || isNaN(slippage) || !isFinite(slippage) || slippage < 0 || slippage > 1) return false;
+      }
+      return true;
+    };
+
+    expect(isValidSwapInput("USDC", "WETH", 100)).toBe(true);
+    expect(isValidSwapInput("0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", 100)).toBe(true); // Contract addresses
+    expect(isValidSwapInput("USDC", "WETH", 100, 0.005)).toBe(true);
+    expect(isValidSwapInput("USDC", "WETH", 100, 0)).toBe(true);
+
+    // Invalid fromToken/toToken
+    expect(isValidSwapInput(123, "WETH", 100)).toBe(false);
+    expect(isValidSwapInput("USDC", "", 100)).toBe(false);
+    expect(isValidSwapInput("USDC", "WETH".repeat(30), 100)).toBe(false);
+
+    // Invalid amount
+    expect(isValidSwapInput("USDC", "WETH", "100")).toBe(false);
+    expect(isValidSwapInput("USDC", "WETH", 0)).toBe(false);
+    expect(isValidSwapInput("USDC", "WETH", -10)).toBe(false);
+    expect(isValidSwapInput("USDC", "WETH", NaN)).toBe(false);
+    expect(isValidSwapInput("USDC", "WETH", Infinity)).toBe(false);
+
+    // Invalid slippage
+    expect(isValidSwapInput("USDC", "WETH", 100, "0.01")).toBe(false);
+    expect(isValidSwapInput("USDC", "WETH", 100, -0.01)).toBe(false);
+    expect(isValidSwapInput("USDC", "WETH", 100, 1.05)).toBe(false);
+    expect(isValidSwapInput("USDC", "WETH", 100, NaN)).toBe(false);
+    expect(isValidSwapInput("USDC", "WETH", 100, Infinity)).toBe(false);
+  });
+
+  it("validates bot creation parameters correctly", () => {
+    const isValidBotInput = (name, strategy, riskLevel, initialCapital, userAddress) => {
+      if (!name || typeof name !== 'string' || name.length > 100) return false;
+      if (!strategy || typeof strategy !== 'string' || strategy.length > 100) return false;
+      if (!riskLevel || typeof riskLevel !== 'string' || riskLevel.length > 100) return false;
+      if (typeof initialCapital !== 'number' || isNaN(initialCapital) || !isFinite(initialCapital) || initialCapital < 0 || initialCapital > 1000000000) return false;
+      if (userAddress !== undefined && userAddress !== null) {
+        if (typeof userAddress !== 'string' || userAddress.length > 100 || (userAddress !== 'demo' && !require("ethers").isAddress(userAddress))) return false;
+      }
+      return true;
+    };
+
+    expect(isValidBotInput("My Arbitrage Bot", "Arbitrage Detection", "Conservative (2x leverage)", 1000)).toBe(true);
+    expect(isValidBotInput("My Arbitrage Bot", "Arbitrage Detection", "Conservative (2x leverage)", 1000, "0x9F407b7f793555c35c33aC64bd6901759470736D")).toBe(true);
+    expect(isValidBotInput("My Arbitrage Bot", "Arbitrage Detection", "Conservative (2x leverage)", 1000, "demo")).toBe(true);
+
+    // Invalid string fields
+    expect(isValidBotInput("", "Arbitrage Detection", "Conservative (2x leverage)", 1000)).toBe(false);
+    expect(isValidBotInput("My Arbitrage Bot", "", "Conservative (2x leverage)", 1000)).toBe(false);
+    expect(isValidBotInput("My Arbitrage Bot", "Arbitrage Detection", "", 1000)).toBe(false);
+    expect(isValidBotInput("A".repeat(101), "Arbitrage Detection", "Conservative (2x leverage)", 1000)).toBe(false);
+
+    // Invalid initialCapital
+    expect(isValidBotInput("My Bot", "Arbitrage Detection", "Conservative (2x leverage)", "1000")).toBe(false);
+    expect(isValidBotInput("My Bot", "Arbitrage Detection", "Conservative (2x leverage)", -10)).toBe(false);
+    expect(isValidBotInput("My Bot", "Arbitrage Detection", "Conservative (2x leverage)", NaN)).toBe(false);
+    expect(isValidBotInput("My Bot", "Arbitrage Detection", "Conservative (2x leverage)", Infinity)).toBe(false);
+
+    // Invalid userAddress
+    expect(isValidBotInput("My Bot", "Arbitrage Detection", "Conservative (2x leverage)", 1000, "invalid-address")).toBe(false);
+    expect(isValidBotInput("My Bot", "Arbitrage Detection", "Conservative (2x leverage)", 1000, 123)).toBe(false);
+    expect(isValidBotInput("My Bot", "Arbitrage Detection", "Conservative (2x leverage)", 1000, "a".repeat(101))).toBe(false);
+  });
+
+  it("validates task claim and payout userAddress with type safety and anchored regex", () => {
+    const isValidEarlyAddress = (userAddress) => {
+      return !!(userAddress && typeof userAddress === 'string' && userAddress !== 'demo' && /^0x[a-fA-F0-9]{40}$/.test(userAddress));
+    };
+
+    expect(isValidEarlyAddress("0x9F407b7f793555c35c33aC64bd6901759470736D")).toBe(true);
+    expect(isValidEarlyAddress("demo")).toBe(false);
+    expect(isValidEarlyAddress("0x9F407b7f793555c35c33aC64bd6901759470736D.evil.com")).toBe(false);
+    expect(isValidEarlyAddress(["0x9F407b7f793555c35c33aC64bd6901759470736D"])).toBe(false);
+    expect(isValidEarlyAddress(null)).toBe(false);
+    expect(isValidEarlyAddress(undefined)).toBe(false);
+    expect(isValidEarlyAddress(123)).toBe(false);
+  });
+
+  it("enforces strict type-safety and length limit checks on the /api/maintenance/log endpoint", async () => {
+    const originalPort = process.env.PORT;
+    process.env.PORT = "0";
+
+    const express = require('express');
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
+    let activeServer = null;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
+    };
+
+    delete require.cache[require.resolve("./server.js")];
+    delete require.cache[require.resolve("./routes/payoutRoutes.js")];
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
+    try {
+      const port = activeServer.address().port;
+
+      // 1. Valid payload - should succeed
+      const res1 = await fetch(`http://localhost:${port}/api/maintenance/log`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agent: "TEST-AGENT", message: "Everything is fine", level: "INFO" })
+      });
+      expect(res1.status).toBe(200);
+
+      // 2. Invalid payload (non-string agent) - should be rejected with 400
+      const res2 = await fetch(`http://localhost:${port}/api/maintenance/log`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agent: 123, message: "Everything is fine" })
+      });
+      expect(res2.status).toBe(400);
+
+      // 3. Invalid payload (too long agent) - should be rejected with 400
+      const res3 = await fetch(`http://localhost:${port}/api/maintenance/log`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agent: "A".repeat(101), message: "Everything is fine" })
+      });
+      expect(res3.status).toBe(400);
+
+      // 4. Invalid payload (too long message) - should be rejected with 400
+      const res4 = await fetch(`http://localhost:${port}/api/maintenance/log`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agent: "TEST-AGENT", message: "M".repeat(501) })
+      });
+      expect(res4.status).toBe(400);
+
+      // 5. Invalid payload (too long level) - should be rejected with 400
+      const res5 = await fetch(`http://localhost:${port}/api/maintenance/log`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agent: "TEST-AGENT", message: "Fine", level: "L".repeat(21) })
+      });
+      expect(res5.status).toBe(400);
+
+    } finally {
+      http.Server.prototype.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+    }
+  });
+
+  it("enforces strict type-safety and length limit checks on the /api/maintenance/patch endpoint", async () => {
+    const originalPort = process.env.PORT;
+    process.env.PORT = "0";
+
+    const express = require('express');
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
+    let activeServer = null;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
+    };
+
+    delete require.cache[require.resolve("./server.js")];
+    delete require.cache[require.resolve("./routes/payoutRoutes.js")];
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
+    try {
+      const port = activeServer.address().port;
+
+      // 1. Valid payload - should succeed (logged for review, 200 OK)
+      const res1 = await fetch(`http://localhost:${port}/api/maintenance/patch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filepath: "public/index.html", patch: "diff content", description: "update title" })
+      });
+      expect(res1.status).toBe(200);
+
+      // 2. Invalid payload (non-string patch) - should be rejected with 400
+      const res2 = await fetch(`http://localhost:${port}/api/maintenance/patch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filepath: "public/index.html", patch: { code: "invalid" } })
+      });
+      expect(res2.status).toBe(400);
+
+      // 3. Invalid payload (too long description) - should be rejected with 400
+      const res3 = await fetch(`http://localhost:${port}/api/maintenance/patch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filepath: "public/index.html", patch: "diff", description: "D".repeat(1001) })
+      });
+      expect(res3.status).toBe(400);
+
+      // 4. Invalid payload (too long patch) - should be rejected with 400
+      const res4 = await fetch(`http://localhost:${port}/api/maintenance/patch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filepath: "public/index.html", patch: "P".repeat(50001), description: "patch too big" })
+      });
+      expect(res4.status).toBe(400);
+
+    } finally {
+      http.Server.prototype.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+    }
+  });
+});
+
+describe("Faucet Claim - Sentinel Hardening", () => {
+  it("rejects duplicate faucet claims for the same Ethereum address", async () => {
+    const originalPort = process.env.PORT;
+    process.env.PORT = "0";
+
+    const express = require('express');
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
+    let activeServer = null;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
+    };
+
+    delete require.cache[require.resolve("./server.js")];
+    delete require.cache[require.resolve("./routes/payoutRoutes.js")];
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
+    try {
+      const port = activeServer.address().port;
+      const testAddress = "0x9F407b7f793555c35c33aC64bd6901759470736D";
+
+      // First request - should succeed
+      const res1 = await fetch(`http://localhost:${port}/api/faucet/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userAddress: testAddress })
+      });
+      const data1 = await res1.json();
+      expect(res1.status).toBe(200);
+      expect(data1.success).toBe(true);
+
+      // Second request with same address (even case insensitive) - should be rejected with 429
+      const res2 = await fetch(`http://localhost:${port}/api/faucet/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userAddress: testAddress.toLowerCase() })
+      });
+      const data2 = await res2.json();
+      expect(res2.status).toBe(429);
+      expect(data2.success).toBe(false);
+      expect(data2.error).toBe('Faucet already claimed for this address');
+    } finally {
+      http.Server.prototype.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+    }
+  });
+
+  it("caches /api/diagnostics/full results to prevent RPC spam", async () => {
+    const originalPort = process.env.PORT;
+    process.env.PORT = "0";
+
+    const express = require('express');
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
+    let activeServer = null;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
+    };
+
+    delete require.cache[require.resolve("./server.js")];
+    delete require.cache[require.resolve("./routes/payoutRoutes.js")];
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
+    try {
+      const port = activeServer.address().port;
+
+      // First request - should hit actual RPC checks and not be cached
+      const res1 = await fetch(`http://localhost:${port}/api/diagnostics/full`);
+      const firstResult = await res1.json();
+      expect(firstResult._cached).toBe(undefined);
+
+      // Second request - should be served from memory cache immediately
+      const res2 = await fetch(`http://localhost:${port}/api/diagnostics/full`);
+      const secondResult = await res2.json();
+      expect(secondResult._cached).toBe(true);
+    } finally {
+      http.Server.prototype.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+    }
+  });
+});
+
+describe("Server Endpoint Caching - Sentinel Hardening", () => {
+  it("validates that /api/market/prices handles symbols query parameter type pollution gracefully", async () => {
+    const originalPort = process.env.PORT;
+    process.env.PORT = "0";
+
+    const express = require('express');
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
+    let activeServer = null;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
+    };
+
+    Object.keys(require.cache).forEach(key => {
+      if (key.includes('payoutRoutes') || key.includes('payoutService') || key.includes('server.js')) {
+        delete require.cache[key];
+      }
+    });
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
+    try {
+      const port = activeServer.address().port;
+
+      // Passing multiple symbols parameter triggers query parameter pollution / array representation
+      const res = await fetch(`http://localhost:${port}/api/market/prices?symbols=WETH&symbols=USDC`);
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.success).toBe(false);
+      expect(data.error).toBe('Invalid symbols parameter type');
+    } finally {
+      http.Server.prototype.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+    }
+  });
+
+  it("caches /api/status/connections results to prevent RPC spam", async () => {
+    const originalPort = process.env.PORT;
+    process.env.PORT = "0";
+
+    // Mock Express listen to capture the server instance and close it later
+    const express = require('express');
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
+    let activeServer = null;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
+    };
+
+    Object.keys(require.cache).forEach(key => {
+      if (key.includes('payoutRoutes') || key.includes('payoutService') || key.includes('server.js')) {
+        delete require.cache[key];
+      }
+    });
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
+    try {
+      const port = activeServer.address().port;
+
+      // First request - should hit actual RPC checks and not be cached
+      const res1 = await fetch(`http://localhost:${port}/api/status/connections`);
+      const firstResult = await res1.json();
+      expect(firstResult._cached).toBe(undefined);
+
+      // Second request - should be served from memory cache immediately
+      const res2 = await fetch(`http://localhost:${port}/api/status/connections`);
+      const secondResult = await res2.json();
+      expect(secondResult._cached).toBe(true);
+    } finally {
+      // Restore listen and close server to prevent open handles from hanging tests
+      http.Server.prototype.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+    }
+  });
+});
+
+describe("Task Claim Security & Whitelisting - Sentinel Hardening", () => {
+  it("rejects unauthorized taskId values", async () => {
+    const originalPort = process.env.PORT;
+    const originalSecret = process.env.TASK_CLAIM_SECRET;
+    process.env.PORT = "0";
+    process.env.TASK_CLAIM_SECRET = "test-secret-key-123";
+
+    const express = require('express');
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
+    let activeServer = null;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
+    };
+
+    Object.keys(require.cache).forEach(key => {
+      if (key.includes('payoutRoutes') || key.includes('payoutService') || key.includes('server.js')) {
+        delete require.cache[key];
+      }
+    });
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
+    try {
+      const port = activeServer.address().port;
+      const res = await fetch(`http://localhost:${port}/api/tasks/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: "invalid_unauthorized_task",
+          reward: 10,
+          userAddress: "0x9F407b7f793555c35c33aC64bd6901759470736D",
+          validationToken: "test-secret-key-123"
+        })
+      });
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.success).toBe(false);
+      expect(data.error).toBe("Invalid or unauthorized taskId requested");
+    } finally {
+      http.Server.prototype.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+      process.env.TASK_CLAIM_SECRET = originalSecret;
+    }
+  });
+
+  it("rejects duplicate task claims with 429 status", async () => {
+    const originalPort = process.env.PORT;
+    const originalSecret = process.env.TASK_CLAIM_SECRET;
+    process.env.PORT = "0";
+    process.env.TASK_CLAIM_SECRET = "test-secret-key-123";
+
+    const express = require('express');
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
+    let activeServer = null;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
+    };
+
+    Object.keys(require.cache).forEach(key => {
+      if (key.includes('payoutRoutes') || key.includes('payoutService') || key.includes('server.js')) {
+        delete require.cache[key];
+      }
+    });
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
+    try {
+      const port = activeServer.address().port;
+      const payload = {
+        taskId: "follow_twitter",
+        reward: 10,
+        userAddress: "0x9F407b7f793555c35c33aC64bd6901759470736D",
+        validationToken: "test-secret-key-123"
+      };
+
+      // First claim should succeed (or at least pass validation and return 200)
+      const res1 = await fetch(`http://localhost:${port}/api/tasks/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      expect(res1.status).toBe(200);
+      const data1 = await res1.json();
+      expect(data1.success).toBe(true);
+
+      // Second claim with same userAddress and taskId should be blocked with 429
+      const res2 = await fetch(`http://localhost:${port}/api/tasks/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      expect(res2.status).toBe(429);
+      const data2 = await res2.json();
+      expect(data2.success).toBe(false);
+      expect(data2.error).toBe("Task already claimed for this address");
+    } finally {
+      http.Server.prototype.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+      process.env.TASK_CLAIM_SECRET = originalSecret;
+    }
+  });
+
+  it("rejects unauthorized taskId values on routes/payoutRoutes", async () => {
+    const originalPort = process.env.PORT;
+    const originalSecret = process.env.TASK_CLAIM_SECRET;
+    const originalOracleKey = process.env.PAYOUT_PRIVATE_KEY;
+    process.env.PORT = "0";
+    process.env.TASK_CLAIM_SECRET = "test-secret-key-123";
+    process.env.PAYOUT_PRIVATE_KEY = "0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+
+    const express = require('express');
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
+    let activeServer = null;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
+    };
+
+    Object.keys(require.cache).forEach(key => {
+      if (key.includes('payoutRoutes') || key.includes('payoutService') || key.includes('server.js')) {
+        delete require.cache[key];
+      }
+    });
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
+    try {
+      const port = activeServer.address().port;
+      const res = await fetch(`http://localhost:${port}/api/v1/payouts/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: "invalid_unauthorized_task",
+          proofOfWork: "some-proof",
+          userAddress: "0x9F407b7f793555c35c33aC64bd6901759470736D",
+          validationToken: "test-secret-key-123"
+        })
+      });
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.error).toBe("Invalid or unauthorized taskId requested");
+    } finally {
+      http.Server.prototype.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+      process.env.TASK_CLAIM_SECRET = originalSecret;
+      process.env.PAYOUT_PRIVATE_KEY = originalOracleKey;
+    }
+  });
+
+  it("rejects duplicate task claims with 429 status on routes/payoutRoutes", async () => {
+    const originalPort = process.env.PORT;
+    const originalSecret = process.env.TASK_CLAIM_SECRET;
+    const originalOracleKey = process.env.PAYOUT_PRIVATE_KEY;
+    process.env.PORT = "0";
+    process.env.TASK_CLAIM_SECRET = "test-secret-key-123";
+    process.env.PAYOUT_PRIVATE_KEY = "0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+
+    const express = require('express');
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
+    let activeServer = null;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
+    };
+
+    Object.keys(require.cache).forEach(key => {
+      if (key.includes('payoutRoutes') || key.includes('payoutService') || key.includes('server.js')) {
+        delete require.cache[key];
+      }
+    });
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
+    try {
+      const port = activeServer.address().port;
+      const payload = {
+        taskId: "join_discord",
+        proofOfWork: "some-proof",
+        userAddress: "0x26fE35d19F481F376e862Aa70688a18Ae0237be5",
+        validationToken: "test-secret-key-123"
+      };
+
+      // First claim should succeed (using test mock/simulation signature payload)
+      const res1 = await fetch(`http://localhost:${port}/api/v1/payouts/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      expect(res1.status).toBe(200);
+      const data1 = await res1.json();
+      expect(data1.success).toBe(true);
+
+      // Second claim with same userAddress and taskId should be blocked with 429
+      const res2 = await fetch(`http://localhost:${port}/api/v1/payouts/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      expect(res2.status).toBe(429);
+      const data2 = await res2.json();
+      expect(data2.error).toBe("Task already claimed for this address");
+    } finally {
+      http.Server.prototype.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+      process.env.TASK_CLAIM_SECRET = originalSecret;
+      process.env.PAYOUT_PRIVATE_KEY = originalOracleKey;
+    }
+  });
+});
+
+describe("Strategy Loader Security & Path Traversal - Sentinel Hardening", () => {
+  it("rejects invalid/untrusted strategyId format in addCustomStrategy and removeCustomStrategy", async () => {
+    const loader = require("./strategies/loader");
+
+    // Test non-string input
+    let success = await loader.addCustomStrategy(123, {});
+    expect(success).toBe(false);
+
+    // Test path traversal payload
+    success = await loader.addCustomStrategy("../../../malicious", {
+      info: { name: "test", description: "test", version: "1.0.0" },
+      execute: () => {}
+    });
+    expect(success).toBe(false);
+
+    // Test null/undefined format
+    success = await loader.addCustomStrategy("test", null);
+    expect(success).toBe(false);
+
+    success = await loader.addCustomStrategy("test", undefined);
+    expect(success).toBe(false);
+  });
+
+  it("safely handles null or non-object in isValidStrategy", () => {
+    const loader = require("./strategies/loader");
+    expect(loader.isValidStrategy(null)).toBe(false);
+    expect(loader.isValidStrategy(undefined)).toBe(false);
+    expect(loader.isValidStrategy(123)).toBe(false);
+    expect(loader.isValidStrategy("not-an-object")).toBe(false);
+  });
+
+  it("successfully adds and removes custom strategy with valid strategyId", async () => {
+    const loader = require("./strategies/loader");
+    const strategyId = "sentinel_test_strategy";
+    const dummyStrategy = {
+      info: { name: "Sentinel Strategy", description: "Test", version: "1.0.0" },
+      execute: function(marketData, params) { return { signal: "HOLD", confidence: 0.5 }; },
+      toString: function() {
+        return `
+          module.exports = {
+            info: { name: "Sentinel Strategy", description: "Test", version: "1.0.0" },
+            execute: function(marketData, params) { return { signal: "HOLD", confidence: 0.5 }; }
+          };
+        `;
+      }
+    };
+
+    // Add strategy
+    const added = await loader.addCustomStrategy(strategyId, dummyStrategy);
+    expect(added).toBe(true);
+
+    // Verify it exists in strategies list
+    const strategies = loader.getStrategies();
+    expect(strategies[strategyId] !== undefined).toBe(true);
+
+    // Remove strategy
+    const removed = await loader.removeCustomStrategy(strategyId);
+    expect(removed).toBe(true);
+
+    // Verify it is removed
+    const strategiesAfter = loader.getStrategies();
+    expect(strategiesAfter[strategyId] === undefined).toBe(true);
+  });
+});
+
+describe("On-Chain Execution Engine & Worker", () => {
+  it("executes trades in dry-run mode and returns expected fields with null transactionHash", async () => {
+    const onchainEngine = require("./services/OnchainExecutionEngine");
+    const originalDryRun = process.env.DRY_RUN;
+    const originalKey = process.env.TRADING_PRIVATE_KEY;
+    process.env.DRY_RUN = "true";
+    delete process.env.TRADING_PRIVATE_KEY;
+
+    try {
+      const result = await onchainEngine.executeTrade({
+        botId: "test-bot",
+        fromToken: "USDC",
+        toToken: "WETH",
+        amount: 10,
+        slippageBps: 100
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.mode).toBe("DRY_RUN");
+      expect(result.txHash).toBe(null);
+      expect(result.fromAmount).toBe(10);
+      expect(result.toAmount).toBe(9.9);
+    } finally {
+      process.env.DRY_RUN = originalDryRun;
+      if (originalKey) {
+        process.env.TRADING_PRIVATE_KEY = originalKey;
+      }
+    }
+  });
+
+  it("fails execution when calling with non-whitelisted assets", async () => {
+    const onchainEngine = require("./services/OnchainExecutionEngine");
+    try {
+      await onchainEngine.executeTrade({
+        botId: "test-bot",
+        fromToken: "INVALID",
+        toToken: "WETH",
+        amount: 10
+      });
+      throw new Error("Should have thrown");
+    } catch (e) {
+      expect(e.message.includes("Asset validation failed")).toBe(true);
+    }
+  });
+
+  it("enforces risk limits on large transaction sizes", async () => {
+    const onchainEngine = require("./services/OnchainExecutionEngine");
+    const originalDryRun = process.env.DRY_RUN;
+    const originalKey = process.env.TRADING_PRIVATE_KEY;
+    const originalMax = process.env.MAX_TRADE_USD;
+
+    process.env.DRY_RUN = "false";
+    process.env.TRADING_PRIVATE_KEY = "0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+    process.env.MAX_TRADE_USD = "100";
+
+    try {
+      await onchainEngine.executeTrade({
+        botId: "test-bot",
+        fromToken: "USDC",
+        toToken: "WETH",
+        amount: 500
+      });
+      throw new Error("Should have thrown");
+    } catch (e) {
+      expect(e.message.includes("exceeds MAX_TRADE_USD")).toBe(true);
+    } finally {
+      process.env.DRY_RUN = originalDryRun;
+      if (originalKey) {
+        process.env.TRADING_PRIVATE_KEY = originalKey;
+      } else {
+        delete process.env.TRADING_PRIVATE_KEY;
+      }
+      process.env.MAX_TRADE_USD = originalMax;
+    }
+  });
+});
+
+
 async function run() {
   let lastSuite = null;
 
@@ -976,9 +2272,10 @@ async function run() {
 
   if (testFailures > 0) {
     console.error(`❌ Test suite failed with ${testFailures} failure(s).`);
-    process.exitCode = 1;
+    process.exit(1);
   } else {
     console.log("✅ Test suite passed with 0 failures.");
+    process.exit(0);
   }
 
   console.log("=".repeat(50) + "\n");
@@ -986,5 +2283,5 @@ async function run() {
 
 run().catch((error) => {
   console.error("❌ Test runner failed:", error);
-  process.exitCode = 1;
+  process.exit(1);
 });

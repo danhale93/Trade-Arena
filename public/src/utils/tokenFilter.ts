@@ -34,6 +34,10 @@ export const STABLECOIN_QUOTE_OK = [
   'GUSD',
 ];
 
+// ⚡ Bolt Optimization: Pre-allocated static Sets for O(1) lookups to avoid O(N) array scans and garbage collection overhead
+const STABLECOIN_BLOCK_SET = new Set(STABLECOIN_BLOCKLIST);
+const STABLECOIN_QUOTE_SET = new Set(STABLECOIN_QUOTE_OK);
+
 /**
  * Check if a token symbol is a stablecoin
  * @param symbol - Token symbol to check
@@ -42,7 +46,7 @@ export const STABLECOIN_QUOTE_OK = [
 export function isStablecoin(symbol: string): boolean {
   if (!symbol) return false;
   const upperSymbol = symbol.toUpperCase().trim();
-  return STABLECOIN_BLOCKLIST.includes(upperSymbol);
+  return STABLECOIN_BLOCK_SET.has(upperSymbol);
 }
 
 /**
@@ -53,7 +57,7 @@ export function isStablecoin(symbol: string): boolean {
 export function isStablecoinQuoteOk(symbol: string): boolean {
   if (!symbol) return false;
   const upperSymbol = symbol.toUpperCase().trim();
-  return STABLECOIN_QUOTE_OK.includes(upperSymbol);
+  return STABLECOIN_QUOTE_SET.has(upperSymbol);
 }
 
 /**

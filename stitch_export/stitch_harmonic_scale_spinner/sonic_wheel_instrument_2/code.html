@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Crypto Wheel</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&amp;family=Inter:wght@400;500&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-high": "#272a2f",
+                        "primary": "#a4c9ff",
+                        "surface-variant": "#32353a",
+                        "tertiary-container": "#c58305",
+                        "secondary-fixed-dim": "#ffb1c4",
+                        "secondary-container": "#b20055",
+                        "on-background": "#e1e2e9",
+                        "on-error": "#690005",
+                        "on-secondary-fixed-variant": "#8f0043",
+                        "tertiary-fixed": "#ffddb4",
+                        "surface-dim": "#101418",
+                        "on-primary": "#00315d",
+                        "on-primary-fixed-variant": "#004883",
+                        "on-surface": "#e1e2e9",
+                        "on-tertiary-fixed-variant": "#633f00",
+                        "on-tertiary-fixed": "#291800",
+                        "surface-container-low": "#191c21",
+                        "secondary": "#ffb1c4",
+                        "outline": "#8b919d",
+                        "on-primary-fixed": "#001c39",
+                        "surface-container-lowest": "#0b0e13",
+                        "inverse-on-surface": "#2e3036",
+                        "surface": "#101418",
+                        "surface-container-highest": "#32353a",
+                        "outline-variant": "#414751",
+                        "on-secondary": "#65002e",
+                        "inverse-surface": "#e1e2e9",
+                        "primary-fixed": "#d4e3ff",
+                        "on-secondary-fixed": "#3f001a",
+                        "primary-container": "#4d93e5",
+                        "primary-fixed-dim": "#a4c9ff",
+                        "background": "#101418",
+                        "on-error-container": "#ffdad6",
+                        "on-surface-variant": "#c1c7d3",
+                        "error-container": "#93000a",
+                        "on-primary-container": "#002a51",
+                        "on-tertiary-container": "#3c2500",
+                        "tertiary": "#ffb953",
+                        "inverse-primary": "#0060ac",
+                        "error": "#ffb4ab",
+                        "tertiary-fixed-dim": "#ffb953",
+                        "surface-bright": "#36393f",
+                        "secondary-fixed": "#ffd9e0",
+                        "surface-container": "#1d2025",
+                        "on-secondary-container": "#ffc0cf",
+                        "surface-tint": "#a4c9ff",
+                        "on-tertiary": "#452b00"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "16px",
+                        "container-max": "1440px",
+                        "margin-mobile": "16px",
+                        "unit": "4px",
+                        "margin-desktop": "32px"
+                    },
+                    "fontFamily": {
+                        "headline-lg-mobile": ["Montserrat"],
+                        "headline-md": ["Montserrat"],
+                        "body-sm": ["Inter"],
+                        "display-lg": ["Montserrat"],
+                        "label-mono": ["JetBrains Mono"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg-mobile": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-mono": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .wheel-container {
+            width: 320px;
+            height: 320px;
+            position: relative;
+            border-radius: 50%;
+            overflow: hidden;
+            box-shadow: 0 0 40px rgba(164, 201, 255, 0.1), inset 0 0 20px rgba(0,0,0,0.8);
+            border: 4px solid #32353a;
+        }
+
+        .wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            position: relative;
+            transition: transform 4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .segment {
+            position: absolute;
+            width: 50%;
+            height: 2px;
+            background-color: transparent;
+            top: 50%;
+            left: 50%;
+            transform-origin: 0% 50%;
+        }
+
+        .segment-fill {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: currentColor;
+            clip-path: polygon(0 0, 100% -5px, 100% 7px);
+        }
+
+        .indicator {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 30px;
+            background: #a4c9ff;
+            clip-path: polygon(50% 100%, 0 0, 100% 0);
+            z-index: 10;
+            filter: drop-shadow(0 0 10px rgba(164, 201, 255, 0.5));
+        }
+
+        .glow {
+            animation: pulse-glow 2s infinite alternate;
+        }
+
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 20px rgba(164, 201, 255, 0.2); }
+            100% { box-shadow: 0 0 40px rgba(164, 201, 255, 0.6); }
+        }
+
+        .glass-panel {
+            background: rgba(39, 42, 47, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(139, 145, 157, 0.2);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col font-body-lg">
+<!-- TopAppBar -->
+<header class="bg-surface/80 backdrop-blur-xl border-b border-outline-variant/30 fixed top-0 w-full flex justify-between items-center px-margin-mobile md:px-margin-desktop h-16 z-50">
+<div class="flex items-center gap-2 cursor-pointer scale-95 active:scale-90 transition-transform duration-200 hover:bg-surface-variant/50 p-2 rounded-lg text-primary dark:text-primary font-headline-md text-headline-md font-bold">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">currency_bitcoin</span>
+<span>Crypto Wheel</span>
+</div>
+<button class="text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-variant/50 transition-colors p-2 rounded-full scale-95 active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</header>
+<main class="flex-1 mt-16 pb-24 flex flex-col items-center justify-center p-gutter md:p-margin-desktop overflow-x-hidden relative">
+<!-- Ambient background glow -->
+<div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/10 via-background to-background -z-10"></div>
+<div class="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-12 gap-gutter md:gap-margin-desktop">
+<!-- Left Column: Wheel & Controls -->
+<div class="lg:col-span-8 flex flex-col items-center gap-8">
+<!-- Result Display -->
+<div class="glass-panel rounded-xl p-6 w-full max-w-md text-center flex flex-col items-center justify-center min-h-[140px] transition-all duration-300" id="resultDisplay">
+<p class="font-label-mono text-label-mono text-on-surface-variant mb-2">CURRENT TOKEN</p>
+<div class="flex items-center gap-4">
+<img alt="Token Logo" class="w-12 h-12 hidden" id="noteSymbol" src=""/>
+<h2 class="font-display-lg text-display-lg text-outline transition-colors duration-300" id="noteName">--</h2>
+</div>
+</div>
+<!-- The Wheel -->
+<div class="relative mt-8 mb-4">
+<div class="indicator"></div>
+<div class="wheel-container">
+<div class="wheel" id="spinWheel">
+<!-- Segments generated by JS -->
+</div>
+</div>
+<!-- Center Hub -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-surface-container-high border-4 border-surface shadow-2xl flex items-center justify-center z-20">
+<div class="w-8 h-8 rounded-full bg-surface-variant"></div>
+</div>
+</div>
+<!-- Spin Button -->
+<button class="bg-primary hover:bg-primary-container text-on-primary font-headline-md text-headline-md py-4 px-12 rounded-full glow transition-all duration-300 active:scale-95 shadow-lg relative overflow-hidden group" id="spinBtn">
+<span class="relative z-10 flex items-center gap-2">
+<span class="material-symbols-outlined">refresh</span>
+                        SPIN
+                    </span>
+<div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+</button>
+</div>
+<!-- Right Column: History -->
+<div class="lg:col-span-4 flex flex-col gap-4">
+<div class="glass-panel rounded-xl p-6 h-full flex flex-col">
+<div class="flex items-center justify-between mb-6 border-b border-outline-variant/30 pb-4">
+<h3 class="font-headline-md text-headline-md text-on-surface">History</h3>
+<span class="material-symbols-outlined text-on-surface-variant">history</span>
+</div>
+<div class="flex-1 overflow-y-auto space-y-3 pr-2 max-h-[400px]" id="historyList">
+<!-- History items generated by JS -->
+<div class="text-center text-on-surface-variant font-body-sm text-body-sm py-8 italic" id="emptyHistory">
+                            Spin the wheel to log tokens.
+                        </div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden bg-surface-container-low backdrop-blur-2xl border-t border-outline-variant/20 fixed bottom-0 w-full rounded-t-xl shadow-lg z-50 flex justify-around items-center px-4 py-2">
+<div class="flex flex-col items-center justify-center text-on-surface-variant p-3 hover:text-primary transition-all scale-110 active:scale-95 transition-all duration-300 cursor-pointer">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">home</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full p-3 hover:text-primary transition-all scale-110 active:scale-95 transition-all duration-300 cursor-pointer">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">equalizer</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant p-3 hover:text-primary transition-all scale-110 active:scale-95 transition-all duration-300 cursor-pointer">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">history</span>
+</div>
+</nav>
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const wheel = document.getElementById('spinWheel');
+            const spinBtn = document.getElementById('spinBtn');
+            const noteNameDisplay = document.getElementById('noteName');
+            const noteSymbolDisplay = document.getElementById('noteSymbol');
+            const resultDisplay = document.getElementById('resultDisplay');
+            const historyList = document.getElementById('historyList');
+            const emptyHistory = document.getElementById('emptyHistory');
+
+            const totalSegments = 100;
+            const degreesPerSegment = 360 / totalSegments;
+            
+            const cryptoTokens = [
+                'BTC', 'ETH', 'USDT', 'BNB', 'SOL', 'USDC', 'XRP', 'DOGE', 'TON', 'ADA',
+                'AVAX', 'SHIB', 'BCH', 'DOT', 'TRX', 'LINK', 'MATIC', 'NEAR', 'LTC', 'ICP',
+                'LEO', 'DAI', 'UNI', 'APT', 'XLM', 'STX', 'OKB', 'ATOM', 'FIL', 'IMX',
+                'ETC', 'RNDR', 'INJ', 'HBAR', 'VET', 'MNT', 'KAS', 'OP', 'CRO', 'AR',
+                'FTM', 'THETA', 'MKR', 'XMR', 'LDO', 'ALGO', 'GRT', 'TIA', 'RUNE', 'AAVE',
+                'SNX', 'BSV', 'EGLD', 'QNT', 'FLOW', 'GALA', 'AXS', 'SAND', 'CHZ', 'NEO',
+                'MINA', 'FTT', 'XTZ', 'EOS', 'MANA', 'CAKE', 'KAVA', 'IOTA', 'ENJ', 'ZEC',
+                'DASH', 'XEC', 'KLAY', 'HT', 'ZIL', 'BAT', 'ROSE', 'COMP', '1INCH', 'HOT',
+                'RVN', 'ANKR', 'CRV', 'YFI', 'LRC', 'BTT', 'DGB', 'QTUM', 'ONT', 'SUSHI',
+                'ZRX', 'CELO', 'ICX', 'OMG', 'WAVES', 'SC', 'GLM', 'LSK', 'ZEN', 'IOST'
+            ];
+
+            const colors = [
+                '#ffb1c4', '#ffddb4', '#ffb953', '#c58305', '#a4c9ff', '#4d93e5', '#b20055'
+            ];
+
+            let currentRotation = 0;
+            let isSpinning = false;
+            const segmentsData = [];
+
+            // Initialize Wheel
+            for (let i = 0; i < totalSegments; i++) {
+                const token = cryptoTokens[i] || cryptoTokens[i % cryptoTokens.length];
+                const color = colors[i % colors.length];
+                
+                const segmentData = {
+                    name: token,
+                    color: color,
+                    symbol: `https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/${token.toLowerCase()}.png`,
+                    angle: i * degreesPerSegment
+                };
+                segmentsData.push(segmentData);
+
+                const segmentEl = document.createElement('div');
+                segmentEl.className = 'segment';
+                segmentEl.style.transform = `rotate(${segmentData.angle}deg)`;
+                segmentEl.style.color = segmentData.color;
+
+                const fillEl = document.createElement('div');
+                fillEl.className = 'segment-fill';
+                
+                segmentEl.appendChild(fillEl);
+                wheel.appendChild(segmentEl);
+            }
+
+            spinBtn.addEventListener('click', () => {
+                if (isSpinning) return;
+                isSpinning = true;
+                
+                // Reset display
+                noteNameDisplay.textContent = '--';
+                noteNameDisplay.className = 'font-display-lg text-display-lg text-outline transition-colors duration-300';
+                noteSymbolDisplay.classList.add('hidden');
+                resultDisplay.style.boxShadow = 'none';
+                
+                // Calculate random rotation (3 to 6 full spins + random segment)
+                const randomSpins = Math.floor(Math.random() * 4) + 3;
+                const randomDegrees = Math.floor(Math.random() * 360);
+                const extraRotation = (randomSpins * 360) + randomDegrees;
+                
+                currentRotation += extraRotation;
+                
+                wheel.style.transform = `rotate(${currentRotation}deg)`;
+
+                // Wait for animation to finish
+                setTimeout(() => {
+                    isSpinning = false;
+                    
+                    // Calculate which segment is at the top (0 degrees or 360 degrees)
+                    // The wheel rotates clockwise (positive degrees), so the top is -currentRotation % 360
+                    const normalizedRotation = currentRotation % 360;
+                    // The pointer is at 270 degrees relative to standard circle (top)
+                    // Adjust based on how segments were drawn
+                    const pointerAngle = (360 - normalizedRotation + 270) % 360;
+                    
+                    const segmentIndex = Math.floor(pointerAngle / degreesPerSegment);
+                    const selectedSegment = segmentsData[segmentIndex % totalSegments];
+
+                    if (selectedSegment) {
+                        // Update Display
+                        noteNameDisplay.textContent = selectedSegment.name;
+                        noteNameDisplay.style.color = selectedSegment.color;
+                        
+                        noteSymbolDisplay.src = selectedSegment.symbol;
+                        noteSymbolDisplay.classList.remove('hidden');
+                        
+                        resultDisplay.style.boxShadow = `0 0 30px ${selectedSegment.color}40, inset 0 0 10px ${selectedSegment.color}20`;
+
+                        // Add to History
+                        addHistoryItem(selectedSegment);
+                    }
+                }, 4000); // matches CSS transition duration
+            });
+
+            function addHistoryItem(segment) {
+                if (emptyHistory) emptyHistory.remove();
+
+                const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                
+                const item = document.createElement('div');
+                item.className = 'flex items-center justify-between p-3 rounded-lg bg-surface-container-highest border border-outline-variant/20 hover:border-outline-variant/50 transition-colors animate-[fadeIn_0.3s_ease-out]';
+                item.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center bg-surface overflow-hidden" style="border: 2px solid ${segment.color}">
+                            <img src="${segment.symbol}" alt="${segment.name}" class="w-6 h-6" onerror="this.src='https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/generic.png'">
+                        </div>
+                        <span class="font-headline-md text-body-lg" style="color: ${segment.color}">${segment.name}</span>
+                    </div>
+                    <span class="font-label-mono text-label-mono text-on-surface-variant">${time}</span>
+                `;
+                
+                historyList.insertBefore(item, historyList.firstChild);
+                
+                // Keep only last 10 items
+                if (historyList.children.length > 10) {
+                    historyList.removeChild(historyList.lastChild);
+                }
+            }
+        });
+    </script>
+</body></html>

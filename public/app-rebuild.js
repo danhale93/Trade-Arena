@@ -1,5 +1,5 @@
 /**
- * TRADE ARENA v4.2 - PRODUCTION BUILD
+ * TRADE ARENA v4.3.12 - PRODUCTION BUILD
  * Master Switch (FIXED), Real-Time Balance, Ticker Tracking, Market Pricing
  *
  * ✓ Master ON/OFF switch controls all 6 bots simultaneously
@@ -262,7 +262,14 @@ class AutoRecovery {
       if (stored) {
         const state = JSON.parse(stored);
         Object.assign(window, state);
-        console.log("[AutoRecovery] ✓ State restored from localStorage");
+        
+        // 🛡️ REAL WALLET OVERRIDE: Prioritize real-time synced balance if available
+        const realBal = localStorage.getItem('ta_real_balance');
+        const realStart = localStorage.getItem('ta_real_start_balance');
+        if (realBal) window.balance = parseFloat(realBal);
+        if (realStart) window.startBalance = parseFloat(realStart);
+        
+        console.log("[AutoRecovery] ✓ State restored from localStorage (Real Balance prioritised)");
       }
     } catch (e) {
       console.warn("[AutoRecovery] Recovery failed:", e);
@@ -279,6 +286,20 @@ class AutoRecovery {
 // ══════════════════════════════════════════════════════
 // REAL MARKET PRICING & LIVE PRICE TRACKING
 // ══════════════════════════════════════════════════════
+
+// ⚡ Bolt Optimization: Static map to avoid redundant object allocations in getPrice()
+const MARKET_TOKEN_MAP = {
+  ETH: "ethereum",
+  BTC: "bitcoin",
+  SOL: "solana",
+  DOGE: "dogecoin",
+  PEPE: "pepe",
+  WIF: "dogwifcoin",
+  BONK: "bonk",
+  FLOKI: "floki",
+  ARB: "arbitrum",
+  MATIC: "matic-network",
+};
 
 class RealMarketPricing {
   constructor() {
@@ -353,20 +374,8 @@ class RealMarketPricing {
   }
 
   getPrice(token) {
-    const tokenMap = {
-      ETH: "ethereum",
-      BTC: "bitcoin",
-      SOL: "solana",
-      DOGE: "dogecoin",
-      PEPE: "pepe",
-      WIF: "dogwifcoin",
-      BONK: "bonk",
-      FLOKI: "floki",
-      ARB: "arbitrum",
-      MATIC: "matic-network",
-    };
-
-    const id = tokenMap[token] || token.toLowerCase();
+    // ⚡ Bolt Optimization: Use MARKET_TOKEN_MAP constant instead of local object allocation
+    const id = MARKET_TOKEN_MAP[token] || token.toLowerCase();
     const price = this.priceCache[id]?.usd;
     return price || null;
   }
@@ -418,15 +427,15 @@ let balanceUpdater = null;
 let autoRecovery = null;
 let realMarketPricing = null;
 
-function initAppRebuildV42() {
+function initAppRebuildV4312() {
   // Wait for DOM and game state
   if (document.readyState === "loading" || !document.getElementById("mainApp") || typeof window.balance === "undefined" || typeof window.bots === "undefined") {
-    setTimeout(initAppRebuildV42, 100); // Check again shortly
+    setTimeout(initAppRebuildV4312, 100); // Check again shortly
     return;
   }
 
   console.log(
-    "%c🚀 TRADE ARENA v4.2 INITIALIZING...",
+    "%c🚀 TRADE ARENA v4.3.12 INITIALIZING...",
     "color: #39ff14; font-weight: bold; font-size: 14px;",
   );
 
@@ -510,7 +519,7 @@ document.addEventListener('click', function(e) {
     }
 });
 // Auto-init
-initAppRebuildV42();
+initAppRebuildV4312();
 
 // ══════════════════════════════════════════════════════
 // PUBLIC API - EXTERNAL CONTROL
@@ -573,7 +582,7 @@ window.TradeArenaApp = {
 /**
  * Live Mode Management
  */
-window.isLiveMode = false;
+window.isLiveMode = true;
 
 async function toggleLiveMode() {
     const goingLive = !window.isLiveMode;
@@ -604,6 +613,24 @@ async function toggleLiveMode() {
     if (badge) {
         badge.textContent = window.isLiveMode ? 'LIVE' : 'DEMO';
         badge.style.color = window.isLiveMode ? 'var(--green)' : 'var(--dim)';
+    }
+
+    // Play tactile tick sound
+    if (typeof SFX !== 'undefined' && SFX.tick) {
+        try { SFX.tick(); } catch (e) {}
+    }
+
+    // Trigger visual confetti at button coordinates for tactile delight
+    if (window.FX && window.FX.confetti && btn) {
+        const rect = btn.getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        const y = rect.top + rect.height / 2;
+        try { window.FX.confetti(x, y, 6); } catch (e) {}
+    }
+
+    // Show accessible confirmation toast
+    if (typeof showToast === 'function') {
+        showToast(window.isLiveMode ? 'Switched to LIVE mainnet trading mode!' : 'Switched to DEMO paper trading mode.', window.isLiveMode ? 'success' : 'info');
     }
 
     console.log('[App] Mode changed to:', window.isLiveMode ? 'LIVE' : 'DEMO');

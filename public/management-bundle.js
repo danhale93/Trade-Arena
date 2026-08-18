@@ -3,7 +3,7 @@
  * Trade Arena v4 • Real-time task queue viewer
  */
 
-const API_BASE = (location.protocol === 'https:' ? '' : 'http://localhost:3001');
+var API_BASE = (location.protocol === 'https:' ? '' : 'http://localhost:3001');
 const DEPLOYMENT_POLL_INTERVAL = 4000;
 
 /**
@@ -21,10 +21,10 @@ function escapeHTML(str) {
 let deploymentTimer = null;
 let latestDeployments = [];
 
-let taskState = {
+window.taskState = window.taskState || {
     faucetClaimed: false,
     creditsEarned: 0,
-    tasks: []
+    quests: []
 };
 
 async function fetchDeployments() {
@@ -67,6 +67,9 @@ async function claimFaucet() {
     }
 }
 
+// ── Secure Storage Decoder ──
+var _cfg_d = (s) => { try { return s ? atob(s) : ''; } catch(e) { return s; } };
+
 async function completeTask(taskId) {
     try {
         await fetch(`${API_BASE}/api/tasks/claim`, {
@@ -76,7 +79,7 @@ async function completeTask(taskId) {
                 taskId,
                 reward: 0,
                 userAddress: window.ethereum?.selectedAddress || 'demo',
-                validationToken: localStorage.getItem('ta_task_secret') || ''
+                validationToken: _cfg_d(localStorage.getItem('ta_task_secret')) || ''
             })
         });
         fetchDeployments();
@@ -146,7 +149,7 @@ window.latestDeployments = latestDeployments;
 // Init
 
 // Export to window for bot auto-onboarding
-window.taskState = taskState;
+window.taskState = window.taskState || taskState;
 
 // Start polling immediately after load (outside setupApp timing issues)
 setTimeout(() => {
@@ -388,27 +391,16 @@ window.MARKETPLACE.init();
  * 3. Configure embedded wallet for Base only
  */
 
-const PRIVY_CONFIG = {
-    // Privy App ID from dashboard.privy.com
-    appId: 'cmpl1hc0k00ui0djsr3qo8gg8',
-    // JWKS URL for token verification
-    jwksUrl: 'https://auth.privy.io/api/v1/apps/cmpl1hc0k00ui0djsr3qo8gg8/jwks.json',
-    // Base mainnet ONLY - NO network dropdown
-    chain: 'base',
-    chainId: '0x2105',
-    chainName: 'Base',
-    // USDC only - hide all other tokens
-    defaultToken: 'USDC',
-    // Fiat display
-    fiatCurrency: 'USD',
-    // Hide blockchain complexity from user
-    hideBlockchain: true,
-};
+// PRIVY_CONFIG removed - using global from privy-client.js
 
 // Privy state
-let privyUser = null;
-let privyWalletAddress = null;
-let privyConnected = false;
+if (typeof window.privyUser === 'undefined') window.privyUser = null;
+if (typeof window.privyWalletAddress === 'undefined') window.privyWalletAddress = null;
+if (typeof window.privyConnected === 'undefined') window.privyConnected = false;
+
+var privyUser = window.privyUser;
+var privyWalletAddress = window.privyWalletAddress;
+var privyConnected = window.privyConnected;
 
 /**
  * Initialize Privy embedded wallet
@@ -489,7 +481,7 @@ async function privyLoginGoogle() {
             // Base only - no network choice
             chains: [{
                 id: PRIVY_CONFIG.chain,
-                rpcUrl: 'https://base-mainnet.g.alchemy.com/v2/3zUWwmlHTQNjmM55sV2X0'
+                rpcUrl: 'https://mainnet.base.org'
             }],
         });
 
@@ -1109,23 +1101,44 @@ async function sendStaffQuery() {
     if (!input || !input.value.trim() || !window.STAFF) return;
 
     const query = input.value.trim();
+    const originalBtnHTML = btn ? btn.innerHTML : 'ASK';
 
     try {
         input.disabled = true;
-        if (btn) btn.disabled = true;
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '⏳ ASKING...';
+            btn.setAttribute('aria-label', 'Asking staff...');
+        }
         input.value = '';
 
         responseBox.style.display = 'block';
         responseBox.textContent = 'Thinking...';
 
+        // Play subtle tick on submit
+        if (typeof window.SFX !== 'undefined' && window.SFX.tick) {
+            try { window.SFX.tick(); } catch (e) {}
+        }
+
         const reply = await window.STAFF.handleSupportQuery(query);
         responseBox.textContent = reply;
 
+        // Pulse the response box visually when loaded
+        if (window.FX && window.FX.pulse) {
+            try { window.FX.pulse(responseBox); } catch (e) {}
+        }
+
         // SFX
-        if (typeof window.SFX !== 'undefined') window.SFX.tick();
+        if (typeof window.SFX !== 'undefined' && window.SFX.tick) {
+            try { window.SFX.tick(); } catch (e) {}
+        }
     } finally {
         input.disabled = false;
-        if (btn) btn.disabled = false;
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalBtnHTML;
+            btn.removeAttribute('aria-label');
+        }
     }
 }
 

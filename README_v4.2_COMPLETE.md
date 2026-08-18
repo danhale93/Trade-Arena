@@ -118,7 +118,7 @@ TradeArenaApp.getSystemStatus()
 // Expected output:
 {
   master: "ON",           // Master switch state
-  balance: 10000,         // Current balance
+  balance: 0,         // Current balance
   online: true,           // Connection status
   version: "v4.2"         // Build version
 }

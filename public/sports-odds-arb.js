@@ -30,52 +30,71 @@ function oddsToProbability(odds, format = "american") {
   return americanToProbability(odds);
 }
 
+// ⚡ Bolt Optimization: Consolidate multiple map/filter/reduce allocations into a single-pass loop with safe shallow copying
 function removeVig(outcomes) {
-  const implied = outcomes
-    .map((outcome) => ({
-      ...outcome,
-      impliedProbability:
-        outcome.impliedProbability ?? oddsToProbability(outcome.price, outcome.format || "american"),
-    }))
-    .filter((outcome) => Number.isFinite(outcome.impliedProbability) && outcome.impliedProbability > 0);
+  const len = outcomes.length;
+  const implied = [];
+  let overround = 0;
 
-  const overround = implied.reduce((sum, outcome) => sum + outcome.impliedProbability, 0);
+  for (let i = 0; i < len; i++) {
+    const outcome = outcomes[i];
+    const prob = outcome.impliedProbability ?? oddsToProbability(outcome.price, outcome.format || "american");
+    if (Number.isFinite(prob) && prob > 0) {
+      implied.push({
+        ...outcome,
+        impliedProbability: prob,
+      });
+      overround += prob;
+    }
+  }
+
   if (overround <= 0) return [];
 
-  return implied.map((outcome) => ({
-    ...outcome,
-    fairProbability: outcome.impliedProbability / overround,
-    overround,
-  }));
+  const impliedLen = implied.length;
+  for (let i = 0; i < impliedLen; i++) {
+    const outcome = implied[i];
+    outcome.fairProbability = outcome.impliedProbability / overround;
+    outcome.overround = overround;
+  }
+
+  return implied;
 }
 
+// ⚡ Bolt Optimization: Use secure prototype-free flat objects and clean for...of loops to accumulate sums/counts, completely eliminating prototype-property shadowing risks, Map lookups, and nested array/reduce allocations.
 function normalizeSportsbookEvent(event, marketKey = "h2h", oddsFormat = "american") {
   const eventId = event.id || `${event.home_team || "home"}-${event.away_team || "away"}`;
-  const byOutcome = new Map();
+  const sums = Object.create(null);
+  const counts = Object.create(null);
 
   for (const bookmaker of event.bookmakers || []) {
     const market = (bookmaker.markets || []).find((item) => item.key === marketKey);
     if (!market) continue;
 
-    const fairOutcomes = removeVig(
-      (market.outcomes || []).map((outcome) => ({
+    const outcomes = market.outcomes || [];
+    const mappedOutcomes = [];
+    const bkKey = bookmaker.key || bookmaker.title;
+
+    for (const outcome of outcomes) {
+      mappedOutcomes.push({
         name: outcome.name,
         price: outcome.price,
         format: oddsFormat,
-        bookmaker: bookmaker.key || bookmaker.title,
-      })),
-    );
+        bookmaker: bkKey,
+      });
+    }
+
+    const fairOutcomes = removeVig(mappedOutcomes);
 
     for (const outcome of fairOutcomes) {
-      if (!byOutcome.has(outcome.name)) byOutcome.set(outcome.name, []);
-      byOutcome.get(outcome.name).push(outcome.fairProbability);
+      const name = outcome.name;
+      sums[name] = (sums[name] || 0) + outcome.fairProbability;
+      counts[name] = (counts[name] || 0) + 1;
     }
   }
 
   const fairProbabilities = {};
-  for (const [outcome, probabilities] of byOutcome.entries()) {
-    fairProbabilities[outcome] =
-      probabilities.reduce((sum, probability) => sum + probability, 0) / probabilities.length;
+  for (const name in sums) {
+    fairProbabilities[name] = sums[name] / counts[name];
   }
 
   return {
@@ -116,6 +135,7 @@ function calculatePredictionMarketEdge(fairProbability, market, config = {}) {
   };
 }
 
+// ⚡ Bolt Optimization: Consolidate normalizedEvents array allocation and double-mapping Map creation into a single-pass loop
 function findSportsPredictionEdges({
   sportsbookEvents = [],
   predictionMarkets = [],
@@ -126,10 +146,12 @@ function findSportsPredictionEdges({
   now = Date.now(),
 } = {}) {
   const cfg = { ...DEFAULT_SPORTS_ARB_CONFIG, ...config };
-  const normalizedEvents = sportsbookEvents.map((event) =>
-    normalizeSportsbookEvent(event, marketKey, oddsFormat),
-  );
-  const eventById = new Map(normalizedEvents.map((event) => [event.eventId, event]));
+  const eventById = new Map();
+  const len = sportsbookEvents.length;
+  for (let i = 0; i < len; i++) {
+    const event = normalizeSportsbookEvent(sportsbookEvents[i], marketKey, oddsFormat);
+    eventById.set(event.eventId, event);
+  }
   const opportunities = [];
 
   for (const market of predictionMarkets) {
