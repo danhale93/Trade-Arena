@@ -272,7 +272,8 @@ export const appRouter = router({
       process.env.MM_CLI_TOKEN = input.token;
 
       if (!cli.isMetaMaskCliAvailable()) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: `Token saved but not validated. ${getCliConnectionFailureMessage()}` });
+        await db.setAgentStateKey("mm_cli_session_validated", "false");
+        throw new TRPCError({ code: "BAD_REQUEST", message: getCliConnectionFailureMessage() });
       }
 
       const loggedIn = await cli.loginWithToken(input.token);
@@ -298,6 +299,7 @@ export const appRouter = router({
 
       await db.setAgentStateKey("mm_cli_session_validated", "false");
       if (!cli.isMetaMaskCliAvailable()) {
+        await db.setAgentStateKey("mm_cli_session_validated", "false");
         throw new TRPCError({ code: "BAD_REQUEST", message: getCliConnectionFailureMessage() });
       }
 

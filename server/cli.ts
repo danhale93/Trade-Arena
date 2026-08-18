@@ -231,9 +231,13 @@ export async function runMM(cmd: string, timeout = 30000) {
 
 export async function loginWithToken(token: string): Promise<boolean> {
   if (!isMetaMaskCliAvailable()) return false;
-  await runMMArgs(["logout", "--yes"]);
-  const res = await runMMArgs(["login", "--token", token]);
-  return res.ok;
+  try {
+    await runMMArgs(["logout", "--yes"]);
+    const res = await runMMArgs(["login", "--token", token]);
+    return res.ok;
+  } catch {
+    return false;
+  }
 }
 
 export async function logoutSession(): Promise<boolean> {
