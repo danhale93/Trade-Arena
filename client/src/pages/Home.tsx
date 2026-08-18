@@ -8,6 +8,7 @@ import { Area, AreaChart, CartesianGrid, ReferenceLine, Tooltip, XAxis, YAxis } 
 import { ChartContainer, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { getProfitPulseMotion, shouldTriggerProfitPulse } from "@/lib/profitPulse";
 import { filterPulseEvents, getPulseEventFilterLabel, type PulseNetworkFilter } from "@/lib/pulseEventFilter";
+import { buildFeatureVisualizerModel } from "@/lib/featureVisualizer";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 
@@ -228,6 +229,21 @@ export default function Home() {
     if (profitPulseTimerRef.current !== null) window.clearTimeout(profitPulseTimerRef.current);
   }, []);
 
+  const latestPulseEvent = pulseEvents[0] as any;
+  const latestSimulationRoute = simulationHistory[0] as any;
+  const featureModel = buildFeatureVisualizerModel({
+    latestPulseEvent,
+    latestSimulationRoute,
+    pulseEventCount: pulseEvents.length,
+  });
+  const featureRoute = featureModel.route;
+  const featureNetwork = featureModel.network;
+  const featureProfit = featureModel.profit;
+  const gasTelemetry = (agent?.gasTelemetry || {}) as Record<string, any>;
+  const baseGasTelemetry = gasTelemetry.base;
+  const derivedPulseLevel = featureModel.pulseLevel;
+  const featureReels = featureModel.reels;
+
   return (
     <div className="stitch-shell min-h-screen bg-[#050b0e] text-[#00dbe9] font-mono selection:bg-[#00dbe9]/30 selection:text-white flex flex-col">
       {/* Top Header */}
@@ -403,6 +419,92 @@ export default function Home() {
             <p className="text-[10px] text-[#849495] mt-2">Scanner: {agent?.scannerEnabled ? "RUNNING" : "PAUSED"}</p>
           </div>
         </div>
+
+        {/* Stitch-inspired Feature Visualizer + Audio Telemetry */}
+        <section className="stitch-feature-grid" aria-labelledby="feature-visualizer-title">
+          <div className="stitch-reels-console" data-testid="reels-feature-visualizer">
+            <div className="stitch-reels-header">
+              <div>
+                <p className="stitch-kicker">STITCH REELS / FEATURE VISUALIZER</p>
+                <h2 id="feature-visualizer-title" className="stitch-feature-title">LIQUIDITY SIGNAL REELS</h2>
+              </div>
+              <div className="stitch-reels-status">
+                <span className={`stitch-status-dot ${agent?.scannerEnabled ? "is-live" : ""}`} />
+                {agent?.scannerEnabled ? "SCANNER LIVE" : "SCANNER PAUSED"}
+              </div>
+            </div>
+
+            <div className="stitch-reels-screen" aria-label={`Route visualizer for ${featureNetwork}. ${agent?.executionEnabled ? "Execution armed." : "Simulation only."}`}>
+              <div className="stitch-reels-scanline" aria-hidden="true" />
+              <div className="stitch-reels-screen-meta">
+                <span>ROUTE SIGNAL / {featureNetwork}</span>
+                <span className={agent?.executionEnabled ? "text-emerald-300" : "text-amber-300"}>
+                  {agent?.executionEnabled ? "EXECUTION ARMED" : "SIMULATION ONLY"}
+                </span>
+              </div>
+              <div className="stitch-reels-track">
+                {featureReels.map((reel) => (
+                  <div key={reel.label} className="stitch-reel-column">
+                    <span className="stitch-reel-label">{reel.label}</span>
+                    <div className="stitch-reel-window">
+                      <div className="stitch-reel-strip">
+                        {[...reel.values, ...reel.values].map((value, index) => (
+                          <span key={`${reel.label}-${value}-${index}`} className="stitch-reel-value">{value}</span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="stitch-reels-readout">
+                <span className="truncate">{featureRoute}</span>
+                <span className={featureProfit ? "text-emerald-300" : "text-[#849495]"}>
+                  {featureProfit ? `+$${featureProfit} EST.` : "NO PROFITABILITY SIGNAL"}
+                </span>
+              </div>
+            </div>
+
+            <div className="stitch-reels-footer">
+              <span>REAL DATA / GAS + ROUTE HISTORY</span>
+              <span>{latestPulseEvent?.timestamp ? new Date(latestPulseEvent.timestamp).toLocaleTimeString() : "WAITING FOR EVENT"}</span>
+            </div>
+          </div>
+
+          <div className="stitch-audio-stack">
+            <div className="stitch-telemetry-module">
+              <div className="stitch-module-header">
+                <div>
+                  <p className="stitch-kicker">AUDIO TELEMETRY 01</p>
+                  <h3 className="stitch-module-title">PULSE ENVELOPE</h3>
+                </div>
+                <span className="stitch-module-badge">DERIVED BUS</span>
+              </div>
+              <div className="stitch-audio-spectrum" aria-hidden="true">
+                {Array.from({ length: 18 }).map((_, index) => <span key={index} className="stitch-audio-bar" style={{ animationDelay: `${index * 45}ms` }} />)}
+              </div>
+              <div className="stitch-telemetry-readouts">
+                <div><span>EVENT LEVEL</span><strong>{derivedPulseLevel}%</strong></div>
+                <div><span>EVENTS</span><strong>{pulseEvents.length}</strong></div>
+              </div>
+            </div>
+
+            <div className="stitch-telemetry-module">
+              <div className="stitch-module-header">
+                <div>
+                  <p className="stitch-kicker">AUDIO TELEMETRY 02</p>
+                  <h3 className="stitch-module-title">SPECTRAL READOUT</h3>
+                </div>
+                <Activity className="h-4 w-4 text-[#00dbe9]" aria-hidden="true" />
+              </div>
+              <div className="stitch-spectral-lines" aria-hidden="true"><span /><span /><span /><span /></div>
+              <div className="stitch-telemetry-readouts">
+                <div><span>BASE GAS</span><strong>{baseGasTelemetry?.gasPriceGwei || "0.0000"} GWEI</strong></div>
+                <div><span>CONGESTION</span><strong>{baseGasTelemetry?.congestion || "UNKNOWN"}</strong></div>
+                <div><span>SIGNAL BUS</span><strong>{agent?.scannerEnabled ? "ACTIVE" : "STANDBY"}</strong></div>
+              </div>
+            </div>
+          </div>
+        </section>
 
         {/* Main Grid: Controls & Config */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
