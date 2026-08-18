@@ -807,9 +807,9 @@ describe("Server Endpoint Rate Limiting - Sentinel Hardening", () => {
     };
 
     const originalFetch = global.fetch;
-    // Mock global fetch to simulate AbortError on /api.0x.org/
+    // Mock global fetch to simulate AbortError on 0x API
     global.fetch = async (url, options) => {
-      if (typeof url === 'string' && url.includes('api.0x.org')) {
+      if (typeof url === 'string' && url.startsWith('https://api.0x.org/')) {
         const err = new Error('The operation was aborted');
         err.name = 'AbortError';
         throw err;
