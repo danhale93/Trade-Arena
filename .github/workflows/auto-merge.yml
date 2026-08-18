@@ -1,0 +1,123 @@
+name: Auto-merge all PRs
+
+on:
+  pull_request_target:
+    types: [opened, reopened, labeled, ready_for_review, synchronize, edited]
+  schedule:
+    - cron: '*/15 * * * *'   # run every 15 minutes to catch PRs that became mergeable
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: read
+  issues: write
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Attempt auto-merge (safe; does not run PR code)
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const MERGE_METHOD = 'squash';           // merge method: squash
+            const OWNER = context.repo.owner;
+            const REPO = context.repo.repo;
+
+            // collect candidate PRs:
+            let candidates = [];
+
+            // If triggered by a pull_request event, start with that PR
+            if (context.payload.pull_request) {
+              candidates.push(context.payload.pull_request);
+            } else {
+              // otherwise list open PRs
+              const list = await github.pulls.list({
+                owner: OWNER,
+                repo: REPO,
+                state: 'open',
+                per_page: 100
+              });
+              candidates = list.data;
+            }
+
+            // helper: refresh PR until mergeable is not null or timeout
+            async function fetchWithMergeable(owner, repo, number, attempts = 12, delayMs = 2000) {
+              let i = 0;
+              while (i < attempts) {
+                const r = await github.pulls.get({ owner, repo, pull_number: number });
+                const pr = r.data;
+                if (pr.mergeable !== null) return pr;
+                await new Promise(res => setTimeout(res, delayMs));
+                i++;
+              }
+              // final fetch (may still be null)
+              return (await github.pulls.get({ owner, repo, pull_number: number })).data;
+            }
+
+            for (const pr of candidates) {
+              try {
+                // skip drafts
+                if (pr.draft) {
+                  console.log(`#${pr.number} is a draft — skipping`);
+                  continue;
+                }
+
+                // refresh to get mergeable state
+                const full = await fetchWithMergeable(OWNER, REPO, pr.number);
+
+                if (full.mergeable !== true) {
+                  console.log(`#${pr.number} not mergeable (mergeable=${full.mergeable}) — skipping`);
+                  await github.issues.createComment({
+                    owner: OWNER,
+                    repo: REPO,
+                    issue_number: pr.number,
+                    body: `Auto-merge skipped: PR is not mergeable (mergeable_state=${full.mergeable_state}).`
+                  });
+                  continue;
+                }
+
+                // require mergeable_state be 'clean' (checks & reviews satisfied)
+                if (full.mergeable_state !== 'clean') {
+                  console.log(`#${pr.number} mergeable_state=${full.mergeable_state} — skipping`);
+                  await github.issues.createComment({
+                    owner: OWNER,
+                    repo: REPO,
+                    issue_number: pr.number,
+                    body: `Auto-merge skipped: mergeable_state=${full.mergeable_state}. Waiting for required checks/reviews.`
+                  });
+                  continue;
+                }
+
+                // attempt merge
+                await github.pulls.merge({
+                  owner: OWNER,
+                  repo: REPO,
+                  pull_number: pr.number,
+                  merge_method: MERGE_METHOD
+                });
+
+                console.log(`Merged #${pr.number} (${pr.title})`);
+                await github.issues.createComment({
+                  owner: OWNER,
+                  repo: REPO,
+                  issue_number: pr.number,
+                  body: `Auto-merged by workflow using ${MERGE_METHOD}.`
+                });
+
+              } catch (err) {
+                console.log(`Error handling #${pr.number}: ${err.message || err}`);
+                try {
+                  await github.issues.createComment({
+                    owner: OWNER,
+                    repo: REPO,
+                    issue_number: pr.number,
+                    body: `Auto-merge attempt failed: ${err.message || err}`
+                  });
+                } catch (e) {
+                  console.log(`Also failed to comment on #${pr.number}: ${e.message || e}`);
+                }
+              }
+            }
