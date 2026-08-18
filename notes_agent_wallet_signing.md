@@ -11,3 +11,5 @@ Sources:
 - https://docs.metamask.io/agent-wallet/quickstart/
 - https://docs.metamask.io/agent-wallet/reference/commands/
 - https://docs.metamask.io/agent-wallet/reference/architecture/
+
+UI verification: the new `MM DOCTOR / WALLET LINK` panel renders above the Stitch reels visualizer, shows `CLI UNAVAILABLE` truthfully when the binary is absent, shows `UNAVAILABLE` for the CLI balance without fabricating a value, and states that the dashboard refreshes every 5 seconds. Desktop screenshot confirmed the three-column widget is legible and aligned.

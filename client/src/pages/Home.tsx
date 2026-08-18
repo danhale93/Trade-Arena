@@ -10,6 +10,7 @@ import { getProfitPulseMotion, shouldTriggerProfitPulse } from "@/lib/profitPuls
 import { filterPulseEvents, getPulseEventFilterLabel, type PulseNetworkFilter } from "@/lib/pulseEventFilter";
 import { buildFeatureVisualizerModel } from "@/lib/featureVisualizer";
 import { buildCliWarningToast } from "@/lib/cliWarning";
+import { getCliStatusWidgetModel } from "@/lib/cliStatusWidget";
 import { CLI_COMMANDS, CLI_HANDOFF_URL, CLI_LINKS } from "@/lib/cliCommandDeck";
 import { QRCodeSVG } from "qrcode.react";
 import { useState, useEffect, useRef } from "react";
@@ -303,6 +304,7 @@ export default function Home() {
   const baseGasTelemetry = gasTelemetry.base;
   const derivedPulseLevel = featureModel.pulseLevel;
   const featureReels = featureModel.reels;
+  const cliStatusWidget = getCliStatusWidgetModel(agent?.cliDoctorLive, agent?.cliWalletBalance);
 
   return (
     <div className="stitch-shell min-h-screen bg-[#050b0e] text-[#00dbe9] font-mono selection:bg-[#00dbe9]/30 selection:text-white flex flex-col">
@@ -479,6 +481,50 @@ export default function Home() {
             <p className="text-[10px] text-[#849495] mt-2">Scanner: {agent?.scannerEnabled ? "RUNNING" : "PAUSED"}</p>
           </div>
         </div>
+
+        {/* Managed Agent Health Widget */}
+        <section className="rounded-xl border border-[#00dbe9]/30 bg-[#081217] p-5 shadow-[0_0_20px_rgba(0,219,233,0.05)]" data-testid="cli-health-widget" aria-labelledby="cli-health-widget-title">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-[10px] tracking-[0.24em] text-[#849495]">LIVE AGENT TELEMETRY</p>
+              <h2 id="cli-health-widget-title" className="mt-1 flex items-center gap-2 text-sm font-bold tracking-wider text-white">
+                <Activity className="h-4 w-4 text-[#00dbe9]" /> MM DOCTOR / WALLET LINK
+              </h2>
+            </div>
+            <div className={`flex items-center gap-2 rounded border px-2.5 py-1.5 text-[10px] font-bold tracking-wider ${
+              cliStatusWidget.statusClass === "healthy"
+                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                : cliStatusWidget.statusClass === "degraded"
+                  ? "border-amber-500/30 bg-amber-500/10 text-amber-300"
+                  : "border-rose-500/30 bg-rose-500/10 text-rose-300"
+            }`} role="status" aria-live="polite">
+              <span className={`h-2 w-2 rounded-full ${
+                cliStatusWidget.statusClass === "healthy" ? "bg-emerald-400 animate-pulse" : cliStatusWidget.statusClass === "degraded" ? "bg-amber-400" : "bg-rose-400"
+              }`} />
+              {statusLoading ? "CHECKING" : cliStatusWidget.statusLabel}
+            </div>
+          </div>
+          <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+            <div className="rounded-lg border border-[#00dbe9]/15 bg-[#050b0e] p-3">
+              <p className="text-[9px] uppercase tracking-wider text-[#849495]">Doctor Status</p>
+              <p className="mt-2 text-lg font-bold text-[#00dbe9]">{statusLoading ? "CHECKING" : cliStatusWidget.status}</p>
+              <p className="mt-1 truncate text-[9px] text-[#849495]" title={agent?.cliDoctorLive?.detail || "Waiting for mm doctor response."}>{agent?.cliDoctorLive?.detail || "Waiting for mm doctor response."}</p>
+            </div>
+            <div className="rounded-lg border border-emerald-500/15 bg-[#050b0e] p-3">
+              <p className="text-[9px] uppercase tracking-wider text-[#849495]">Active Wallet / Base</p>
+              <p className="mt-2 text-lg font-bold text-emerald-300">{statusLoading ? "CHECKING" : cliStatusWidget.walletBalanceLabel}</p>
+              <p className="mt-1 text-[9px] text-[#849495]">Read through <code className="text-emerald-300">mm wallet balance</code></p>
+            </div>
+            <div className="rounded-lg border border-purple-500/15 bg-[#050b0e] p-3">
+              <p className="text-[9px] uppercase tracking-wider text-[#849495]">Session Flags</p>
+              <div className="mt-2 space-y-1 text-[10px]">
+                <p className={agent?.cliDoctorLive?.authenticated === true ? "text-emerald-300" : "text-[#849495]"}>AUTH {agent?.cliDoctorLive?.authenticated === true ? "OK" : "—"}</p>
+                <p className={agent?.cliDoctorLive?.initialized === true ? "text-emerald-300" : "text-[#849495]"}>INIT {agent?.cliDoctorLive?.initialized === true ? "OK" : "—"}</p>
+              </div>
+            </div>
+          </div>
+          <p className="mt-3 text-[9px] text-[#849495]">{agent?.cliDoctorLive?.checkedAt ? `Last CLI check: ${new Date(agent.cliDoctorLive.checkedAt).toLocaleTimeString()}` : "CLI check pending"} · Dashboard refreshes every 5 seconds.</p>
+        </section>
 
         {/* Stitch-inspired Feature Visualizer + Audio Telemetry */}
         <section className="stitch-feature-grid" aria-labelledby="feature-visualizer-title">

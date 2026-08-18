@@ -41,6 +41,39 @@ const providers = {
   optimism: new ethers.JsonRpcProvider("https://mainnet.optimism.io"),
 };
 
+function extractCliBalance(value: unknown): string | null {
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  if (typeof value === "string" && value.trim()) return value.trim();
+  if (!value || typeof value !== "object") return null;
+  const record = value as Record<string, unknown>;
+  const preferredKeys = ["balance", "nativeBalance", "amount", "value", "formattedBalance"];
+  for (const key of preferredKeys) {
+    const candidate = extractCliBalance(record[key]);
+    if (candidate) return candidate;
+  }
+  for (const candidate of Object.values(record)) {
+    const nested = extractCliBalance(candidate);
+    if (nested) return nested;
+  }
+  return null;
+}
+
+function getCliDoctorSummary(result: { ok: boolean; stdout?: any; error?: string }, sessionValidated: boolean) {
+  const output = result.stdout && typeof result.stdout === "object" ? result.stdout : {};
+  const authenticated = typeof output.authenticated === "boolean" ? output.authenticated : null;
+  const initialized = typeof output.initialized === "boolean" ? output.initialized : null;
+  const healthy = result.ok && sessionValidated && authenticated !== false && initialized !== false;
+  return {
+    status: healthy ? "HEALTHY" : result.ok ? "DEGRADED" : "UNAVAILABLE",
+    authenticated,
+    initialized,
+    cliVersion: output.cliVersion || output.version || null,
+    nodeVersion: output.nodeVersion || output.node || null,
+    detail: result.ok ? (output.message || "mm doctor completed") : (result.error || "mm doctor failed"),
+    checkedAt: new Date().toISOString(),
+  } as const;
+}
+
 export const appRouter = router({
     // Hydrate process.env.MM_CLI_TOKEN from agent_state database on startup
     ...(() => {
@@ -101,7 +134,24 @@ export const appRouter = router({
       const cliSessionValidated = (await db.getAgentStateKey("mm_cli_session_validated")) === "true";
       const cliLastValidatedAt = await db.getAgentStateKey("mm_cli_last_validated_at");
       const strategy = getStrategyProfile(await db.getAgentStateKey("strategy_profile"));
-      const directExecutionPreflight = directDex.getDirectExecutionPreflight();
+
+      const cliPathResolved = cli.getMetaMaskCliPath();
+      const cliAvailable = cli.isMetaMaskCliAvailable();
+      const [cliDoctorResult, cliBalanceResult] = cliAvailable
+        ? await Promise.all([cli.getCliDoctorStatus(), cli.getWalletBalance("8453")])
+        : [{ ok: false, error: "MetaMask Agent CLI binary unavailable" }, { ok: false, error: "MetaMask Agent CLI binary unavailable" }];
+      const cliDoctorLive = getCliDoctorSummary(cliDoctorResult, cliSessionValidated);
+      const cliWalletBalance = {
+        chainId: "8453",
+        balance: cliBalanceResult.ok ? extractCliBalance(cliBalanceResult.stdout) : null,
+        commandOk: cliBalanceResult.ok,
+        detail: cliBalanceResult.ok ? "Base wallet balance read through mm CLI" : (cliBalanceResult.error || "Balance check unavailable"),
+        checkedAt: new Date().toISOString(),
+      };
+      const directExecutionPreflight = directDex.getDirectExecutionPreflight({
+        cliAvailable,
+        sessionValidated: cliSessionValidated && cliDoctorLive.status === "HEALTHY",
+      });
 
       const [baseGas, arbitrumGas, optimismGas] = await Promise.all([
         directDex.fetchChainGasTelemetry("base"),
@@ -130,8 +180,6 @@ export const appRouter = router({
         },
       };
 
-      const cliPathResolved = cli.getMetaMaskCliPath();
-      const cliAvailable = cli.isMetaMaskCliAvailable();
       const cliConnection = {
         ...cli.getMetaMaskAgentConnectionStatus({
           tokenConfigured: Boolean(cliToken),
@@ -189,6 +237,8 @@ export const appRouter = router({
             tokenExpiresAt,
           },
           cliDoctor,
+          cliDoctorLive,
+          cliWalletBalance,
           rpcLatencyMs,
           networks: ["base", "arbitrum", "optimism"],
           recentTrades,

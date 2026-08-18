@@ -296,3 +296,11 @@ POSIX
 - [x] Update dashboard status and CLI Doctor diagnostics in `server/routers.ts` to reflect managed-wallet CLI state
 - [x] Verify test suite, TypeScript check, and production build without broadcasting live transactions
 - [x] Save checkpoint and deliver CLI preflight integration report
+
+# Additional Requirement: Dedicated mm Doctor & Wallet Balance Widget
+
+- [x] Define a tested view model for healthy, degraded, and unavailable CLI states
+- [x] Add backend `cliDoctorLive` and `cliWalletBalance` status fields using mm CLI wrappers
+- [x] Implement responsive cyberpunk dashboard widget with doctor state, Base balance, auth/init flags, and refresh timestamp
+- [x] Verify focused tests, TypeScript, production build, and desktop/mobile previews
+- [x] Save checkpoint and deliver the widget update
