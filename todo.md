@@ -411,3 +411,10 @@ POSIX
 - [x] Add a persisted configurable cooldown period for congestion alerts
 - [x] Suppress repeated alerts during sustained congestion and show remaining cooldown context
 - [x] Add settings controls, focused tests, and responsive verification
+
+# Pre-Push End-to-End Integration Validation
+
+- [x] Run full Vitest test suite (all 25 test files and 83 assertions)
+- [x] Verify TypeScript type safety and production Vite/esbuild bundling
+- [x] Inspect dev server logs, network requests, and error traces
+- [x] Confirm GitHub push readiness without executing unconfirmed pushes
