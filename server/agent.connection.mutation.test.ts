@@ -108,14 +108,14 @@ describe("MetaMask Agent connection mutations", () => {
     expect(db.setAgentStateKey).not.toHaveBeenCalledWith("scanner_running", "true");
   });
 
-  it("blocks owner live arming when direct execution preflight is not ready", async () => {
+  it("blocks owner live arming when MetaMask Agent session is not validated", async () => {
+    vi.mocked(db.getAgentStateKey).mockImplementation(async (key: string) => (key === "mm_cli_session_validated" ? "false" : "test-token"));
     const caller = appRouter.createCaller(createContext("admin"));
 
     await expect(caller.arbitrage.toggleExecution()).rejects.toMatchObject({
       code: "PRECONDITION_FAILED",
-      message: expect.stringContaining("DIRECT_EVM_SIGNER_PRIVATE_KEY is not configured."),
+      message: expect.stringContaining("MetaMask Agent CLI session is not validated"),
     });
-    expect(directDex.getDirectExecutionPreflight).toHaveBeenCalledOnce();
     expect(db.setAgentStateKey).not.toHaveBeenCalledWith("execution_enabled", "true");
   });
 
