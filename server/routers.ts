@@ -148,10 +148,7 @@ export const appRouter = router({
         detail: cliBalanceResult.ok ? "Base wallet balance read through mm CLI" : (cliBalanceResult.error || "Balance check unavailable"),
         checkedAt: new Date().toISOString(),
       };
-      const directExecutionPreflight = directDex.getDirectExecutionPreflight({
-        cliAvailable,
-        sessionValidated: cliSessionValidated && cliDoctorLive.status === "HEALTHY",
-      });
+      const directExecutionPreflight = directDex.getDirectExecutionPreflight();
 
       const [baseGas, arbitrumGas, optimismGas] = await Promise.all([
         directDex.fetchChainGasTelemetry("base"),

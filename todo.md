@@ -347,3 +347,10 @@ POSIX
 - [x] Add focused test suite in `client/src/lib/containerLogViewer.test.ts` for level and combined category filtering
 - [x] Verify test suites, TypeScript check, and production build successfully
 - [x] Save checkpoint and deliver log filtering enhancement report
+
+# Additional Requirement: MetaMask Agent CLI Integration Repair & Full Test Suite Pass
+
+- [x] Align CLI diagnostics, gas telemetry fallback, and direct DEX helper functions
+- [x] Verify all 60 unit tests across 19 test files pass successfully
+- [x] Verify TypeScript type check and production bundle compilation successfully
+- [x] Preserve simulation-safe execution state and deliver repair report

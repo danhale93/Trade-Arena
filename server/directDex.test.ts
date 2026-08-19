@@ -93,7 +93,7 @@ describe("direct Ethers.js DEX adapter", () => {
     const preflight = getDirectExecutionPreflight();
     expect(preflight.ready).toBe(false);
     expect(preflight.signerMatchesManagedWallet).toBe(false);
-    expect(preflight.reasons.join(" ")).toContain("does not match MANAGED_WALLET_ADDRESS.");
+    expect(preflight.reasons.join(" ")).toContain("does not match MANAGED_WALLET_ADDRESS");
   });
 
   it("does not reach an RPC or broadcast path while live execution is disabled", async () => {
