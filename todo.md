@@ -340,3 +340,10 @@ POSIX
 - [x] Verify test suite, TypeScript check, and production build successfully
 - [x] Preserve safety defaults (`DIRECT_EXECUTION_ENABLED=false`)
 - [x] Save checkpoint and deliver CI/CD publishing instructions
+
+# Additional Requirement: Log-Level Filtering for Container Log Viewer
+
+- [x] Enhance `client/src/lib/containerLogViewer.ts` with explicit `LogLevelFilter` support (`ALL`, `INFO`, `SUCCESS`, `WARN`, `ERROR`)
+- [x] Add focused test suite in `client/src/lib/containerLogViewer.test.ts` for level and combined category filtering
+- [x] Verify test suites, TypeScript check, and production build successfully
+- [x] Save checkpoint and deliver log filtering enhancement report
