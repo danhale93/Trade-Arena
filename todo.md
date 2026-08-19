@@ -333,3 +333,10 @@ POSIX
 - [x] Verify test suite, TypeScript check, and production build successfully
 - [x] Preserve safety boundaries (live trading remains disarmed pending valid session token and authorized preflight)
 - [x] Save checkpoint and deliver deployment repair report
+
+# Additional Requirement: CI/CD Workflow for Docker Publishing
+
+- [x] Create `.github/workflows/docker-publish.yml` to automate building and pushing Docker images to GHCR without requiring a local Docker daemon
+- [x] Verify test suite, TypeScript check, and production build successfully
+- [x] Preserve safety defaults (`DIRECT_EXECUTION_ENABLED=false`)
+- [x] Save checkpoint and deliver CI/CD publishing instructions
