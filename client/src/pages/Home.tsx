@@ -13,7 +13,7 @@ import { buildCliWarningToast } from "@/lib/cliWarning";
 import { getCliStatusWidgetModel } from "@/lib/cliStatusWidget";
 import { getManualPreflightCheckLabel, getManualPreflightStatusModel } from "@/lib/manualPreflight";
 import { formatGasReading, formatTelemetryTime, getGasCongestionModel } from "@/lib/gasTelemetryWidget";
-import { getGasAlertLabel, shouldNotifyGasAlert, type GasAlertThreshold } from "@/lib/gasAlert";
+import { formatGasAlertCooldownRemaining, GAS_ALERT_COOLDOWN_OPTIONS, getGasAlertCooldownLabel, getGasAlertCooldownRemainingMs, getGasAlertLabel, shouldNotifyGasAlert, type GasAlertCooldownMinutes, type GasAlertThreshold } from "@/lib/gasAlert";
 import { CLI_COMMANDS, CLI_HANDOFF_URL, CLI_LINKS } from "@/lib/cliCommandDeck";
 import { QRCodeSVG } from "qrcode.react";
 import { useState, useEffect, useRef } from "react";
@@ -232,6 +232,9 @@ export default function Home() {
   const [preflightNetwork, setPreflightNetwork] = useState<"base" | "arbitrum" | "optimism">("base");
   const [networkSlippage, setNetworkSlippage] = useState<Record<string, number>>({ base: 50, arbitrum: 50, optimism: 50 });
   const [gasAlertSettings, setGasAlertSettings] = useState<Record<"base" | "arbitrum" | "optimism", GasAlertThreshold>>({ base: "DISABLED", arbitrum: "DISABLED", optimism: "DISABLED" });
+  const [gasAlertCooldownMinutes, setGasAlertCooldownMinutes] = useState<GasAlertCooldownMinutes>(5);
+  const [gasAlertCooldownDraft, setGasAlertCooldownDraft] = useState<GasAlertCooldownMinutes>(5);
+  const [lastGasAlertAt, setLastGasAlertAt] = useState<Record<string, number>>({});
   const gasAlertInitializedRef = useRef(false);
   const previousGasStatesRef = useRef<Record<string, string>>({});
 
@@ -253,6 +256,18 @@ export default function Home() {
     },
     onError: (err) => {
       toast.error("Failed to update congestion alert: " + err.message);
+    },
+  });
+
+  const updateGasAlertCooldownMutation = trpc.arbitrage.updateGasAlertCooldown.useMutation({
+    onSuccess: (data) => {
+      setGasAlertCooldownMinutes(data.cooldownMinutes as GasAlertCooldownMinutes);
+      setGasAlertCooldownDraft(data.cooldownMinutes as GasAlertCooldownMinutes);
+      toast.success(`Congestion alert ${getGasAlertCooldownLabel(data.cooldownMinutes)}`);
+      utils.arbitrage.status.invalidate();
+    },
+    onError: (err) => {
+      toast.error("Failed to update alert cooldown: " + err.message);
     },
   });
 
@@ -431,17 +446,28 @@ export default function Home() {
     ...row,
     congestion: getGasCongestionModel(row.telemetry?.congestion),
   }));
+  const activeGasCooldowns = gasTelemetryRows
+    .map((row) => ({
+      label: row.label,
+      remainingMs: getGasAlertCooldownRemainingMs(lastGasAlertAt[row.network], gasAlertCooldownMinutes),
+    }))
+    .filter((row) => row.remainingMs > 0);
   const derivedPulseLevel = featureModel.pulseLevel;
   const featureReels = featureModel.reels;
   const cliStatusWidget = getCliStatusWidgetModel(agent?.cliDoctorLive, agent?.cliWalletBalance);
 
   useEffect(() => {
     const persistedThresholds = agent?.gasAlertThresholds as Partial<Record<"base" | "arbitrum" | "optimism", GasAlertThreshold>> | undefined;
-    if (!gasAlertInitializedRef.current && persistedThresholds) {
-      setGasAlertSettings((current) => ({ ...current, ...persistedThresholds }));
+    const persistedCooldown = agent?.gasAlertCooldownMinutes as GasAlertCooldownMinutes | undefined;
+    if (!gasAlertInitializedRef.current && (persistedThresholds || persistedCooldown !== undefined)) {
+      if (persistedThresholds) setGasAlertSettings((current) => ({ ...current, ...persistedThresholds }));
+      if (persistedCooldown !== undefined && GAS_ALERT_COOLDOWN_OPTIONS.includes(persistedCooldown)) {
+        setGasAlertCooldownMinutes(persistedCooldown);
+        setGasAlertCooldownDraft(persistedCooldown);
+      }
       gasAlertInitializedRef.current = true;
     }
-  }, [agent?.gasAlertThresholds]);
+  }, [agent?.gasAlertThresholds, agent?.gasAlertCooldownMinutes]);
 
   useEffect(() => {
     const networks = ["base", "arbitrum", "optimism"] as const;
@@ -450,17 +476,19 @@ export default function Home() {
       if (!currentState) return;
       const previousState = previousGasStatesRef.current[network];
       const threshold = gasAlertSettings[network];
-      if (previousState && shouldNotifyGasAlert(previousState, currentState, threshold)) {
+      const now = Date.now();
+      if (previousState && shouldNotifyGasAlert(previousState, currentState, threshold, lastGasAlertAt[network], now, gasAlertCooldownMinutes)) {
         const networkLabel = network.toUpperCase();
         const level = currentState === "CONGESTED" ? "CONGESTED" : "ELEVATED";
         toast.warning(`${networkLabel} gas is ${level}`, {
-          description: `Configured alert threshold reached. Current fee: ${formatGasReading(gasTelemetry[network]?.gasPriceGwei)} GWEI. Trading remains unchanged.`,
+          description: `Configured alert threshold reached. Current fee: ${formatGasReading(gasTelemetry[network]?.gasPriceGwei)} GWEI. ${getGasAlertCooldownLabel(gasAlertCooldownMinutes)}. Trading remains unchanged.`,
           duration: 7000,
         });
+        setLastGasAlertAt((current) => ({ ...current, [network]: now }));
       }
       previousGasStatesRef.current[network] = currentState;
     });
-  }, [gasTelemetry, gasAlertSettings]);
+  }, [gasTelemetry, gasAlertSettings, gasAlertCooldownMinutes, lastGasAlertAt]);
 
   return (
     <div className="stitch-shell min-h-screen bg-[#050b0e] text-[#00dbe9] font-mono selection:bg-[#00dbe9]/30 selection:text-white flex flex-col">
@@ -792,6 +820,8 @@ export default function Home() {
 
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[9px] text-[#849495]">
             <span>BANDS: <span className="text-emerald-300">LOW</span> · <span className="text-cyan-300">NORMAL</span> · <span className="text-amber-300">ELEVATED</span> · <span className="text-rose-300">CONGESTED</span></span>
+            <span className="text-amber-300">ALERT COOLDOWN: {getGasAlertCooldownLabel(gasAlertCooldownMinutes)}</span>
+            <span>{activeGasCooldowns.length > 0 ? `SUPPRESSED: ${activeGasCooldowns.map((item) => `${item.label} ${formatGasAlertCooldownRemaining(item.remainingMs)}`).join(" · ")}` : "NO ACTIVE SUPPRESSION"}</span>
             <span>{statusData?.timestamp ? `Status snapshot ${new Date(statusData.timestamp).toLocaleTimeString()}` : "Awaiting status snapshot"}</span>
           </div>
         </section>
@@ -2025,6 +2055,31 @@ export default function Home() {
                 <div className="border-t border-[#00dbe9]/15 pt-4">
                   <h4 className="text-[11px] uppercase font-mono text-white font-bold mb-1">Congestion Alerts</h4>
                   <p className="text-[10px] text-[#849495] mb-3">Receive a dashboard warning when live gas telemetry crosses the selected band. Alerts are read-only and never arm trading.</p>
+                  <div className="mb-3 flex flex-wrap items-end gap-3 rounded-lg border border-amber-500/20 bg-[#050b0e] p-3">
+                    <div className="min-w-[180px] flex-1">
+                      <label htmlFor="gas-alert-cooldown" className="text-[10px] uppercase tracking-wider text-[#849495]">Alert cooldown</label>
+                      <select
+                        id="gas-alert-cooldown"
+                        value={gasAlertCooldownDraft}
+                        onChange={(event) => setGasAlertCooldownDraft(Number(event.target.value) as GasAlertCooldownMinutes)}
+                        className="mt-1 h-8 w-full rounded border border-amber-500/25 bg-[#081217] px-2 text-[10px] font-mono text-white outline-none focus:border-amber-400"
+                      >
+                        {GAS_ALERT_COOLDOWN_OPTIONS.map((minutes) => (
+                          <option key={minutes} value={minutes}>{minutes === 0 ? "DISABLED" : `${minutes} MINUTES`}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => updateGasAlertCooldownMutation.mutate({ cooldownMinutes: gasAlertCooldownDraft })}
+                      disabled={!isAuthenticated || updateGasAlertCooldownMutation.isPending || gasAlertCooldownDraft === gasAlertCooldownMinutes}
+                      className="bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 text-[10px] h-8 font-mono border border-amber-500/25"
+                    >
+                      {updateGasAlertCooldownMutation.isPending ? "SAVING..." : "SAVE COOLDOWN"}
+                    </Button>
+                    <p className="w-full text-[9px] text-[#849495]">{getGasAlertCooldownLabel(gasAlertCooldownDraft)} · sustained congestion stays silent until the cooldown expires.</p>
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {(["base", "arbitrum", "optimism"] as const).map((net) => {
                       const selectedThreshold = gasAlertSettings[net];

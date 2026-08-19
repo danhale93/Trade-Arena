@@ -78,6 +78,9 @@ function getCliDoctorSummary(result: { ok: boolean; stdout?: any; error?: string
 const GAS_ALERT_THRESHOLDS = ["DISABLED", "ELEVATED", "CONGESTED"] as const;
 type GasAlertThreshold = (typeof GAS_ALERT_THRESHOLDS)[number];
 const DEFAULT_GAS_ALERT_THRESHOLD: GasAlertThreshold = "DISABLED";
+const GAS_ALERT_COOLDOWN_OPTIONS = [0, 1, 5, 15, 30, 60] as const;
+type GasAlertCooldownMinutes = (typeof GAS_ALERT_COOLDOWN_OPTIONS)[number];
+const DEFAULT_GAS_ALERT_COOLDOWN_MINUTES: GasAlertCooldownMinutes = 5;
 
 async function getGasAlertThresholds() {
   const networks = ["base", "arbitrum", "optimism"] as const;
@@ -89,6 +92,13 @@ async function getGasAlertThresholds() {
     return [network, threshold] as const;
   }));
   return Object.fromEntries(entries) as Record<(typeof networks)[number], GasAlertThreshold>;
+}
+
+async function getGasAlertCooldownMinutes(): Promise<GasAlertCooldownMinutes> {
+  const stored = Number(await db.getAgentStateKey("gas_alert_cooldown_minutes"));
+  return GAS_ALERT_COOLDOWN_OPTIONS.includes(stored as GasAlertCooldownMinutes)
+    ? stored as GasAlertCooldownMinutes
+    : DEFAULT_GAS_ALERT_COOLDOWN_MINUTES;
 }
 
 export const appRouter = router({
@@ -183,6 +193,7 @@ export const appRouter = router({
         optimism: optimismGas,
       };
       const gasAlertThresholds = await getGasAlertThresholds();
+      const gasAlertCooldownMinutes = await getGasAlertCooldownMinutes();
 
       const adjustedNetworkConfigs: typeof strategy.networks = {
         base: {
@@ -256,6 +267,7 @@ export const appRouter = router({
           strategyProfile: strategy,
           gasTelemetry: gasTelemetryRecord,
           gasAlertThresholds,
+          gasAlertCooldownMinutes,
           networkConfigs: adjustedNetworkConfigs,
           scannerEnabled: scannerRunning,
           running: scannerRunning,
@@ -376,6 +388,22 @@ export const appRouter = router({
           details: `Alert threshold: ${input.threshold}`,
         });
         return { success: true, network: input.network, threshold: input.threshold };
+      }),
+
+    updateGasAlertCooldown: protectedProcedure
+      .input(z.object({ cooldownMinutes: z.number().int().refine((value): value is GasAlertCooldownMinutes => GAS_ALERT_COOLDOWN_OPTIONS.includes(value as GasAlertCooldownMinutes), "Unsupported congestion-alert cooldown.") }))
+      .mutation(async ({ input, ctx }) => {
+        if (ctx.user.role !== "admin" && ctx.user.openId !== process.env.OWNER_OPEN_ID) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Only owner/admin can update congestion-alert cooldown." });
+        }
+        await db.setAgentStateKey("gas_alert_cooldown_minutes", String(input.cooldownMinutes));
+        await db.recordAgentLog({
+          level: "SUCCESS",
+          category: "TELEMETRY",
+          message: "Gas congestion alert cooldown updated",
+          details: input.cooldownMinutes === 0 ? "Cooldown disabled" : `Cooldown: ${input.cooldownMinutes} minutes`,
+        });
+        return { success: true, cooldownMinutes: input.cooldownMinutes };
       }),
 
     setWalletMode: protectedProcedure

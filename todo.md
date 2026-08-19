@@ -405,3 +405,9 @@ POSIX
 - [x] Add persistent owner-configurable ELEVATED/CONGESTED alert settings per network
 - [x] Evaluate live gas telemetry transitions and show alert feedback without enabling trading
 - [x] Add settings controls, focused tests, and responsive verification
+
+# Additional Requirement: Congestion Alert Cooldown
+
+- [x] Add a persisted configurable cooldown period for congestion alerts
+- [x] Suppress repeated alerts during sustained congestion and show remaining cooldown context
+- [x] Add settings controls, focused tests, and responsive verification

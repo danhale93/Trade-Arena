@@ -42,10 +42,23 @@ describe("gas congestion alert router", () => {
     expect(db.recordAgentLog).toHaveBeenCalledWith(expect.objectContaining({ category: "TELEMETRY" }));
   });
 
+  it("persists an owner-configured cooldown", async () => {
+    const caller = appRouter.createCaller(createContext("admin"));
+    await expect(caller.arbitrage.updateGasAlertCooldown({ cooldownMinutes: 15 })).resolves.toEqual({
+      success: true,
+      cooldownMinutes: 15,
+    });
+    expect(db.setAgentStateKey).toHaveBeenCalledWith("gas_alert_cooldown_minutes", "15");
+    expect(db.recordAgentLog).toHaveBeenCalledWith(expect.objectContaining({ category: "TELEMETRY" }));
+  });
+
   it("rejects non-admin users from changing alert settings", async () => {
     const caller = appRouter.createCaller(createContext("user"));
     await expect(caller.arbitrage.updateGasAlertThreshold({ network: "optimism", threshold: "CONGESTED" })).rejects.toThrowError(
       /Only owner\/admin can update congestion alerts/i,
+    );
+    await expect(caller.arbitrage.updateGasAlertCooldown({ cooldownMinutes: 30 })).rejects.toThrowError(
+      /Only owner\/admin can update congestion-alert cooldown/i,
     );
     expect(db.setAgentStateKey).not.toHaveBeenCalled();
   });
