@@ -280,6 +280,19 @@ export async function executeSwap(chainId: string, tokenIn: string, tokenOut: st
 }
 
 export async function getCliDoctorStatus() {
+  if (!isMetaMaskCliAvailable()) {
+    return {
+      ok: false,
+      error: `MetaMask Agent CLI binary is unavailable at ${getMetaMaskCliPath()}. Ensure @metamask/agent-wallet is installed or MM_PATH is configured correctly.`,
+      stdout: {
+        authenticated: false,
+        initialized: false,
+        cliAvailable: false,
+        cliPath: getMetaMaskCliPath(),
+        status: "UNAVAILABLE",
+      },
+    };
+  }
   return runMMArgs(["doctor"]);
 }
 
