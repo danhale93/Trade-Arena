@@ -424,3 +424,9 @@ POSIX
 - [x] Bind integrated acoustic engine to profit pulse events and congestion threshold warnings
 - [x] Add browser-safe audio toggle and volume controls in header / settings
 - [x] Add focused tests and verify production build stability
+
+# Additional Requirement: Persistent Audio Preferences
+
+- [x] Persist audio enabled and volume settings in localStorage
+- [x] Hydrate and apply stored audio preferences safely on dashboard startup
+- [x] Add focused tests and verify build stability

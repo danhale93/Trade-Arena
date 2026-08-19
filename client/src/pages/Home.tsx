@@ -15,6 +15,7 @@ import { getManualPreflightCheckLabel, getManualPreflightStatusModel } from "@/l
 import { formatGasReading, formatTelemetryTime, getGasCongestionModel } from "@/lib/gasTelemetryWidget";
 import { formatGasAlertCooldownRemaining, GAS_ALERT_COOLDOWN_OPTIONS, getGasAlertCooldownLabel, getGasAlertCooldownRemainingMs, getGasAlertLabel, shouldNotifyGasAlert, type GasAlertCooldownMinutes, type GasAlertThreshold } from "@/lib/gasAlert";
 import { playAudioCue, setAudioEngineEnabled, setAudioEngineVolume, triggerVisualFx } from "@/lib/audioBridge";
+import { getAudioPreferences, saveAudioPreferences } from "@/lib/audioPreferences";
 import { CLI_COMMANDS, CLI_HANDOFF_URL, CLI_LINKS } from "@/lib/cliCommandDeck";
 import { QRCodeSVG } from "qrcode.react";
 import { useState, useEffect, useRef } from "react";
@@ -236,8 +237,8 @@ export default function Home() {
   const [gasAlertCooldownMinutes, setGasAlertCooldownMinutes] = useState<GasAlertCooldownMinutes>(5);
   const [gasAlertCooldownDraft, setGasAlertCooldownDraft] = useState<GasAlertCooldownMinutes>(5);
   const [lastGasAlertAt, setLastGasAlertAt] = useState<Record<string, number>>({});
-  const [audioEnabled, setAudioEnabled] = useState(true);
-  const [audioVolume, setAudioVolume] = useState(0.5);
+  const [audioEnabled, setAudioEnabled] = useState(() => getAudioPreferences().enabled);
+  const [audioVolume, setAudioVolume] = useState(() => getAudioPreferences().volume);
   const latestPulseEventIdRef = useRef<number | null>(null);
   const gasAlertInitializedRef = useRef(false);
   const previousGasStatesRef = useRef<Record<string, string>>({});
@@ -497,6 +498,12 @@ export default function Home() {
   }, [gasTelemetry, gasAlertSettings, gasAlertCooldownMinutes, lastGasAlertAt]);
 
   useEffect(() => {
+    const preferences = saveAudioPreferences({ enabled: audioEnabled, volume: audioVolume });
+    setAudioEngineEnabled(preferences.enabled);
+    setAudioEngineVolume(preferences.volume);
+  }, [audioEnabled, audioVolume]);
+
+  useEffect(() => {
     if (!latestPulseEvent || !audioEnabled) return;
     const eventId = latestPulseEvent.timestamp || latestPulseEvent.id;
     if (eventId && latestPulseEventIdRef.current !== eventId) {
@@ -528,6 +535,7 @@ export default function Home() {
               onClick={() => {
                 const next = !audioEnabled;
                 setAudioEnabled(next);
+                saveAudioPreferences({ enabled: next });
                 setAudioEngineEnabled(next);
                 toast.success(next ? "Acoustic engine enabled" : "Acoustic engine muted");
               }}
@@ -544,6 +552,7 @@ export default function Home() {
               onChange={(e) => {
                 const val = parseFloat(e.target.value);
                 setAudioVolume(val);
+                saveAudioPreferences({ volume: val });
                 setAudioEngineVolume(val);
               }}
               className="w-16 accent-[#00dbe9] cursor-pointer"
