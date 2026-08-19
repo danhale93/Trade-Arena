@@ -383,6 +383,12 @@ POSIX
 - [x] Remove any non-production CLI fallback behavior and surface actionable runtime/authentication errors
 - [x] Add regression coverage for session invalidation after CLI reports unauthenticated
 
+# Additional Requirement: Owner-Confirmed Manual Trade Verification
+
+- [x] Run comprehensive read-only verification and test quote simulation on Base Mainnet
+- [x] Enforce explicit user confirmation gate before preflight/quote execution
+- [x] Keep autonomous execution strictly disabled per safety policy
+
 # Additional Requirement: Manual Preflight Settings Control
 
 - [x] Add a manual preflight trigger button and result display area to the dashboard Secure Vault/settings modal
