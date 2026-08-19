@@ -77,11 +77,27 @@ describe("MetaMask Agent connection mutations", () => {
     await expect(caller.arbitrage.reconnectAgent()).resolves.toMatchObject({
       success: true,
       connected: true,
+      attempts: 1,
     });
     expect(cli.loginWithToken).toHaveBeenCalledWith("test-token");
     expect(db.setAgentStateKey).toHaveBeenNthCalledWith(1, "mm_cli_session_validated", "false");
     expect(db.setAgentStateKey).toHaveBeenNthCalledWith(2, "mm_cli_session_validated", "true");
     expect(db.setAgentStateKey).toHaveBeenNthCalledWith(3, "mm_cli_last_validated_at", expect.stringMatching(/^20\d{2}-\d{2}-\d{2}T/));
+  });
+
+  it("retries up to 3 times before failing if validation initially fails", async () => {
+    vi.mocked(cli.validateSession)
+      .mockResolvedValueOnce({ ok: false, authenticated: false, initialized: false, error: "Transient network timeout" })
+      .mockResolvedValueOnce({ ok: true, authenticated: true, initialized: true });
+
+    const caller = appRouter.createCaller(createContext("admin"));
+
+    await expect(caller.arbitrage.reconnectAgent()).resolves.toMatchObject({
+      success: true,
+      connected: true,
+      attempts: 2,
+    });
+    expect(cli.loginWithToken).toHaveBeenCalledTimes(2);
   });
 
   it("rejects a login command that does not produce an authenticated initialized session", async () => {

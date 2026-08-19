@@ -421,21 +421,55 @@ export const appRouter = router({
         };
       }
 
-      const loggedIn = await cli.loginWithToken(token);
-      const session = loggedIn ? await cli.validateSession() : { ok: false, authenticated: null, initialized: null, error: "CLI login command did not complete successfully." };
+      const maxRetries = 3;
+      let attempt = 0;
+      let lastError = "CLI login command did not complete successfully.";
+      let session: { ok: boolean; authenticated: boolean | null; initialized: boolean | null; error?: string } = { ok: false, authenticated: null, initialized: null };
+
+      while (attempt < maxRetries) {
+        attempt++;
+        const loggedIn = await cli.loginWithToken(token);
+        if (loggedIn) {
+          session = await cli.validateSession();
+          if (session.ok) {
+            break;
+          } else {
+            lastError = session.error || `Attempt ${attempt}: doctor did not confirm an authenticated session.`;
+          }
+        } else {
+          lastError = `Attempt ${attempt}: login command failed.`;
+        }
+
+        if (attempt < maxRetries) {
+          await new Promise((resolve) => setTimeout(resolve, attempt * 1000));
+        }
+      }
+
       if (!session.ok) {
         await db.setAgentStateKey("mm_cli_session_validated", "false");
+        await db.recordAgentLog({
+          level: "WARN",
+          category: "CLI",
+          message: `Automatic reconnect retry exhausted after ${maxRetries} attempts`,
+          details: lastError,
+        });
         return {
           success: true,
           validated: false,
-          warning: `MetaMask Agent CLI session validation failed: ${session.error || "doctor did not confirm an authenticated, initialized session."}`,
-          message: "Token remains stored securely, but the runtime session is not authenticated. Reconnect after fixing the CLI runtime or token.",
+          attempts: maxRetries,
+          warning: `MetaMask Agent CLI automatic reconnect failed after ${maxRetries} attempts: ${lastError}`,
+          message: "Token remains stored securely, but automatic validation attempts exhausted. Try checking the token or binary path.",
         };
       }
 
       await db.setAgentStateKey("mm_cli_session_validated", "true");
       await db.setAgentStateKey("mm_cli_last_validated_at", new Date().toISOString());
-      return { success: true, connected: true, message: "MetaMask Agent reconnected and session validated." };
+      await db.recordAgentLog({
+        level: "SUCCESS",
+        category: "CLI",
+        message: `MetaMask Agent reconnected successfully after ${attempt} attempt(s)`,
+      });
+      return { success: true, connected: true, attempts: attempt, message: `MetaMask Agent reconnected and session validated on attempt ${attempt}.` };
     }),
 
     disconnectAgent: protectedProcedure.mutation(async ({ ctx }) => {
