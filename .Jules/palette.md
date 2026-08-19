@@ -65,3 +65,7 @@
 ## 2026-08-14 - [Semantic ARIA Labels for Icon-Text Controls]
 **Learning:** Navigation controls that combine visual emojis and short uppercase text (e.g. "👷 STAFF", "⚙️ SETTINGS") can be highly confusing to screen-reader users if announced verbatim. Overriding their announcements with explicit, descriptive `aria-label` properties provides full situational context (such as "Staff Panel: Application Maintenance and Support") while keeping the interface visually minimalist.
 **Action:** Use comprehensive `aria-label` overrides on all navigation or menu trigger elements that utilize emojis or highly condensed text labels.
+
+## 2026-08-19 - [Range Inputs & Unlabeled Close Buttons]
+**Learning:** Range inputs (`<input type="range">`) and icon/symbol close buttons (`✕`) in modals or headers are accessibility blind spots if missing explicit `aria-label`, `aria-valuenow`, and `aria-valuetext` attributes. Screen readers announce symbols verbatim (e.g. "multiplication sign") or generic numbers without context.
+**Action:** Always annotate `<input type="range">` with `aria-label`, `aria-valuenow`, and `aria-valuetext`, and provide explicit `aria-label` for symbol close buttons.

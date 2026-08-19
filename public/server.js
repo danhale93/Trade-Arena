@@ -14,7 +14,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Import MetaMask Agent Arbitrage Service
-const mmArbService = require('../services/MetaMaskAgentArbService');
+const mmArbService = require('../services/MetaMaskAgentArbService.cjs');
 mmArbService.start();
 
 // Middleware

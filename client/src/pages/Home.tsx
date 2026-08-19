@@ -3,7 +3,7 @@ import { startLogin } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Shield, Play, Pause, Terminal, Cpu, Zap, Activity, CheckCircle2, Lock, RefreshCw, Bell, Power, TrendingUp, Clock3, Copy, Check, ExternalLink, Link2 } from "lucide-react";
+import { Shield, Play, Pause, Terminal, Cpu, Zap, Activity, CheckCircle2, Lock, RefreshCw, Bell, Power, TrendingUp, Clock3, Copy, Check, ExternalLink, Link2, Download } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, ReferenceLine, Tooltip, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { getProfitPulseMotion, shouldTriggerProfitPulse } from "@/lib/profitPulse";
@@ -577,6 +577,9 @@ export default function Home() {
               max="1"
               step="0.05"
               value={audioVolume}
+              aria-label="Audio volume level"
+              aria-valuenow={Math.round(audioVolume * 100)}
+              aria-valuetext={`${Math.round(audioVolume * 100)} percent`}
               onChange={(e) => {
                 const val = parseFloat(e.target.value);
                 setAudioVolume(val);
@@ -1986,6 +1989,17 @@ export default function Home() {
                 <Activity className="w-4 h-4 text-[#00dbe9]" /> VERBOSE LIVE EVENT STREAM & DIAGNOSTICS
               </h2>
               <div className="flex items-center gap-2 flex-wrap">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={exportTelemetryCsv}
+                  aria-label="Export telemetry data as CSV"
+                  title="Export trade, pulse event, and simulation telemetry to a CSV file"
+                  className="border-[#00dbe9]/30 bg-[#00dbe9]/10 text-[#00dbe9] hover:bg-[#00dbe9]/20 text-[10px] font-mono font-bold h-7 px-2.5"
+                >
+                  <Download className="w-3 h-3 mr-1" /> EXPORT CSV
+                </Button>
                 <div className="flex items-center gap-1 bg-[#050b0e] p-1 rounded border border-[#00dbe9]/20 text-[10px]">
                   {["ALL", "CLI", "SCANNER", "EXECUTION", "SETTLEMENT", "NOTIFY"].map((cat) => (
                     <button
@@ -2048,6 +2062,7 @@ export default function Home() {
                 type="button"
                 variant="ghost"
                 size="sm"
+                aria-label="Close settings modal"
                 onClick={() => setSettingsModalOpen(false)}
                 className="text-[#849495] hover:text-white"
               >
@@ -2116,6 +2131,9 @@ export default function Home() {
                             max="300"
                             step="5"
                             value={bps}
+                            aria-label={`${net.toUpperCase()} maximum slippage tolerance`}
+                            aria-valuenow={bps}
+                            aria-valuetext={`${bps} basis points`}
                             onChange={(e) => setNetworkSlippage({ ...networkSlippage, [net]: parseInt(e.target.value) || 50 })}
                             className="w-full accent-[#00dbe9] cursor-pointer"
                           />

@@ -3,7 +3,7 @@
  * Optimized for pure CLI execution via MetaMask Agent Wallet
  */
 
-const mmArbService = require('../services/MetaMaskAgentArbService');
+const mmArbService = require('../services/MetaMaskAgentArbService.cjs');
 require('dotenv').config();
 
 async function main() {
