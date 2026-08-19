@@ -1,0 +1,50 @@
+name: Trade Arena CI
+
+on:
+  push:
+    branches: [ main, chore/add-render-link ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v7
+
+    - name: Install pnpm
+      uses: pnpm/action-setup@v6
+      with:
+        version: 10
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v7
+      with:
+        node-version: 20
+        cache: 'pnpm'
+
+    - name: Install Dependencies
+      run: pnpm install --no-frozen-lockfile
+
+    - name: Build Assets
+      run: pnpm run build
+
+    - name: Run Unit & Integration Tests
+      run: pnpm test
+
+    - name: Run RPC Health Check
+      run: node scripts/rpc-check.js
+      env:
+        ALCHEMY_MAINNET_URL: ${{ secrets.ALCHEMY_MAINNET_URL }}
+        INFURA_MAINNET_URL: ${{ secrets.INFURA_MAINNET_URL }}
+
+    - name: Run Mainnet-Fork Integration Tests
+      run: node scripts/fork-test.js
+      env:
+        ALCHEMY_MAINNET_URL: ${{ secrets.ALCHEMY_MAINNET_URL }}
+        INFURA_MAINNET_URL: ${{ secrets.INFURA_MAINNET_URL }}

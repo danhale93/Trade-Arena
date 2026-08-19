@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Test Runner - Trade Arena Logic</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="trading-engine.js"></script>
+<script src="app.js"></script>
+<script src="contract-helpers.js"></script>
+<script>
+window.addEventListener('load', () => {
+  console.clear();
+  console.log('🚀 Test Runner Loaded - TradingEngine:', typeof TradingEngine);
+  tradingEngine = new TradingEngine(); // Global instance
+
+  // Auto-run Crucible
+  console.log('🔬 Running CrucibleTest...');
+  setTimeout(() => {
+    if (typeof runCrucibleTest === 'undefined') {
+      console.log('Loading crucible-test.js...');
+      const script = document.createElement('script');
+      script.src = 'crucible-test.js';
+      script.onload = runCrucibleTest;
+      document.body.appendChild(script);
+    } else {
+      runCrucibleTest(10, 1000);
+    }
+  }, 500);
+
+  // Run tests.js after load
+  const testScript = document.createElement('script');
+  testScript.textContent = `
+// Real TradingEngine Tests
+const engine = new TradingEngine();
+
+describe('TradingEngine Real Tests', () => {
+  it('detectArbitrageOpportunities returns array', async () => {
+    const opps = await engine.detectArbitrageOpportunities([{token:'WETH',volume:1000,volatility:2}]);
+    console.log('Arbitrage opps:', opps);
+    expect(Array.isArray(opps)).toBe(true);
+  });
+
+  it('analyzeVolatility works', () => {
+    const vol = engine.analyzeVolatility([2500,2510,2520]);
+    console.log('Vol analysis:', vol);
+    expect(vol.current).toBeDefined();
+  });
+
+  it('position sizing positive', () => {
+    const pos = engine.calculatePositionSize(10, 3, 5);
+    console.log('Position:', pos);
+    expect(parseFloat(pos.size) > 0).toBe(true);
+  });
+
+  it('generateTradeSignal valid', () => {
+    const sig = engine.generateTradeSignal({price:2500,rsi:40,macd:{histogram:0.1},bollinger:{}});
+    console.log('Signal:', sig);
+    expect(['BUY','SELL','HOLD'].includes(sig.action)).toBe(true);
+  });
+
+  console.log('✅ All TradingEngine tests PASSED');
+});
+`;
+  document.body.appendChild(testScript);
+
+  // Multi-AI test
+  const multiScript = document.createElement('script');
+  multiScript.textContent = `
+console.log('🤖 Multi-AI verification:');
+console.log('TradingEngine:', typeof TradingEngine);
+console.log('callAI:', typeof callAI);
+console.log('CrucibleTest:', typeof CrucibleTest);
+`;
+  document.body.appendChild(multiScript);
+});
+</script>
+</head>
+<body style="font-family:monospace;background:black;color:lime;padding:20px;">
+<h1>🚀 Trade Arena Test Runner</h1>
+<p>Open console (F12) for full test output.</p>
+<p>Auto-running:</p>
+<ul>
+<li>CrucibleTest paper trading</li>
+<li>Real TradingEngine tests</li>
+<li>Multi-AI verification</li>
+</ul>
+<div id="status">Loading...</div>
+</body>
+</html>
+

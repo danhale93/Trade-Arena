@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: trade-arena
+    runtime: node
+    plan: starter
+    buildCommand: pnpm install --no-frozen-lockfile && pnpm run build
+    startCommand: node server.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "22.18.0"
+      - key: MM_PATH
+        value: "./node_modules/.bin/mm"
+      - key: PORT
+        value: 3001
+      - key: NODE_ENV
+        value: production
+      - key: RPC_URL
+        value: https://mainnet.base.org
+      - key: PRIVY_APP_ID
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: MOONPAY_WEBHOOK_SECRET
+        sync: false
+      - key: PAYOUT_PRIVATE_KEY
+        sync: false
+      - key: TASK_CLAIM_SECRET
+        sync: false
+      - key: ALCHEMY_API_KEY
+        sync: false
+      - key: ZERO_EX_API_KEY
+        sync: false

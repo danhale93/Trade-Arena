@@ -1,0 +1,122 @@
+{
+  "0x1234567890123456789012345678901234567890": {
+    "id": "0x1234567890123456789012345678901234567890",
+    "name": "0x1234···7890",
+    "email": null,
+    "address": "0x1234567890123456789012345678901234567890",
+    "provider": "metamask",
+    "avatar": null,
+    "balance": 0,
+    "bots": [],
+    "trades": [],
+    "created": 1783408424926
+  },
+  "v4.2.senior.engineer@trade-arena.com": {
+    "id": "v4.2.senior.engineer@trade-arena.com",
+    "name": "Arena Trader",
+    "email": "v4.2.senior.engineer@trade-arena.com",
+    "address": "0x3213A78bC2dB42b7812903e1c22DA6A8F092348a",
+    "provider": "privy",
+    "avatar": null,
+    "balance": 0,
+    "bots": [],
+    "trades": [],
+    "created": 1784266062906
+  },
+  "palette@trade-arena.com": {
+    "id": "palette@trade-arena.com",
+    "name": "Arena Trader",
+    "email": "palette@trade-arena.com",
+    "address": "0xABC1234567890abcdef1234567890ABCDEF1234",
+    "provider": "privy",
+    "avatar": null,
+    "balance": 0,
+    "bots": [],
+    "trades": [],
+    "created": 1784414909205
+  },
+  "test-trader@gmail.com": {
+    "id": "test-trader@gmail.com",
+    "name": "Arena Trader",
+    "email": "test-trader@gmail.com",
+    "address": "0x84537233ab333444a11223344556677889900abc",
+    "provider": "privy",
+    "avatar": null,
+    "balance": 0,
+    "bots": [],
+    "trades": [],
+    "created": 1784610379505
+  },
+  "senior_web3_coder@gmail.com": {
+    "id": "senior_web3_coder@gmail.com",
+    "name": "Senior Web3 Coder",
+    "email": "senior_web3_coder@gmail.com",
+    "address": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+    "provider": "privy",
+    "avatar": null,
+    "balance": 0,
+    "bots": [],
+    "trades": [],
+    "created": 1784870421287
+  },
+  "trader@arena.com": {
+    "id": "trader@arena.com",
+    "name": "trader@arena.com",
+    "email": "trader@arena.com",
+    "address": "0x1234567890abcdef1234567890abcdef1234abcd",
+    "provider": "privy",
+    "avatar": null,
+    "balance": 0,
+    "bots": [],
+    "trades": [],
+    "created": 1785042562163
+  },
+  "0x9999999999999999999999999999999999999999": {
+    "id": "0x9999999999999999999999999999999999999999",
+    "name": "MetaMask Trader",
+    "email": null,
+    "address": "0x9999999999999999999999999999999999999999",
+    "provider": "metamask",
+    "avatar": null,
+    "balance": 0,
+    "bots": [],
+    "trades": [],
+    "created": 1785366194561
+  },
+  "0x9d69704566064b6EfdBc56cd5a33f664C36c26a6": {
+    "id": "0x9d69704566064b6EfdBc56cd5a33f664C36c26a6",
+    "name": "MetaMask Trader",
+    "email": null,
+    "address": "0x9d69704566064b6EfdBc56cd5a33f664C36c26a6",
+    "provider": "metamask",
+    "avatar": null,
+    "balance": 0,
+    "bots": [],
+    "trades": [],
+    "created": 1785762742650
+  },
+  "0x94C54e741C8d64a62637b0DBCea83134F14f316E": {
+    "id": "0x94C54e741C8d64a62637b0DBCea83134F14f316E",
+    "name": "MetaMask Trader",
+    "email": null,
+    "address": "0x94C54e741C8d64a62637b0DBCea83134F14f316E",
+    "provider": "metamask",
+    "avatar": null,
+    "balance": 0,
+    "bots": [],
+    "trades": [],
+    "created": 1786334758130
+  },
+  "test-rate-limit@example.com": {
+    "id": "test-rate-limit@example.com",
+    "name": "New User",
+    "email": "test-rate-limit@example.com",
+    "address": null,
+    "provider": "unknown",
+    "avatar": null,
+    "balance": 0,
+    "bots": [],
+    "trades": [],
+    "created": 1786630350316
+  }
+}

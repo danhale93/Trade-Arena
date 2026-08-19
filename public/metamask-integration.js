@@ -1,0 +1,150 @@
+<!-- LOAD BLOCKCHAIN EXECUTION MODULE -->
+<script src="./real-wallet.js"></script>
+<script src="./blockchain-execution.js"></script>
+
+<!-- METAMASK LOGIN & BALANCE UPDATE HANDLER -->
+<script>
+async function handleMetaMaskConnect() {
+  console.log('🦊 Starting MetaMask connection...');
+  
+  if (!window.ethereum) {
+    alert('❌ MetaMask not installed. Get it at https://metamask.io');
+    return;
+  }
+
+  try {
+    // Step 1: Request account access
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    walletState.address = accounts[0];
+    walletState.isConnected = true;
+    console.log('✅ Connected account:', walletState.address);
+
+    // Step 2: Setup ethers.js provider & signer
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const signer = provider.getSigner();
+    
+    walletState.provider = provider;
+    walletState.signer = signer;
+    
+    // Step 3: Check network
+    const network = await provider.getNetwork();
+    walletState.networkId = network.chainId;
+    walletState.isCorrectNetwork = network.chainId === 8453; // Base Mainnet
+    
+    if (!walletState.isCorrectNetwork) {
+      console.warn('❌ Wrong network! Please switch to Base Mainnet');
+      await switchToBaseNetwork();
+    }
+    
+    // Step 4: Get balance
+    const balance = await getWalletBalance();
+    console.log('💰 Balance retrieved:', balance);
+    
+    // Step 5: Update UI
+    document.getElementById('connectScreen').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'flex';
+    document.getElementById('ghBalance').innerText = '$' + (balance?.usd || 0).toFixed(2);
+    document.getElementById('ghNetwork').style.display = 'inline';
+    
+    // Step 6: Start polling for balance updates
+    startBalancePolling();
+    
+    console.log('✅ MetaMask fully connected and ready!');
+    
+  } catch (error) {
+    console.error('❌ MetaMask connection failed:', error);
+    alert('Connection failed: ' + error.message);
+  }
+}
+
+// BALANCE POLLING - Update every 10 seconds
+function startBalancePolling() {
+  if (window.balancePoller) clearInterval(window.balancePoller);
+  
+  window.balancePoller = setInterval(async () => {
+    if (!walletState.isConnected) return;
+    
+    const balance = await getWalletBalance();
+    if (balance) {
+      const balanceEl = document.getElementById('ghBalance');
+      if (balanceEl) {
+        balanceEl.innerText = '$' + balance.usd.toFixed(2);
+      }
+    }
+  }, 10000); // Poll every 10 seconds
+}
+
+// OVERRIDE BOT SPIN TO EXECUTE REAL TRANSACTIONS
+// Patch the original spin function to execute real swaps
+const originalSpinFn = window.spinBot || function() {};
+
+window.spinBot = async function(botId, betAmount) {
+  console.log('🎰 Spin initiated - checking if real execution needed...');
+  
+  // Check if we're in live mode (MetaMask connected)
+  if (!walletState.isConnected) {
+    console.log('📊 Demo mode - simulating trade');
+    return originalSpinFn(botId, betAmount);
+  }
+  
+  console.log('💎 LIVE MODE - Executing real blockchain transaction');
+  
+  try {
+    // Execute real swap on Base network
+    const txResult = await executeRealSwap(
+      betAmount,
+      '0x4200000000000000000000000000000000000006', // WETH
+      '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // USDC
+      'ARBITRAGE' // method
+    );
+    
+    if (txResult.success) {
+      console.log('✅ Transaction confirmed!', txResult.txHash);
+      console.log('📊 Gas cost:', txResult.gasCost, 'ETH');
+      
+      // Wait 5 seconds then refresh balance
+      setTimeout(() => {
+        refreshBalanceAfterTrade();
+      }, 5000);
+      
+      return txResult;
+    } else {
+      console.error('❌ Transaction failed:', txResult.error);
+      alert('Trade failed: ' + txResult.error);
+      return { success: false, error: txResult.error };
+    }
+    
+  } catch (error) {
+    console.error('❌ Real execution error:', error);
+    alert('Execution error: ' + error.message);
+  }
+};
+
+// UPDATE GLOBAL BALANCE FUNCTION
+window.updateBalance = function(balance) {
+  console.log('💰 Updating UI balance...');
+  const balanceEl = document.getElementById('ghBalance');
+  const pnlEl = document.getElementById('ghPnl');
+  
+  if (balanceEl) balanceEl.innerText = '$' + balance.usd.toFixed(2);
+  if (pnlEl) {
+    const pnl = (balance.usd - (window.initialBalance || balance.usd));
+    const pnlClass = pnl >= 0 ? 'pnl-pos' : 'pnl-neg';
+    pnlEl.className = pnlClass;
+    pnlEl.innerText = (pnl >= 0 ? '+' : '') + '$' + pnl.toFixed(2) + ' today';
+  }
+};
+
+// MANUAL BALANCE REFRESH BUTTON
+window.refreshBalanceManual = async function() {
+  console.log('🔄 Manual balance refresh...');
+  const success = await refreshBalanceAfterTrade();
+  if (success) {
+    showToast('✅ Balance updated!', 'success');
+  } else {
+    showToast('❌ Balance update failed', 'error');
+  }
+};
+
+console.log('✅ MetaMask integration loaded and ready');
+</script>

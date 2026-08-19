@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Trade Arena - Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-tertiary-fixed": "#231b00",
+                      "tertiary": "#fff5de",
+                      "outline-variant": "#3b494b",
+                      "tertiary-container": "#fed639",
+                      "primary-container": "#00f0ff",
+                      "surface-container-highest": "#32353b",
+                      "inverse-surface": "#e1e2ea",
+                      "on-secondary-container": "#ddcdff",
+                      "on-primary-fixed": "#002022",
+                      "on-tertiary": "#3b2f00",
+                      "on-tertiary-fixed-variant": "#554500",
+                      "primary-fixed": "#7df4ff",
+                      "on-secondary": "#3c0090",
+                      "outline": "#849495",
+                      "surface-container-low": "#191c21",
+                      "surface": "#111319",
+                      "primary-fixed-dim": "#00dbe9",
+                      "on-secondary-fixed": "#23005b",
+                      "tertiary-fixed-dim": "#eac324",
+                      "secondary": "#d1bcff",
+                      "secondary-fixed-dim": "#d1bcff",
+                      "background": "#111319",
+                      "secondary-fixed": "#e9ddff",
+                      "on-primary-fixed-variant": "#004f54",
+                      "on-background": "#e1e2ea",
+                      "tertiary-fixed": "#ffe179",
+                      "on-primary-container": "#006970",
+                      "error-container": "#93000a",
+                      "surface-container-lowest": "#0b0e13",
+                      "on-surface-variant": "#b9cacb",
+                      "inverse-primary": "#006970",
+                      "inverse-on-surface": "#2e3036",
+                      "surface-dim": "#111319",
+                      "on-error": "#690005",
+                      "error": "#ffb4ab",
+                      "on-primary": "#00363a",
+                      "on-secondary-fixed-variant": "#5700c9",
+                      "surface-container-high": "#272a30",
+                      "on-surface": "#e1e2ea",
+                      "surface-tint": "#00dbe9",
+                      "surface-container": "#1d2025",
+                      "surface-variant": "#32353b",
+                      "on-tertiary-container": "#715d00",
+                      "on-error-container": "#ffdad6",
+                      "surface-bright": "#36393f",
+                      "secondary-container": "#7000ff",
+                      "primary": "#dbfcff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "data-row-height": "2rem",
+                      "input-height": "2.5rem",
+                      "unit": "4px",
+                      "container-padding": "1.5rem",
+                      "module-gap": "0.75rem"
+              },
+              "fontFamily": {
+                      "data-lg": [
+                              "JetBrains Mono"
+                      ],
+                      "display-lg": [
+                              "Hanken Grotesk"
+                      ],
+                      "headline-md": [
+                              "Hanken Grotesk"
+                      ],
+                      "label-caps": [
+                              "JetBrains Mono"
+                      ],
+                      "body-md": [
+                              "Hanken Grotesk"
+                      ],
+                      "data-sm": [
+                              "JetBrains Mono"
+                      ]
+              },
+              "fontSize": {
+                      "data-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "24px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "56px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-caps": [
+                              "10px",
+                              {
+                                      "lineHeight": "12px",
+                                      "letterSpacing": "0.08em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "data-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+            margin: 0;
+            overflow-x: hidden;
+        }
+        
+        .glass-panel {
+            background-color: rgba(25, 28, 33, 0.4);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid theme('colors.outline-variant');
+        }
+
+        .data-table-row {
+            border-bottom: 1px solid theme('colors.outline-variant');
+        }
+
+        .data-table-row:last-child {
+            border-bottom: none;
+        }
+
+        /* Custom scrollbar for terminal effect */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: theme('colors.outline-variant');
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: theme('colors.primary-fixed-dim');
+        }
+        
+        @keyframes pulse-cyan {
+            0% { box-shadow: 0 0 0 0 rgba(0, 219, 233, 0.4); }
+            70% { box-shadow: 0 0 0 6px rgba(0, 219, 233, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 219, 233, 0); }
+        }
+        
+        .live-indicator {
+            animation: pulse-cyan 2s infinite;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="antialiased min-h-screen relative flex flex-col font-body-md text-body-md text-on-background">
+<!-- Shader Background -->
+<div class="fixed inset-0 z-[-1] pointer-events-none">
+
+<div class="absolute inset-0 bg-background/60"></div>
+</div>
+<!-- Shared TopAppBar -->
+<header class="bg-surface-container-low/80 backdrop-blur-xl fixed top-0 w-full z-50 shadow-none border-b border-outline-variant/30 text-primary-fixed-dim">
+<div class="flex justify-between items-center px-container-padding h-16 w-full">
+<div class="flex items-center gap-2 font-display-lg text-display-lg tracking-tighter text-primary-fixed hover:bg-surface-container-high transition-colors active:scale-95 duration-75 p-2 rounded cursor-pointer">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">hub</span>
+<span>TRADE ARENA</span>
+</div>
+<button class="bg-primary-container text-on-primary-container font-label-caps text-label-caps px-4 py-2 rounded uppercase tracking-wider hover:bg-primary-fixed transition-colors active:scale-95">
+                KILL SWITCH
+            </button>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 mt-16 md:mt-16 mb-20 md:mb-0 px-container-padding py-6 max-w-[1920px] mx-auto w-full grid grid-cols-1 md:grid-cols-12 gap-module-gap z-10 relative">
+<!-- Left Column: P/L & Consensus -->
+<div class="md:col-span-4 flex flex-col gap-module-gap">
+<!-- P/L Summary Module -->
+<div class="glass-panel rounded-lg p-4 flex flex-col gap-4">
+<div class="flex justify-between items-center border-b border-outline-variant/30 pb-2">
+<h2 class="font-headline-md text-headline-md text-on-surface">P/L SUMMARY</h2>
+<span class="material-symbols-outlined text-outline">account_balance_wallet</span>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="flex flex-col">
+<span class="font-label-caps text-label-caps text-outline uppercase">Daily P/L</span>
+<span class="font-data-lg text-data-lg text-primary-fixed-dim">+$12,450.80</span>
+</div>
+<div class="flex flex-col text-right">
+<span class="font-label-caps text-label-caps text-outline uppercase">Win Rate</span>
+<span class="font-data-lg text-data-lg text-tertiary-fixed-dim">78.4%</span>
+</div>
+</div>
+<div class="flex flex-col mt-2">
+<span class="font-label-caps text-label-caps text-outline uppercase mb-1">Session Volume</span>
+<div class="flex items-baseline gap-2">
+<span class="font-data-lg text-data-lg text-on-surface">$1,452,890.00</span>
+<span class="font-data-sm text-data-sm text-surface-tint">/ 24H</span>
+</div>
+<div class="w-full bg-surface-container-high h-1 mt-2">
+<div class="bg-primary-fixed-dim h-full w-[65%]"></div>
+</div>
+</div>
+</div>
+<!-- AI Consensus Weights -->
+<div class="glass-panel rounded-lg p-4 flex flex-col gap-4 flex-1">
+<div class="flex justify-between items-center border-b border-outline-variant/30 pb-2">
+<h2 class="font-headline-md text-headline-md text-on-surface">CONSENSUS WEIGHTS</h2>
+<span class="material-symbols-outlined text-outline">memory</span>
+</div>
+<div class="flex flex-col gap-4 h-full justify-center">
+<!-- AlphaQuant -->
+<div class="flex flex-col gap-1">
+<div class="flex justify-between items-center">
+<span class="font-data-sm text-data-sm text-on-surface-variant">AlphaQuant v4.2</span>
+<span class="font-data-sm text-data-sm text-primary-fixed-dim">85%</span>
+</div>
+<div class="w-full bg-surface-container-high h-2 rounded overflow-hidden">
+<div class="bg-primary-fixed-dim h-full w-[85%]"></div>
+</div>
+</div>
+<!-- DeepArbitrage -->
+<div class="flex flex-col gap-1">
+<div class="flex justify-between items-center">
+<span class="font-data-sm text-data-sm text-on-surface-variant">DeepArbitrage_X</span>
+<span class="font-data-sm text-data-sm text-tertiary-fixed-dim">62%</span>
+</div>
+<div class="w-full bg-surface-container-high h-2 rounded overflow-hidden">
+<div class="bg-tertiary-fixed-dim h-full w-[62%]"></div>
+</div>
+</div>
+<!-- NeuralTrend -->
+<div class="flex flex-col gap-1">
+<div class="flex justify-between items-center">
+<span class="font-data-sm text-data-sm text-on-surface-variant">NeuralTrend (Beta)</span>
+<span class="font-data-sm text-data-sm text-secondary-fixed-dim">41%</span>
+</div>
+<div class="w-full bg-surface-container-high h-2 rounded overflow-hidden">
+<div class="bg-secondary-fixed-dim h-full w-[41%]"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Center Column: DEX Matrix -->
+<div class="md:col-span-8 flex flex-col gap-module-gap">
+<div class="glass-panel rounded-lg p-4 flex flex-col h-full">
+<div class="flex justify-between items-center border-b border-outline-variant/30 pb-2 mb-4">
+<div class="flex items-center gap-3">
+<h2 class="font-headline-md text-headline-md text-on-surface">DEX SCAN MATRIX</h2>
+<div class="w-2 h-2 rounded-full bg-primary-fixed-dim live-indicator"></div>
+<span class="font-label-caps text-label-caps text-primary-fixed-dim">LIVE</span>
+</div>
+<span class="material-symbols-outlined text-outline">grid_on</span>
+</div>
+<div class="flex-1 overflow-auto">
+<!-- Conceptual Grid -->
+<div class="grid grid-cols-5 grid-rows-2 gap-[1px] bg-outline-variant/30 border border-outline-variant/30 h-64">
+<!-- Row 1 -->
+<div class="bg-surface/80 flex flex-col items-center justify-center p-2 relative hover:bg-surface-container-high transition-colors group cursor-crosshair">
+<span class="font-label-caps text-label-caps text-on-surface-variant group-hover:text-primary-fixed-dim">UNISWAP V3</span>
+<div class="mt-2 text-center">
+<span class="block font-data-sm text-data-sm text-tertiary-fixed-dim">ETH/USDC</span>
+<span class="block font-data-sm text-data-sm text-outline">Scanned</span>
+</div>
+</div>
+<div class="bg-surface/80 flex flex-col items-center justify-center p-2 relative hover:bg-surface-container-high transition-colors group cursor-crosshair">
+<span class="font-label-caps text-label-caps text-on-surface-variant group-hover:text-primary-fixed-dim">SUSHISWAP</span>
+<div class="mt-2 text-center">
+<span class="block font-data-sm text-data-sm text-secondary-fixed-dim">WBTC/ETH</span>
+<span class="block font-data-sm text-data-sm text-outline">Idle</span>
+</div>
+</div>
+<div class="bg-surface/80 flex flex-col items-center justify-center p-2 relative hover:bg-surface-container-high transition-colors group cursor-crosshair">
+<span class="font-label-caps text-label-caps text-on-surface-variant group-hover:text-primary-fixed-dim">PANCAKESWAP</span>
+<div class="mt-2 text-center">
+<span class="block font-data-sm text-data-sm text-primary-fixed-dim">BNB/BUSD</span>
+<span class="block font-data-sm text-data-sm text-outline">Scanned</span>
+</div>
+</div>
+<div class="bg-surface/80 flex flex-col items-center justify-center p-2 relative hover:bg-surface-container-high transition-colors group cursor-crosshair">
+<span class="font-label-caps text-label-caps text-on-surface-variant group-hover:text-primary-fixed-dim">CURVE</span>
+<div class="mt-2 text-center">
+<span class="block font-data-sm text-data-sm text-outline">USDT/DAI</span>
+<span class="block font-data-sm text-data-sm text-outline">Idle</span>
+</div>
+</div>
+<div class="bg-surface/80 flex flex-col items-center justify-center p-2 relative hover:bg-surface-container-high transition-colors group cursor-crosshair">
+<span class="font-label-caps text-label-caps text-on-surface-variant group-hover:text-primary-fixed-dim">BALANCER</span>
+<div class="mt-2 text-center">
+<span class="block font-data-sm text-data-sm text-outline">LINK/ETH</span>
+<span class="block font-data-sm text-data-sm text-outline">Idle</span>
+</div>
+</div>
+<!-- Row 2 -->
+<div class="bg-surface/80 flex flex-col items-center justify-center p-2 relative hover:bg-surface-container-high transition-colors group cursor-crosshair">
+<span class="font-label-caps text-label-caps text-on-surface-variant group-hover:text-primary-fixed-dim">AERODROME</span>
+<div class="mt-2 text-center">
+<span class="block font-data-sm text-data-sm text-outline">OP/USDC</span>
+<span class="block font-data-sm text-data-sm text-outline">Idle</span>
+</div>
+</div>
+<div class="bg-surface/80 flex flex-col items-center justify-center p-2 relative hover:bg-surface-container-high transition-colors group cursor-crosshair">
+<span class="font-label-caps text-label-caps text-on-surface-variant group-hover:text-primary-fixed-dim">1INCH</span>
+<div class="mt-2 text-center">
+<span class="block font-data-sm text-data-sm text-tertiary-fixed-dim">ARB/ETH</span>
+<span class="block font-data-sm text-data-sm text-outline">Scanned</span>
+</div>
+</div>
+<div class="bg-surface/80 flex flex-col items-center justify-center p-2 relative hover:bg-surface-container-high transition-colors group cursor-crosshair">
+<span class="font-label-caps text-label-caps text-on-surface-variant group-hover:text-primary-fixed-dim">KYBER</span>
+<div class="mt-2 text-center">
+<span class="block font-data-sm text-data-sm text-outline">MATIC/ETH</span>
+<span class="block font-data-sm text-data-sm text-outline">Idle</span>
+</div>
+</div>
+<div class="bg-surface/80 flex flex-col items-center justify-center p-2 relative hover:bg-surface-container-high transition-colors group cursor-crosshair">
+<span class="font-label-caps text-label-caps text-on-surface-variant group-hover:text-primary-fixed-dim">DODO</span>
+<div class="mt-2 text-center">
+<span class="block font-data-sm text-data-sm text-outline">USDC/USDT</span>
+<span class="block font-data-sm text-data-sm text-outline">Idle</span>
+</div>
+</div>
+<div class="bg-surface/80 flex flex-col items-center justify-center p-2 relative hover:bg-surface-container-high transition-colors group cursor-crosshair">
+<span class="font-label-caps text-label-caps text-on-surface-variant group-hover:text-primary-fixed-dim">MAVERICK</span>
+<div class="mt-2 text-center">
+<span class="block font-data-sm text-data-sm text-outline">ETH/stETH</span>
+<span class="block font-data-sm text-data-sm text-outline">Idle</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Live Tally Log Module -->
+<div class="glass-panel rounded-lg p-4 flex flex-col flex-1 max-h-64">
+<div class="flex justify-between items-center border-b border-outline-variant/30 pb-2 mb-2">
+<h2 class="font-headline-md text-headline-md text-on-surface">LIVE TALLY LOG</h2>
+<span class="material-symbols-outlined text-outline">receipt_long</span>
+</div>
+<div class="flex-1 overflow-y-auto pr-2">
+<div class="w-full text-left">
+<div class="grid grid-cols-4 font-label-caps text-label-caps text-on-surface/40 bg-surface/20 p-2 mb-1 sticky top-0">
+<div>TYPE</div>
+<div>ASSET</div>
+<div class="text-right">PROFIT</div>
+<div class="text-right">SL TIMER</div>
+</div>
+<div class="data-table-row grid grid-cols-4 items-center p-2 font-data-sm text-data-sm hover:bg-surface-container-low transition-colors">
+<div class="text-primary-fixed-dim">ARB</div>
+<div class="text-on-surface">ETH/USDC</div>
+<div class="text-right text-primary-fixed-dim">+$45.20</div>
+<div class="text-right text-outline">00:14s</div>
+</div>
+<div class="data-table-row grid grid-cols-4 items-center p-2 font-data-sm text-data-sm hover:bg-surface-container-low transition-colors">
+<div class="text-error">SHORT</div>
+<div class="text-on-surface">WBTC</div>
+<div class="text-right text-outline">PENDING</div>
+<div class="text-right text-tertiary-fixed-dim">01:42s</div>
+</div>
+<div class="data-table-row grid grid-cols-4 items-center p-2 font-data-sm text-data-sm hover:bg-surface-container-low transition-colors">
+<div class="text-primary-fixed-dim">LONG</div>
+<div class="text-on-surface">SOL</div>
+<div class="text-right text-primary-fixed-dim">+$12.80</div>
+<div class="text-right text-outline">00:00s</div>
+</div>
+<div class="data-table-row grid grid-cols-4 items-center p-2 font-data-sm text-data-sm hover:bg-surface-container-low transition-colors">
+<div class="text-primary-fixed-dim">ARB</div>
+<div class="text-on-surface">UNI/ETH</div>
+<div class="text-right text-error">-$2.10</div>
+<div class="text-right text-outline">00:00s</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Shared BottomNavBar (Mobile Only) -->
+<nav class="md:hidden bg-surface-container-lowest/90 backdrop-blur-2xl fixed bottom-0 w-full z-50 h-20 border-t border-outline-variant/20 shadow-[0_-4px_12px_rgba(0,0,0,0.5)]">
+<div class="flex justify-around items-center px-4 h-full">
+<button class="flex flex-col items-center justify-center text-primary-fixed-dim bg-primary-container/10 rounded-xl px-4 py-1 hover:text-primary transition-all active:scale-90 duration-100">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-label-caps text-label-caps mt-1">Dashboard</span>
+</button>
+<button class="flex flex-col items-center justify-center text-outline hover:text-primary transition-all active:scale-90 duration-100">
+<span class="material-symbols-outlined">extension</span>
+<span class="font-label-caps text-label-caps mt-1">Modules</span>
+</button>
+<button class="flex flex-col items-center justify-center text-outline hover:text-primary transition-all active:scale-90 duration-100">
+<span class="material-symbols-outlined">terminal</span>
+<span class="font-label-caps text-label-caps mt-1">Log</span>
+</button>
+<button class="flex flex-col items-center justify-center text-outline hover:text-primary transition-all active:scale-90 duration-100">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-caps text-label-caps mt-1">Settings</span>
+</button>
+</div>
+</nav>
+</body></html>

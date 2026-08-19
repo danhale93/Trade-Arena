@@ -1,0 +1,47 @@
+{
+  "name": "Trade Arena — AI Trading Floor",
+  "short_name": "Trade Arena",
+  "description": "AI-Powered Crypto Trading Floor. 5-Agent Ensemble Voting System with Real Market Data",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#05010a",
+  "theme_color": "#00f5ff",
+  "categories": ["finance", "productivity"],
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDE5MiAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9Ijk2IiBjeT0iOTYiIHI9Ijk2IiBmaWxsPSIjMDA1NTU1Ii8+CjxjaXJjbGUgY3g9Ijk2IiBjeT0iOTYiIHI9Ijc2IiBmaWxsPSIjMDA4ODg4Ii8+CjxjaXJjbGUgY3g9Ijk2IiBjeT0iOTYiIHI9IjU2IiBmaWxsPSIjMDBGRkZGIi8+CjxyZWN0IHg9IjQwIiB5PSI0MCIgd2lkdGg9IjUwIiBoZWlnaHQ9IjUwIiBmaWxsPSIjRkYyRDc4IiBvcGFjaXR5PSIwLjgiLz4KPHJlY3QgeD0iMTAyIiB5PSIxMDIiIHdpZHRoPSI1MCIgaGVpZ2h0PSI1MCIgZmlsbD0iIzM5RkYxNCIgb3BhY2l0eT0iMC44Ii8+Cjwvc3ZnPgo=",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Start Auto Trading",
+      "short_name": "Auto Trade",
+      "description": "Launch Trade Arena in auto-trading mode",
+      "url": "./index.html?mode=auto",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,657 @@
+/**
+ * TRADE ARENA v4.3.12 - PRODUCTION BUILD
+ * Master Switch (FIXED), Real-Time Balance, Ticker Tracking, Market Pricing
+ *
+ * ✓ Master ON/OFF switch controls all 6 bots simultaneously
+ * ✓ Real-time balance updates every 500ms (responsive)
+ * ✓ Live ticker display for each bot's position
+ * ✓ Real CoinGecko prices with dynamic fee calculations
+ * ✓ Unrealised P&L on balance display
+ * ✓ Persistent state across reloads
+ * ✓ Auto-recovery on disconnect/reconnect
+ */
+
+// MasterSwitch removed — global AUTO is now in the header (globalAutoToggle)
+
+// ══════════════════════════════════════════════════════
+// REAL-TIME BALANCE UPDATER (500MS)
+// ══════════════════════════════════════════════════════
+
+class BalanceUpdater {
+  constructor() {
+    this.updateInterval = 500; // REAL-TIME - every 500ms
+    this.lastDisplayBalance = 0;
+    this.balanceHistory = [];
+    this.maxHistory = 120;
+    this.displayCurrency = localStorage.getItem("ta_display_currency") || "USD";
+    this.ethPrice = 0; // To be updated by RealMarketPricing
+    this.init();
+  }
+
+  init() {
+    this.startMonitoring();
+    console.log("[BalanceUpdater] ✓ ONLINE - Real-time updates (500ms)");
+  }
+
+
+  startMonitoring() {
+    setInterval(() => {
+      try {
+        this.updateBalance();
+        this.updateTickerDisplay();
+      } catch (e) {
+        console.warn("[BalanceUpdater] Error:", e);
+      }
+    }, this.updateInterval);
+  }
+
+  formatCurrency(value, currency) {
+    const sign = value < 0 ? "-" : "";
+    const absValue = Math.abs(value);
+
+    switch (currency) {
+      case "ETH":
+        return `${sign}Ξ${absValue.toFixed(5)}`;
+      case "AUD":
+        // TODO: Implement real-time currency conversion API
+        // Using a static conversion rate for display purposes.
+        // For real-time rates, an API call would be needed.
+        return `${sign}A$${(absValue * 1.5).toFixed(2)}`;
+      case "USD":
+      default:
+        return `${sign}$${absValue.toFixed(2)}`;
+    }
+  }
+
+  convertValue(value, toCurrency) {
+    switch (toCurrency) {
+      case "ETH":
+        return this.ethPrice > 0 ? value / this.ethPrice : 0;
+      case "AUD":
+        // Using a static conversion rate for simplicity.
+        // For real-time rates, an API call would be needed.
+        return value * 1.5;
+      case "USD":
+      default:
+        return value;
+    }
+  }
+
+
+  updateBalance() {
+    const balEl = document.getElementById("ghBalance");
+    if (!balEl) return;
+
+    // Calculate unrealised P&L from open positions
+    let unrealisedPnl = 0;
+    if (typeof openPositions !== "undefined" && Array.isArray(openPositions)) {
+      unrealisedPnl = openPositions.reduce(
+        (sum, p) => sum + (p.livePnl || 0),
+        0,
+      );
+    }
+
+    // Get realised balance
+    const realisedBalance = typeof balance !== "undefined" ? balance : 0;
+    const startingBalance =
+      typeof startBalance !== "undefined" ? startBalance : 0;
+    const displayBalance = realisedBalance + unrealisedPnl;
+
+    // Store history
+    this.balanceHistory.push({
+      timestamp: Date.now(),
+      balance: displayBalance,
+      realised: realisedBalance,
+      unrealised: unrealisedPnl,
+    });
+
+    if (this.balanceHistory.length > this.maxHistory) {
+      this.balanceHistory.shift();
+    }
+
+    const convertedBalance = this.convertValue(displayBalance, this.displayCurrency);
+
+    // Determine color based on profit/loss
+    const color = this.getBalanceColor(displayBalance, startingBalance);
+
+    // Update balance display with smooth transition
+    balEl.style.transition = "color 0.2s ease, text-shadow 0.2s ease";
+    balEl.style.color = color;
+    balEl.textContent = this.formatCurrency(convertedBalance, this.displayCurrency).replace("-", "");
+
+    // Add glow effect when unrealised P&L exists
+    if (unrealisedPnl !== 0) {
+      balEl.style.textShadow =
+        unrealisedPnl > 0
+          ? "0 0 10px rgba(57,255,20,0.5)"
+          : "0 0 10px rgba(255,45,120,0.5)";
+    } else {
+      balEl.style.textShadow = "none";
+    }
+
+    this.lastDisplayBalance = displayBalance;
+
+    // Update P&L display
+    const pnlEl = document.getElementById("ghPnl");
+    if (pnlEl) {
+      const totalPnlValue = typeof totalPnl !== "undefined" ? totalPnl : 0;
+      const displayPnL = this.convertValue(totalPnlValue + unrealisedPnl, this.displayCurrency);
+      const pnlString = this.formatCurrency(displayPnL, this.displayCurrency);
+
+      pnlEl.textContent = (displayPnL >= 0 ? `+${pnlString}` : pnlString) +
+                          (unrealisedPnl !== 0 ? " (live)" : " today");
+      pnlEl.className = "gh-pnl " + (displayPnL >= 0 ? "pnl-pos" : "pnl-neg");
+      pnlEl.style.color = displayPnL >= 0 ? "var(--green)" : "var(--hot)";
+      pnlEl.style.transition = "color 0.2s ease";
+    }
+  }
+
+  updateTickerDisplay() {
+    // Update ticker text for each bot's open position
+    if (typeof bots === "undefined" || !Array.isArray(bots)) return;
+
+    bots.forEach((bot) => {
+      const tickEl = document.getElementById("mtick-" + bot.id);
+      if (!tickEl) return;
+
+      // Find open position for this bot
+      const openPos =
+        typeof openPositions !== "undefined"
+          ? openPositions.find((p) => p.botId === bot.id)
+          : null;
+
+      if (openPos && openPos.livePnl !== undefined) {
+        const pnl = openPos.livePnl;
+        const convertedPnl = this.convertValue(pnl, this.displayCurrency);
+        const direction = openPos.direction === "long" ? "📈" : "📉";
+        const color = pnl > 0 ? "🟢" : pnl < 0 ? "🔴" : "🟡";
+
+        tickEl.textContent = `${direction}${color} ${openPos.token} ${pnl >= 0 ? "+" : ""}${this.formatCurrency(convertedPnl, this.displayCurrency)}`;
+        tickEl.style.color =
+          pnl > 0 ? "var(--green)" : pnl < 0 ? "var(--hot)" : "var(--gold)";
+        tickEl.style.transition = "color 0.2s ease";
+      } else {
+        // Rotating display
+        const frames = ["📡 READY", "💰 TRADING", "⚡ ACTIVE", "📊 RUNNING"];
+        const idx = Math.floor(Date.now() / 1500) % frames.length;
+        tickEl.textContent = frames[idx];
+        tickEl.style.color = "var(--cyan)";
+      }
+    });
+  }
+
+  getBalanceColor(currentBalance, startingBalance) {
+    if (startingBalance === 0) return "var(--gold)";
+
+    const changePercent =
+      ((currentBalance - startingBalance) / startingBalance) * 100;
+
+    if (changePercent >= 10) return "#00ff41"; // Bright green for big wins
+    if (changePercent >= 5) return "var(--green)";
+    if (changePercent >= 2) return "var(--cyan)";
+    if (changePercent >= -2) return "var(--gold)";
+    if (changePercent >= -5) return "var(--amber)";
+    return "var(--hot)"; // Red for losses
+  }
+
+  getBalanceHistory(minutes = 5) {
+    const cutoff = Date.now() - minutes * 60000;
+    return this.balanceHistory.filter((h) => h.timestamp >= cutoff);
+  }
+
+  getBalanceTrend() {
+    if (this.balanceHistory.length < 2) return "stable";
+    const recent = this.balanceHistory.slice(-5);
+    const avg = recent.reduce((s, h) => s + h.balance, 0) / recent.length;
+    const latest = recent[recent.length - 1].balance;
+
+    if (latest > avg * 1.01) return "up";
+    if (latest < avg * 0.99) return "down";
+    return "stable";
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// AUTO-RECOVERY & CONNECTION MANAGEMENT
+// ══════════════════════════════════════════════════════
+
+class AutoRecovery {
+  constructor() {
+    this.isOnline = navigator.onLine;
+    this.reconnectAttempts = 0;
+    this.maxReconnectAttempts = 10;
+    this.reconnectDelay = 3000;
+    this.init();
+  }
+
+  init() {
+    window.addEventListener("online", () => this.handleOnline());
+    window.addEventListener("offline", () => this.handleOffline());
+    setInterval(() => this.checkHealth(), 10000);
+    console.log("[AutoRecovery] ✓ ONLINE - Monitoring connection");
+  }
+
+  handleOnline() {
+    this.isOnline = true;
+    this.reconnectAttempts = 0;
+    console.log("[AutoRecovery] ✓ Reconnected - Syncing state");
+    this.syncState();
+  }
+
+  handleOffline() {
+    this.isOnline = false;
+    console.log("[AutoRecovery] ⚠ Connection lost - Waiting for reconnect");
+  }
+
+  checkHealth() {
+    if (!this.isOnline) return;
+
+    // Check if critical globals are intact
+    const required = ["balance", "bots", "openPositions", "closedTrades"];
+    const missing = required.filter((g) => typeof window[g] === "undefined");
+
+    if (missing.length > 0) {
+      console.warn("[AutoRecovery] Missing globals:", missing);
+      this.attemptRecovery();
+    }
+  }
+
+  attemptRecovery() {
+    try {
+      const stored = localStorage.getItem("ta_game_state");
+      if (stored) {
+        const state = JSON.parse(stored);
+        Object.assign(window, state);
+        
+        // 🛡️ REAL WALLET OVERRIDE: Prioritize real-time synced balance if available
+        const realBal = localStorage.getItem('ta_real_balance');
+        const realStart = localStorage.getItem('ta_real_start_balance');
+        if (realBal) window.balance = parseFloat(realBal);
+        if (realStart) window.startBalance = parseFloat(realStart);
+        
+        console.log("[AutoRecovery] ✓ State restored from localStorage (Real Balance prioritised)");
+      }
+    } catch (e) {
+      console.warn("[AutoRecovery] Recovery failed:", e);
+    }
+  }
+
+  syncState() {
+    if (typeof balanceUpdater !== "undefined") {
+      balanceUpdater.updateBalance();
+    }
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// REAL MARKET PRICING & LIVE PRICE TRACKING
+// ══════════════════════════════════════════════════════
+
+// ⚡ Bolt Optimization: Static map to avoid redundant object allocations in getPrice()
+const MARKET_TOKEN_MAP = {
+  ETH: "ethereum",
+  BTC: "bitcoin",
+  SOL: "solana",
+  DOGE: "dogecoin",
+  PEPE: "pepe",
+  WIF: "dogwifcoin",
+  BONK: "bonk",
+  FLOKI: "floki",
+  ARB: "arbitrum",
+  MATIC: "matic-network",
+};
+
+class RealMarketPricing {
+  constructor() {
+    this.priceCache = {};
+    this.cacheAge = 30000; // 30 seconds
+    this.lastFetchTime = 0;
+    this.init();
+  }
+
+  init() {
+    // Update prices every 30 seconds
+    setInterval(() => this.updateLivePrices(), 30000);
+    // Initial price fetch
+    this.updateLivePrices();
+  }
+
+  async updateLivePrices() {
+    if (Date.now() - this.lastFetchTime < this.cacheAge) return;
+
+    try {
+      const tokens = [
+        "ethereum",
+        "bitcoin",
+        "solana",
+        "dogecoin",
+        "pepe",
+        "dogwifcoin",
+        "bonk",
+        "floki",
+        "arbitrum",
+        "matic-network",
+      ];
+      const response = await fetch(
+        `https://api.coingecko.com/api/v3/simple/price?ids=${tokens.join(",")}&vs_currencies=usd`,
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        this.priceCache = data;
+        this.lastFetchTime = Date.now();
+
+        // Update ETH price for currency conversion
+        if (this.priceCache.ethereum?.usd && balanceUpdater) {
+            balanceUpdater.ethPrice = this.priceCache.ethereum.usd;
+        }
+
+        // Update live P&L for all open positions
+        this.updateOpenPositions();
+      }
+    } catch (e) {
+      console.warn("[RealMarketPricing] Fetch failed:", e);
+    }
+  }
+
+  updateOpenPositions() {
+    if (typeof openPositions === "undefined" || !Array.isArray(openPositions))
+      return;
+
+    openPositions.forEach((pos) => {
+      const price = this.getPrice(pos.token);
+      if (price) {
+        const priceChange = price - pos.entryPrice;
+        const direction = pos.direction === "long" ? 1 : -1;
+
+        // Calculate unrealised P&L
+        const pnlMultiplier = (pos.bet / pos.entryPrice); // How many tokens were notionally bought
+        const unrealisedPnl = priceChange * pnlMultiplier * direction - (pos.costs?.total || 0);
+        pos.livePnl = unrealisedPnl;
+        pos.currentPrice = price;
+      }
+    });
+  }
+
+  getPrice(token) {
+    // ⚡ Bolt Optimization: Use MARKET_TOKEN_MAP constant instead of local object allocation
+    const id = MARKET_TOKEN_MAP[token] || token.toLowerCase();
+    const price = this.priceCache[id]?.usd;
+    return price || null;
+  }
+
+  calculateTradeCosts(method, volumeUsd, leverage = 1) {
+    // Real trading costs
+    const feeStructure = {
+      "SPOT LONG": { gas: 0.25, spread: 0.0008, slippage: 0.001 },
+      "SPOT SHORT": { gas: 0.35, spread: 0.001, slippage: 0.0015 },
+      "YIELD FARM": { gas: 0.5, spread: 0.0006, slippage: 0.0008 },
+      "PERP LONG": {
+        gas: 0.4,
+        spread: 0.0012,
+        slippage: 0.002,
+        funding: 0.0001,
+      },
+      "PERP SHORT": {
+        gas: 0.4,
+        spread: 0.0012,
+        slippage: 0.002,
+        funding: 0.0001,
+      },
+      HOLD: { gas: 0, spread: 0, slippage: 0 },
+    };
+
+    const f = feeStructure[method] || feeStructure["SPOT LONG"];
+    const gasCost = f.gas;
+    const spreadCost = volumeUsd * f.spread;
+    const slippageCost = volumeUsd * f.slippage * leverage;
+    const fundingCost = (f.funding || 0) * volumeUsd;
+    const totalCost = gasCost + spreadCost + slippageCost + fundingCost;
+
+    return {
+      gas: gasCost,
+      spread: spreadCost,
+      slippage: slippageCost,
+      funding: fundingCost,
+      total: totalCost,
+      percentage: ((totalCost / volumeUsd) * 100).toFixed(3),
+    };
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// GLOBAL INITIALIZATION & STARTUP
+// ══════════════════════════════════════════════════════
+
+let balanceUpdater = null;
+let autoRecovery = null;
+let realMarketPricing = null;
+
+function initAppRebuildV4312() {
+  // Wait for DOM and game state
+  if (document.readyState === "loading" || !document.getElementById("mainApp") || typeof window.balance === "undefined" || typeof window.bots === "undefined") {
+    setTimeout(initAppRebuildV4312, 100); // Check again shortly
+    return;
+  }
+
+  console.log(
+    "%c🚀 TRADE ARENA v4.3.12 INITIALIZING...",
+    "color: #39ff14; font-weight: bold; font-size: 14px;",
+  );
+
+  // Initialize all subsystems
+  balanceUpdater = new BalanceUpdater();
+  autoRecovery = new AutoRecovery();
+  realMarketPricing = new RealMarketPricing();
+
+  // ACOUSTIC Audio-Visual System
+  // Currency Toggle UI
+  const currencyToggleContainer = document.createElement('div');
+  currencyToggleContainer.style.cssText = `
+    position: fixed;
+    top: 70px;
+    right: 250px; /* Adjust based on master switch position */
+    z-index: 9500;
+    display: flex;
+    gap: 4px;
+    background: rgba(22,15,30,0.8);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 4px;
+  `;
+  ['USD', 'ETH', 'AUD'].forEach(currency => {
+      const btn = document.createElement('button');
+      btn.textContent = currency;
+      btn.className = 'currency-toggle-btn';
+      btn.dataset.currency = currency;
+      currencyToggleContainer.appendChild(btn);
+  });
+  document.body.appendChild(currencyToggleContainer);
+  updateCurrencyToggleUI(balanceUpdater.displayCurrency);
+
+  if (typeof ACOUSTICCore !== "undefined") {
+    window.ACOUSTIC = new ACOUSTICCore();
+    window.ACOUSTIC.init();
+    console.log("%c→ ACOUSTIC Audio-Visual System ONLINE", "color: #ff00ff;");
+  }
+
+  // Auto-save game state every 30 seconds
+  setInterval(() => {
+    try {
+      const gameState = {
+        balance: typeof balance !== "undefined" ? balance : 0,
+        totalPnl: typeof totalPnl !== "undefined" ? totalPnl : 0,
+      };
+      localStorage.setItem("ta_game_state", JSON.stringify(gameState));
+    } catch (e) {
+      console.warn("[AppRebuild] Save failed:", e);
+    }
+  }, 30000);
+
+  console.log(
+    "%c✓ TRADE ARENA v4.2 READY",
+    "color: #39ff14; font-weight: bold; font-size: 14px;",
+  );
+
+  console.log("%c→ Real-time balance (500ms)", "color: #00ffff;");
+  console.log("%c→ Live ticker tracking", "color: #00ffff;");
+  console.log("%c→ Real market prices (CoinGecko)", "color: #00ffff;");
+}
+
+function updateCurrencyToggleUI(activeCurrency) {
+    document.querySelectorAll('.currency-toggle-btn').forEach(btn => {
+        if (btn.dataset.currency === activeCurrency) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+}
+
+document.addEventListener('click', function(e) {
+    if (e.target.matches('.currency-toggle-btn')) {
+        const currency = e.target.dataset.currency;
+        if (balanceUpdater) {
+            balanceUpdater.displayCurrency = currency;
+            localStorage.setItem("ta_display_currency", currency);
+            updateCurrencyToggleUI(currency);
+        }
+    }
+});
+// Auto-init
+initAppRebuildV4312();
+
+// ══════════════════════════════════════════════════════
+// PUBLIC API - EXTERNAL CONTROL
+// ══════════════════════════════════════════════════════
+
+window.TradeArenaApp = {
+  // ACOUSTIC Audio-Visual Control
+  ACOUSTIC: {
+    getInstance: () => window.ACOUSTIC,
+    toggle: () => (window.ACOUSTIC ? window.ACOUSTIC.toggle() : null),
+    setVolume: (vol) =>
+      window.ACOUSTIC ? window.ACOUSTIC.setVolume(vol) : null,
+    playEvent: (event) =>
+      window.ACOUSTIC ? window.ACOUSTIC.playEvent(event) : null,
+    isEnabled: () => (window.ACOUSTIC ? window.ACOUSTIC.isEnabled : false),
+  },
+
+  // Global auto control (replaces master switch)
+  toggleMaster: () => {
+    if (typeof globalAutoToggle === "function") globalAutoToggle();
+  },
+  enableAllBots: () => {
+    if (!_ghAutoOn && typeof globalAutoToggle === "function")
+      globalAutoToggle();
+  },
+  disableAllBots: () => {
+    if (_ghAutoOn && typeof globalAutoToggle === "function") globalAutoToggle();
+  },
+
+  // Balance info
+  getBalance: () => (typeof balance !== "undefined" ? balance : 0),
+  getPnL: () => (typeof totalPnl !== "undefined" ? totalPnl : 0),
+  getBalanceHistory: (minutes) =>
+    balanceUpdater ? balanceUpdater.getBalanceHistory(minutes) : [],
+  getBalanceTrend: () =>
+    balanceUpdater ? balanceUpdater.getBalanceTrend() : "unknown",
+
+  // Price info
+  getCurrentPrice: (token) =>
+    realMarketPricing ? realMarketPricing.getPrice(token) : null,
+  calculateTradeCosts: (method, amount, leverage) => {
+    return realMarketPricing
+      ? realMarketPricing.calculateTradeCosts(method, amount, leverage)
+      : null;
+  },
+
+  // System info
+  getAutoRecovery: () => autoRecovery,
+  getSystemStatus: () => {
+    return {
+      master:
+        typeof _ghAutoOn !== "undefined" ? (_ghAutoOn ? "ON" : "OFF") : "INIT",
+      balance: typeof balance !== "undefined" ? balance : "LOADING",
+      online: autoRecovery ? autoRecovery.isOnline : false,
+      version: "v4.2",
+    };
+  },
+};
+
+/**
+ * Live Mode Management
+ */
+window.isLiveMode = true;
+
+async function toggleLiveMode() {
+    const goingLive = !window.isLiveMode;
+    if (goingLive) {
+        if (!window.walletState || !window.walletState.isConnected) {
+            if (typeof window.privyLogin === 'function') {
+                await window.privyLogin();
+            }
+            if (!window.walletState || !window.walletState.isConnected) {
+                if (typeof showToast === 'function') {
+                    showToast('Connect real wallet first!', 'error');
+                }
+                return;
+            }
+        }
+    }
+    window.isLiveMode = goingLive;
+    const btn = document.getElementById('liveToggleBtn');
+    if (btn) {
+        btn.textContent = window.isLiveMode ? 'LIVE' : 'DEMO';
+        btn.style.borderColor = window.isLiveMode ? 'var(--green)' : 'var(--gold2)';
+        btn.style.color = window.isLiveMode ? 'var(--green)' : 'var(--gold2)';
+        btn.style.boxShadow = window.isLiveMode ? '0 0 10px rgba(0,255,157,0.3)' : 'none';
+        btn.setAttribute('aria-pressed', window.isLiveMode.toString());
+    }
+
+    const badge = document.getElementById('ghBadge');
+    if (badge) {
+        badge.textContent = window.isLiveMode ? 'LIVE' : 'DEMO';
+        badge.style.color = window.isLiveMode ? 'var(--green)' : 'var(--dim)';
+    }
+
+    // Play tactile tick sound
+    if (typeof SFX !== 'undefined' && SFX.tick) {
+        try { SFX.tick(); } catch (e) {}
+    }
+
+    // Trigger visual confetti at button coordinates for tactile delight
+    if (window.FX && window.FX.confetti && btn) {
+        const rect = btn.getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        const y = rect.top + rect.height / 2;
+        try { window.FX.confetti(x, y, 6); } catch (e) {}
+    }
+
+    // Show accessible confirmation toast
+    if (typeof showToast === 'function') {
+        showToast(window.isLiveMode ? 'Switched to LIVE mainnet trading mode!' : 'Switched to DEMO paper trading mode.', window.isLiveMode ? 'success' : 'info');
+    }
+
+    console.log('[App] Mode changed to:', window.isLiveMode ? 'LIVE' : 'DEMO');
+}
+
+window.toggleLiveMode = toggleLiveMode;
+
+/**
+ * Handle Privy Ready
+ */
+window.onPrivyReady = (user, address) => {
+    if(typeof setupWalletListeners === "function") setupWalletListeners();
+    console.log('[App] Privy ready, switching to LIVE mode preference');
+    if (!window.isLiveMode) {
+        window.toggleLiveMode();
+    }
+};
+
+module.exports = {
+    BalanceUpdater,
+    AutoRecovery,
+    RealMarketPricing
+};
+

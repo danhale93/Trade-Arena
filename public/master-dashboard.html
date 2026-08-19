@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>TRADE ARENA - MAINNET EXECUTION DASHBOARD</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface": "#111319",
+                      "background": "#0b0e13",
+                      "primary-container": "#00f0ff",
+                      "primary-fixed-dim": "#00dbe9",
+                      "terminal-green": "#00ff66",
+                      "terminal-red": "#ff3333",
+                      "terminal-warn": "#ffb800",
+                      "outline-variant": "#3b494b"
+              },
+              "fontFamily": {
+                      "data": ["JetBrains Mono"],
+                      "headline": ["Hanken Grotesk"]
+              }
+            }
+          }
+        }
+    </script>
+    <style>
+        body { background-color: #0b0e13; color: #e1e2ea; font-family: 'Hanken Grotesk', sans-serif; }
+        .glass-panel { background-color: rgba(25, 28, 33, 0.4); backdrop-filter: blur(24px); border: 1px solid #3b494b; }
+        .data-table-row { border-bottom: 1px solid rgba(59, 73, 75, 0.3); }
+        .live-indicator { animation: pulse-cyan 2s infinite; }
+        @keyframes pulse-cyan { 0% { box-shadow: 0 0 0 0 rgba(0, 219, 233, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(0, 219, 233, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 219, 233, 0); } }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col pb-10">
+    <!-- Header -->
+    <header class="bg-[#0b0e13] border-b border-[#3b494b] fixed top-0 w-full flex justify-between items-center px-8 h-16 z-50">
+        <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-[#00dbe9]">account_balance_wallet</span>
+            <h1 class="font-headline text-xl font-bold tracking-tight">TRADE_ARENA <span class="text-[#849495] font-normal">/ MAINNET CONSOLE</span></h1>
+        </div>
+        <div class="flex items-center gap-6">
+            <div id="execBadge" class="px-3 py-1 bg-terminal-warn/10 border border-terminal-warn/30 text-terminal-warn text-[10px] font-data rounded">
+                SIMULATION_ONLY
+            </div>
+            <button onclick="window.location.href='agent-console.html'" class="px-4 py-1.5 bg-[#00dbe9]/10 border border-[#00dbe9]/30 text-[#00dbe9] text-[10px] font-data rounded hover:bg-[#00dbe9]/20 transition">
+                AGENT_TERMINAL
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 mt-20 px-8 max-w-7xl mx-auto w-full flex flex-col gap-6">
+        <!-- Multi-Chain Balances Bar -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="glass-panel p-4 rounded-xl">
+                <p class="text-[10px] font-data text-[#849495] uppercase mb-1">Base Balance (ETH)</p>
+                <p id="baseBal" class="text-2xl font-headline font-bold text-[#00dbe9]">0.0000 WETH</p>
+            </div>
+            <div class="glass-panel p-4 rounded-xl">
+                <p class="text-[10px] font-data text-[#849495] uppercase mb-1">Arbitrum Balance (ETH)</p>
+                <p id="arbBal" class="text-2xl font-headline font-bold text-terminal-green">0.0000 WETH</p>
+            </div>
+            <div class="glass-panel p-4 rounded-xl">
+                <p class="text-[10px] font-data text-[#849495] uppercase mb-1">Optimism Balance (ETH)</p>
+                <p id="optBal" class="text-2xl font-headline font-bold text-purple-400">0.0000 WETH</p>
+            </div>
+            <div class="glass-panel p-4 rounded-xl">
+                <p class="text-[10px] font-data text-[#849495] uppercase mb-1">Execution Status</p>
+                <p id="scannerStatusText" class="text-2xl font-headline font-bold text-terminal-green">RUNNING</p>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- Left: Wallet & Safety Controls -->
+            <div class="lg:col-span-8 flex flex-col gap-6">
+                <div class="glass-panel rounded-xl overflow-hidden flex flex-col p-6">
+                    <h2 class="font-headline font-bold text-sm mb-4 text-[#00dbe9]">METAMASK AGENT WALLET SYNC</h2>
+                    <div class="space-y-4 font-data text-xs">
+                        <div class="flex justify-between p-3 bg-surface/50 rounded border border-[#3b494b]">
+                            <span class="text-[#849495]">Managed Wallet Address:</span>
+                            <span id="agentAddr" class="text-[#00dbe9] truncate max-w-[300px]">Loading...</span>
+                        </div>
+                        <div class="flex justify-between p-3 bg-surface/50 rounded border border-[#3b494b]">
+                            <span class="text-[#849495]">Active Profit Threshold:</span>
+                            <span id="profitThresholdText" class="text-terminal-warn">$2.00 (Gas-Aware)</span>
+                        </div>
+                        <div class="flex justify-between p-3 bg-surface/50 rounded border border-[#3b494b]">
+                            <span class="text-[#849495]">MEV Protection / Slippage:</span>
+                            <span id="slippageText" class="text-terminal-green">Enabled (0.1% max slippage)</span>
+                        </div>
+                    </div>
+                    
+                    <h2 class="font-headline font-bold text-sm mt-6 mb-4 text-[#00dbe9]">MULTI-CHAIN CONFIGURATION</h2>
+                    <div id="chainConfigs" class="grid grid-cols-1 md:grid-cols-3 gap-4 font-data text-[10px]">
+                        <!-- Populated by JS -->
+                    </div>
+
+                    <div class="mt-6 pt-6 border-t border-[#3b494b] flex gap-4">
+                        <button onclick="toggleScanner()" id="pauseScannerBtn" class="flex-1 py-3 bg-terminal-red/10 border border-terminal-red/30 text-terminal-red font-data text-xs rounded hover:bg-terminal-red/20 transition">
+                            PAUSE SCANNER
+                        </button>
+                        <button onclick="fetchAgentStatus()" class="px-6 py-3 bg-[#00dbe9]/10 border border-[#00dbe9]/30 text-[#00dbe9] font-data text-xs rounded hover:bg-[#00dbe9]/20 transition">
+                            REFRESH BALANCES
+                        </button>
+                    </div>
+                </div>
+
+                <!-- NEW: MetaMask Agent CLI Authentication -->
+                <div class="glass-panel rounded-xl overflow-hidden flex flex-col p-6">
+                    <h2 class="font-headline font-bold text-sm mb-4 text-[#00dbe9]">METAMASK AGENT CLI AUTHENTICATION</h2>
+                    <p class="text-[10px] font-data text-[#849495] mb-4 uppercase">Submit your CLI token to enable live on-chain execution</p>
+                    
+                    <div class="flex flex-col gap-3">
+                        <input type="password" id="cliTokenInput" placeholder="Paste your CLI token here..." 
+                               class="bg-surface/50 border border-[#3b494b] rounded p-3 text-xs font-data text-[#00dbe9] focus:outline-none focus:border-[#00dbe9] transition w-full">
+                        
+                        <div class="flex gap-4">
+                            <button onclick="submitCliToken()" id="submitTokenBtn" class="flex-1 py-3 bg-terminal-green/10 border border-terminal-green/30 text-terminal-green font-data text-xs rounded hover:bg-terminal-green/20 transition">
+                                SUBMIT TOKEN
+                            </button>
+                            <a href="/api/agent/login-url" target="_blank" class="px-6 py-3 bg-[#849495]/10 border border-[#849495]/30 text-[#849495] font-data text-xs rounded hover:bg-[#849495]/20 transition flex items-center justify-center">
+                                GET NEW LINK
+                            </a>
+                        </div>
+                    </div>
+                    <div id="tokenStatus" class="mt-3 text-[9px] font-data text-[#849495] hidden italic"></div>
+                </div>
+            </div>
+
+            <!-- Right: Live Log -->
+            <div class="lg:col-span-4 flex flex-col gap-6">
+                <div class="glass-panel rounded-xl flex-1 flex flex-col max-h-[400px]">
+                    <div class="px-6 py-4 border-b border-[#3b494b] flex justify-between items-center">
+                        <h2 class="font-headline font-bold text-sm">AGENT EVENT STREAM</h2>
+                        <span class="material-symbols-outlined text-[#849495] text-sm">receipt_long</span>
+                    </div>
+                    <div id="eventStreamList" class="flex-1 overflow-y-auto p-4 space-y-2 font-data text-[10px]">
+                        <div class="text-[#849495]">[00:00:00] Initializing Master Console...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="fixed bottom-0 w-full bg-[#0b0e13] border-t border-[#3b494b] px-8 h-10 flex items-center justify-between text-[10px] font-data text-[#849495]">
+        <div>METAMASK AGENT WALLET CONNECTED</div>
+        <div class="flex gap-6">
+            <span>MUTEX_LOCK: ACTIVE</span>
+            <span>MAINNET READY</span>
+        </div>
+    </footer>
+
+    <script>
+        let scannerRunning = true;
+        
+        // Backend API Base URL (defaults to window location or Render backend)
+        let API_BASE = localStorage.getItem('trade_arena_api_base') || '';
+        
+        function getApiUrl(endpoint) {
+            return API_BASE ? `${API_BASE}${endpoint}` : endpoint;
+        }
+
+        async function fetchAgentStatus() {
+            try {
+                const res = await fetch(getApiUrl('/api/agent/status'));
+                const data = await res.json();
+                if (data.success && data.agent) {
+                    const agent = data.agent;
+                    document.getElementById('agentAddr').innerText = agent.walletAddress || '0x2ca1f801c1e19d16160c982c627e2932e95117be (Managed)';
+                    
+                    if (agent.balances) {
+                        document.getElementById('baseBal').innerText = (agent.balances.base || '0.0000') + ' ETH';
+                        document.getElementById('arbBal').innerText = (agent.balances.arbitrum || '0.0000') + ' ETH';
+                        document.getElementById('optBal').innerText = (agent.balances.optimism || '0.0000') + ' ETH';
+                    }
+
+                    const execBadge = document.getElementById('execBadge');
+                    if (agent.executionEnabled) {
+                        execBadge.innerText = 'EXECUTION_ARMED';
+                        execBadge.className = 'px-3 py-1 bg-terminal-green/10 border border-terminal-green/30 text-terminal-green text-[10px] font-data rounded';
+                    } else {
+                        execBadge.innerText = 'SIMULATION_ONLY';
+                        execBadge.className = 'px-3 py-1 bg-terminal-warn/10 border border-terminal-warn/30 text-terminal-warn text-[10px] font-data rounded';
+                    }
+
+                    scannerRunning = agent.scannerEnabled && agent.running;
+                    const scannerStatusText = document.getElementById('scannerStatusText');
+                    const pauseScannerBtn = document.getElementById('pauseScannerBtn');
+                    if (scannerRunning) {
+                        scannerStatusText.innerText = 'RUNNING';
+                        scannerStatusText.className = 'text-2xl font-headline font-bold text-terminal-green';
+                        pauseScannerBtn.innerText = 'PAUSE SCANNER';
+                        pauseScannerBtn.className = 'flex-1 py-3 bg-terminal-red/10 border border-terminal-red/30 text-terminal-red font-data text-xs rounded hover:bg-terminal-red/20 transition';
+                    } else {
+                        scannerStatusText.innerText = 'PAUSED';
+                        scannerStatusText.className = 'text-2xl font-headline font-bold text-terminal-warn';
+                        pauseScannerBtn.innerText = 'RESUME SCANNER';
+                        pauseScannerBtn.className = 'flex-1 py-3 bg-terminal-green/10 border border-terminal-green/30 text-terminal-green font-data text-xs rounded hover:bg-terminal-green/20 transition';
+                    }
+
+                    document.getElementById('profitThresholdText').innerText = '$' + agent.profitThresholdUsd.toFixed(2) + ' (Global)';
+                    
+                    if (agent.networkConfigs) {
+                        const configContainer = document.getElementById('chainConfigs');
+                        configContainer.innerHTML = '';
+                        for (const [network, config] of Object.entries(agent.networkConfigs)) {
+                            const card = document.createElement('div');
+                            card.className = 'p-3 bg-surface/50 rounded border border-[#3b494b]';
+                            card.innerHTML = `
+                                <p class="text-[#00dbe9] font-bold uppercase mb-1">${network}</p>
+                                <div class="flex justify-between text-[#849495]">
+                                    <span>Min Profit:</span>
+                                    <span class="text-terminal-warn">$${config.profitThresholdUsd.toFixed(2)}</span>
+                                </div>
+                                <div class="flex justify-between text-[#849495]">
+                                    <span>Slippage:</span>
+                                    <span class="text-terminal-green">${config.slippage}%</span>
+                                </div>
+                            `;
+                            configContainer.appendChild(card);
+                        }
+                    }
+
+                    addEventStreamLog(`[${new Date().toLocaleTimeString()}] Multi-chain configuration synced.`);
+                }
+            } catch (err) {
+                console.error('Failed to sync agent status:', err);
+                addEventStreamLog(`[${new Date().toLocaleTimeString()}] ERR: Failed to sync wallet balances.`);
+            }
+        }
+
+        async function toggleScanner() {
+            const endpoint = scannerRunning ? '/api/agent/pause' : '/api/agent/resume';
+            try {
+                const res = await fetch(getApiUrl(endpoint), { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    fetchAgentStatus();
+                }
+            } catch (err) {
+                console.error('Failed to toggle scanner:', err);
+            }
+        }
+
+        async function submitCliToken() {
+            const token = document.getElementById('cliTokenInput').value;
+            const statusDiv = document.getElementById('tokenStatus');
+            const btn = document.getElementById('submitTokenBtn');
+
+            if (!token) {
+                alert('Please paste a valid token first.');
+                return;
+            }
+
+            try {
+                btn.disabled = true;
+                btn.innerText = 'AUTHENTICATING...';
+                statusDiv.innerText = 'Connecting to MetaMask Agent...';
+                statusDiv.classList.remove('hidden');
+
+                const res = await fetch(getApiUrl('/api/agent/submit-token'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    statusDiv.innerText = 'Success! Session refreshed. Live execution enabled.';
+                    statusDiv.className = 'mt-3 text-[9px] font-data text-terminal-green italic';
+                    document.getElementById('cliTokenInput').value = '';
+                    setTimeout(() => {
+                        statusDiv.classList.add('hidden');
+                        fetchAgentStatus();
+                    }, 3000);
+                } else {
+                    throw new Error(data.error || 'Authentication failed');
+                }
+            } catch (err) {
+                statusDiv.innerText = 'Error: ' + err.message;
+                statusDiv.className = 'mt-3 text-[9px] font-data text-terminal-red italic';
+                console.error('Token Submission Error:', err);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'SUBMIT TOKEN';
+            }
+        }
+
+        function addEventStreamLog(msg) {
+            const list = document.getElementById('eventStreamList');
+            const div = document.createElement('div');
+            div.className = msg.includes('ERR') ? 'text-terminal-red' : 'text-[#849495]';
+            div.innerText = msg;
+            list.insertBefore(div, list.firstChild);
+            if (list.children.length > 50) list.removeChild(list.lastChild);
+        }
+
+        setInterval(fetchAgentStatus, 10000);
+        fetchAgentStatus();
+    </script>
+</body>
+</html>
