@@ -98,12 +98,28 @@ export function isHighProfitSimulation(
 }
 
 export function summarizeSimulationHistory(entries: Array<Pick<SimulationHistoryEntry, "netProfitUsd" | "profitable">>) {
-  const profits = entries.map((entry) => Number(entry.netProfitUsd)).filter(Number.isFinite);
-  const totalProfitUsd = profits.reduce((sum, profit) => sum + profit, 0);
+  // Single-pass accumulation: eliminates 3 intermediate array allocations (.map, .filter, .filter)
+  // and reduces 4 array traversals down to 1 pass with O(1) auxiliary space.
+  let totalProfitUsd = 0;
+  let validCount = 0;
+  let profitableRoutes = 0;
+
+  for (let i = 0; i < entries.length; i++) {
+    const entry = entries[i];
+    const profit = Number(entry.netProfitUsd);
+    if (Number.isFinite(profit)) {
+      totalProfitUsd += profit;
+      validCount++;
+    }
+    if (entry.profitable) {
+      profitableRoutes++;
+    }
+  }
+
   return {
     totalProfitUsd: Number(totalProfitUsd.toFixed(4)),
-    averageProfitUsd: profits.length ? Number((totalProfitUsd / profits.length).toFixed(4)) : 0,
-    profitableRoutes: entries.filter((entry) => entry.profitable).length,
+    averageProfitUsd: validCount ? Number((totalProfitUsd / validCount).toFixed(4)) : 0,
+    profitableRoutes,
     totalRoutes: entries.length,
   };
 }
