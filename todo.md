@@ -393,3 +393,9 @@ POSIX
 
 - [x] Add a manual preflight trigger button and result display area to the dashboard Secure Vault/settings modal
 - [x] Add or update UI tests covering manual preflight loading, success, and failure states
+
+# Additional Requirement: Real-Time Gas Telemetry Widget
+
+- [x] Add a dedicated multi-chain gas telemetry widget for Base, Arbitrum, and Optimism
+- [x] Display live congestion bands, fee readings, threshold multipliers, and last refresh context
+- [x] Add focused tests and verify responsive rendering

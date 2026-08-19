@@ -12,6 +12,7 @@ import { buildFeatureVisualizerModel } from "@/lib/featureVisualizer";
 import { buildCliWarningToast } from "@/lib/cliWarning";
 import { getCliStatusWidgetModel } from "@/lib/cliStatusWidget";
 import { getManualPreflightCheckLabel, getManualPreflightStatusModel } from "@/lib/manualPreflight";
+import { formatGasReading, formatTelemetryTime, getGasCongestionModel } from "@/lib/gasTelemetryWidget";
 import { CLI_COMMANDS, CLI_HANDOFF_URL, CLI_LINKS } from "@/lib/cliCommandDeck";
 import { QRCodeSVG } from "qrcode.react";
 import { useState, useEffect, useRef } from "react";
@@ -407,6 +408,14 @@ export default function Home() {
   const featureProfit = featureModel.profit;
   const gasTelemetry = (agent?.gasTelemetry || {}) as Record<string, any>;
   const baseGasTelemetry = gasTelemetry.base;
+  const gasTelemetryRows = ([
+    { network: "base", label: "BASE", accent: "cyan", telemetry: gasTelemetry.base },
+    { network: "arbitrum", label: "ARBITRUM", accent: "emerald", telemetry: gasTelemetry.arbitrum },
+    { network: "optimism", label: "OPTIMISM", accent: "purple", telemetry: gasTelemetry.optimism },
+  ] as const).map((row) => ({
+    ...row,
+    congestion: getGasCongestionModel(row.telemetry?.congestion),
+  }));
   const derivedPulseLevel = featureModel.pulseLevel;
   const featureReels = featureModel.reels;
   const cliStatusWidget = getCliStatusWidgetModel(agent?.cliDoctorLive, agent?.cliWalletBalance);
@@ -668,6 +677,81 @@ export default function Home() {
             </div>
           </div>
           <p className="mt-3 text-[9px] text-[#849495]">{agent?.cliDoctorLive?.checkedAt ? `Last CLI check: ${new Date(agent.cliDoctorLive.checkedAt).toLocaleTimeString()}` : "CLI check pending"} · Dashboard refreshes every 5 seconds.</p>
+        </section>
+
+        {/* Real-time Gas Telemetry */}
+        <section className="rounded-xl border border-[#00dbe9]/30 bg-[#081217] p-5 shadow-[0_0_20px_rgba(0,219,233,0.05)]" data-testid="gas-telemetry-widget" aria-labelledby="gas-telemetry-title">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-[10px] tracking-[0.24em] text-[#849495]">NETWORK CONDITIONS / LIVE FEED</p>
+              <h2 id="gas-telemetry-title" className="mt-1 flex items-center gap-2 text-sm font-bold tracking-wider text-white">
+                <Activity className="h-4 w-4 text-[#00dbe9]" /> GAS TELEMETRY / CONGESTION BANDS
+              </h2>
+              <p className="mt-1 text-[10px] text-[#849495]">Read-only fee telemetry drives the dynamic profit threshold model. No transaction is signed or broadcast.</p>
+            </div>
+            <div className={`flex items-center gap-2 rounded border px-2.5 py-1.5 text-[10px] font-bold tracking-wider ${
+              statusLoading ? "border-amber-500/30 bg-amber-500/10 text-amber-300" : statusError ? "border-rose-500/30 bg-rose-500/10 text-rose-300" : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+            }`} role="status" aria-live="polite">
+              <span className={`h-2 w-2 rounded-full ${statusLoading ? "bg-amber-400 animate-pulse" : statusError ? "bg-rose-400" : "bg-emerald-400 animate-pulse"}`} />
+              {statusLoading ? "REFRESHING" : statusError ? "FEED DEGRADED" : "LIVE · 5S REFRESH"}
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+            {gasTelemetryRows.map((row) => {
+              const telemetry = row.telemetry;
+              const isLoading = statusLoading && !telemetry;
+              const gasPrice = formatGasReading(telemetry?.gasPriceGwei);
+              const baseFee = formatGasReading(telemetry?.baseFeeGwei);
+              const multiplier = typeof telemetry?.adjustedThresholdMultiplier === "number" ? `${telemetry.adjustedThresholdMultiplier.toFixed(2)}×` : "—";
+              return (
+                <div key={row.network} className="rounded-lg border border-[#00dbe9]/15 bg-[#050b0e] p-4" data-testid={`gas-telemetry-${row.network}`}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className={`h-2 w-2 rounded-full ${row.congestion.dotClass}`} />
+                      <span className="text-xs font-bold tracking-wider text-white">{row.label}</span>
+                      <span className="text-[9px] text-[#849495]">#{telemetry?.chainId || "—"}</span>
+                    </div>
+                    <span className={`rounded border px-2 py-1 text-[9px] font-bold tracking-wider ${row.congestion.badgeClass}`}>
+                      {isLoading ? "CHECKING" : row.congestion.label}
+                    </span>
+                  </div>
+
+                  <div className="mt-4 space-y-2">
+                    <div className="flex items-end justify-between gap-3">
+                      <div>
+                        <p className="text-[9px] uppercase tracking-wider text-[#849495]">Gas price</p>
+                        <p className="mt-1 text-xl font-bold text-[#00dbe9]">{isLoading ? "—" : gasPrice}<span className="ml-1 text-[10px] font-normal text-[#849495]">GWEI</span></p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[9px] uppercase tracking-wider text-[#849495]">Base fee</p>
+                        <p className="mt-1 text-xs font-bold text-white">{isLoading ? "—" : baseFee} GWEI</p>
+                      </div>
+                    </div>
+                    <div className="h-1.5 overflow-hidden rounded-full bg-white/10" aria-label={`${row.label} congestion meter`}>
+                      <div className={`h-full rounded-full ${row.congestion.meterClass} ${row.congestion.widthClass}`} />
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-2 gap-2 text-[10px]">
+                    <div className="border-t border-white/10 pt-2">
+                      <p className="text-[#849495]">Threshold multiplier</p>
+                      <p className="mt-1 font-bold text-emerald-300">{isLoading ? "—" : multiplier}</p>
+                    </div>
+                    <div className="border-t border-white/10 pt-2 text-right">
+                      <p className="text-[#849495]">Last sample</p>
+                      <p className="mt-1 font-bold text-white">{isLoading ? "—" : formatTelemetryTime(telemetry?.fetchedAt)}</p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[9px] text-[#849495]">
+            <span>BANDS: <span className="text-emerald-300">LOW</span> · <span className="text-cyan-300">NORMAL</span> · <span className="text-amber-300">ELEVATED</span> · <span className="text-rose-300">CONGESTED</span></span>
+            <span>{statusData?.timestamp ? `Status snapshot ${new Date(statusData.timestamp).toLocaleTimeString()}` : "Awaiting status snapshot"}</span>
+          </div>
         </section>
 
         {/* Stitch-inspired Feature Visualizer + Audio Telemetry */}
