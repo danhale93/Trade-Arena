@@ -3,7 +3,7 @@
  * Simulates high-frequency trade events to verify aggregation and fallback logic.
  */
 
-const mmArbService = require('../services/MetaMaskAgentArbService');
+const mmArbService = require('../services/MetaMaskAgentArbService.cjs');
 require('dotenv').config();
 
 // Configuration

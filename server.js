@@ -284,7 +284,7 @@ const { loadUsers, saveUsers } = require('./user_persistence');
 const PORT = process.env.PORT || 3001;
 
 // Import MetaMask Agent Arbitrage Service
-const mmArbService = require('./services/MetaMaskAgentArbService');
+const mmArbService = require('./services/MetaMaskAgentArbService.cjs');
 mmArbService.start();
 
 const onchainEngine = require('./services/OnchainExecutionEngine');

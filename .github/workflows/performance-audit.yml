@@ -26,7 +26,7 @@ jobs:
     - name: 🚀 Run Baseline HFT Load Test
       run: |
         mkdir -p logs
-        node scripts/load-test-notifications.js
+        node scripts/load-test-notifications.cjs
       env:
         MM_CLI_TOKEN: "ci_test_token"
         DISCORD_WEBHOOK_URL: ""
