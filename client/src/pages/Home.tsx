@@ -43,7 +43,7 @@ export default function Home() {
     }
   });
 
-  const { data: statusData, isLoading: statusLoading } = trpc.arbitrage.status.useQuery(undefined, {
+  const { data: statusData, isLoading: statusLoading, isError: statusError, refetch: refetchStatus } = trpc.arbitrage.status.useQuery(undefined, {
     refetchInterval: 5000,
   });
 
@@ -430,24 +430,36 @@ export default function Home() {
           <div
             role="status"
             aria-live="polite"
-            title={cliConnection?.reason || "Checking MetaMask Agent session status."}
-            aria-label={`MetaMask Agent token ${cliConnection?.label?.toLowerCase() || "status checking"}`}
+            title={statusError ? "Failed to fetch backend status. Click retry." : cliConnection?.reason || "Checking MetaMask Agent session status."}
+            aria-label={`MetaMask Agent token ${statusError ? "fetch error" : cliConnection?.label?.toLowerCase() || "status checking"}`}
             className={`flex items-center gap-2 rounded border px-2.5 py-1.5 text-[10px] font-bold tracking-wider transition-colors ${
-              statusLoading || !cliConnection
+              statusError
+                ? "border-rose-500/40 bg-rose-500/15 text-rose-300 cursor-pointer hover:bg-rose-500/25"
+                : statusLoading || !cliConnection
                 ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-300 animate-pulse"
                 : cliConnected
                 ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
                 : "border-rose-500/30 bg-rose-500/10 text-rose-300"
             }`}
+            onClick={() => {
+              if (statusError) refetchStatus();
+            }}
           >
-            {statusLoading || !cliConnection ? (
+            {statusError ? (
+              <button type="button" onClick={() => refetchStatus()} className="flex items-center gap-1.5 text-rose-300 hover:text-white">
+                <RefreshCw className="h-3 w-3 animate-spin text-rose-400" />
+                <span>CONNECTION ERROR · RETRY</span>
+              </button>
+            ) : statusLoading || !cliConnection ? (
               <RefreshCw className="h-3 w-3 animate-spin text-cyan-400" />
             ) : (
               <span className={`inline-block h-2 w-2 rounded-full ${cliConnected ? "bg-emerald-400 animate-pulse" : "bg-rose-400"}`} />
             )}
-            <span className="inline whitespace-nowrap">
-              MM CLI: {statusLoading || !cliConnection ? "CHECKING…" : cliConnected ? "AUTHENTICATED & CONNECTED" : "DISCONNECTED / UNVERIFIED"}
-            </span>
+            {!statusError && (
+              <span className="inline whitespace-nowrap">
+                MM CLI: {statusLoading || !cliConnection ? "CHECKING…" : cliConnected ? "AUTHENTICATED & CONNECTED" : "DISCONNECTED / UNVERIFIED"}
+              </span>
+            )}
             <span className="sr-only">
               {statusLoading || !cliConnection
                 ? "MetaMask Agent CLI connection is being verified."
@@ -1811,41 +1823,69 @@ export default function Home() {
                 />
               </div>
 
-              <div className="border-t border-[#00dbe9]/20 pt-4 space-y-3">
-                <h4 className="text-[11px] uppercase font-mono text-white font-bold">Network Slippage Tolerance Settings</h4>
-                <p className="text-[10px] text-[#849495]">Configure custom maximum allowable slippage per network in basis points (100 BPS = 1.0%).</p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {(["base", "arbitrum", "optimism"] as const).map((net) => {
-                    const bps = networkSlippage[net] || 50;
-                    return (
-                      <div key={net} className="bg-[#050b0e] p-3 rounded-lg border border-[#00dbe9]/20 space-y-2">
-                        <div className="flex justify-between items-center text-[11px] font-mono">
-                          <span className="text-white uppercase font-bold">{net}</span>
-                          <span className="text-[#00dbe9]">{bps} BPS ({(bps / 100).toFixed(2)}%)</span>
-                        </div>
-                        <input
-                          type="range"
-                          min="5"
-                          max="300"
-                          step="5"
-                          value={bps}
-                          onChange={(e) => setNetworkSlippage({ ...networkSlippage, [net]: parseInt(e.target.value) || 50 })}
-                          className="w-full accent-[#00dbe9] cursor-pointer"
-                        />
-                        <Button
-                          type="button"
-                          size="sm"
-                          onClick={() => {
-                            updateNetworkSlippageMutation.mutate({ network: net, slippageBps: bps });
-                          }}
-                          disabled={updateNetworkSlippageMutation.isPending}
-                          className="w-full bg-[#00dbe9]/20 text-[#00dbe9] hover:bg-[#00dbe9]/30 text-[10px] h-6 font-mono"
-                        >
-                          SAVE {net.toUpperCase()}
-                        </Button>
+              <div className="border-t border-[#00dbe9]/20 pt-4 space-y-4">
+                <div>
+                  <h4 className="text-[11px] uppercase font-mono text-white font-bold mb-1">Autonomous Strategy Profile</h4>
+                  <p className="text-[10px] text-[#849495] mb-3">Switch between Guarded (conservative input caps, strict spread) and Aggressive (higher limits, faster poll).</p>
+                  <div className="flex items-center justify-between bg-[#050b0e] p-3 rounded-lg border border-[#00dbe9]/20">
+                    <div className="flex items-center gap-2">
+                      <Zap className={`w-4 h-4 ${agent?.strategyProfile?.name === "aggressive" ? "text-amber-400" : "text-[#00dbe9]"}`} />
+                      <div>
+                        <p className="text-xs font-bold text-white uppercase">{agent?.strategyProfile?.label || "Guarded Strategy"}</p>
+                        <p className="text-[10px] text-[#849495]">{agent?.strategyProfile?.description || "Safe execution parameters."}</p>
                       </div>
-                    );
-                  })}
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => {
+                        const nextProfile = agent?.strategyProfile?.name === "aggressive" ? "guarded" : "aggressive";
+                        setStrategyProfileMutation.mutate({ profile: nextProfile });
+                      }}
+                      disabled={setStrategyProfileMutation.isPending}
+                      className={`font-mono font-bold text-xs px-4 h-8 ${agent?.strategyProfile?.name === "aggressive" ? "bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30" : "bg-[#00dbe9]/20 text-[#00dbe9] border border-[#00dbe9]/40 hover:bg-[#00dbe9]/30"}`}
+                    >
+                      {setStrategyProfileMutation.isPending ? "SWITCHING..." : agent?.strategyProfile?.name === "aggressive" ? "AGGRESSIVE (ACTIVE)" : "SWITCH TO AGGRESSIVE"}
+                    </Button>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-[11px] uppercase font-mono text-white font-bold mb-1">Network Slippage Tolerance Settings</h4>
+                  <p className="text-[10px] text-[#849495] mb-3">Configure custom maximum allowable slippage per network in basis points (100 BPS = 1.0%).</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {(["base", "arbitrum", "optimism"] as const).map((net) => {
+                      const bps = networkSlippage[net] || 50;
+                      return (
+                        <div key={net} className="bg-[#050b0e] p-3 rounded-lg border border-[#00dbe9]/20 space-y-2">
+                          <div className="flex justify-between items-center text-[11px] font-mono">
+                            <span className="text-white uppercase font-bold">{net}</span>
+                            <span className="text-[#00dbe9]">{bps} BPS ({(bps / 100).toFixed(2)}%)</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="5"
+                            max="300"
+                            step="5"
+                            value={bps}
+                            onChange={(e) => setNetworkSlippage({ ...networkSlippage, [net]: parseInt(e.target.value) || 50 })}
+                            className="w-full accent-[#00dbe9] cursor-pointer"
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => {
+                              updateNetworkSlippageMutation.mutate({ network: net, slippageBps: bps });
+                            }}
+                            disabled={updateNetworkSlippageMutation.isPending}
+                            className="w-full bg-[#00dbe9]/20 text-[#00dbe9] hover:bg-[#00dbe9]/30 text-[10px] h-6 font-mono"
+                          >
+                            SAVE {net.toUpperCase()}
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
