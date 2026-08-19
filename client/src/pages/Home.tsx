@@ -223,6 +223,24 @@ export default function Home() {
 
   const [cliToken, setCliToken] = useState("");
   const [copiedCommand, setCopiedCommand] = useState<string | null>(null);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [modalCliToken, setModalCliToken] = useState("");
+  const [preflightTestResult, setPreflightTestResult] = useState<any | null>(null);
+
+  const runPreflightTestMutation = trpc.arbitrage.runManualPreflightTest.useMutation({
+    onSuccess: (data) => {
+      setPreflightTestResult(data);
+      if (data.ready) {
+        toast.success(data.message);
+      } else {
+        toast.warning(data.message);
+      }
+      utils.arbitrage.status.invalidate();
+    },
+    onError: (err) => {
+      toast.error("Preflight test failed: " + err.message);
+    }
+  });
   const [handoffAttempted, setHandoffAttempted] = useState(false);
   const [miniWidgetMode, setMiniWidgetMode] = useState(false);
   const [logFilter, setLogFilter] = useState("ALL");
@@ -423,6 +441,15 @@ export default function Home() {
             <span className="hidden md:inline">{connectionActionPending ? "WORKING" : cliConnected ? "DISCONNECT" : "RECONNECT"}</span>
           </Button>
           <div className="flex items-center gap-2 sm:gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setSettingsModalOpen(true)}
+              className="border-[#00dbe9]/40 bg-[#00dbe9]/10 text-[#00dbe9] hover:bg-[#00dbe9]/20 text-xs font-mono font-bold"
+            >
+              VAULT SETTINGS & TOKEN
+            </Button>
             <Button 
               onClick={() => setMiniWidgetMode(!miniWidgetMode)}
               className={`text-xs font-bold px-3 py-1.5 border ${miniWidgetMode ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-[#00dbe9]/10 border-[#00dbe9]/30 text-[#00dbe9]'}`}
@@ -1706,6 +1733,79 @@ export default function Home() {
         </>
       )}
       </main>
+
+      {/* Secure Token & Vault Settings Modal */}
+      {settingsModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg rounded-xl border border-[#00dbe9]/40 bg-[#081217] p-6 shadow-2xl font-mono text-white relative">
+            <div className="flex items-center justify-between pb-4 border-b border-[#00dbe9]/20 mb-4">
+              <h3 className="text-sm font-bold tracking-wider flex items-center gap-2 text-[#00dbe9]">
+                <Lock className="w-4 h-4 text-[#00dbe9]" /> SECURE VAULT & CLI SESSION TOKEN
+              </h3>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setSettingsModalOpen(false)}
+                className="text-[#849495] hover:text-white"
+              >
+                ✕
+              </Button>
+            </div>
+
+            <p className="text-xs text-[#849495] mb-4">
+              Input and manage your MetaMask Agent CLI session token below. The token is stored securely in the backend vault and validated against the managed wallet.
+            </p>
+
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="text-[10px] uppercase text-[#849495] block mb-1">MetaMask Agent CLI Token (JWT)</label>
+                <Input
+                  type="password"
+                  placeholder="mm_token_..."
+                  value={modalCliToken}
+                  onChange={(e) => setModalCliToken(e.target.value)}
+                  className="bg-[#050b0e] border-[#00dbe9]/30 text-white text-xs font-mono h-9"
+                />
+              </div>
+
+              <div className="p-3 rounded bg-[#050b0e] border border-[#00dbe9]/20 text-[11px] space-y-1 text-[#849495]">
+                <div>CLI Binary Path: <span className="text-[#00dbe9]">{statusData?.agent?.cliConnection?.cliPath || "Checking..."}</span></div>
+                <div>Session Status: <span className={statusData?.agent?.cliConnection?.sessionValidated ? "text-emerald-400 font-bold" : "text-amber-400 font-bold"}>{statusData?.agent?.cliConnection?.sessionValidated ? "VALIDATED & ACTIVE" : "UNVERIFIED"}</span></div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setSettingsModalOpen(false)}
+                className="border-white/20 bg-transparent text-[#849495] hover:text-white text-xs"
+              >
+                Close
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => {
+                  if (modalCliToken.trim().length >= 10) {
+                    submitTokenMutation.mutate({ token: modalCliToken.trim() });
+                    setModalCliToken("");
+                    setSettingsModalOpen(false);
+                  } else {
+                    toast.error("Please enter a valid MetaMask Agent token (at least 10 characters).");
+                  }
+                }}
+                disabled={submitTokenMutation.isPending || modalCliToken.trim().length < 10}
+                className="bg-[#00dbe9] text-black font-bold hover:bg-[#00dbe9]/80 text-xs"
+              >
+                {submitTokenMutation.isPending ? "SAVING & VALIDATING..." : "SAVE & VALIDATE TOKEN"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="border-t border-[#00dbe9]/20 bg-[#081217] py-4 px-6 text-center text-xs text-[#849495]">

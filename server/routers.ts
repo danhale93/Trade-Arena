@@ -576,6 +576,40 @@ export const appRouter = router({
       return { success: true, minProfitThreshold: input.threshold };
     }),
 
+    runManualPreflightTest: protectedProcedure.input(z.object({ network: z.enum(["base", "arbitrum", "optimism"]) })).mutation(async ({ input, ctx }) => {
+      if (ctx.user.role !== "admin" && ctx.user.openId !== process.env.OWNER_OPEN_ID) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Only owner/admin can run manual preflight tests." });
+      }
+      const cliAvailable = cli.isMetaMaskCliAvailable();
+      const sessionValidated = (await db.getAgentStateKey("mm_cli_session_validated")) === "true";
+      const tokenConfigured = Boolean(await db.getAgentStateKey("mm_cli_token") || process.env.MM_CLI_TOKEN);
+      const executionEnabled = (await db.getAgentStateKey("execution_enabled")) === "true";
+
+      const checks = [
+        { name: "CLI Binary Available", passed: cliAvailable, detail: cliAvailable ? `Found at ${cli.getMetaMaskCliPath()}` : "Missing or not executable" },
+        { name: "Token Configured", passed: tokenConfigured, detail: tokenConfigured ? "JWT token present in vault" : "Token missing" },
+        { name: "Session Validated", passed: sessionValidated, detail: sessionValidated ? "Session authenticated successfully" : "Session unvalidated" },
+        { name: "Execution Armed", passed: executionEnabled, detail: executionEnabled ? "WARNING: Live execution is ARMED" : "Safely in SIMULATION_ONLY mode" },
+      ];
+
+      const ready = cliAvailable && tokenConfigured && sessionValidated;
+      await db.recordAgentLog({
+        level: ready ? "SUCCESS" : "WARN",
+        category: "EXECUTION",
+        message: `Manual preflight test executed on ${input.network.toUpperCase()}`,
+        details: `Ready: ${ready} | Armed: ${executionEnabled} | CLI: ${cliAvailable} | Validated: ${sessionValidated}`,
+      });
+
+      return {
+        success: true,
+        ready,
+        executionArmed: executionEnabled,
+        network: input.network,
+        checks,
+        message: ready ? "Manual preflight check passed successfully. System is ready for manual live test." : "Preflight check failed. Review unmet requirements above.",
+      };
+    }),
+
     runArbitrageCheck: protectedProcedure.input(z.object({ network: z.enum(["base", "arbitrum", "optimism"]) })).mutation(async ({ input, ctx }) => {
       await db.recordAgentLog({
         level: "INFO",
