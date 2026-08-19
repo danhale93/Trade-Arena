@@ -204,6 +204,12 @@ export const appRouter = router({
         tokenExpiresAt,
       });
 
+      const walletMode = (await db.getAgentStateKey("wallet_connection_mode")) || "agent";
+      const standardWalletAddress = await db.getAgentStateKey("standard_wallet_address") || "";
+      const standardWalletProvider = await db.getAgentStateKey("standard_wallet_provider") || "";
+
+      const activeWalletAddress = walletMode === "standard" && standardWalletAddress ? standardWalletAddress : MANAGED_WALLET;
+
       const recentTrades = await db.getRecentTrades(10);
       const simulationRouteHistory = await db.getSimulationRouteHistory(60);
       const pulseEvents = await db.getPulseEvents(50);
@@ -213,8 +219,10 @@ export const appRouter = router({
       return {
         success: true,
         agent: {
-          walletMode: "managed-agent",
-          walletAddress: MANAGED_WALLET,
+          walletMode,
+          standardWalletAddress,
+          standardWalletProvider,
+          walletAddress: activeWalletAddress,
           balances: {
             base: parseFloat(baseBal).toFixed(4),
             arbitrum: parseFloat(arbitrumBal).toFixed(4),
@@ -306,6 +314,44 @@ export const appRouter = router({
           details: `Max Gas: ${input.maxGasGwei} Gwei | Max Input: ${input.maxInputWeth} WETH`,
         });
         return { success: true, maxGasGwei: input.maxGasGwei, maxInputWeth: input.maxInputWeth };
+      }),
+
+    setWalletMode: protectedProcedure
+      .input(z.object({ mode: z.enum(["agent", "standard"]) }))
+      .mutation(async ({ input, ctx }) => {
+        if (ctx.user.role !== "admin" && ctx.user.openId !== process.env.OWNER_OPEN_ID) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Only owner/admin can change the wallet connection mode." });
+        }
+        await db.setAgentStateKey("wallet_connection_mode", input.mode);
+        await db.recordAgentLog({
+          level: "INFO",
+          category: "AUTH",
+          message: `Wallet connection mode switched to ${input.mode === "agent" ? "MetaMask Agent Wallet" : "Standard EVM Wallet (BYOW)"}`,
+          details: `Active mode: ${input.mode}`,
+        });
+        return { success: true, mode: input.mode };
+      }),
+
+    connectStandardWallet: protectedProcedure
+      .input(z.object({ address: z.string().min(40), providerType: z.enum(["injected", "walletconnect", "privateKey"]) }))
+      .mutation(async ({ input, ctx }) => {
+        if (ctx.user.role !== "admin" && ctx.user.openId !== process.env.OWNER_OPEN_ID) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Only owner/admin can connect a standard wallet." });
+        }
+        if (!ethers.isAddress(input.address)) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Provided wallet address is not a valid EVM address." });
+        }
+        await db.setAgentStateKey("wallet_connection_mode", "standard");
+        await db.setAgentStateKey("standard_wallet_address", input.address);
+        await db.setAgentStateKey("standard_wallet_provider", input.providerType);
+        await db.setAgentStateKey("standard_wallet_connected_at", new Date().toISOString());
+        await db.recordAgentLog({
+          level: "SUCCESS",
+          category: "AUTH",
+          message: `Standard EVM Wallet connected (${input.providerType})`,
+          details: `Address: ${input.address}`,
+        });
+        return { success: true, address: input.address, providerType: input.providerType };
       }),
 
     submitToken: protectedProcedure.input(z.object({ token: z.string().min(10) })).mutation(async ({ input, ctx }) => {

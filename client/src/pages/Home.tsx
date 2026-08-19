@@ -155,6 +155,26 @@ export default function Home() {
     },
   });
 
+  const setWalletModeMutation = trpc.arbitrage.setWalletMode.useMutation({
+    onSuccess: (data) => {
+      toast.success(`Switched to ${data.mode === "agent" ? "MetaMask Agent Wallet" : "Standard EVM Wallet"}.`);
+      utils.arbitrage.status.invalidate();
+    },
+    onError: (err) => {
+      toast.error("Wallet mode switch failed: " + err.message);
+    },
+  });
+
+  const connectStandardWalletMutation = trpc.arbitrage.connectStandardWallet.useMutation({
+    onSuccess: () => {
+      toast.success("Standard EVM Wallet connected successfully.");
+      utils.arbitrage.status.invalidate();
+    },
+    onError: (err) => {
+      toast.error("Wallet connection failed: " + err.message);
+    },
+  });
+
   const [minProfitInput, setMinProfitInput] = useState("");
   const updateThresholdMutation = trpc.arbitrage.updateMinProfitThreshold.useMutation({
     onSuccess: () => {
@@ -862,40 +882,97 @@ export default function Home() {
               )}
             </div>
 
-            {/* CLI Token Submission / Settings Panel */}
+            {/* Dual Wallet Mode & Setup Panel */}
             <div className="stitch-panel bg-[#081217] border border-[#00dbe9]/30 p-6 rounded-xl relative overflow-hidden flex flex-col gap-6">
               <div className="absolute top-0 right-0 bg-[#00dbe9]/10 text-[#00dbe9] border-l border-b border-[#00dbe9]/30 px-3 py-1 rounded-bl text-[10px] font-mono tracking-wider">
-                SETTINGS / SECURE VAULT
+                WALLET SELECTOR / VAULT
               </div>
-              
+
               <div>
                 <h2 className="text-sm font-bold tracking-wider text-white mb-2 flex items-center gap-2">
-                  <Terminal className="w-4 h-4 text-[#00dbe9]" /> METAMASK AGENT CLI TOKEN SETTINGS
+                  <Shield className="w-4 h-4 text-[#00dbe9]" /> SELECT WALLET CONNECTION MODE
                 </h2>
-                <p className="text-xs text-[#849495] mb-4">Securely submit and save your MetaMask Agent CLI JWT token. Input is masked for security and authenticated via owner OAuth session.</p>
-                
-                <div className="flex flex-col gap-3">
-                  <div className="flex gap-3">
-                    <Input 
-                      type="password"
-                      autoComplete="off"
-                      placeholder="Enter encrypted or raw CLI JWT token..." 
-                      value={cliToken}
-                      onChange={(e) => setCliToken(e.target.value)}
-                      className="bg-[#050b0e] border-[#00dbe9]/30 text-white text-xs placeholder:text-[#849495]/40 font-mono"
-                    />
-                    <Button 
-                      onClick={() => submitTokenMutation.mutate({ token: cliToken })}
-                      disabled={!isAuthenticated || !cliToken || submitTokenMutation.isPending}
-                      className="bg-[#00dbe9] text-black hover:bg-[#00dbe9]/80 text-xs font-bold px-6 shrink-0"
-                    >
-                      {submitTokenMutation.isPending ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : "SAVE & RENEW"}
-                    </Button>
-                  </div>
-                  {!isAuthenticated && (
-                    <p className="text-[10px] text-amber-400/80">🔒 Owner authentication required to update CLI session credentials.</p>
-                  )}
+                <p className="text-xs text-[#849495] mb-4">Choose between the MetaMask Agent Managed Wallet (CLI/Passkey) or a Standard EVM Wallet (Bring Your Own Wallet / Mobile Injected Provider).</p>
+
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <Button
+                    type="button"
+                    onClick={() => setWalletModeMutation.mutate({ mode: "agent" })}
+                    disabled={!isAuthenticated || setWalletModeMutation.isPending}
+                    className={`p-3 h-auto flex flex-col items-start gap-1 border text-left ${
+                      (agent?.walletMode || "agent") === "agent"
+                        ? "border-[#00dbe9] bg-[#00dbe9]/15 text-white"
+                        : "border-[#00dbe9]/30 bg-[#050b0e] text-[#849495] hover:text-white"
+                    }`}
+                  >
+                    <span className="text-xs font-bold text-[#00dbe9]">METAMASK AGENT WALLET</span>
+                    <span className="text-[10px] text-[#849495]">Managed agent session, CLI auth & passkey</span>
+                  </Button>
+
+                  <Button
+                    type="button"
+                    onClick={() => setWalletModeMutation.mutate({ mode: "standard" })}
+                    disabled={!isAuthenticated || setWalletModeMutation.isPending}
+                    className={`p-3 h-auto flex flex-col items-start gap-1 border text-left ${
+                      agent?.walletMode === "standard"
+                        ? "border-emerald-500 bg-emerald-500/15 text-white"
+                        : "border-[#00dbe9]/30 bg-[#050b0e] text-[#849495] hover:text-white"
+                    }`}
+                  >
+                    <span className="text-xs font-bold text-emerald-400">STANDARD EVM WALLET (BYOW)</span>
+                    <span className="text-[10px] text-[#849495]">Connect mobile wallet or injected provider</span>
+                  </Button>
                 </div>
+
+                {agent?.walletMode === "standard" ? (
+                  <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-4 space-y-3">
+                    <p className="text-xs font-bold text-emerald-300">Standard Wallet Connected</p>
+                    <p className="text-[10px] text-[#849495]">Active Address: <span className="text-white font-mono">{agent?.standardWalletAddress || "Not connected"}</span></p>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        onClick={() => {
+                          const addr = prompt("Enter your standard EVM wallet address (e.g. 0x...):", agent?.standardWalletAddress || "");
+                          if (addr) connectStandardWalletMutation.mutate({ address: addr, providerType: "injected" });
+                        }}
+                        disabled={!isAuthenticated || connectStandardWalletMutation.isPending}
+                        className="bg-emerald-500 text-black hover:bg-emerald-400 text-xs font-bold px-4 py-2"
+                      >
+                        {connectStandardWalletMutation.isPending ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : "CONNECT INJECTED / MOBILE WALLET"}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <h2 className="text-sm font-bold tracking-wider text-white mb-2 flex items-center gap-2">
+                      <Terminal className="w-4 h-4 text-[#00dbe9]" /> METAMASK AGENT CLI TOKEN SETTINGS
+                    </h2>
+                    <p className="text-xs text-[#849495] mb-4">Securely submit and save your MetaMask Agent CLI JWT token. Input is masked for security and authenticated via owner OAuth session.</p>
+                    
+                    <div className="flex flex-col gap-3">
+                      <div className="flex gap-3">
+                        <Input 
+                          type="password"
+                          autoComplete="off"
+                          placeholder="Enter encrypted or raw CLI JWT token..." 
+                          value={cliToken}
+                          onChange={(e) => setCliToken(e.target.value)}
+                          className="bg-[#050b0e] border-[#00dbe9]/30 text-white text-xs placeholder:text-[#849495]/40 font-mono"
+                        />
+                        <Button 
+                          onClick={() => submitTokenMutation.mutate({ token: cliToken })}
+                          disabled={!isAuthenticated || !cliToken || submitTokenMutation.isPending}
+                          className="bg-[#00dbe9] text-black hover:bg-[#00dbe9]/80 text-xs font-bold px-6 shrink-0"
+                        >
+                          {submitTokenMutation.isPending ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : "SAVE & RENEW"}
+                        </Button>
+                      </div>
+                      {!isAuthenticated && (
+                        <p className="text-[10px] text-amber-400/80">🔒 Owner authentication required to update CLI session credentials.</p>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="border-t border-[#00dbe9]/20 pt-4">

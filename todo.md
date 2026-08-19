@@ -369,3 +369,10 @@ POSIX
 - [x] Implement graceful structured warning responses for token validation failures
 - [x] Add toast recovery with quick retry and setup link guidance
 - [x] Verify unit tests, TypeScript checks, production build, and checkpoint save
+
+# Additional Requirement: Dual-Mode Wallet Connection (Agent Wallet vs. Standard EVM Wallet) & Mobile Setup
+
+- [x] Design dual-mode wallet connection schema, backend router endpoints, and mobile onboarding UX
+- [x] Implement backend wallet mode toggle and standard EVM wallet validation
+- [x] Build mobile-friendly UI panel with wallet selector, QR code auth, and injected EVM provider connection
+- [x] Verify unit tests, TypeScript checks, production build, and checkpoint save
