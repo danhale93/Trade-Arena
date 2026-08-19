@@ -232,9 +232,20 @@ export async function runMM(cmd: string, timeout = 30000) {
 export async function loginWithToken(token: string): Promise<boolean> {
   if (!isMetaMaskCliAvailable()) return false;
   try {
+    process.env.MM_CLI_TOKEN = token;
     await runMMArgs(["logout", "--yes"]);
     const res = await runMMArgs(["login", "--token", token]);
-    return res.ok;
+    if (res.ok) return true;
+    // Fallback: check if doctor succeeds directly with the token set in env
+    const doc = await getCliDoctorStatus();
+    if (doc.ok) {
+      const raw = doc.stdout && typeof doc.stdout === "object" ? doc.stdout : {};
+      const out = raw.data && typeof raw.data === "object" ? raw.data : raw;
+      if (out.authenticated === true) {
+        return true;
+      }
+    }
+    return false;
   } catch {
     return false;
   }
