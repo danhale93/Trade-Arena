@@ -354,3 +354,11 @@ POSIX
 - [x] Verify all 60 unit tests across 19 test files pass successfully
 - [x] Verify TypeScript type check and production bundle compilation successfully
 - [x] Preserve simulation-safe execution state and deliver repair report
+
+# Additional Requirement: Header Wallet Balance, Live Toggle, and Checking Indicator
+
+- [x] Inspect header, status payload, execution toggle, and existing loading components
+- [x] Implement header MM balance and connection indicator
+- [x] Add guarded Simulation/Live trading toggle switch with preflight enforcement
+- [x] Add visual loading indicator during session checking states
+- [x] Verify unit tests, TypeScript checks, production build, and checkpoint save

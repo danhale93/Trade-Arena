@@ -319,6 +319,16 @@ export default function Home() {
             <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             RPC Connected · <span className="text-[#00dbe9] font-mono">{statusData?.agent?.rpcLatencyMs ?? 16}ms</span>
           </div>
+
+          {/* Prominent Header MM Agent Wallet Balance & Status */}
+          <div className="flex items-center gap-2 rounded border border-[#00dbe9]/30 bg-[#050b0e] px-3 py-1.5 text-[10px] font-mono" title="Active MetaMask Agent managed wallet balance on Base Mainnet">
+            <span className="text-[#849495]">MM WALLET:</span>
+            <span className="text-white font-bold">{balances.base} ETH</span>
+            <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${cliConnected ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-300"}`}>
+              {statusLoading || !cliConnection ? "CHECKING…" : cliConnected ? "CONNECTED" : "DISCONNECTED"}
+            </span>
+          </div>
+
           <div className="flex items-center gap-2">
           <div
             role="status"
@@ -326,13 +336,19 @@ export default function Home() {
             title={cliConnection?.reason || "Checking MetaMask Agent session status."}
             aria-label={`MetaMask Agent token ${cliConnection?.label?.toLowerCase() || "status checking"}`}
             className={`flex items-center gap-2 rounded border px-2.5 py-1.5 text-[10px] font-bold tracking-wider transition-colors ${
-              cliConnected
+              statusLoading || !cliConnection
+                ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-300 animate-pulse"
+                : cliConnected
                 ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
                 : "border-rose-500/30 bg-rose-500/10 text-rose-300"
             }`}
           >
-            <span className={`inline-block h-2 w-2 rounded-full ${cliConnected ? "bg-emerald-400 animate-pulse" : "bg-rose-400"}`} />
-            <span className="inline whitespace-nowrap">AGENT {statusLoading || !cliConnection ? "CHECKING" : cliConnection.label}</span>
+            {statusLoading || !cliConnection ? (
+              <RefreshCw className="h-3 w-3 animate-spin text-cyan-400" />
+            ) : (
+              <span className={`inline-block h-2 w-2 rounded-full ${cliConnected ? "bg-emerald-400 animate-pulse" : "bg-rose-400"}`} />
+            )}
+            <span className="inline whitespace-nowrap">AGENT {statusLoading || !cliConnection ? "CHECKING SESSION..." : cliConnection.label}</span>
             <span className="sr-only">
               {statusLoading || !cliConnection
                 ? "MetaMask Agent token connection is being checked."
@@ -343,7 +359,7 @@ export default function Home() {
             className="whitespace-nowrap text-[10px] text-[#849495]"
             title={cliConnection?.lastValidatedAt || "No successful validation has been recorded."}
           >
-            LAST CHECK: {statusLoading ? "CHECKING" : lastValidatedLabel}
+            LAST CHECK: {statusLoading ? "CHECKING…" : lastValidatedLabel}
           </span>
           </div>
           <Button
@@ -769,34 +785,70 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Owner Controls */}
-              <div className="mt-6 pt-6 border-t border-[#00dbe9]/20 flex flex-wrap gap-4">
-                <Button 
-                  onClick={() => toggleScannerMutation.mutate()} 
-                  disabled={!isAuthenticated || toggleScannerMutation.isPending}
-                  className={`flex-1 py-3 text-xs font-bold border ${
-                    agent?.scannerEnabled 
-                      ? 'bg-rose-500/10 border-rose-500/30 text-rose-400 hover:bg-rose-500/20' 
-                      : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20'
-                  }`}
-                >
-                  {agent?.scannerEnabled ? <Pause className="w-3.5 h-3.5 mr-2" /> : <Play className="w-3.5 h-3.5 mr-2" />}
-                  {agent?.scannerEnabled ? "PAUSE SCANNER" : "RESUME SCANNER"}
-                </Button>
+              {/* Owner Controls & Guarded Simulation/Live Switch */}
+              <div className="mt-6 pt-6 border-t border-[#00dbe9]/20 flex flex-col gap-4">
+                <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl border border-[#00dbe9]/25 bg-[#050b0e]">
+                  <div>
+                    <p className="text-xs font-bold text-white flex items-center gap-2">
+                      <Zap className="w-4 h-4 text-[#00dbe9]" /> TRADING MODE: {agent?.executionEnabled ? <span className="text-amber-400">LIVE TRADING ARMED</span> : <span className="text-[#00dbe9]">SIMULATION ONLY</span>}
+                    </p>
+                    <p className="text-[10px] text-[#849495] mt-1">
+                      {agent?.executionEnabled 
+                        ? "Real-time execution active under configured gas and input limits." 
+                        : "Simulating routes with QuoterV2. No transactions broadcast until armed."}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] font-bold text-[#849495]">SIMULATION</span>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={Boolean(agent?.executionEnabled)}
+                      aria-label="Toggle between simulation-only and live trading execution mode"
+                      disabled={!isAuthenticated || toggleExecutionMutation.isPending || (!agent?.executionEnabled && executionPreflight && !livePreflightReady)}
+                      onClick={() => toggleExecutionMutation.mutate()}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#00dbe9] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+                        agent?.executionEnabled ? "bg-amber-500" : "bg-cyan-900"
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                          agent?.executionEnabled ? "translate-x-5" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                    <span className="text-[10px] font-bold text-amber-400">LIVE</span>
+                  </div>
+                </div>
 
-                <Button 
-                  onClick={() => toggleExecutionMutation.mutate()} 
-                  disabled={!isAuthenticated || toggleExecutionMutation.isPending || (!agent?.executionEnabled && executionPreflight && !livePreflightReady)}
-                  title={!livePreflightReady && !agent?.executionEnabled ? "Live execution is blocked until the direct signer, gas cap, input cap, and confirmation flags pass preflight." : undefined}
-                  className={`flex-1 py-3 text-xs font-bold border ${
-                    agent?.executionEnabled 
-                      ? 'bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20' 
-                      : 'bg-[#00dbe9]/10 border-[#00dbe9]/30 text-[#00dbe9] hover:bg-[#00dbe9]/20'
-                  }`}
-                >
-                  <Zap className="w-3.5 h-3.5 mr-2" />
-                  {agent?.executionEnabled ? "SWITCH TO SIMULATION" : !livePreflightReady && executionPreflight ? "LIVE PREFLIGHT BLOCKED" : "ARM LIVE EXECUTION"}
-                </Button>
+                <div className="flex flex-wrap gap-4">
+                  <Button 
+                    onClick={() => toggleScannerMutation.mutate()} 
+                    disabled={!isAuthenticated || toggleScannerMutation.isPending}
+                    className={`flex-1 py-3 text-xs font-bold border ${
+                      agent?.scannerEnabled 
+                        ? 'bg-rose-500/10 border-rose-500/30 text-rose-400 hover:bg-rose-500/20' 
+                        : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20'
+                    }`}
+                  >
+                    {agent?.scannerEnabled ? <Pause className="w-3.5 h-3.5 mr-2" /> : <Play className="w-3.5 h-3.5 mr-2" />}
+                    {agent?.scannerEnabled ? "PAUSE SCANNER" : "RESUME SCANNER"}
+                  </Button>
+
+                  <Button 
+                    onClick={() => toggleExecutionMutation.mutate()} 
+                    disabled={!isAuthenticated || toggleExecutionMutation.isPending || (!agent?.executionEnabled && executionPreflight && !livePreflightReady)}
+                    title={!livePreflightReady && !agent?.executionEnabled ? "Live execution is blocked until the direct signer, gas cap, input cap, and confirmation flags pass preflight." : undefined}
+                    className={`flex-1 py-3 text-xs font-bold border ${
+                      agent?.executionEnabled 
+                        ? 'bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20' 
+                        : 'bg-[#00dbe9]/10 border-[#00dbe9]/30 text-[#00dbe9] hover:bg-[#00dbe9]/20'
+                    }`}
+                  >
+                    <Zap className="w-3.5 h-3.5 mr-2" />
+                    {agent?.executionEnabled ? "SWITCH TO SIMULATION" : !livePreflightReady && executionPreflight ? "LIVE PREFLIGHT BLOCKED" : "ARM LIVE EXECUTION"}
+                  </Button>
+                </div>
               </div>
               {executionPreflight && !executionPreflight.ready && (
                 <div className="mt-4 rounded border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-[10px] text-amber-300" role="status">
