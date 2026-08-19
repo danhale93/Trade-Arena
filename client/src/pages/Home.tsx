@@ -226,6 +226,48 @@ export default function Home() {
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [modalCliToken, setModalCliToken] = useState("");
   const [preflightTestResult, setPreflightTestResult] = useState<any | null>(null);
+  const [networkSlippage, setNetworkSlippage] = useState<Record<string, number>>({ base: 50, arbitrum: 50, optimism: 50 });
+
+  const updateNetworkSlippageMutation = trpc.arbitrage.updateNetworkSlippage.useMutation({
+    onSuccess: (data) => {
+      toast.success(`Slippage for ${data.network.toUpperCase()} updated to ${(data.slippageBps / 100).toFixed(2)}% (${data.slippageBps} BPS)`);
+      utils.arbitrage.status.invalidate();
+    },
+    onError: (err) => {
+      toast.error("Failed to update slippage: " + err.message);
+    }
+  });
+
+  const exportTelemetryCsv = () => {
+    try {
+      const trades = agent?.recentTrades || [];
+      const pulses = agent?.pulseEvents || [];
+      const history = agent?.simulationRouteHistory || [];
+      
+      let csv = "Timestamp,Type,Network,Pair,NetProfitUsd,Details,TxHash\n";
+      trades.forEach((t: any) => {
+        csv += `"${new Date(t.timestamp).toISOString()}","TRADE","${t.network}","${t.tokenPair}","${t.netProfitUsd}","Route: ${t.route}","${t.txHash}"\n`;
+      });
+      pulses.forEach((p: any) => {
+        csv += `"${new Date(p.timestamp).toISOString()}","PULSE_EVENT","${p.network}","${p.route}","${p.netProfitUsd}","Threshold: $${p.thresholdUsd}","${p.source}"\n`;
+      });
+      history.forEach((h: any) => {
+        csv += `"${new Date(h.timestamp).toISOString()}","SIMULATION","${h.network}","${h.tokenPair || 'WETH/V3'}","${h.netProfit || h.profit || '0'}","Spread: ${h.spreadBps || 0}bps","SIM"\n`;
+      });
+
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `trade-arena-telemetry-${Date.now()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success("Telemetry CSV exported successfully");
+    } catch (err: any) {
+      toast.error("CSV export failed: " + (err.message || "Unknown error"));
+    }
+  };
 
   const runPreflightTestMutation = trpc.arbitrage.runManualPreflightTest.useMutation({
     onSuccess: (data) => {
@@ -1767,6 +1809,44 @@ export default function Home() {
                   onChange={(e) => setModalCliToken(e.target.value)}
                   className="bg-[#050b0e] border-[#00dbe9]/30 text-white text-xs font-mono h-9"
                 />
+              </div>
+
+              <div className="border-t border-[#00dbe9]/20 pt-4 space-y-3">
+                <h4 className="text-[11px] uppercase font-mono text-white font-bold">Network Slippage Tolerance Settings</h4>
+                <p className="text-[10px] text-[#849495]">Configure custom maximum allowable slippage per network in basis points (100 BPS = 1.0%).</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {(["base", "arbitrum", "optimism"] as const).map((net) => {
+                    const bps = networkSlippage[net] || 50;
+                    return (
+                      <div key={net} className="bg-[#050b0e] p-3 rounded-lg border border-[#00dbe9]/20 space-y-2">
+                        <div className="flex justify-between items-center text-[11px] font-mono">
+                          <span className="text-white uppercase font-bold">{net}</span>
+                          <span className="text-[#00dbe9]">{bps} BPS ({(bps / 100).toFixed(2)}%)</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="5"
+                          max="300"
+                          step="5"
+                          value={bps}
+                          onChange={(e) => setNetworkSlippage({ ...networkSlippage, [net]: parseInt(e.target.value) || 50 })}
+                          className="w-full accent-[#00dbe9] cursor-pointer"
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => {
+                            updateNetworkSlippageMutation.mutate({ network: net, slippageBps: bps });
+                          }}
+                          disabled={updateNetworkSlippageMutation.isPending}
+                          className="w-full bg-[#00dbe9]/20 text-[#00dbe9] hover:bg-[#00dbe9]/30 text-[10px] h-6 font-mono"
+                        >
+                          SAVE {net.toUpperCase()}
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="p-3 rounded bg-[#050b0e] border border-[#00dbe9]/20 text-[11px] space-y-1 text-[#849495]">

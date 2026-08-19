@@ -325,6 +325,22 @@ export const appRouter = router({
         return { success: true, maxGasGwei: input.maxGasGwei, maxInputWeth: input.maxInputWeth };
       }),
 
+    updateNetworkSlippage: protectedProcedure
+      .input(z.object({ network: z.enum(["base", "arbitrum", "optimism"]), slippageBps: z.number().min(1).max(500) }))
+      .mutation(async ({ input, ctx }) => {
+        if (ctx.user.role !== "admin" && ctx.user.openId !== process.env.OWNER_OPEN_ID) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Only owner/admin can update network slippage tolerance." });
+        }
+        await db.setAgentStateKey(`network_slippage_${input.network}`, String(input.slippageBps));
+        await db.recordAgentLog({
+          level: "SUCCESS",
+          category: "STRATEGY",
+          message: `Slippage tolerance updated for ${input.network.toUpperCase()}`,
+          details: `New slippage: ${input.slippageBps} BPS (${(input.slippageBps / 100).toFixed(2)}%)`,
+        });
+        return { success: true, network: input.network, slippageBps: input.slippageBps };
+      }),
+
     setWalletMode: protectedProcedure
       .input(z.object({ mode: z.enum(["agent", "standard"]) }))
       .mutation(async ({ input, ctx }) => {
