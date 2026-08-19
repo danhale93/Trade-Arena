@@ -399,3 +399,9 @@ POSIX
 - [x] Add a dedicated multi-chain gas telemetry widget for Base, Arbitrum, and Optimism
 - [x] Display live congestion bands, fee readings, threshold multipliers, and last refresh context
 - [x] Add focused tests and verify responsive rendering
+
+# Additional Requirement: Configurable Congestion Alerts
+
+- [x] Add persistent owner-configurable ELEVATED/CONGESTED alert settings per network
+- [x] Evaluate live gas telemetry transitions and show alert feedback without enabling trading
+- [x] Add settings controls, focused tests, and responsive verification

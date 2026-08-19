@@ -75,6 +75,22 @@ function getCliDoctorSummary(result: { ok: boolean; stdout?: any; error?: string
   } as const;
 }
 
+const GAS_ALERT_THRESHOLDS = ["DISABLED", "ELEVATED", "CONGESTED"] as const;
+type GasAlertThreshold = (typeof GAS_ALERT_THRESHOLDS)[number];
+const DEFAULT_GAS_ALERT_THRESHOLD: GasAlertThreshold = "DISABLED";
+
+async function getGasAlertThresholds() {
+  const networks = ["base", "arbitrum", "optimism"] as const;
+  const entries = await Promise.all(networks.map(async (network) => {
+    const stored = await db.getAgentStateKey(`gas_alert_threshold_${network}`);
+    const threshold = GAS_ALERT_THRESHOLDS.includes(stored as GasAlertThreshold)
+      ? stored as GasAlertThreshold
+      : DEFAULT_GAS_ALERT_THRESHOLD;
+    return [network, threshold] as const;
+  }));
+  return Object.fromEntries(entries) as Record<(typeof networks)[number], GasAlertThreshold>;
+}
+
 export const appRouter = router({
     // Hydrate process.env.MM_CLI_TOKEN from agent_state database on startup
     ...(() => {
@@ -166,6 +182,7 @@ export const appRouter = router({
         arbitrum: arbitrumGas,
         optimism: optimismGas,
       };
+      const gasAlertThresholds = await getGasAlertThresholds();
 
       const adjustedNetworkConfigs: typeof strategy.networks = {
         base: {
@@ -238,6 +255,7 @@ export const appRouter = router({
           executionPreflight: directExecutionPreflight,
           strategyProfile: strategy,
           gasTelemetry: gasTelemetryRecord,
+          gasAlertThresholds,
           networkConfigs: adjustedNetworkConfigs,
           scannerEnabled: scannerRunning,
           running: scannerRunning,
@@ -339,6 +357,25 @@ export const appRouter = router({
           details: `New slippage: ${input.slippageBps} BPS (${(input.slippageBps / 100).toFixed(2)}%)`,
         });
         return { success: true, network: input.network, slippageBps: input.slippageBps };
+      }),
+
+    updateGasAlertThreshold: protectedProcedure
+      .input(z.object({
+        network: z.enum(["base", "arbitrum", "optimism"]),
+        threshold: z.enum(GAS_ALERT_THRESHOLDS),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (ctx.user.role !== "admin" && ctx.user.openId !== process.env.OWNER_OPEN_ID) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Only owner/admin can update congestion alerts." });
+        }
+        await db.setAgentStateKey(`gas_alert_threshold_${input.network}`, input.threshold);
+        await db.recordAgentLog({
+          level: "SUCCESS",
+          category: "TELEMETRY",
+          message: `Gas congestion alert updated for ${input.network.toUpperCase()}`,
+          details: `Alert threshold: ${input.threshold}`,
+        });
+        return { success: true, network: input.network, threshold: input.threshold };
       }),
 
     setWalletMode: protectedProcedure

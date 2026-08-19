@@ -13,6 +13,7 @@ import { buildCliWarningToast } from "@/lib/cliWarning";
 import { getCliStatusWidgetModel } from "@/lib/cliStatusWidget";
 import { getManualPreflightCheckLabel, getManualPreflightStatusModel } from "@/lib/manualPreflight";
 import { formatGasReading, formatTelemetryTime, getGasCongestionModel } from "@/lib/gasTelemetryWidget";
+import { getGasAlertLabel, shouldNotifyGasAlert, type GasAlertThreshold } from "@/lib/gasAlert";
 import { CLI_COMMANDS, CLI_HANDOFF_URL, CLI_LINKS } from "@/lib/cliCommandDeck";
 import { QRCodeSVG } from "qrcode.react";
 import { useState, useEffect, useRef } from "react";
@@ -230,6 +231,9 @@ export default function Home() {
   const [preflightTestResult, setPreflightTestResult] = useState<any | null>(null);
   const [preflightNetwork, setPreflightNetwork] = useState<"base" | "arbitrum" | "optimism">("base");
   const [networkSlippage, setNetworkSlippage] = useState<Record<string, number>>({ base: 50, arbitrum: 50, optimism: 50 });
+  const [gasAlertSettings, setGasAlertSettings] = useState<Record<"base" | "arbitrum" | "optimism", GasAlertThreshold>>({ base: "DISABLED", arbitrum: "DISABLED", optimism: "DISABLED" });
+  const gasAlertInitializedRef = useRef(false);
+  const previousGasStatesRef = useRef<Record<string, string>>({});
 
   const updateNetworkSlippageMutation = trpc.arbitrage.updateNetworkSlippage.useMutation({
     onSuccess: (data) => {
@@ -239,6 +243,17 @@ export default function Home() {
     onError: (err) => {
       toast.error("Failed to update slippage: " + err.message);
     }
+  });
+
+  const updateGasAlertThresholdMutation = trpc.arbitrage.updateGasAlertThreshold.useMutation({
+    onSuccess: (data) => {
+      setGasAlertSettings((current) => ({ ...current, [data.network]: data.threshold }));
+      toast.success(`${data.network.toUpperCase()} congestion alert saved: ${getGasAlertLabel(data.threshold as GasAlertThreshold)}`);
+      utils.arbitrage.status.invalidate();
+    },
+    onError: (err) => {
+      toast.error("Failed to update congestion alert: " + err.message);
+    },
   });
 
   const exportTelemetryCsv = () => {
@@ -419,6 +434,33 @@ export default function Home() {
   const derivedPulseLevel = featureModel.pulseLevel;
   const featureReels = featureModel.reels;
   const cliStatusWidget = getCliStatusWidgetModel(agent?.cliDoctorLive, agent?.cliWalletBalance);
+
+  useEffect(() => {
+    const persistedThresholds = agent?.gasAlertThresholds as Partial<Record<"base" | "arbitrum" | "optimism", GasAlertThreshold>> | undefined;
+    if (!gasAlertInitializedRef.current && persistedThresholds) {
+      setGasAlertSettings((current) => ({ ...current, ...persistedThresholds }));
+      gasAlertInitializedRef.current = true;
+    }
+  }, [agent?.gasAlertThresholds]);
+
+  useEffect(() => {
+    const networks = ["base", "arbitrum", "optimism"] as const;
+    networks.forEach((network) => {
+      const currentState = String(gasTelemetry[network]?.congestion || "");
+      if (!currentState) return;
+      const previousState = previousGasStatesRef.current[network];
+      const threshold = gasAlertSettings[network];
+      if (previousState && shouldNotifyGasAlert(previousState, currentState, threshold)) {
+        const networkLabel = network.toUpperCase();
+        const level = currentState === "CONGESTED" ? "CONGESTED" : "ELEVATED";
+        toast.warning(`${networkLabel} gas is ${level}`, {
+          description: `Configured alert threshold reached. Current fee: ${formatGasReading(gasTelemetry[network]?.gasPriceGwei)} GWEI. Trading remains unchanged.`,
+          duration: 7000,
+        });
+      }
+      previousGasStatesRef.current[network] = currentState;
+    });
+  }, [gasTelemetry, gasAlertSettings]);
 
   return (
     <div className="stitch-shell min-h-screen bg-[#050b0e] text-[#00dbe9] font-mono selection:bg-[#00dbe9]/30 selection:text-white flex flex-col">
@@ -1974,6 +2016,44 @@ export default function Home() {
                           >
                             SAVE {net.toUpperCase()}
                           </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="border-t border-[#00dbe9]/15 pt-4">
+                  <h4 className="text-[11px] uppercase font-mono text-white font-bold mb-1">Congestion Alerts</h4>
+                  <p className="text-[10px] text-[#849495] mb-3">Receive a dashboard warning when live gas telemetry crosses the selected band. Alerts are read-only and never arm trading.</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {(["base", "arbitrum", "optimism"] as const).map((net) => {
+                      const selectedThreshold = gasAlertSettings[net];
+                      return (
+                        <div key={`gas-alert-${net}`} className="bg-[#050b0e] p-3 rounded-lg border border-amber-500/20 space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[11px] text-white uppercase font-bold">{net}</span>
+                            <span className={`h-2 w-2 rounded-full ${selectedThreshold === "DISABLED" ? "bg-slate-500" : selectedThreshold === "CONGESTED" ? "bg-rose-400" : "bg-amber-400"}`} />
+                          </div>
+                          <select
+                            aria-label={`${net} congestion alert threshold`}
+                            value={selectedThreshold}
+                            onChange={(event) => setGasAlertSettings((current) => ({ ...current, [net]: event.target.value as GasAlertThreshold }))}
+                            className="h-8 w-full rounded border border-amber-500/25 bg-[#081217] px-2 text-[10px] font-mono text-white outline-none focus:border-amber-400"
+                          >
+                            <option value="DISABLED">DISABLED</option>
+                            <option value="ELEVATED">ELEVATED +</option>
+                            <option value="CONGESTED">CONGESTED ONLY</option>
+                          </select>
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => updateGasAlertThresholdMutation.mutate({ network: net, threshold: selectedThreshold })}
+                            disabled={!isAuthenticated || updateGasAlertThresholdMutation.isPending}
+                            className="w-full bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 text-[10px] h-6 font-mono border border-amber-500/25"
+                          >
+                            {updateGasAlertThresholdMutation.isPending ? "SAVING..." : "SAVE ALERT"}
+                          </Button>
+                          <p className="text-[9px] text-[#849495]">{getGasAlertLabel(selectedThreshold)}</p>
                         </div>
                       );
                     })}
