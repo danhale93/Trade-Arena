@@ -362,3 +362,10 @@ POSIX
 - [x] Add guarded Simulation/Live trading toggle switch with preflight enforcement
 - [x] Add visual loading indicator during session checking states
 - [x] Verify unit tests, TypeScript checks, production build, and checkpoint save
+
+# Additional Requirement: MetaMask Agent CLI Token Validation Error Handling
+
+- [x] Inspect token submission, CLI login, validation, and toast error paths
+- [x] Implement graceful structured warning responses for token validation failures
+- [x] Add toast recovery with quick retry and setup link guidance
+- [x] Verify unit tests, TypeScript checks, production build, and checkpoint save

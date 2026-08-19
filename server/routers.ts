@@ -331,7 +331,12 @@ export const appRouter = router({
       const loggedIn = await cli.loginWithToken(input.token);
       if (!loggedIn) {
         await db.setAgentStateKey("mm_cli_session_validated", "false");
-        throw new TRPCError({ code: "BAD_REQUEST", message: getCliConnectionFailureMessage() });
+        return {
+          success: true,
+          validated: false,
+          warning: "MetaMask Agent CLI could not validate the token. Check that the token is current and belongs to the managed wallet.",
+          message: "Token saved securely in vault. Validation pending correct managed-wallet credentials.",
+        };
       }
 
       await db.setAgentStateKey("mm_cli_session_validated", "true");
@@ -363,7 +368,12 @@ export const appRouter = router({
       const loggedIn = await cli.loginWithToken(token);
       if (!loggedIn) {
         await db.setAgentStateKey("mm_cli_session_validated", "false");
-        throw new TRPCError({ code: "BAD_REQUEST", message: getCliConnectionFailureMessage() });
+        return {
+          success: true,
+          validated: false,
+          warning: "MetaMask Agent CLI could not validate the token. Check that the token is current and belongs to the managed wallet.",
+          message: "Token saved securely in vault. Validation pending correct managed-wallet credentials.",
+        };
       }
 
       await db.setAgentStateKey("mm_cli_session_validated", "true");
