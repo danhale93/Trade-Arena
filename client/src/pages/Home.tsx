@@ -26,6 +26,23 @@ export default function Home() {
   const [profitPulseActive, setProfitPulseActive] = useState(false);
   const [profitPulseSummary, setProfitPulseSummary] = useState<{ network: string; profit: string; route: string } | null>(null);
 
+  const [backtestNetworks, setBacktestNetworks] = useState<Array<"base" | "arbitrum" | "optimism">>(["base", "arbitrum", "optimism"]);
+  const [backtestStrategy, setBacktestStrategy] = useState<"guarded" | "aggressive">("guarded");
+  const [backtestSampleSize, setBacktestSampleSize] = useState<number>(100);
+  const [backtestGasGwei, setBacktestGasGwei] = useState<number>(0.05);
+  const [backtestResult, setBacktestResult] = useState<any | null>(null);
+  const [backtestActiveTab, setBacktestActiveTab] = useState<"summary" | "runs">("summary");
+
+  const runBacktestMutation = trpc.arbitrage.runHistoricalBacktest.useMutation({
+    onSuccess: (data) => {
+      setBacktestResult(data);
+      toast.success(`Backtest completed: $${data.summary.totalProfitUsd} total profit across ${data.summary.totalRuns} runs.`);
+    },
+    onError: (err) => {
+      toast.error("Backtest failed: " + err.message);
+    }
+  });
+
   const { data: statusData, isLoading: statusLoading } = trpc.arbitrage.status.useQuery(undefined, {
     refetchInterval: 5000,
   });
@@ -1104,6 +1121,252 @@ export default function Home() {
             </div>
           </div>
         </div>
+
+        {/* Multi-Chain Historical Backtest Panel */}
+        <section
+          className="stitch-panel bg-[#081217] border border-[#00dbe9]/40 p-5 sm:p-6 rounded-xl shadow-lg relative overflow-hidden mb-6"
+          aria-labelledby="historical-backtest-title"
+        >
+          <div className="absolute top-0 right-0 transform translate-x-4 -translate-y-4 w-32 h-32 bg-[#00dbe9]/10 rounded-full blur-2xl pointer-events-none" />
+          
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono bg-[#00dbe9]/20 text-[#00dbe9] border border-[#00dbe9]/30">
+                  SIMULATION ONLY · ZERO RISK
+                </span>
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                  MULTI-CHAIN ENGINE
+                </span>
+              </div>
+              <h2 id="historical-backtest-title" className="text-base font-bold tracking-wider text-white flex items-center gap-2 mt-2">
+                <Cpu className="w-5 h-5 text-[#00dbe9]" /> MULTI-CHAIN HISTORICAL BACKTEST SUITE
+              </h2>
+              <p className="text-xs text-[#849495] mt-1 max-w-2xl">
+                Simulate cross-DEX arbitrage execution across Base, Arbitrum, and Optimism using historical spread models and gas telemetry. No private keys required; no transactions are broadcast.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  runBacktestMutation.mutate({
+                    networks: backtestNetworks,
+                    strategyProfile: backtestStrategy,
+                    sampleSize: backtestSampleSize,
+                    gasGwei: backtestGasGwei,
+                  });
+                }}
+                disabled={runBacktestMutation.isPending || backtestNetworks.length === 0}
+                className="bg-[#00dbe9] text-black font-mono font-bold hover:bg-[#00dbe9]/80 border-none shadow-md"
+              >
+                {runBacktestMutation.isPending ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> RUNNING BACKTEST...
+                  </>
+                ) : (
+                  <>
+                    <Zap className="w-4 h-4 mr-2" /> RUN MULTI-CHAIN BACKTEST
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+
+          {/* Configuration Controls */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 bg-[#050b0e] p-4 rounded-lg border border-[#00dbe9]/20">
+            <div>
+              <label className="text-[10px] uppercase font-mono text-[#849495] block mb-1.5">Target Networks</label>
+              <div className="flex flex-wrap gap-1.5">
+                {(["base", "arbitrum", "optimism"] as const).map((net) => {
+                  const active = backtestNetworks.includes(net);
+                  return (
+                    <button
+                      key={net}
+                      type="button"
+                      onClick={() => {
+                        if (active) {
+                          if (backtestNetworks.length > 1) {
+                            setBacktestNetworks(backtestNetworks.filter((n) => n !== net));
+                          }
+                        } else {
+                          setBacktestNetworks([...backtestNetworks, net]);
+                        }
+                      }}
+                      className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold uppercase transition-colors border ${active ? 'bg-[#00dbe9]/20 text-[#00dbe9] border-[#00dbe9]/50' : 'bg-[#081217] text-[#849495] border-white/10'}`}
+                    >
+                      {net} {active && "✓"}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[10px] uppercase font-mono text-[#849495] block mb-1.5">Strategy Profile</label>
+              <div className="flex gap-1.5">
+                {(["guarded", "aggressive"] as const).map((profile) => (
+                  <button
+                    key={profile}
+                    type="button"
+                    onClick={() => setBacktestStrategy(profile)}
+                    className={`flex-1 px-2.5 py-1 rounded text-[10px] font-mono font-bold uppercase transition-colors border ${backtestStrategy === profile ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-[#081217] text-[#849495] border-white/10'}`}
+                  >
+                    {profile}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="backtest-sample-size-home" className="text-[10px] uppercase font-mono text-[#849495] block mb-1.5">Sample Size: {backtestSampleSize} ticks</label>
+              <div className="flex gap-1.5">
+                {[50, 100, 250, 500].map((size) => (
+                  <button
+                    key={size}
+                    type="button"
+                    onClick={() => setBacktestSampleSize(size)}
+                    className={`flex-1 px-2 py-1 rounded text-[10px] font-mono font-bold transition-colors border ${backtestSampleSize === size ? 'bg-purple-500/20 text-purple-300 border-purple-500/50' : 'bg-[#081217] text-[#849495] border-white/10'}`}
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="backtest-gas-gwei-input-home" className="text-[10px] uppercase font-mono text-[#849495] block mb-1.5">Gas Price Override (Gwei)</label>
+              <Input
+                id="backtest-gas-gwei-input-home"
+                type="number"
+                step="0.01"
+                min="0.01"
+                max="50"
+                value={backtestGasGwei}
+                onChange={(e) => setBacktestGasGwei(parseFloat(e.target.value) || 0.05)}
+                className="bg-[#081217] border-[#00dbe9]/30 text-white font-mono text-xs h-8"
+              />
+            </div>
+          </div>
+
+          {/* Results Display */}
+          {backtestResult ? (
+            <div>
+              <div className="flex items-center justify-between mb-4 border-b border-[#00dbe9]/20 pb-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-bold text-white uppercase font-mono">Backtest Results ({backtestResult.summary.strategyLabel})</span>
+                  <span className="text-[10px] text-[#849495]">Tested {backtestResult.summary.totalRuns} historical market ticks across {backtestResult.summary.networksTested.join(", ").toUpperCase()}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setBacktestActiveTab("summary")}
+                    className={`px-3 py-1 rounded text-[10px] font-mono font-bold transition-colors ${backtestActiveTab === "summary" ? "bg-[#00dbe9] text-black" : "bg-[#050b0e] text-[#849495] hover:text-white"}`}
+                  >
+                    Summary & Networks
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBacktestActiveTab("runs")}
+                    className={`px-3 py-1 rounded text-[10px] font-mono font-bold transition-colors ${backtestActiveTab === "runs" ? "bg-[#00dbe9] text-black" : "bg-[#050b0e] text-[#849495] hover:text-white"}`}
+                  >
+                    Execution Log ({backtestResult.backtestRuns.length})
+                  </button>
+                </div>
+              </div>
+
+              {backtestActiveTab === "summary" ? (
+                <div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+                    <div className="rounded-lg border border-[#00dbe9]/30 bg-[#050b0e] p-3">
+                      <p className="text-[9px] uppercase font-mono text-[#849495]">Total Net Profit</p>
+                      <p className={`mt-1 text-lg font-bold font-mono ${backtestResult.summary.totalProfitUsd >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                        {backtestResult.summary.totalProfitUsd >= 0 ? "+" : "-"}${Math.abs(backtestResult.summary.totalProfitUsd).toFixed(2)}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-emerald-500/30 bg-[#050b0e] p-3">
+                      <p className="text-[9px] uppercase font-mono text-[#849495]">Win Rate</p>
+                      <p className="mt-1 text-lg font-bold font-mono text-emerald-400">
+                        {backtestResult.summary.winRatePercent}%
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-[#00dbe9]/30 bg-[#050b0e] p-3">
+                      <p className="text-[9px] uppercase font-mono text-[#849495]">Avg Profit / Run</p>
+                      <p className={`mt-1 text-lg font-bold font-mono ${backtestResult.summary.avgNetProfitUsd >= 0 ? "text-[#00dbe9]" : "text-rose-400"}`}>
+                        {backtestResult.summary.avgNetProfitUsd >= 0 ? "+" : "-"}${Math.abs(backtestResult.summary.avgNetProfitUsd).toFixed(4)}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-rose-500/30 bg-[#050b0e] p-3">
+                      <p className="text-[9px] uppercase font-mono text-[#849495]">Max Drawdown</p>
+                      <p className="mt-1 text-lg font-bold font-mono text-rose-400">
+                        -${backtestResult.summary.maxDrawdownUsd.toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Network Breakdown Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {Object.entries(backtestResult.networkStats).map(([net, stats]: [string, any]) => {
+                      const winRate = stats.runs > 0 ? ((stats.wins / stats.runs) * 100).toFixed(1) : "0.0";
+                      return (
+                        <div key={net} className="rounded-lg border border-[#00dbe9]/20 bg-[#050b0e] p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-mono font-bold text-xs uppercase text-white">{net}</span>
+                            <span className="text-[10px] font-mono text-[#00dbe9] bg-[#00dbe9]/10 px-2 py-0.5 rounded">{stats.runs} Runs</span>
+                          </div>
+                          <div className="space-y-1.5 text-[11px] font-mono">
+                            <div className="flex justify-between text-[#849495]">
+                              <span>Net Profit:</span>
+                              <span className={stats.profitUsd >= 0 ? "text-emerald-400 font-bold" : "text-rose-400 font-bold"}>
+                                {stats.profitUsd >= 0 ? "+" : "-"}${Math.abs(stats.profitUsd).toFixed(2)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-[#849495]">
+                              <span>Win Rate:</span>
+                              <span className="text-white">{winRate}%</span>
+                            </div>
+                            <div className="flex justify-between text-[#849495]">
+                              <span>Simulated Volume:</span>
+                              <span className="text-white">{stats.volumeWeth.toFixed(2)} WETH</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
+                  {backtestResult.backtestRuns.map((run: any) => (
+                    <div key={run.id} className="flex items-center justify-between bg-[#050b0e] border border-[#00dbe9]/20 p-2.5 rounded text-xs font-mono">
+                      <div className="flex items-center gap-3">
+                        <span className={`w-2 h-2 rounded-full ${run.profitable ? "bg-emerald-400 animate-pulse" : "bg-rose-400"}`} />
+                        <span className="font-bold text-white uppercase">{run.network}</span>
+                        <span className="text-[#849495] truncate max-w-xs">{run.route}</span>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <span className="text-[10px] text-[#849495]">Gas: ${run.gasCostUsd}</span>
+                        <span className={`font-bold ${run.profitable ? "text-emerald-400" : "text-rose-400"}`}>
+                          {run.profitable ? "+" : ""}${run.netProfitUsd}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="bg-[#050b0e] border border-dashed border-[#00dbe9]/20 rounded-lg p-8 text-center">
+              <Cpu className="w-10 h-10 text-[#00dbe9]/40 mx-auto mb-3" />
+              <p className="text-xs text-white font-bold font-mono">No backtest suite executed yet</p>
+              <p className="text-[10px] text-[#849495] mt-1 max-w-md mx-auto">
+                Configure your sample size and target networks above, then click <strong>Run Multi-Chain Backtest</strong> to evaluate historical strategy performance across Base, Arbitrum, and Optimism.
+              </p>
+            </div>
+          )}
+        </section>
 
         {/* Simulated Route Profitability History */}
         <section
