@@ -430,3 +430,9 @@ POSIX
 - [x] Persist audio enabled and volume settings in localStorage
 - [x] Hydrate and apply stored audio preferences safely on dashboard startup
 - [x] Add focused tests and verify build stability
+
+# Additional Requirement: Audio Engine Health Indicator
+
+- [x] Detect browser-blocked, ready, and unavailable audio playback states
+- [x] Add a visual dashboard indicator and user-gesture retry action
+- [x] Add focused tests and verify build stability

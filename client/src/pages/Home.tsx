@@ -14,7 +14,7 @@ import { getCliStatusWidgetModel } from "@/lib/cliStatusWidget";
 import { getManualPreflightCheckLabel, getManualPreflightStatusModel } from "@/lib/manualPreflight";
 import { formatGasReading, formatTelemetryTime, getGasCongestionModel } from "@/lib/gasTelemetryWidget";
 import { formatGasAlertCooldownRemaining, GAS_ALERT_COOLDOWN_OPTIONS, getGasAlertCooldownLabel, getGasAlertCooldownRemainingMs, getGasAlertLabel, shouldNotifyGasAlert, type GasAlertCooldownMinutes, type GasAlertThreshold } from "@/lib/gasAlert";
-import { playAudioCue, setAudioEngineEnabled, setAudioEngineVolume, triggerVisualFx } from "@/lib/audioBridge";
+import { getAudioHealth, playAudioCue, retryAudioEngine, setAudioEngineEnabled, setAudioEngineVolume, triggerVisualFx, type AudioHealthModel } from "@/lib/audioBridge";
 import { getAudioPreferences, saveAudioPreferences } from "@/lib/audioPreferences";
 import { CLI_COMMANDS, CLI_HANDOFF_URL, CLI_LINKS } from "@/lib/cliCommandDeck";
 import { QRCodeSVG } from "qrcode.react";
@@ -239,6 +239,8 @@ export default function Home() {
   const [lastGasAlertAt, setLastGasAlertAt] = useState<Record<string, number>>({});
   const [audioEnabled, setAudioEnabled] = useState(() => getAudioPreferences().enabled);
   const [audioVolume, setAudioVolume] = useState(() => getAudioPreferences().volume);
+  const [audioHealth, setAudioHealth] = useState<AudioHealthModel>(() => getAudioHealth());
+  const [audioHealthChecking, setAudioHealthChecking] = useState(false);
   const latestPulseEventIdRef = useRef<number | null>(null);
   const gasAlertInitializedRef = useRef(false);
   const previousGasStatesRef = useRef<Record<string, string>>({});
@@ -504,6 +506,23 @@ export default function Home() {
   }, [audioEnabled, audioVolume]);
 
   useEffect(() => {
+    const refreshAudioHealth = () => setAudioHealth(getAudioHealth());
+    refreshAudioHealth();
+    const timer = window.setInterval(refreshAudioHealth, 3000);
+    return () => window.clearInterval(timer);
+  }, [audioEnabled]);
+
+  const handleAudioHealthRetry = async () => {
+    setAudioHealthChecking(true);
+    const nextHealth = await retryAudioEngine();
+    setAudioHealth(nextHealth);
+    setAudioHealthChecking(false);
+    if (nextHealth.status === "READY") toast.success("Audio engine ready");
+    else if (nextHealth.status === "BLOCKED") toast.warning("Browser is still blocking audio", { description: nextHealth.detail });
+    else toast.error("Audio engine unavailable", { description: nextHealth.detail });
+  };
+
+  useEffect(() => {
     if (!latestPulseEvent || !audioEnabled) return;
     const eventId = latestPulseEvent.timestamp || latestPulseEvent.id;
     if (eventId && latestPulseEventIdRef.current !== eventId) {
@@ -530,6 +549,15 @@ export default function Home() {
           {/* Audio Engine Controls */}
           <div className="flex items-center gap-2 rounded border border-[#00dbe9]/30 bg-[#050b0e] px-3 py-1.5 text-[10px] font-mono">
             <span className="text-[#849495]">AUDIO:</span>
+            <span className={`flex items-center gap-1 ${audioHealth.status === "READY" ? "text-emerald-300" : audioHealth.status === "BLOCKED" ? "text-amber-300" : "text-rose-300"}`} title={audioHealth.detail}>
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-current" />
+              {audioHealth.label}
+            </span>
+            {audioHealth.status === "BLOCKED" && (
+              <button type="button" onClick={handleAudioHealthRetry} disabled={audioHealthChecking} className="text-[9px] text-amber-300 underline disabled:opacity-50" title={audioHealth.detail}>
+                {audioHealthChecking ? "RETRYING" : "RETRY"}
+              </button>
+            )}
             <button
               type="button"
               onClick={() => {
