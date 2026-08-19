@@ -418,3 +418,9 @@ POSIX
 - [x] Verify TypeScript type safety and production Vite/esbuild bundling
 - [x] Inspect dev server logs, network requests, and error traces
 - [x] Confirm GitHub push readiness without executing unconfirmed pushes
+
+# Additional Requirement: Sound Engine Event Binding
+
+- [x] Bind integrated acoustic engine to profit pulse events and congestion threshold warnings
+- [x] Add browser-safe audio toggle and volume controls in header / settings
+- [x] Add focused tests and verify production build stability

@@ -14,6 +14,7 @@ import { getCliStatusWidgetModel } from "@/lib/cliStatusWidget";
 import { getManualPreflightCheckLabel, getManualPreflightStatusModel } from "@/lib/manualPreflight";
 import { formatGasReading, formatTelemetryTime, getGasCongestionModel } from "@/lib/gasTelemetryWidget";
 import { formatGasAlertCooldownRemaining, GAS_ALERT_COOLDOWN_OPTIONS, getGasAlertCooldownLabel, getGasAlertCooldownRemainingMs, getGasAlertLabel, shouldNotifyGasAlert, type GasAlertCooldownMinutes, type GasAlertThreshold } from "@/lib/gasAlert";
+import { playAudioCue, setAudioEngineEnabled, setAudioEngineVolume, triggerVisualFx } from "@/lib/audioBridge";
 import { CLI_COMMANDS, CLI_HANDOFF_URL, CLI_LINKS } from "@/lib/cliCommandDeck";
 import { QRCodeSVG } from "qrcode.react";
 import { useState, useEffect, useRef } from "react";
@@ -235,6 +236,9 @@ export default function Home() {
   const [gasAlertCooldownMinutes, setGasAlertCooldownMinutes] = useState<GasAlertCooldownMinutes>(5);
   const [gasAlertCooldownDraft, setGasAlertCooldownDraft] = useState<GasAlertCooldownMinutes>(5);
   const [lastGasAlertAt, setLastGasAlertAt] = useState<Record<string, number>>({});
+  const [audioEnabled, setAudioEnabled] = useState(true);
+  const [audioVolume, setAudioVolume] = useState(0.5);
+  const latestPulseEventIdRef = useRef<number | null>(null);
   const gasAlertInitializedRef = useRef(false);
   const previousGasStatesRef = useRef<Record<string, string>>({});
 
@@ -480,6 +484,8 @@ export default function Home() {
       if (previousState && shouldNotifyGasAlert(previousState, currentState, threshold, lastGasAlertAt[network], now, gasAlertCooldownMinutes)) {
         const networkLabel = network.toUpperCase();
         const level = currentState === "CONGESTED" ? "CONGESTED" : "ELEVATED";
+        playAudioCue("warning");
+        triggerVisualFx("flash", "rgba(245,158,11,0.18)");
         toast.warning(`${networkLabel} gas is ${level}`, {
           description: `Configured alert threshold reached. Current fee: ${formatGasReading(gasTelemetry[network]?.gasPriceGwei)} GWEI. ${getGasAlertCooldownLabel(gasAlertCooldownMinutes)}. Trading remains unchanged.`,
           duration: 7000,
@@ -489,6 +495,16 @@ export default function Home() {
       previousGasStatesRef.current[network] = currentState;
     });
   }, [gasTelemetry, gasAlertSettings, gasAlertCooldownMinutes, lastGasAlertAt]);
+
+  useEffect(() => {
+    if (!latestPulseEvent || !audioEnabled) return;
+    const eventId = latestPulseEvent.timestamp || latestPulseEvent.id;
+    if (eventId && latestPulseEventIdRef.current !== eventId) {
+      latestPulseEventIdRef.current = eventId;
+      playAudioCue("success");
+      triggerVisualFx("win");
+    }
+  }, [latestPulseEvent, audioEnabled]);
 
   return (
     <div className="stitch-shell min-h-screen bg-[#050b0e] text-[#00dbe9] font-mono selection:bg-[#00dbe9]/30 selection:text-white flex flex-col">
@@ -502,6 +518,37 @@ export default function Home() {
           <div className="hidden md:flex items-center gap-2 text-xs text-[#849495]" title="Real-time multi-chain RPC provider latency">
             <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             RPC Connected · <span className="text-[#00dbe9] font-mono">{statusData?.agent?.rpcLatencyMs ?? 16}ms</span>
+          </div>
+
+          {/* Audio Engine Controls */}
+          <div className="flex items-center gap-2 rounded border border-[#00dbe9]/30 bg-[#050b0e] px-3 py-1.5 text-[10px] font-mono">
+            <span className="text-[#849495]">AUDIO:</span>
+            <button
+              type="button"
+              onClick={() => {
+                const next = !audioEnabled;
+                setAudioEnabled(next);
+                setAudioEngineEnabled(next);
+                toast.success(next ? "Acoustic engine enabled" : "Acoustic engine muted");
+              }}
+              className={`px-2 py-0.5 rounded text-[9px] font-bold border ${audioEnabled ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300" : "bg-slate-500/10 border-slate-500/30 text-slate-400"}`}
+            >
+              {audioEnabled ? "SFX ON" : "MUTED"}
+            </button>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={audioVolume}
+              onChange={(e) => {
+                const val = parseFloat(e.target.value);
+                setAudioVolume(val);
+                setAudioEngineVolume(val);
+              }}
+              className="w-16 accent-[#00dbe9] cursor-pointer"
+              title={`Audio volume: ${Math.round(audioVolume * 100)}%`}
+            />
           </div>
 
           {/* Prominent Header MM Agent Wallet Balance & Status */}
