@@ -382,3 +382,8 @@ POSIX
 - [x] Fix stale MetaMask Agent session state so the dashboard cannot remain connected after live CLI authentication or balance checks fail
 - [x] Remove any non-production CLI fallback behavior and surface actionable runtime/authentication errors
 - [x] Add regression coverage for session invalidation after CLI reports unauthenticated
+
+# Additional Requirement: Manual Preflight Settings Control
+
+- [x] Add a manual preflight trigger button and result display area to the dashboard Secure Vault/settings modal
+- [x] Add or update UI tests covering manual preflight loading, success, and failure states

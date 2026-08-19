@@ -11,6 +11,7 @@ import { filterPulseEvents, getPulseEventFilterLabel, type PulseNetworkFilter } 
 import { buildFeatureVisualizerModel } from "@/lib/featureVisualizer";
 import { buildCliWarningToast } from "@/lib/cliWarning";
 import { getCliStatusWidgetModel } from "@/lib/cliStatusWidget";
+import { getManualPreflightCheckLabel, getManualPreflightStatusModel } from "@/lib/manualPreflight";
 import { CLI_COMMANDS, CLI_HANDOFF_URL, CLI_LINKS } from "@/lib/cliCommandDeck";
 import { QRCodeSVG } from "qrcode.react";
 import { useState, useEffect, useRef } from "react";
@@ -226,6 +227,7 @@ export default function Home() {
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [modalCliToken, setModalCliToken] = useState("");
   const [preflightTestResult, setPreflightTestResult] = useState<any | null>(null);
+  const [preflightNetwork, setPreflightNetwork] = useState<"base" | "arbitrum" | "optimism">("base");
   const [networkSlippage, setNetworkSlippage] = useState<Record<string, number>>({ base: 50, arbitrum: 50, optimism: 50 });
 
   const updateNetworkSlippageMutation = trpc.arbitrage.updateNetworkSlippage.useMutation({
@@ -292,6 +294,12 @@ export default function Home() {
   const logScrollRef = useRef<HTMLDivElement>(null);
 
   const agent = statusData?.agent;
+  const manualPreflightStatus = preflightTestResult
+    ? getManualPreflightStatusModel({
+        ready: Boolean(preflightTestResult.ready),
+        executionArmed: Boolean(preflightTestResult.executionArmed),
+      })
+    : null;
   const pulseEvents = agent?.pulseEvents || [];
   const filteredPulseEvents = filterPulseEvents(pulseEvents, pulseNetworkFilter);
   const cliConnection = agent?.cliConnection;
@@ -1887,6 +1895,75 @@ export default function Home() {
                     })}
                   </div>
                 </div>
+              </div>
+
+              <div className="border-t border-[#00dbe9]/20 pt-4 space-y-3" aria-labelledby="manual-preflight-title">
+                <div>
+                  <h4 id="manual-preflight-title" className="text-[11px] uppercase font-mono text-white font-bold mb-1">Manual Live Preflight</h4>
+                  <p className="text-[10px] text-[#849495]">Run a read-only runtime check before any owner-confirmed manual test. This action does not quote, sign, or broadcast a transaction.</p>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2" role="group" aria-label="Preflight network">
+                  {(["base", "arbitrum", "optimism"] as const).map((network) => (
+                    <Button
+                      key={`preflight-network-${network}`}
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      aria-pressed={preflightNetwork === network}
+                      onClick={() => setPreflightNetwork(network)}
+                      className={`h-8 text-[10px] font-mono font-bold uppercase ${preflightNetwork === network ? "border-[#00dbe9] bg-[#00dbe9]/15 text-[#00dbe9]" : "border-[#00dbe9]/20 bg-[#050b0e] text-[#849495] hover:text-white"}`}
+                    >
+                      {network}
+                    </Button>
+                  ))}
+                </div>
+
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setPreflightTestResult(null);
+                    runPreflightTestMutation.mutate({ network: preflightNetwork });
+                  }}
+                  disabled={!isAuthenticated || runPreflightTestMutation.isPending}
+                  aria-busy={runPreflightTestMutation.isPending}
+                  className="w-full bg-[#00dbe9]/15 text-[#00dbe9] border border-[#00dbe9]/40 hover:bg-[#00dbe9]/25 text-xs font-mono font-bold"
+                >
+                  {runPreflightTestMutation.isPending ? (
+                    <><RefreshCw className="mr-2 h-3.5 w-3.5 animate-spin" /> RUNNING PREFLIGHT…</>
+                  ) : (
+                    <>RUN MANUAL PREFLIGHT · {preflightNetwork.toUpperCase()}</>
+                  )}
+                </Button>
+
+                {preflightTestResult && (
+                  <div
+                    className={`rounded-lg border p-3 space-y-3 ${manualPreflightStatus?.tone === "ready" ? "border-emerald-500/40 bg-emerald-500/5" : "border-amber-500/40 bg-amber-500/5"}`}
+                    role="status"
+                    aria-live="polite"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-[10px] uppercase tracking-wider text-[#849495]">
+                        {preflightTestResult.network?.toUpperCase() || preflightNetwork.toUpperCase()} · CHECK RESULT
+                      </span>
+                      <span className={`text-[10px] font-bold ${manualPreflightStatus?.tone === "ready" ? "text-emerald-300" : "text-amber-300"}`}>
+                        {manualPreflightStatus?.label}
+                      </span>
+                    </div>
+                    <p className="text-[10px] leading-relaxed text-white/80">{preflightTestResult.message}</p>
+                    <div className="space-y-1.5">
+                      {preflightTestResult.checks?.map((check: { name: string; passed: boolean; detail: string }) => (
+                        <div key={`${preflightTestResult.network || preflightNetwork}-${check.name}`} className="flex items-start gap-2 text-[10px]">
+                          <span className={`mt-0.5 font-bold ${check.passed ? "text-emerald-300" : "text-rose-300"}`} aria-label={check.passed ? "Passed" : "Failed"}>
+                            {getManualPreflightCheckLabel(check.passed)}
+                          </span>
+                          <span className="min-w-0 flex-1 text-white/90">{check.name}<span className="ml-2 text-[#849495]">{check.detail}</span></span>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="border-t border-white/10 pt-2 text-[9px] text-[#849495]">Execution armed: {manualPreflightStatus?.executionLabel}</p>
+                  </div>
+                )}
               </div>
 
               <div className="p-3 rounded bg-[#050b0e] border border-[#00dbe9]/20 text-[11px] space-y-1 text-[#849495]">
