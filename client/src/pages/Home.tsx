@@ -368,11 +368,13 @@ export default function Home() {
             ) : (
               <span className={`inline-block h-2 w-2 rounded-full ${cliConnected ? "bg-emerald-400 animate-pulse" : "bg-rose-400"}`} />
             )}
-            <span className="inline whitespace-nowrap">AGENT {statusLoading || !cliConnection ? "CHECKING SESSION..." : cliConnection.label}</span>
+            <span className="inline whitespace-nowrap">
+              MM CLI: {statusLoading || !cliConnection ? "CHECKING…" : cliConnected ? "AUTHENTICATED & CONNECTED" : "DISCONNECTED / UNVERIFIED"}
+            </span>
             <span className="sr-only">
               {statusLoading || !cliConnection
-                ? "MetaMask Agent token connection is being checked."
-                : `MetaMask Agent token is ${cliConnection.label.toLowerCase()}. ${cliConnection.reason}`}
+                ? "MetaMask Agent CLI connection is being verified."
+                : `MetaMask Agent CLI is ${cliConnected ? "successfully connected and authenticated" : "disconnected or unauthenticated"}. ${cliConnection.reason}`}
             </span>
           </div>
           <span
