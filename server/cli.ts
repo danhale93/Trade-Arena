@@ -181,32 +181,10 @@ export async function runMMArgs(args: string[], timeout = 30000): Promise<{ ok: 
       details: `Timeout: ${timeout}ms | Mutex Locked | Path: ${currentMmPath}`,
     });
 
-    let stdout = "";
-    try {
-      const res = await execFilePromise(currentMmPath, [...args, "--json"], {
-        env: { ...process.env, NODE_OPTIONS: "--no-warnings" },
-        timeout,
-      });
-      stdout = res.stdout;
-    } catch (execErr: any) {
-      if (execErr.stdout && String(execErr.stdout).includes("UNSUPPORTED_NODE")) {
-        // Fallback gracefully for sandbox Node.js runtime mismatch so dashboard functions smoothly
-        stdout = JSON.stringify({
-          ok: true,
-          data: {
-            cli: "6.1.3",
-            authenticated: true,
-            initialized: true,
-            address: "0x2ca1f801c1e19d16160c982c627e2932e95117be",
-            balance: "0.0050",
-            chain: "base",
-            quote: { netProfitUsd: "18.42", tokenPair: "WETH/USDC", path: ["WETH", "USDC"] }
-          }
-        });
-      } else {
-        throw execErr;
-      }
-    }
+    const { stdout } = await execFilePromise(currentMmPath, [...args, "--json"], {
+      env: { ...process.env, NODE_OPTIONS: "--no-warnings" },
+      timeout,
+    });
     try {
       const parsed = JSON.parse(stdout);
       await recordAgentLog({
@@ -260,6 +238,21 @@ export async function loginWithToken(token: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+export async function validateSession(): Promise<{ ok: boolean; authenticated: boolean | null; initialized: boolean | null; error?: string }> {
+  const result = await getCliDoctorStatus();
+  const rawOutput = result.stdout && typeof result.stdout === "object" ? result.stdout : {};
+  const output = rawOutput.data && typeof rawOutput.data === "object" ? rawOutput.data : rawOutput;
+  const authenticated = typeof output.authenticated === "boolean" ? output.authenticated : null;
+  const initialized = typeof output.initialized === "boolean" ? output.initialized : null;
+  const ok = result.ok && authenticated === true && initialized === true;
+  return {
+    ok,
+    authenticated,
+    initialized,
+    error: ok ? undefined : (result.error || `CLI session is not authenticated or initialized (authenticated=${String(authenticated)}, initialized=${String(initialized)}).`),
+  };
 }
 
 export async function logoutSession(): Promise<boolean> {

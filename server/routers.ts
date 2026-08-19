@@ -59,7 +59,8 @@ function extractCliBalance(value: unknown): string | null {
 }
 
 function getCliDoctorSummary(result: { ok: boolean; stdout?: any; error?: string }, sessionValidated: boolean) {
-  const output = result.stdout && typeof result.stdout === "object" ? result.stdout : {};
+  const rawOutput = result.stdout && typeof result.stdout === "object" ? result.stdout : {};
+  const output = rawOutput.data && typeof rawOutput.data === "object" ? rawOutput.data : rawOutput;
   const authenticated = typeof output.authenticated === "boolean" ? output.authenticated : null;
   const initialized = typeof output.initialized === "boolean" ? output.initialized : null;
   const healthy = result.ok && sessionValidated && authenticated !== false && initialized !== false;
@@ -141,6 +142,10 @@ export const appRouter = router({
         ? await Promise.all([cli.getCliDoctorStatus(), cli.getWalletBalance("8453")])
         : [{ ok: false, error: "MetaMask Agent CLI binary unavailable" }, { ok: false, error: "MetaMask Agent CLI binary unavailable" }];
       const cliDoctorLive = getCliDoctorSummary(cliDoctorResult, cliSessionValidated);
+      const liveSessionValidated = cliSessionValidated && cliDoctorLive.authenticated === true && cliDoctorLive.initialized === true;
+      if (cliSessionValidated && !liveSessionValidated) {
+        await db.setAgentStateKey("mm_cli_session_validated", "false");
+      }
       const cliWalletBalance = {
         chainId: "8453",
         balance: cliBalanceResult.ok ? extractCliBalance(cliBalanceResult.stdout) : null,
@@ -181,7 +186,7 @@ export const appRouter = router({
         ...cli.getMetaMaskAgentConnectionStatus({
           tokenConfigured: Boolean(cliToken),
           cliAvailable,
-          sessionValidated: cliSessionValidated,
+          sessionValidated: liveSessionValidated,
           cliPath: cliPathResolved,
         }),
         lastValidatedAt: cliLastValidatedAt,
@@ -198,9 +203,9 @@ export const appRouter = router({
         tokenConfigured: Boolean(cliToken),
         cliAvailable,
         resolvedPath: cliPathResolved,
-        sessionValidated: cliSessionValidated,
+        sessionValidated: liveSessionValidated,
         lastValidatedAt: cliLastValidatedAt,
-        walletBalanceEth: "0.0050",
+        walletBalanceEth: cliWalletBalance.balance || "0.0000",
         tokenExpiresAt,
       });
 
@@ -379,13 +384,14 @@ export const appRouter = router({
       }
 
       const loggedIn = await cli.loginWithToken(input.token);
-      if (!loggedIn) {
+      const session = loggedIn ? await cli.validateSession() : { ok: false, authenticated: null, initialized: null, error: "CLI login command did not complete successfully." };
+      if (!session.ok) {
         await db.setAgentStateKey("mm_cli_session_validated", "false");
         return {
           success: true,
           validated: false,
-          warning: "MetaMask Agent CLI could not validate the token. Check that the token is current and belongs to the managed wallet.",
-          message: "Token saved securely in vault. Validation pending correct managed-wallet credentials.",
+          warning: `MetaMask Agent CLI session validation failed: ${session.error || "doctor did not confirm an authenticated, initialized session."}`,
+          message: "Token saved securely in vault, but the runtime session is not authenticated. Reconnect after fixing the CLI runtime or token.",
         };
       }
 
@@ -416,13 +422,14 @@ export const appRouter = router({
       }
 
       const loggedIn = await cli.loginWithToken(token);
-      if (!loggedIn) {
+      const session = loggedIn ? await cli.validateSession() : { ok: false, authenticated: null, initialized: null, error: "CLI login command did not complete successfully." };
+      if (!session.ok) {
         await db.setAgentStateKey("mm_cli_session_validated", "false");
         return {
           success: true,
           validated: false,
-          warning: "MetaMask Agent CLI could not validate the token. Check that the token is current and belongs to the managed wallet.",
-          message: "Token saved securely in vault. Validation pending correct managed-wallet credentials.",
+          warning: `MetaMask Agent CLI session validation failed: ${session.error || "doctor did not confirm an authenticated, initialized session."}`,
+          message: "Token remains stored securely, but the runtime session is not authenticated. Reconnect after fixing the CLI runtime or token.",
         };
       }
 

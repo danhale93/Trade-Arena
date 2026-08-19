@@ -376,3 +376,9 @@ POSIX
 - [x] Implement backend wallet mode toggle and standard EVM wallet validation
 - [x] Build mobile-friendly UI panel with wallet selector, QR code auth, and injected EVM provider connection
 - [x] Verify unit tests, TypeScript checks, production build, and checkpoint save
+
+# Bugfix: MetaMask Session Connected Then Failed
+
+- [x] Fix stale MetaMask Agent session state so the dashboard cannot remain connected after live CLI authentication or balance checks fail
+- [x] Remove any non-production CLI fallback behavior and surface actionable runtime/authentication errors
+- [x] Add regression coverage for session invalidation after CLI reports unauthenticated

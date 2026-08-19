@@ -33,6 +33,7 @@ vi.mock("./cli", () => ({
     reason: "test",
   })),
   loginWithToken: vi.fn(async () => true),
+  validateSession: vi.fn(async () => ({ ok: true, authenticated: true, initialized: true })),
   logoutSession: vi.fn(async () => true),
 }));
 
@@ -66,6 +67,7 @@ describe("MetaMask Agent connection mutations", () => {
     vi.mocked(cli.getMetaMaskCliPath).mockReturnValue("/opt/metamask-agent/mm");
     vi.mocked(db.getAgentStateKey).mockImplementation(async (key: string) => (key === "mm_cli_token" ? "test-token" : null));
     vi.mocked(cli.loginWithToken).mockResolvedValue(true);
+    vi.mocked(cli.validateSession).mockResolvedValue({ ok: true, authenticated: true, initialized: true });
     vi.mocked(cli.logoutSession).mockResolvedValue(true);
   });
 
@@ -80,6 +82,23 @@ describe("MetaMask Agent connection mutations", () => {
     expect(db.setAgentStateKey).toHaveBeenNthCalledWith(1, "mm_cli_session_validated", "false");
     expect(db.setAgentStateKey).toHaveBeenNthCalledWith(2, "mm_cli_session_validated", "true");
     expect(db.setAgentStateKey).toHaveBeenNthCalledWith(3, "mm_cli_last_validated_at", expect.stringMatching(/^20\d{2}-\d{2}-\d{2}T/));
+  });
+
+  it("rejects a login command that does not produce an authenticated initialized session", async () => {
+    vi.mocked(cli.validateSession).mockResolvedValue({
+      ok: false,
+      authenticated: false,
+      initialized: false,
+      error: "No CLI refresh token available — run mm login to sign in.",
+    });
+    const caller = appRouter.createCaller(createContext("admin"));
+
+    await expect(caller.arbitrage.reconnectAgent()).resolves.toMatchObject({
+      success: true,
+      validated: false,
+      warning: expect.stringContaining("No CLI refresh token available"),
+    });
+    expect(db.setAgentStateKey).toHaveBeenCalledWith("mm_cli_session_validated", "false");
   });
 
   it("switches an owner to the aggressive strategy profile and persists it", async () => {
