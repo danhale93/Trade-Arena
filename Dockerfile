@@ -33,8 +33,15 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/drizzle ./drizzle
 COPY --from=builder /app/scripts ./scripts
 
-# Install official MetaMask Agent CLI globally so it's reliably in PATH
-RUN npm install -g @metamask/agent-wallet@latest
+# Install official MetaMask Agent CLI globally and verify binary symlink/path
+RUN npm install -g @metamask/agent-wallet@latest && \
+    which mm || find / -name mm -type f 2>/dev/null || true && \
+    mkdir -p /usr/local/bin && \
+    if [ ! -f /usr/local/bin/mm ]; then \
+      ln -s $(npm root -g)/@metamask/agent-wallet/bin/mm.js /usr/local/bin/mm || \
+      ln -s $(which mm) /usr/local/bin/mm || true; \
+    fi && \
+    chmod +x /usr/local/bin/mm || true
 
 ENV NODE_ENV=production
 ENV PORT=3000
