@@ -284,7 +284,7 @@ const { loadUsers, saveUsers } = require('./user_persistence');
 const PORT = process.env.PORT || 3001;
 
 // Import MetaMask Agent Arbitrage Service
-const mmArbService = require('./services/MetaMaskAgentArbService');
+const mmArbService = require('./services/MetaMaskAgentArbService.cjs');
 mmArbService.start();
 
 const onchainEngine = require('./services/OnchainExecutionEngine');
@@ -423,7 +423,7 @@ app.get('/api/agent/status', (req, res) => {
 /**
  * POST /api/agent/pause - Pause quote polling and execution decisions.
  */
-app.post('/api/agent/pause', (req, res) => {
+app.post('/api/agent/pause', tradingLimiter, (req, res) => {
     mmArbService.pause();
     res.json({ success: true, agent: mmArbService.getStatus(), timestamp: Date.now() });
 });
@@ -432,7 +432,7 @@ app.post('/api/agent/pause', (req, res) => {
  * POST /api/agent/resume - Resume quote polling. Execution remains disabled unless
  * AGENT_EXECUTION_ENABLED=true is explicitly configured on the server.
  */
-app.post('/api/agent/resume', (req, res) => {
+app.post('/api/agent/resume', tradingLimiter, (req, res) => {
     mmArbService.resume();
     res.json({ success: true, agent: mmArbService.getStatus(), timestamp: Date.now() });
 });
@@ -561,8 +561,13 @@ app.get('/api/network/status', (req, res) => {
 });
 
 // 🛠️ ARBITRAGE CONTROL
-app.post('/api/arbitrage/toggle', (req, res) => {
+app.post('/api/arbitrage/toggle', tradingLimiter, (req, res) => {
     const { action } = req.body;
+    // Sentinel: Enforce input type and allowed value checks on arbitrage toggle action
+    if (!action || typeof action !== 'string' || !['start', 'stop'].includes(action)) {
+        return res.status(400).json({ success: false, error: 'Invalid or missing action parameter' });
+    }
+
     if (action === 'start') {
         arbitrageEngine.start();
         res.json({ success: true, running: true });
@@ -1417,8 +1422,24 @@ app.get('/api/market/prices', async (req, res) => {
 
 app.get('/api/user/:address/data', async (req, res) => {
     try {
+        const addressParam = req.params.address;
+
+        // Sentinel: Enforce strict input validation on user address URL parameter to prevent Prototype Pollution, DoS, and invalid lookups
+        if (!addressParam || typeof addressParam !== 'string' || addressParam.length > 100) {
+            return res.status(400).json({ success: false, error: 'Invalid address parameter' });
+        }
+
+        const dangerousProps = ['__proto__', 'constructor', 'prototype'];
+        if (dangerousProps.includes(addressParam)) {
+            return res.status(400).json({ success: false, error: 'Invalid address parameter' });
+        }
+
+        if (addressParam !== 'demo' && !ethers.isAddress(addressParam)) {
+            return res.status(400).json({ success: false, error: 'Invalid address format' });
+        }
+
         const users = loadUsers();
-        const user = users[req.params.address] || users['demo'];
+        const user = Object.hasOwn(users, addressParam) ? users[addressParam] : users['demo'];
         res.json({ 
             success: true, 
             bots: user ? user.bots : [], 
@@ -1426,6 +1447,7 @@ app.get('/api/user/:address/data', async (req, res) => {
             balance: user ? user.balance : 0
         });
     } catch (error) {
+        console.error('User data fetch error:', error);
         res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });

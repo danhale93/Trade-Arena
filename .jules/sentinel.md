@@ -285,3 +285,8 @@ Running security audit across localStorage and active config...
 
 ## 2026-08-14T04:55:38.844Z - [INFO] SENTINEL
 Running security audit across localStorage and active config...
+
+## 2026-08-19 - Control Plane Rate Limiting & User Data Parameter Validation Hardening
+**Vulnerability:** Control plane state-changing endpoints (`/api/arbitrage/toggle`, `/api/agent/pause`, `/api/agent/resume`) lacked dedicated rate limiting and parameter type checks, exposing them to high-frequency state toggling DoS attacks. Additionally, `/api/user/:address/data` lacked address format validation and prototype property filtering on URL parameters.
+**Learning:** Read-only or control-plane routes can easily be overlooked for rate limiting and input validation compared to transactional POST routes. Passing unvalidated path parameters into user lookup objects risks prototype lookup manipulation and unexpected 500 errors.
+**Prevention:** Apply dedicated rate limiters to all control-plane endpoints, validate URL parameter formats using strict regex or `ethers.isAddress`, and use `Object.hasOwn` when querying user persistence dictionaries.

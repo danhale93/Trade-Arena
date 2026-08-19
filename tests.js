@@ -1463,6 +1463,32 @@ describe("Server Input Validation - Sentinel Hardening", () => {
     expect(validateLoginInput("palette@trade-arena.com", "0x9F407b7f793555c35c33aC64bd6901759470736D", "Arena Trader", "A".repeat(51))).toBe(false);
   });
 
+  it("validates arbitrage toggle action parameter and user data address parameter correctly", () => {
+    const isValidArbitrageAction = (action) => {
+      return !!(action && typeof action === 'string' && ['start', 'stop'].includes(action));
+    };
+
+    expect(isValidArbitrageAction("start")).toBe(true);
+    expect(isValidArbitrageAction("stop")).toBe(true);
+    expect(isValidArbitrageAction("invalid_action")).toBe(false);
+    expect(isValidArbitrageAction(123)).toBe(false);
+    expect(isValidArbitrageAction(null)).toBe(false);
+
+    const isValidUserDataAddress = (addressParam) => {
+      if (!addressParam || typeof addressParam !== 'string' || addressParam.length > 100) return false;
+      const dangerousProps = ['__proto__', 'constructor', 'prototype'];
+      if (dangerousProps.includes(addressParam)) return false;
+      if (addressParam !== 'demo' && !require("ethers").isAddress(addressParam)) return false;
+      return true;
+    };
+
+    expect(isValidUserDataAddress("demo")).toBe(true);
+    expect(isValidUserDataAddress("0x9F407b7f793555c35c33aC64bd6901759470736D")).toBe(true);
+    expect(isValidUserDataAddress("invalid-address")).toBe(false);
+    expect(isValidUserDataAddress("__proto__")).toBe(false);
+    expect(isValidUserDataAddress("0x9F407b7f793555c35c33aC64bd6901759470736D" + "a".repeat(70))).toBe(false);
+  });
+
   it("validates swap parameters correctly", () => {
     const isValidSwapInput = (fromToken, toToken, amount, slippage) => {
       if (!fromToken || typeof fromToken !== 'string' || fromToken.length > 100) return false;
