@@ -60,8 +60,14 @@ async function getWalletBalance() {
   try {
     const balance = await walletState.provider.getBalance(walletState.address);
     walletState.balanceETH = parseFloat(ethers.formatEther(balance));
-    // Mock price for now
-    walletState.balanceUSD = walletState.balanceETH * 3200;
+    let ethPrice = 2500;
+    if (typeof getLivePrice === 'function') {
+      try {
+        const livePrice = await getLivePrice('ETH');
+        if (livePrice) ethPrice = livePrice;
+      } catch (pErr) {}
+    }
+    walletState.balanceUSD = walletState.balanceETH * ethPrice;
     return { eth: walletState.balanceETH, usd: walletState.balanceUSD };
   } catch (e) {
     console.error('Failed to fetch balance:', e);
