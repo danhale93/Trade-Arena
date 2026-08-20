@@ -798,6 +798,7 @@ app.post('/api/gemini', aiProxyLimiter, async (req, res) => {
  * Forwards swap quotes with secure API key injection
  */
 app.get('/api/0x/quote', aiProxyLimiter, async (req, res) => {
+    let timeout;
     try {
         const rawUrl = req.url || '';
         const queryString = rawUrl.includes('?') ? rawUrl.substring(rawUrl.indexOf('?') + 1) : '';
@@ -805,17 +806,23 @@ app.get('/api/0x/quote', aiProxyLimiter, async (req, res) => {
             return res.status(400).json({ error: 'Query parameters too long' });
         }
 
+        const controller = new AbortController();
+        timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
         const query = new URLSearchParams(req.query).toString();
         const response = await fetch(`https://api.0x.org/swap/v1/quote?${query}`, {
             headers: {
                 '0x-api-key': process.env.ZERO_EX_API_KEY || ''
-            }
+            },
+            signal: controller.signal
         });
         const data = await response.json();
         res.status(response.status).json(data);
     } catch (error) {
         console.error('0x Proxy error:', error);
         res.status(500).json({ error: 'Failed to fetch swap quote' });
+    } finally {
+        if (timeout) clearTimeout(timeout);
     }
 });
 

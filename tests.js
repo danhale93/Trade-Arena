@@ -793,6 +793,53 @@ describe("Server Endpoint Rate Limiting - Sentinel Hardening", () => {
     }
   });
 
+  it("handles fetch timeouts on /api/0x/quote gracefully", async () => {
+    const originalPort = process.env.PORT;
+    process.env.PORT = "0";
+
+    const express = require('express');
+    const http = require('http');
+    const originalListen = http.Server.prototype.listen;
+    let activeServer = null;
+    http.Server.prototype.listen = function(...args) {
+      activeServer = this;
+      return originalListen.apply(this, args);
+    };
+
+    const originalFetch = global.fetch;
+    // Mock global fetch to simulate AbortError on 0x API
+    global.fetch = async (url, options) => {
+      if (typeof url === 'string' && url.startsWith('https://api.0x.org/')) {
+        const err = new Error('The operation was aborted');
+        err.name = 'AbortError';
+        throw err;
+      }
+      return originalFetch(url, options);
+    };
+
+    delete require.cache[require.resolve("./server.js")];
+    delete require.cache[require.resolve("./routes/payoutRoutes.js")];
+    const { app, server } = require("./server.js");
+    activeServer = server;
+    if (!activeServer.listening) {
+      await new Promise((resolve) => activeServer.listen(0, resolve));
+    }
+    try {
+      const port = activeServer.address().port;
+      const res = await originalFetch(`http://localhost:${port}/api/0x/quote?buyToken=WETH&sellToken=USDC`);
+      expect(res.status).toBe(500);
+      const data = await res.json();
+      expect(data.error).toBe('Failed to fetch swap quote');
+    } finally {
+      global.fetch = originalFetch;
+      http.Server.prototype.listen = originalListen;
+      if (activeServer) {
+        activeServer.close();
+      }
+      process.env.PORT = originalPort;
+    }
+  });
+
   it("evicts the oldest IP record when MAX_TRACKED_IPS threshold is reached", async () => {
     delete require.cache[require.resolve("./server.js")];
     const { app: serverApp, server } = require("./server.js");
