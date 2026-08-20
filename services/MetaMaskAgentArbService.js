@@ -4,6 +4,9 @@
  * network-labeled Prometheus metrics, Discord alerts, and MEV-protected arbitrage execution.
  */
 
+import { createRequire } from "module";
+import { fileURLToPath } from "url";
+const require = createRequire(import.meta.url);
 const { Mutex } = require('async-mutex');
 const { exec } = require('child_process');
 const { promisify } = require('util');
@@ -13,6 +16,9 @@ const prometheus = require('prom-client');
 const fs = require('fs');
 const path = require('path');
 const { PerformanceObserver } = require('perf_hooks');
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const execAsync = promisify(exec);
 
@@ -463,4 +469,5 @@ class MetaMaskAgentArbService {
     }
 }
 
-module.exports = new MetaMaskAgentArbService();
+const mmArbServiceInstance = new MetaMaskAgentArbService();
+export default mmArbServiceInstance;

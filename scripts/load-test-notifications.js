@@ -3,8 +3,13 @@
  * Simulates high-frequency trade events to verify aggregation and fallback logic.
  */
 
-const mmArbService = require('../services/MetaMaskAgentArbService');
-require('dotenv').config();
+import mmArbService from '../services/MetaMaskAgentArbService.js';
+import 'dotenv/config';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Configuration
 const TRADES_PER_SECOND = 100;
@@ -59,8 +64,6 @@ async function runLoadTest() {
 }
 
 // Ensure logs directory exists
-const fs = require('fs');
-const path = require('path');
 const logsDir = path.join(__dirname, '../logs');
 if (!fs.existsSync(logsDir)) {
     fs.mkdirSync(logsDir);

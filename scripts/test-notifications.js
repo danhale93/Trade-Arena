@@ -3,8 +3,8 @@
  * Verifies that webhooks and bot tokens are correctly configured.
  */
 
-const axios = require('axios');
-require('dotenv').config();
+import axios from 'axios';
+import 'dotenv/config';
 
 const config = {
     discordUrl: process.env.DISCORD_WEBHOOK_URL,
