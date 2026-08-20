@@ -6,6 +6,8 @@
  * Skip execution if ALCHEMY_MAINNET_URL or INFURA_MAINNET_URL is not present.
  */
 
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
 const { ethers } = require("ethers");
 require("dotenv").config();
 
@@ -86,8 +88,6 @@ async function runForkTest() {
   }
 }
 
-if (require.main === module) {
-  runForkTest();
-}
+runForkTest();
 
-module.exports = { runForkTest };
+export { runForkTest };

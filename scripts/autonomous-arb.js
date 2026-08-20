@@ -3,8 +3,8 @@
  * Optimized for pure CLI execution via MetaMask Agent Wallet
  */
 
-const mmArbService = require('../services/MetaMaskAgentArbService');
-require('dotenv').config();
+import mmArbService from '../services/MetaMaskAgentArbService.js';
+import 'dotenv/config';
 
 async function main() {
     console.log('🚀 Initializing Autonomous Arbitrage Worker...');

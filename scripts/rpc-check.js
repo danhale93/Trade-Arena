@@ -5,6 +5,8 @@
  * Verifies connection to the specified RPC endpoint and validates the network.
  */
 
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
 const { ethers } = require("ethers");
 require("dotenv").config();
 
@@ -52,8 +54,6 @@ async function checkRPC() {
   }
 }
 
-if (require.main === module) {
-  checkRPC();
-}
+checkRPC();
 
-module.exports = { checkRPC };
+export { checkRPC };

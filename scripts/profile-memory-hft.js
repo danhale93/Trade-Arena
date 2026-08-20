@@ -4,9 +4,9 @@
  * Run with: node --expose-gc scripts/profile-memory-hft.js
  */
 
-const mmArbService = require('../services/MetaMaskAgentArbService');
-const v8 = require('v8');
-require('dotenv').config();
+import mmArbService from '../services/MetaMaskAgentArbService.js';
+import v8 from 'v8';
+import 'dotenv/config';
 
 // Configuration
 const TRADES_PER_SECOND = 100;
