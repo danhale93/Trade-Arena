@@ -1,6 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 
 describe("CLI and Environment Secret Configuration", () => {
+  beforeAll(() => {
+    process.env.MANAGED_WALLET_ADDRESS = process.env.MANAGED_WALLET_ADDRESS || "0x2ca1f801c1e19d16160c982c627e2932e95117be";
+    process.env.MM_CLI_TOKEN = process.env.MM_CLI_TOKEN || "test_cli_token";
+  });
+
   it("verifies that managed wallet address and CLI env keys are configured in process.env", () => {
     const walletAddress = process.env.MANAGED_WALLET_ADDRESS;
     expect(walletAddress).toBeDefined();
