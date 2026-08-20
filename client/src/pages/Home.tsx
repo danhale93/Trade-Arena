@@ -3,7 +3,7 @@ import { startLogin } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Shield, Play, Pause, Terminal, Cpu, Zap, Activity, CheckCircle2, Lock, RefreshCw, Bell, Power, TrendingUp, Clock3, Copy, Check, ExternalLink, Link2 } from "lucide-react";
+import { Shield, Play, Pause, Terminal, Cpu, Zap, Activity, CheckCircle2, Lock, RefreshCw, Bell, Power, TrendingUp, Clock3, Copy, Check, ExternalLink, Link2, Download } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, ReferenceLine, Tooltip, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { getProfitPulseMotion, shouldTriggerProfitPulse } from "@/lib/profitPulse";
@@ -677,9 +677,11 @@ export default function Home() {
             </Button>
             <Button 
               onClick={() => setMiniWidgetMode(!miniWidgetMode)}
-              className={`text-xs font-bold px-3 py-1.5 border ${miniWidgetMode ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-[#00dbe9]/10 border-[#00dbe9]/30 text-[#00dbe9]'}`}
+              aria-pressed={miniWidgetMode}
+              aria-label={miniWidgetMode ? "Switch to Full Dashboard view" : "Switch to Mini Widget view"}
+              className={`text-xs font-bold px-3 py-1.5 border focus-visible:ring-2 focus-visible:ring-[#00dbe9] ${miniWidgetMode ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-[#00dbe9]/10 border-[#00dbe9]/30 text-[#00dbe9]'}`}
             >
-              {miniWidgetMode ? "FULL DASHBOARD" : "📱 MINI WIDGET MODE"}
+              {miniWidgetMode ? "FULL DASHBOARD" : <> <span role="img" aria-label="Mobile phone">📱</span> MINI WIDGET MODE </>}
             </Button>
             {authLoading ? (
               <span className="text-xs text-[#849495]">Checking Auth...</span>
@@ -2000,6 +2002,16 @@ export default function Home() {
                 <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-1 rounded animate-pulse">
                   LIVE STREAM ACTIVE
                 </span>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={exportTelemetryCsv}
+                  aria-label="Export system telemetry to CSV file"
+                  title="Export system telemetry to CSV file"
+                  className="bg-[#00dbe9]/10 text-[#00dbe9] hover:bg-[#00dbe9]/20 border border-[#00dbe9]/30 text-[10px] font-mono font-bold flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-[#00dbe9]"
+                >
+                  <Download className="w-3 h-3" /> EXPORT CSV
+                </Button>
               </div>
             </div>
             <div ref={logScrollRef} className="bg-[#050b0e] p-4 rounded-lg border border-[#00dbe9]/20 font-mono text-[11px] h-[260px] overflow-y-auto space-y-2">
