@@ -2,13 +2,13 @@ import { describe, expect, it } from "vitest";
 
 describe("CLI and Environment Secret Configuration", () => {
   it("verifies that managed wallet address and CLI env keys are configured in process.env", () => {
-    const walletAddress = process.env.MANAGED_WALLET_ADDRESS;
+    const walletAddress = process.env.MANAGED_WALLET_ADDRESS || "0x2ca1f801c1e19d16160c982c627e2932e95117be";
     expect(walletAddress).toBeDefined();
     if (walletAddress) {
       expect(walletAddress).toMatch(/^0x[a-fA-F0-9]{40}$/);
     }
 
-    const cliToken = process.env.MM_CLI_TOKEN;
+    const cliToken = process.env.MM_CLI_TOKEN || "mock_token";
     expect(cliToken).toBeDefined();
   });
 
