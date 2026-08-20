@@ -148,7 +148,13 @@ async function getAIModelDecision(modelType, marketData, bet, botId, botStrategy
   // Market condition analysis
   let marketContext = 'STABLE';
   if (marketData?.length > 0) {
-    const avg24h = marketData.slice(0, 8).reduce((sum, c) => sum + (c.price_change_percentage_24h || 0), 0) / 8;
+    // ⚡ Bolt Optimization: Single-pass manual loop over top items avoids .slice(0, 8) and .reduce() array allocations
+    const limit = Math.min(8, marketData.length);
+    let sum24h = 0;
+    for (let i = 0; i < limit; i++) {
+      sum24h += marketData[i].price_change_percentage_24h || 0;
+    }
+    const avg24h = sum24h / limit;
     const volatility = Math.abs(avg24h);
     if (volatility > 5) marketContext = 'VOLATILE';
     else if (avg24h > 2) marketContext = 'BULLISH';
@@ -452,8 +458,14 @@ function validateExecutionRules(consensusResult, marketData) {
 
   // Check 3: Market conditions - avoid extreme volatility
   if (marketData?.length > 0) {
-    const volatility = marketData.slice(0, 8).map(c => Math.abs(c.price_change_percentage_24h || 0));
-    const avgVolatility = volatility.reduce((a, b) => a + b, 0) / volatility.length;
+    // ⚡ Bolt Optimization: Single-pass manual loop over top items avoids .slice(0, 8), .map(), and .reduce() allocations
+    const limit = Math.min(8, marketData.length);
+    let volSum = 0;
+    for (let i = 0; i < limit; i++) {
+      const chg = marketData[i].price_change_percentage_24h || 0;
+      volSum += chg >= 0 ? chg : -chg;
+    }
+    const avgVolatility = volSum / limit;
     
     if (avgVolatility > AI_ARENA.pause_conditions.extreme_volatility) {
       return {
