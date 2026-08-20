@@ -1634,6 +1634,32 @@ async function handleMetaMaskConnect() {
     btn.textContent = 'CONNECTING...';
   }
   try {
+    // Ensure network is switched to Base Mainnet (8453 / 0x2105)
+    try {
+      await window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: '0x2105' }],
+      });
+    } catch (switchError) {
+      // 4902 error code indicates that the chain has not been added to MetaMask.
+      if (switchError.code === 4902) {
+        try {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: '0x2105',
+              chainName: 'Base Mainnet',
+              rpcUrls: ['https://mainnet.base.org'],
+              nativeCurrency: { name: 'Ethereum', symbol: 'ETH', decimals: 18 },
+              blockExplorerUrls: ['https://basescan.org']
+            }],
+          });
+        } catch (addError) {
+          console.error('Failed to add Base Mainnet to wallet:', addError);
+        }
+      }
+    }
+
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     if (accounts.length > 0) {
       const address = accounts[0];
@@ -3677,8 +3703,8 @@ async function claimPayout() {
   try {
     if (typeof SFX !== 'undefined') SFX.tick();
 
-    // Check wallet connection (Privy or MetaMask)
-    const address = window.privyWalletAddress || window.ethereum?.selectedAddress;
+    // Check wallet connection (Privy or MetaMask/walletState)
+    const address = window.privyWalletAddress || (window.walletState && window.walletState.isConnected && window.walletState.address) || window.ethereum?.selectedAddress;
     if (!address) {
       if (window.showToast) window.showToast('Connect wallet first', 'warn');
       btn.textContent = originalText;
@@ -6982,7 +7008,7 @@ function updateSettingsVolume(val) {
         <div class="settings-section-title">💳 Wallet Connection</div>
         <div id="settingsWalletStatus" style="font-size:10px;color:var(--dim);margin-bottom:8px">🔴 Not connected</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <button class="mm-btn" onclick="window.ethereum?.request({ method: 'eth_requestAccounts' }).then(() => { location.reload(); })" style="flex:1;min-width:120px;padding:8px;font-size:10px;background:#f6851b;color:#fff;border:none">Connect MetaMask</button>
+          <button class="mm-btn" onclick="handleMetaMaskConnect()" style="flex:1;min-width:120px;padding:8px;font-size:10px;background:#f6851b;color:#fff;border:none;cursor:pointer">Connect MetaMask</button>
           <button class="onramp-btn" onclick="if(window.privyLogin) window.privyLogin()" style="flex:1;min-width:120px;padding:8px;font-size:10px">Other Wallets (Privy)</button>
         </div>
       </div>
