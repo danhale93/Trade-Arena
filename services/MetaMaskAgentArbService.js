@@ -4,15 +4,20 @@
  * network-labeled Prometheus metrics, Discord alerts, and MEV-protected arbitrage execution.
  */
 
-const { Mutex } = require('async-mutex');
-const { exec } = require('child_process');
-const { promisify } = require('util');
-const { ethers } = require('ethers');
-const axios = require('axios');
-const prometheus = require('prom-client');
-const fs = require('fs');
-const path = require('path');
-const { PerformanceObserver } = require('perf_hooks');
+import { Mutex } from 'async-mutex';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import { ethers } from 'ethers';
+import axios from 'axios';
+import prometheus from 'prom-client';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { PerformanceObserver } from 'perf_hooks';
+import v8 from 'v8';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const execAsync = promisify(exec);
 
@@ -70,7 +75,6 @@ const obs = new PerformanceObserver((list) => {
 obs.observe({ entryTypes: ['gc'] });
 
 // Periodically update V8 heap stats
-const v8 = require('v8');
 setInterval(() => {
     const stats = v8.getHeapStatistics();
     v8HeapStats.set({ stat: 'total_heap_size' }, stats.total_heap_size);
@@ -463,4 +467,4 @@ class MetaMaskAgentArbService {
     }
 }
 
-module.exports = new MetaMaskAgentArbService();
+export default new MetaMaskAgentArbService();
