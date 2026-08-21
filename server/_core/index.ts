@@ -63,7 +63,8 @@ async function startServer() {
       return res.json({ success: true, timestamp: Date.now(), baseBal });
     } catch (e: any) {
       console.error("[Heartbeat] Poll error:", e);
-      return res.status(500).json({ error: e.message, stack: e.stack });
+      // Sentinel: Do not leak stack traces in HTTP responses to prevent information disclosure
+      return res.status(500).json({ error: e.message || "Internal server error" });
     }
   });
 
