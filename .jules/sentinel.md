@@ -285,3 +285,8 @@ Running security audit across localStorage and active config...
 
 ## 2026-08-14T04:55:38.844Z - [INFO] SENTINEL
 Running security audit across localStorage and active config...
+
+## 2026-08-21 - Stack Trace Information Disclosure in Heartbeat Endpoint
+**Vulnerability:** The scheduled polling endpoint (`/api/scheduled/poll-arbitrage`) in `server/_core/index.ts` was returning `e.stack` directly in 500 error responses during exception handling.
+**Learning:** Secondary or cron endpoint error handlers often include `stack` properties during rapid prototyping or debugging, which persists into production and exposes internal source paths and runtime environment details.
+**Prevention:** Never include `e.stack` in JSON error responses returned to clients. Sanitize error responses at route handlers to return high-level error descriptions while logging full stack traces internally to server logs.
