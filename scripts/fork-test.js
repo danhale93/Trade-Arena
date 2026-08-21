@@ -6,8 +6,11 @@
  * Skip execution if ALCHEMY_MAINNET_URL or INFURA_MAINNET_URL is not present.
  */
 
-const { ethers } = require("ethers");
-require("dotenv").config();
+import { fileURLToPath } from "url";
+import { ethers } from "ethers";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const WETH_ADDRESS = "0x4200000000000000000000000000000000000006";
 const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
@@ -21,7 +24,7 @@ const ERC20_ABI = [
   "function balanceOf(address owner) view returns (uint256)"
 ];
 
-async function runForkTest() {
+export async function runForkTest() {
   const rpcUrl = process.env.ALCHEMY_MAINNET_URL || process.env.INFURA_MAINNET_URL;
 
   if (!rpcUrl) {
@@ -86,8 +89,6 @@ async function runForkTest() {
   }
 }
 
-if (require.main === module) {
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   runForkTest();
 }
-
-module.exports = { runForkTest };

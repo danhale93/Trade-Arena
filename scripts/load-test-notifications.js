@@ -3,8 +3,16 @@
  * Simulates high-frequency trade events to verify aggregation and fallback logic.
  */
 
-const mmArbService = require('../services/MetaMaskAgentArbService');
-require('dotenv').config();
+import { fileURLToPath } from "url";
+import path from "path";
+import fs from "fs";
+import dotenv from "dotenv";
+import mmArbService from "../services/MetaMaskAgentArbService.js";
+
+dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Configuration
 const TRADES_PER_SECOND = 100;
@@ -37,33 +45,34 @@ async function runLoadTest() {
     const startTime = Date.now();
     let tradesSent = 0;
 
-    const interval = setInterval(async () => {
-        for (let i = 0; i < 10; i++) { // Send in small batches to maintain frequency
-            if (tradesSent >= TOTAL_TRADES) {
-                clearInterval(interval);
-                const duration = (Date.now() - startTime) / 1000;
-                console.log(`\n🏁 LOAD TEST COMPLETE`);
-                console.log(`✅ Sent ${tradesSent} trades in ${duration.toFixed(2)}s`);
-                console.log(`📊 Check your Discord/Telegram for a "Bulk Arbitrage Report"`);
-                console.log(`📄 Check logs/trades.log for ${tradesSent} individual JSON entries`);
-                return;
+    return new Promise((resolve) => {
+        const interval = setInterval(async () => {
+            for (let i = 0; i < 10; i++) { // Send in small batches to maintain frequency
+                if (tradesSent >= TOTAL_TRADES) {
+                    clearInterval(interval);
+                    const duration = (Date.now() - startTime) / 1000;
+                    console.log(`\n🏁 LOAD TEST COMPLETE`);
+                    console.log(`✅ Sent ${tradesSent} trades in ${duration.toFixed(2)}s`);
+                    console.log(`📊 Check your Discord/Telegram for a "Bulk Arbitrage Report"`);
+                    console.log(`📄 Check logs/trades.log for ${tradesSent} individual JSON entries`);
+                    resolve();
+                    return;
+                }
+                simulateTrade(tradesSent++);
             }
-            simulateTrade(tradesSent++);
-        }
-        
-        // Progress indicator
-        if (tradesSent % 100 === 0) {
-            process.stdout.write('.');
-        }
-    }, 100); // Run every 100ms
+
+            // Progress indicator
+            if (tradesSent % 100 === 0) {
+                process.stdout.write('.');
+            }
+        }, 100); // Run every 100ms
+    });
 }
 
 // Ensure logs directory exists
-const fs = require('fs');
-const path = require('path');
 const logsDir = path.join(__dirname, '../logs');
 if (!fs.existsSync(logsDir)) {
-    fs.mkdirSync(logsDir);
+    fs.mkdirSync(logsDir, { recursive: true });
 }
 
 runLoadTest().catch(err => console.error('❌ Load Test Failed:', err));
