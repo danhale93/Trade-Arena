@@ -18,7 +18,7 @@ import { getAudioHealth, playAudioCue, retryAudioEngine, setAudioEngineEnabled, 
 import { getAudioPreferences, saveAudioPreferences } from "@/lib/audioPreferences";
 import { CLI_COMMANDS, CLI_HANDOFF_URL, CLI_LINKS } from "@/lib/cliCommandDeck";
 import { QRCodeSVG } from "qrcode.react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { toast } from "sonner";
 
 
@@ -375,24 +375,47 @@ export default function Home() {
   const executionPreflight = agent?.executionPreflight;
   const livePreflightReady = executionPreflight?.ready === true;
   const simulationHistory = agent?.simulationRouteHistory || [];
-  const nowMs = Date.now();
-  const timeRangeMs = profitTimeRange === "1H" ? 3600 * 1000 : profitTimeRange === "24H" ? 24 * 3600 * 1000 : Infinity;
 
-  const filteredSimulationHistory = simulationHistory.filter((entry: any) => {
-    const entryTime = new Date(entry.timestamp).getTime();
-    const matchesTime = nowMs - entryTime <= timeRangeMs;
-    const matchesNetwork = profitNetworkFilter === "ALL" || entry.network === profitNetworkFilter;
-    return matchesTime && matchesNetwork;
-  });
+  // Bolt ⚡ Performance Optimization: Memoize chart data and stats calculation using a single-pass backwards loop.
+  // Eliminates array copying ([...arr].reverse()), multiple .filter(), .map(), and .reduce() passes and redundant allocations.
+  const { simulationChartData, simulationProfitTotal, simulationProfitableCount, simulationAverageProfit } = useMemo(() => {
+    const nowMs = Date.now();
+    const timeRangeMs = profitTimeRange === "1H" ? 3600 * 1000 : profitTimeRange === "24H" ? 24 * 3600 * 1000 : Infinity;
+    const chartData: any[] = [];
+    let totalProfit = 0;
+    let profitableCount = 0;
 
-  const simulationChartData = [...filteredSimulationHistory].reverse().map((entry: any) => ({
-    ...entry,
-    profit: Number(entry.netProfitUsd),
-    time: new Date(entry.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-  }));
-  const simulationProfitTotal = simulationChartData.reduce((total, entry) => total + (Number.isFinite(entry.profit) ? entry.profit : 0), 0);
-  const simulationProfitableCount = simulationChartData.filter((entry) => entry.profitable === 1).length;
-  const simulationAverageProfit = simulationChartData.length ? simulationProfitTotal / simulationChartData.length : 0;
+    // simulationHistory is ordered newest to oldest; iterate backwards to build chronological order
+    for (let i = simulationHistory.length - 1; i >= 0; i--) {
+      const entry = simulationHistory[i];
+      const entryTime = new Date(entry.timestamp).getTime();
+      if (nowMs - entryTime > timeRangeMs) continue;
+      if (profitNetworkFilter !== "ALL" && entry.network !== profitNetworkFilter) continue;
+
+      const profit = Number(entry.netProfitUsd);
+      if (Number.isFinite(profit)) {
+        totalProfit += profit;
+      }
+      if (entry.profitable === 1) {
+        profitableCount++;
+      }
+
+      chartData.push({
+        ...entry,
+        profit,
+        time: new Date(entry.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      });
+    }
+
+    const averageProfit = chartData.length ? totalProfit / chartData.length : 0;
+
+    return {
+      simulationChartData: chartData,
+      simulationProfitTotal: totalProfit,
+      simulationProfitableCount: profitableCount,
+      simulationAverageProfit: averageProfit,
+    };
+  }, [simulationHistory, profitTimeRange, profitNetworkFilter]);
   const simulationChartConfig = {
     profit: { label: "Net simulated profit", color: "#00dbe9" },
   } satisfies ChartConfig;
