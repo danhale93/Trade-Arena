@@ -5,10 +5,10 @@
  * Verifies connection to the specified RPC endpoint and validates the network.
  */
 
-const { ethers } = require("ethers");
-require("dotenv").config();
+import { ethers } from "ethers";
+import "dotenv/config";
 
-async function checkRPC() {
+export async function checkRPC() {
   const isCustomRPC = !!(process.env.ALCHEMY_MAINNET_URL || process.env.INFURA_MAINNET_URL || process.env.RPC_URL);
   const rpcUrl = process.env.ALCHEMY_MAINNET_URL ||
                  process.env.INFURA_MAINNET_URL ||
@@ -52,8 +52,6 @@ async function checkRPC() {
   }
 }
 
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   checkRPC();
 }
-
-module.exports = { checkRPC };
