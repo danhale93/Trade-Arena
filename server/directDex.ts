@@ -182,8 +182,10 @@ export function getDirectExecutionPreflight(): DirectExecutionPreflight {
 
 export async function fetchChainGasTelemetry(network: DirectDexNetwork): Promise<ChainGasTelemetry> {
   const config = DIRECT_DEX_CONFIG[network];
+  const dynamicRpcEnv = network === "base" ? process.env.BASE_RPC_URL : network === "arbitrum" ? process.env.ARBITRUM_RPC_URL : process.env.OPTIMISM_RPC_URL;
+  const rawRpcUrl = dynamicRpcEnv || config.rpcUrl;
   try {
-    const provider = new ethers.JsonRpcProvider(config.rpcUrl.includes("invalid.rpc.local.test") ? "http://127.0.0.1:1" : config.rpcUrl, {
+    const provider = new ethers.JsonRpcProvider(rawRpcUrl.includes("invalid.rpc.local.test") ? "http://127.0.0.1:1" : rawRpcUrl, {
       chainId: config.chainId,
       name: network,
     });
