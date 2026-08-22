@@ -4,7 +4,7 @@
  * Run with: node --expose-gc scripts/profile-memory-hft.js
  */
 
-const mmArbService = require('../services/MetaMaskAgentArbService');
+const mmArbService = require('../services/MetaMaskAgentArbService.cjs');
 const v8 = require('v8');
 require('dotenv').config();
 

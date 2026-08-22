@@ -6,8 +6,10 @@
  * Skip execution if ALCHEMY_MAINNET_URL or INFURA_MAINNET_URL is not present.
  */
 
-const { ethers } = require("ethers");
-require("dotenv").config();
+import { ethers } from "ethers";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const WETH_ADDRESS = "0x4200000000000000000000000000000000000006";
 const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
@@ -86,8 +88,8 @@ async function runForkTest() {
   }
 }
 
-if (require.main === module) {
+if (process.argv[1] && process.argv[1].includes("fork-test.js")) {
   runForkTest();
 }
 
-module.exports = { runForkTest };
+export { runForkTest };
