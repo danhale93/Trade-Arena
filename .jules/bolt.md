@@ -153,3 +153,7 @@ Action: Implemented dual-mode trading system with real on-chain execution, batch
 ## 2026-08-14 - Allocation-Free Single-Pass ELO Evolution Traversal
 **Learning:** Calling `Object.values().reduce()` and `Object.keys().reduce()` inside high-frequency event callbacks or state evolution checks (such as `checkForEvolution` and `getLeaderAgent` in `elo-tournament-engine.js`) creates unnecessary array allocations and callback heap pressure on every evaluation pass. Replacing these functional iterations with direct `for...in` manual loops eliminates heap allocation overhead completely.
 **Action:** Use manual `for...in` accumulation loops over entity map objects in match/state tracking routines to keep evaluation paths allocation-free.
+
+## 2026-08-22 - Single-Pass Report Accumulation and Metric Sign Preservation
+**Learning:** Replacing multi-pass `.filter()` and `.reduce()` chains with a single O(N) manual loop eliminates intermediate array allocations and reduce callbacks. However, care must be taken to preserve exact sign semantics for sub-metrics like `avgLoss` (where total loss amount is unsigned for Profit Factor calculations, but `avgLoss` is signed for trade reporting).
+**Action:** When accumulating loss totals in a single pass, track both signed loss sum (`lossPnLSum`) and absolute loss amount (`totalLossAmount`) to ensure exact output parity with legacy reporting methods.
