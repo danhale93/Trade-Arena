@@ -417,33 +417,46 @@ const CrucibleAITest = {
   // ════════════════════════════════════════════════════════════════
   // GET RUNNING STATISTICS
   // ════════════════════════════════════════════════════════════════
+  // ⚡ Bolt Optimization: Replace 9 functional filter/reduce array traversals and allocations
+  // with a single manual loop accumulating all metrics in O(1) space.
   getRunningStats() {
-    const executedTrades = this.trades.filter(t => !t.skipped);
-    const wins = executedTrades.filter(t => t.isWin).length;
-    const losses = executedTrades.filter(t => !t.isWin).length;
-    const winRate = executedTrades.length > 0 ? (wins / executedTrades.length) * 100 : 0;
+    let totalTrades = 0;
+    let wins = 0;
+    let losses = 0;
+    let totalPnL = 0;
+    let winPnLSum = 0;
+    let lossPnLSum = 0;
 
-    const totalPnL = executedTrades.reduce((sum, t) => sum + t.pnl, 0);
-    const winTrades = executedTrades.filter(t => t.isWin);
-    const lossTrades = executedTrades.filter(t => !t.isWin);
-    
-    const avgWin = winTrades.length > 0 
-      ? (winTrades.reduce((sum, t) => sum + t.pnl, 0) / winTrades.length)
-      : 0;
-    
-    const avgLoss = lossTrades.length > 0
-      ? (lossTrades.reduce((sum, t) => sum + t.pnl, 0) / lossTrades.length)
-      : 0;
+    const len = this.trades.length;
+    for (let i = 0; i < len; i++) {
+      const t = this.trades[i];
+      if (t.skipped) continue;
 
-    const totalWinAmount = Math.abs(winTrades.reduce((sum, t) => sum + t.pnl, 0));
-    const totalLossAmount = Math.abs(lossTrades.reduce((sum, t) => sum + t.pnl, 0));
-    
+      totalTrades++;
+      totalPnL += t.pnl;
+
+      if (t.isWin) {
+        wins++;
+        winPnLSum += t.pnl;
+      } else {
+        losses++;
+        lossPnLSum += t.pnl;
+      }
+    }
+
+    const winRate = totalTrades > 0 ? (wins / totalTrades) * 100 : 0;
+    const avgWin = wins > 0 ? winPnLSum / wins : 0;
+    const avgLoss = losses > 0 ? lossPnLSum / losses : 0;
+
+    const totalWinAmount = Math.abs(winPnLSum);
+    const totalLossAmount = Math.abs(lossPnLSum);
+
     const profitFactor = totalLossAmount !== 0
       ? (totalWinAmount / totalLossAmount)
       : (totalWinAmount > 0 ? 999 : 0);
 
     return {
-      totalTrades: executedTrades.length,
+      totalTrades,
       wins,
       losses,
       winRate,
@@ -460,38 +473,49 @@ const CrucibleAITest = {
   generateReport() {
     const duration = ((this.endTime - this.startTime) / 1000).toFixed(2);
     
-    // Separate executed and skipped trades
-    const executedTrades = this.trades.filter(t => !t.skipped);
-    const skippedTrades = this.trades.filter(t => t.skipped);
-    
-    const wins = executedTrades.filter(t => t.isWin).length;
-    const losses = executedTrades.filter(t => !t.isWin).length;
-    const winRate = executedTrades.length > 0 ? (wins / executedTrades.length * 100).toFixed(2) : 0;
+    // ⚡ Bolt Optimization: Replace 4 filter array allocations and 5 sequential reduce passes
+    // with a single manual loop accumulating all metrics in O(1) space.
+    let executedCount = 0;
+    let skippedCount = 0;
+    let wins = 0;
+    let losses = 0;
+    let totalPnL = 0;
+    let winPnLSum = 0;
+    let lossPnLSum = 0;
 
-    // P&L calculations
-    const totalPnL = executedTrades.reduce((sum, t) => sum + t.pnl, 0);
+    const len = this.trades.length;
+    for (let i = 0; i < len; i++) {
+      const t = this.trades[i];
+      if (t.skipped) {
+        skippedCount++;
+      } else {
+        executedCount++;
+        totalPnL += t.pnl;
+        if (t.isWin) {
+          wins++;
+          winPnLSum += t.pnl;
+        } else {
+          losses++;
+          lossPnLSum += t.pnl;
+        }
+      }
+    }
+
+    const winRate = executedCount > 0 ? ((wins / executedCount) * 100).toFixed(2) : '0.00';
     const finalBalance = this.config.paperBalance + totalPnL;
-    const returnPercent = (totalPnL / this.config.paperBalance * 100).toFixed(2);
+    const returnPercent = this.config.paperBalance !== 0
+      ? ((totalPnL / this.config.paperBalance) * 100).toFixed(2)
+      : (totalPnL !== 0 ? 'Inf' : '0.00');
 
-    // Trade statistics
-    const winTrades = executedTrades.filter(t => t.isWin);
-    const lossTrades = executedTrades.filter(t => !t.isWin);
-    
-    const avgWin = winTrades.length > 0 
-      ? (winTrades.reduce((sum, t) => sum + t.pnl, 0) / winTrades.length).toFixed(2)
-      : 0;
-    
-    const avgLoss = lossTrades.length > 0
-      ? (lossTrades.reduce((sum, t) => sum + t.pnl, 0) / lossTrades.length).toFixed(2)
-      : 0;
+    const avgWin = wins > 0 ? (winPnLSum / wins).toFixed(2) : '0.00';
+    const avgLoss = losses > 0 ? (lossPnLSum / losses).toFixed(2) : '0.00';
 
-    // Profit Factor
-    const totalWinAmount = Math.abs(winTrades.reduce((sum, t) => sum + t.pnl, 0));
-    const totalLossAmount = Math.abs(lossTrades.reduce((sum, t) => sum + t.pnl, 0));
-    
+    const totalWinAmount = Math.abs(winPnLSum);
+    const totalLossAmount = Math.abs(lossPnLSum);
+
     const profitFactor = totalLossAmount !== 0
       ? (totalWinAmount / totalLossAmount).toFixed(2)
-      : (totalWinAmount > 0 ? 'Inf' : 0);
+      : (totalWinAmount > 0 ? 'Inf' : '0.00');
 
     // Strategy performance breakdown
     const strategyStats = this.getStrategyBreakdown();
@@ -515,12 +539,12 @@ const CrucibleAITest = {
 
     console.log(`\n📈 EXECUTION STATISTICS:`);
     console.log(`  Total Opportunities: ${this.trades.length}`);
-    console.log(`  Executed: ${executedTrades.length} (${((executedTrades.length/this.trades.length)*100).toFixed(0)}%)`);
-    console.log(`  Skipped (Bad EV): ${skippedTrades.length} (${((skippedTrades.length/this.trades.length)*100).toFixed(0)}%)`);
+    console.log(`  Executed: ${executedCount} (${len > 0 ? ((executedCount/len)*100).toFixed(0) : 0}%)`);
+    console.log(`  Skipped (Bad EV): ${skippedCount} (${len > 0 ? ((skippedCount/len)*100).toFixed(0) : 0}%)`);
     console.log(`  AI Learning: ENABLED ✅`);
 
     console.log(`\n🎯 TRADE RESULTS (Executed Trades Only):`);
-    console.log(`  Total Trades: ${executedTrades.length}`);
+    console.log(`  Total Trades: ${executedCount}`);
     console.log(`  Wins: ${wins} | Losses: ${losses}`);
     console.log(`%c  Win Rate: ${winRate}%`, winRate >= 50 ? 'color: #39ff14' : 'color: #ffaa00');
     console.log(`  Avg Win: $${avgWin}`);
@@ -547,7 +571,7 @@ const CrucibleAITest = {
     return {
       sessionId: this.sessionId,
       timestamp: new Date().toISOString(),
-      totalTrades: executedTrades.length,
+      totalTrades: executedCount,
       wins,
       losses,
       winRate,

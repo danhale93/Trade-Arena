@@ -232,52 +232,64 @@ const CrucibleTest = {
   generateReport() {
     const duration = ((this.endTime - this.startTime) / 1000).toFixed(2);
     
-    // Separate executed and skipped trades
-    const executedTrades = this.trades.filter(t => !t.skipped);
-    const skippedTrades = this.trades.filter(t => t.skipped);
-    
-    const wins = executedTrades.filter(t => t.isWin).length;
-    const losses = executedTrades.filter(t => !t.isWin).length;
-    const winRate = executedTrades.length > 0 ? (wins / executedTrades.length * 100).toFixed(2) : 0;
+    // ⚡ Bolt Optimization: Replace 6 filter array allocations and 8 reduce traversals with a single O(N) manual loop
+    let executedCount = 0;
+    let skippedCount = 0;
+    let wins = 0;
+    let losses = 0;
+    let totalPnl = 0;
+    let winPnLSum = 0;
+    let lossPnLSum = 0;
+    let sumExpectedValue = 0;
+    let sumEdge = 0;
+    let sumConfidence = 0;
+    let allVerified = true;
 
-    // P&L calculations (only from executed trades)
-    const totalPnl = executedTrades.reduce((sum, t) => sum + t.pnl, 0);
+    const executedTradesList = [];
+
+    const len = this.trades.length;
+    for (let i = 0; i < len; i++) {
+      const t = this.trades[i];
+      if (t.skipped) {
+        skippedCount++;
+      } else {
+        executedCount++;
+        executedTradesList.push(t);
+        totalPnl += t.pnl;
+        sumExpectedValue += (t.expectedValue || 0);
+        sumEdge += (t.edge || 0);
+        sumConfidence += (t.confidence || 0);
+        if (!t.verified) allVerified = false;
+
+        if (t.isWin) {
+          wins++;
+          winPnLSum += t.pnl;
+        } else {
+          losses++;
+          lossPnLSum += t.pnl;
+        }
+      }
+    }
+
+    const winRate = executedCount > 0 ? ((wins / executedCount) * 100).toFixed(2) : '0.00';
     const finalBalance = this.config.paperBalance + totalPnl;
-    const returnPercent = (totalPnl / this.config.paperBalance * 100).toFixed(2);
+    const returnPercent = this.config.paperBalance !== 0
+      ? ((totalPnl / this.config.paperBalance) * 100).toFixed(2)
+      : (totalPnl !== 0 ? 'Inf' : '0.00');
 
-    // Trade statistics
-    const winTrades = executedTrades.filter(t => t.isWin);
-    const lossTrades = executedTrades.filter(t => !t.isWin);
-    
-    const avgWin = winTrades.length > 0 
-      ? (winTrades.reduce((sum, t) => sum + t.pnl, 0) / winTrades.length).toFixed(2)
-      : 0;
-    
-    const avgLoss = lossTrades.length > 0
-      ? (lossTrades.reduce((sum, t) => sum + t.pnl, 0) / lossTrades.length).toFixed(2)
-      : 0;
+    const avgWin = wins > 0 ? (winPnLSum / wins).toFixed(2) : '0.00';
+    const avgLoss = losses > 0 ? (lossPnLSum / losses).toFixed(2) : '0.00';
 
-    // Profit Factor (with risk management)
-    const totalWinAmount = Math.abs(winTrades.reduce((sum, t) => sum + t.pnl, 0));
-    const totalLossAmount = Math.abs(lossTrades.reduce((sum, t) => sum + t.pnl, 0));
-    
+    const totalWinAmount = Math.abs(winPnLSum);
+    const totalLossAmount = Math.abs(lossPnLSum);
+
     const profitFactor = totalLossAmount !== 0
       ? (totalWinAmount / totalLossAmount).toFixed(2)
-      : (totalWinAmount > 0 ? 'Inf' : 0);
+      : (totalWinAmount > 0 ? 'Inf' : '0.00');
 
-    // Expected Value Calculation
-    const avgExpectedValue = executedTrades.length > 0 
-      ? (executedTrades.reduce((sum, t) => sum + t.expectedValue, 0) / executedTrades.length).toFixed(2)
-      : 0;
-
-    // Edge analysis
-    const avgEdge = executedTrades.length > 0
-      ? (executedTrades.reduce((sum, t) => sum + t.edge, 0) / executedTrades.length).toFixed(2)
-      : 0;
-    
-    const avgConfidence = executedTrades.length > 0
-      ? ((executedTrades.reduce((sum, t) => sum + t.confidence, 0) / executedTrades.length) * 100).toFixed(0)
-      : 0;
+    const avgExpectedValue = executedCount > 0 ? (sumExpectedValue / executedCount).toFixed(2) : '0.00';
+    const avgEdge = executedCount > 0 ? (sumEdge / executedCount).toFixed(2) : '0.00';
+    const avgConfidence = executedCount > 0 ? ((sumConfidence / executedCount) * 100).toFixed(0) : '0';
 
     // Print report
     console.log('%c════════════════════════════════════════════════════════════', 'color: #bf5fff; font-weight: bold;');
@@ -298,12 +310,12 @@ const CrucibleTest = {
 
     console.log(`\n📈 EXECUTION STATISTICS:`);
     console.log(`  Total Opportunities: ${this.trades.length}`);
-    console.log(`  Executed: ${executedTrades.length} (${((executedTrades.length/this.trades.length)*100).toFixed(0)}%)`);
-    console.log(`  Skipped (Bad Setup): ${skippedTrades.length} (${((skippedTrades.length/this.trades.length)*100).toFixed(0)}%)`);
+    console.log(`  Executed: ${executedCount} (${len > 0 ? ((executedCount/len)*100).toFixed(0) : 0}%)`);
+    console.log(`  Skipped (Bad Setup): ${skippedCount} (${len > 0 ? ((skippedCount/len)*100).toFixed(0) : 0}%)`);
     console.log(`%c  Discipline Applied: Only trading positive EV setups`, 'color: #39ff14');
 
     console.log(`\n🎯 TRADE RESULTS (Executed Trades Only):`);
-    console.log(`  Total Trades: ${executedTrades.length}`);
+    console.log(`  Total Trades: ${executedCount}`);
     console.log(`  Wins: ${wins} | Losses: ${losses}`);
     console.log(`%c  Win Rate: ${winRate}%`, winRate >= 50 ? 'color: #39ff14' : 'color: #ffaa00');
     console.log(`  Avg Win: $${avgWin}`);
@@ -318,14 +330,13 @@ const CrucibleTest = {
     console.log(`  Reward Target Per Trade: +$${this.config.rewardTarget}`);
     console.log(`  Risk/Reward Ratio: ${this.config.riskRewardRatio}:1`);
     console.log(`  Avg Expected Value: ${avgExpectedValue} (${avgExpectedValue > 0 ? '✅ POSITIVE' : '❌ NEGATIVE'})`);
-    console.log(`  Entry Discipline: ${((executedTrades.length/this.trades.length)*100).toFixed(0)}% acceptance rate`);
+    console.log(`  Entry Discipline: ${len > 0 ? ((executedCount/len)*100).toFixed(0) : 0}% acceptance rate`);
 
     console.log(`\n📊 EDGE ANALYSIS:`);
     console.log(`  Avg Edge: ${avgEdge}%`);
     console.log(`  Avg Confidence: ${avgConfidence}%`);
 
     console.log(`\n✅ VERIFICATION STATUS:`);
-    const allVerified = executedTrades.every(t => t.verified);
     console.log(`%c  All Trades Verified: ${allVerified ? '✅ YES' : '❌ NO'}`, 
       allVerified ? 'color: #39ff14' : 'color: #ff2d78');
     console.log(`  System: Risk Management Enforced ✅`);
@@ -340,8 +351,8 @@ const CrucibleTest = {
       config: this.config,
       duration,
       totalOpportunities: this.trades.length,
-      executed: executedTrades.length,
-      skipped: skippedTrades.length,
+      executed: executedCount,
+      skipped: skippedCount,
       wins,
       losses,
       winRate,
@@ -354,7 +365,7 @@ const CrucibleTest = {
       avgEdge,
       avgConfidence,
       avgExpectedValue,
-      trades: executedTrades, // Only return executed trades
+      trades: executedTradesList, // Only return executed trades
       allVerified,
     };
   },
