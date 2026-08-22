@@ -1417,8 +1417,22 @@ app.get('/api/market/prices', async (req, res) => {
 
 app.get('/api/user/:address/data', async (req, res) => {
     try {
+        const address = req.params.address;
+        if (!address || typeof address !== 'string' || address.length > 100) {
+            return res.status(400).json({ success: false, error: 'Invalid address parameter' });
+        }
+
+        const dangerousProps = ['__proto__', 'constructor', 'prototype'];
+        if (dangerousProps.includes(address)) {
+            return res.status(400).json({ success: false, error: 'Invalid address parameter' });
+        }
+
+        if (address !== 'demo' && !ethers.isAddress(address)) {
+            return res.status(400).json({ success: false, error: 'Invalid address format' });
+        }
+
         const users = loadUsers();
-        const user = users[req.params.address] || users['demo'];
+        const user = Object.hasOwn(users, address) ? users[address] : (Object.hasOwn(users, 'demo') ? users['demo'] : null);
         res.json({ 
             success: true, 
             bots: user ? user.bots : [], 
