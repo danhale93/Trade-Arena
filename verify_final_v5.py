@@ -8,7 +8,7 @@ async def run():
         page = await browser.new_page()
 
         # Go to the app
-        await page.goto("http://localhost:3001")
+        await page.goto("http://localhost:3000")
         await asyncio.sleep(2)
 
         # Login via Demo
